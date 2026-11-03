@@ -1,0 +1,2 @@
+# 빈 이슈는 만들 수 없게 하고, 아래 양식(1-feature, 2-bug, 3-task)만 사용합니다.
+blank_issues_enabled: false

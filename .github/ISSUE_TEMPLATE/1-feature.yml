@@ -1,0 +1,62 @@
+name: "✨ 기능 개발"
+description: "새로운 기능을 만들거나 기존 기능을 확장할 때 사용합니다."
+title: "[기능] "
+labels: ["✨ feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 작성 전에 확인해 주세요 👀
+        - 비슷한 이슈가 이미 있는지 검색해 보셨나요?
+        - **1~3일 안에 끝낼 수 있는 크기**인가요? 크면 여러 이슈로 쪼개 주세요.
+        - 이슈를 만든 뒤 오른쪽 사이드바에서 **Assignees · Labels(part / area / 우선순위) · Projects · Milestone** 을 설정해 주세요.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: "📌 개요"
+      description: "어떤 기능인지 한두 문장으로 적어 주세요."
+      placeholder: "예) 퀴즈를 제출하면 정답률을 계산하고, 50% 이상이면 통과 처리한다."
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: "💡 배경 / 목적"
+      description: "왜 필요한가요? 관련된 기획서 항목이나 요구사항 번호가 있으면 함께 적어 주세요."
+      placeholder: "예) 기획서 4-1 메인 흐름 4번 '퀴즈 풀이' — 통과해야 실습으로 넘어갈 수 있다."
+    validations:
+      required: false
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: "🛠️ 작업 목록"
+      description: "해야 할 일을 체크리스트로 쪼개 주세요. 진행하면서 하나씩 체크합니다."
+      value: |
+        - [ ] 
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: "✅ 완료 조건"
+      description: "무엇이 되면 '끝났다'고 할 수 있나요? 리뷰어가 확인하는 기준이 됩니다."
+      placeholder: |
+        예)
+        - 정답률이 50% 이상이면 '통과' 화면, 미만이면 '재도전' 화면이 보인다.
+        - 틀린 문제 목록이 함께 표시된다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: "🔗 참고 자료"
+      description: "디자인 링크, 기획서 위치, 관련 이슈(#번호) 등을 적어 주세요."
+    validations:
+      required: false
