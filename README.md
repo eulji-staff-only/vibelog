@@ -159,7 +159,9 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 │       └── 3-task.yml                ← 🔧 작업(리팩터링·문서·설정·테스트·디자인) 양식
 ├── scripts/
 │   └── setup-labels.sh               ← 라벨을 한 번에 만드는 스크립트 (관리자용)
-└── docs/collaboration/               ← 상세 가이드 01 ~ 07
+└── docs/
+    ├── collaboration/                ← 상세 가이드 01 ~ 07
+    └── planning/                     ← 확정 기획 문서 (소개·분석·이벤트 스토밍·요구사항·정책)
 ```
 
 ---
