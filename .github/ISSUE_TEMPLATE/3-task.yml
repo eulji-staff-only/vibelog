@@ -8,6 +8,7 @@ body:
         ### 라벨을 꼭 붙여 주세요 🏷️
         이 양식은 타입 라벨이 자동으로 붙지 않습니다. 오른쪽 **Labels** 에서 작업 종류에 맞는 라벨을 골라 주세요.
         `🎨 design` · `♻️ refactor` · `✅ test` · `📝 docs` · `🔧 chore` (결정이 필요한 질문이면 `❓ question`)
+        - 요구사항·정책을 바꾸자는 내용이면 이 양식 대신 **📐 요구사항 · 정책 변경 요청** 을 써 주세요.
 
   - type: dropdown
     id: kind
@@ -22,6 +23,15 @@ body:
         - "❓ 질문 · 논의"
     validations:
       required: true
+
+  - type: input
+    id: spec
+    attributes:
+      label: "📋 관련 요구사항 · 정책 ID"
+      description: "관련된 ID가 있으면 적어 주세요. (예: 비기능 요구사항, 공통 컴포넌트가 쓰이는 기능)"
+      placeholder: "예) NFR-SEC-005, PL-ERR-006"
+    validations:
+      required: false
 
   - type: textarea
     id: summary

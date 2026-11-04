@@ -153,10 +153,11 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 ├── .github/
 │   ├── pull_request_template.md      ← PR을 만들면 자동으로 채워지는 양식
 │   └── ISSUE_TEMPLATE/
-│       ├── config.yml                ← 빈 이슈 금지 (템플릿만 사용)
+│       ├── config.yml                ← 빈 이슈 금지 + 기획 문서 바로가기
 │       ├── 1-feature.yml             ← ✨ 기능 개발 이슈 양식
 │       ├── 2-bug.yml                 ← 🐛 버그 제보 이슈 양식
-│       └── 3-task.yml                ← 🔧 작업(리팩터링·문서·설정·테스트·디자인) 양식
+│       ├── 3-task.yml                ← 🔧 작업(리팩터링·문서·설정·테스트·디자인) 양식
+│       └── 4-spec-change.yml         ← 📐 요구사항·정책 변경 요청 양식
 ├── scripts/
 │   └── setup-labels.sh               ← 라벨을 한 번에 만드는 스크립트 (관리자용)
 └── docs/

@@ -1,0 +1,73 @@
+name: "📐 요구사항 · 정책 변경 요청"
+description: "명세서에 없는 기능을 추가하거나, 요구사항·정책·우선순위를 바꿔야 할 때 사용합니다."
+title: "[변경] "
+labels: ["❓ question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 요구사항 명세서는 팀의 개발 계약서입니다 📜
+        바꿀 때는 **변경 요청(이 이슈) → 영향 분석 → 팀 승인 → 문서에 기록 → 팀 공유** 순서를 따릅니다. (명세서 0-3)
+        - 팀 승인 전에는 **명세서 기준대로** 구현합니다.
+        - 개발 중 새로 나온 요구사항은 **P2 이하**로 추가하는 것이 원칙입니다.
+        - 승인되면 `docs/planning/` 문서를 고치는 PR을 올리고 각 문서의 **변경 이력**에 남깁니다.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: "🗂️ 변경 종류"
+      options:
+        - "➕ 요구사항 추가"
+        - "✏️ 요구사항 내용 변경"
+        - "➖ 요구사항 삭제 · 제외"
+        - "🎯 우선순위 변경"
+        - "📏 정책 값 변경 (횟수·기간·기준)"
+        - "❓ 명세가 모호하거나 문서끼리 맞지 않음"
+    validations:
+      required: true
+
+  - type: input
+    id: target
+    attributes:
+      label: "📋 대상 ID"
+      description: "바꾸려는 요구사항·정책 ID. 추가라면 넣을 업무 코드를 적어 주세요."
+      placeholder: "예) FR-LSN-006, PL-LSN-002 / 추가: LSN"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: "📄 지금 문서 내용"
+      description: "문서에서 해당 부분을 그대로 옮겨 주세요."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: "✏️ 바꿀 내용"
+      description: "문서에 그대로 넣을 수 있게 적어 주세요."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: "💡 왜 바꿔야 하나요?"
+      placeholder: "예) 구현해 보니 확인한 문항의 답을 고정하면 새로고침 시 진행 상태를 서버에 문항마다 저장해야 해서 …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: "🌊 영향 범위"
+      description: "함께 바뀌어야 하는 문서·요구사항·화면·진행 중 이슈를 적어 주세요."
+      value: |
+        - 관련 요구사항 · 정책:
+        - 관련 화면 · 이벤트:
+        - 영향받는 이슈 · PR: #
+        - 고칠 문서: [ ] 요구사항 명세서  [ ] 정책 정의서  [ ] 이벤트 스토밍  [ ] 업무 분석(사용자 / 백오피스)
+    validations:
+      required: true
