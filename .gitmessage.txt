@@ -10,7 +10,7 @@
 #       docs      문서             chore     설정·패키지·빌드
 #
 # 영역  (선택, 여러 곳이면 생략)
-#       auth  course  lesson  quiz  assignment  agent  portfolio
+#       auth  course  lesson  quiz  portfolio
 #       exam  community  contest  message  admin  common  config
 # ──────────────────────────────────────────────────────────────
 # (제목 아래 한 줄 비우고) 본문: 왜 바꿨는지 적어 주세요. (선택)
