@@ -142,8 +142,8 @@ git config --global core.editor "code --wait"
 **5) 저장소 내려받기 (clone)**
 
 ```bash
-git clone https://github.com/<조직이름>/<저장소이름>.git
-cd <저장소이름>
+git clone https://github.com/eulji-staff-only/vibelog.git
+cd vibelog
 ```
 
 **6) 커밋 메시지 템플릿 등록** — 반드시 저장소 폴더 안에서 실행하세요.
