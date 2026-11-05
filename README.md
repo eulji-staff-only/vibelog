@@ -191,6 +191,12 @@ public enum QuizErrorCode implements ErrorCode {
 **DB 약속**
 
 - 테이블은 DB 팀의 테이블 정의서를 기준으로 SQL 스크립트(`sql/`)로 만듭니다. `ddl-auto`는 `none`이라 Entity가 테이블을 만들거나 바꾸지 않습니다.
+- 모든 Entity는 **`BaseTimeEntity`를 상속**합니다. `created_at`, `updated_at`이 자동으로 채워지므로 Entity에 두 필드를 따로 만들지 않습니다.
+
+```java
+@Entity
+public class Quiz extends BaseTimeEntity { ... }
+```
 
 | 파일 | 내용 | 작성 |
 |---|---|---|
