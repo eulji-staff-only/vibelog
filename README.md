@@ -55,7 +55,7 @@ flowchart LR
 | 5 | [05. PR · 코드 리뷰 규칙](docs/collaboration/05-pull-request.md) | PR을 올리거나 리뷰할 때, 머지할 때 |
 | 6 | [06. 문제 해결 (실수 복구)](docs/collaboration/06-troubleshooting.md) | 충돌이 났을 때, 실수했을 때, 에러가 날 때 |
 | 7 | [07. 저장소 설정 (관리자용)](docs/collaboration/07-repo-setup.md) | 저장소를 처음 세팅할 때 |
-| 8 | [08. 작업 순서와 병렬 진행](docs/collaboration/08-task-flow.md) | 무엇부터 할지, 다른 팀원 작업을 기다리지 않고 진행하는 방법이 궁금할 때 |
+| 8 | [08. 작업 순서 (P1)](docs/collaboration/08-task-flow.md) | DB 설계 → API 명세 → 구현 중 지금 무엇을 할지, 다른 팀원 작업을 기다리지 않는 방법이 궁금할 때 |
 
 ---
 
@@ -256,7 +256,7 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 
 | 파일 | 하는 일 |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | 우리 팀 규칙(코드 구조, 예외 처리, DB, Git, 확인 방법)을 Claude가 읽고 따릅니다. 다른 팀 담당 범위나 사람이 정할 일에 닿으면 **멈추고 붙여넣기용 요청서·상의 안건**을 만들어 줍니다 |
+| [`CLAUDE.md`](CLAUDE.md) | Claude가 작업 전에 **GitHub 저장소 상황(develop 최신 여부·이슈·열린 PR·현재 단계)을 먼저 확인**하고, 우리 팀 규칙(코드 구조, 예외 처리, DB, Git, API 명세)을 따릅니다. 다른 팀 담당 범위나 사람이 정할 일에 닿으면 **멈추고 붙여넣기용 요청서·상의 안건**을 만들어 줍니다 |
 | [`.claude/settings.json`](.claude/settings.json) | Claude가 `develop`·`main`에 직접 push 하거나 force push 하는 것, `.env`를 읽는 것을 막습니다 |
 
 - 처음 켜면 "이 폴더를 신뢰할까요?"라고 묻습니다. **신뢰(Trust)** 를 골라야 설정이 적용됩니다.
