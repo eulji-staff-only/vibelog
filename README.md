@@ -111,7 +111,108 @@ git switch develop
 git pull origin develop
 ```
 
+**8) 개발 도구 준비**
+
+| 도구 | 버전 | 확인 방법 |
+|---|---|---|
+| JDK | **21** | `java -version` |
+| MySQL | **8.0** | MySQL Workbench 접속 |
+| IDE | IntelliJ IDEA 권장 | **File → Open** 으로 저장소 폴더를 열면 Gradle 프로젝트로 자동 인식 |
+
+Gradle은 설치하지 않아도 됩니다. 저장소에 들어 있는 `gradlew`(Gradle Wrapper)가 팀 전원에게 같은 버전을 받아 줍니다.
+
+**9) 로컬 DB 만들기** — MySQL **root 계정**으로 [`sql/00-create-database.sql`](sql/00-create-database.sql)을 한 번 실행합니다.
+`vibelog` 데이터베이스와 `vibelog` / `vibelog` 계정이 만들어집니다.
+
+> 💡 이미 다른 계정을 쓰고 싶다면 `application.yaml`을 고치지 말고 IntelliJ 실행 설정의 **Environment variables** 에
+> `DB_USERNAME=내계정;DB_PASSWORD=내비밀번호` 를 넣으세요. `application.yaml`을 고쳐서 커밋하면 다른 팀원의 실행이 깨집니다.
+
+**10) 실행해 보기**
+
+```bash
+./gradlew build      # 윈도우 cmd/PowerShell 은 gradlew build
+./gradlew bootRun
+```
+
+또는 IntelliJ에서 `VibelogApplication`의 `main`을 실행합니다. `http://localhost:8080` 에 접속해 **404 에러 화면**이 나오면 정상입니다. (아직 화면이 하나도 없어서예요)
+
 여기까지 됐다면 준비 끝입니다. 🎉 이제 [01. 작업 흐름](docs/collaboration/01-workflow.md)을 따라 첫 작업을 시작하세요.
+
+---
+
+## 🧱 코드 구조 규칙
+
+| 항목 | 내용 |
+|---|---|
+| 기술 | Java 21, Spring Boot 3.5, Spring Data JPA, Thymeleaf, Validation, Lombok, MySQL 8.0 |
+| 루트 패키지 | `com.vibelog` (실행 클래스 `VibelogApplication`은 여기에서 옮기지 않습니다) |
+| 도메인 패키지 이름 | [커밋 영역](docs/collaboration/03-commit.md#영역-scope--어느-부분을-바꿨나요)과 **같은 이름**을 씁니다 (`auth`, `quiz`, `portfolio` …) |
+
+```
+src/main/java/com/vibelog/
+├── VibelogApplication.java
+├── domain/
+│   └── quiz/                         ← 영역 하나 = 패키지 하나
+│       ├── controller/               ← 요청을 받고 화면 이름을 돌려준다
+│       ├── exception/QuizErrorCode   ← 이 영역의 에러 목록 (ErrorCode 구현 enum)
+│       └── model/
+│           ├── dao/                  ← Repository (JpaRepository 상속)
+│           ├── dto/                  ← 화면 ↔ 서버 입력·출력 값 + 입력 검증(@Valid)
+│           ├── entity/               ← 테이블과 매핑되는 클래스 + 자기 상태로 판단하는 도메인 규칙
+│           ├── policy/               ← 여러 데이터를 봐야 판단할 수 있는 비즈니스 규칙
+│           └── service/              ← 트랜잭션과 흐름 조립
+└── global/
+    ├── config/                       ← 공통 설정
+    └── exception/                    ← BusinessException · ErrorCode · GlobalExceptionHandler
+
+src/main/resources/
+├── application.yaml
+├── templates/<영역>/*.html            ← 화면도 영역별 폴더 (예: templates/quiz/result.html)
+└── static/css · js · images
+sql/                                  ← DB 스크립트 (00-create-database.sql, 확정 후 01-schema.sql …)
+```
+
+**예외 처리 약속**
+
+- 규칙 위반은 `throw new BusinessException(QuizErrorCode.QUIZ_NOT_FOUND)` 처럼 던지기만 합니다. `try-catch`로 잡아서 화면을 직접 만들지 않습니다. 화면 처리는 `GlobalExceptionHandler`가 합니다.
+- 에러 목록은 **내 영역 패키지의 enum**에 추가합니다. 모든 영역이 파일 하나를 같이 고치면 PR마다 충돌이 나기 때문입니다.
+
+```java
+@Getter
+@RequiredArgsConstructor
+public enum QuizErrorCode implements ErrorCode {
+    QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "퀴즈를 찾을 수 없습니다.");
+
+    private final HttpStatus status;
+    private final String message;
+}
+```
+
+**DB 약속**
+
+- 테이블은 DB 팀의 테이블 정의서를 기준으로 SQL 스크립트(`sql/`)로 만듭니다. `ddl-auto`는 `none`이라 Entity가 테이블을 만들거나 바꾸지 않습니다.
+
+| 파일 | 내용 | 작성 |
+|---|---|---|
+| `sql/00-create-database.sql` | 로컬 DB·계정 만들기 (최초 1회) | 형상관리 |
+| `sql/01-schema.sql` | 모든 테이블 (`DROP TABLE IF EXISTS` → `CREATE TABLE`, 몇 번을 실행해도 같은 결과) | DB 팀 |
+| `sql/02-seed.sql` | 기초 데이터 (진단 문항·트랙·코스 등) | DB 팀 |
+
+- `sql/` 파일이 바뀐 PR이 머지되면 작성자가 팀에 **"develop pull 받고 01·02 다시 실행하세요"** 라고 공지합니다. (데이터는 초기화됩니다)
+- 테이블 구조를 바꿔야 하면 Entity만 고치지 말고 **📐 요구사항·정책 변경 요청** 이슈로 DB 팀과 먼저 합의한 뒤, `sql/` 수정과 Entity 수정을 **같은 PR**에 올립니다.
+
+**리뷰어 지정 약속**
+
+| 이런 파일을 바꾸면 | 리뷰어에 꼭 넣을 사람 |
+|---|---|
+| `sql/` | DB 담당 |
+| `build.gradle`, `application.yaml`, `.github/`, `global/` | 형상관리 담당 |
+
+> 비공개 무료 저장소에서는 `CODEOWNERS` 자동 지정이 동작하지 않아서, PR 작성자가 직접 지정합니다.
+
+**자동 빌드 검사 (GitHub Actions)**
+
+PR을 올리면 MySQL을 띄우고 `sql/` 스크립트 실행 → `./gradlew build`(테스트 포함)가 자동으로 돌아갑니다. PR 화면 아래에 **build ✅** 가 떠야 머지할 수 있습니다. ❌가 뜨면 **Details** 를 눌러 로그를 확인하고 고친 뒤 다시 push 하세요.
 
 ---
 
@@ -151,6 +252,7 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 ├── README.md                         ← 지금 보고 있는 문서 (협업 규칙 입구)
 ├── .gitmessage.txt                   ← 커밋 메시지 템플릿
 ├── .github/
+│   ├── workflows/build.yml           ← PR마다 자동 빌드·테스트 (GitHub Actions)
 │   ├── pull_request_template.md      ← PR을 만들면 자동으로 채워지는 양식
 │   └── ISSUE_TEMPLATE/
 │       ├── config.yml                ← 빈 이슈 금지 + 기획 문서 바로가기
@@ -158,6 +260,12 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 │       ├── 2-bug.yml                 ← 🐛 버그 제보 이슈 양식
 │       ├── 3-task.yml                ← 🔧 작업(리팩터링·문서·설정·테스트·디자인) 양식
 │       └── 4-spec-change.yml         ← 📐 요구사항·정책 변경 요청 양식
+├── .gitignore                        ← GitHub에 올리지 않을 파일 (빌드 결과물·IDE 설정·.env)
+├── .gitattributes                    ← 윈도우·맥 줄바꿈 통일
+├── build.gradle · settings.gradle    ← 의존성·빌드 설정 (바꿀 땐 chore(config) PR)
+├── gradlew · gradlew.bat · gradle/   ← Gradle Wrapper (설치 없이 같은 버전으로 빌드)
+├── src/                              ← 소스 코드 (🧱 코드 구조 규칙 참고)
+├── sql/                              ← DB 스크립트
 ├── scripts/
 │   └── setup-labels.sh               ← 라벨을 한 번에 만드는 스크립트 (관리자용)
 └── docs/
@@ -179,7 +287,7 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 2. `docs/이슈번호-설명` 브랜치에서 문서를 수정하고 PR을 올립니다.
 3. **전원 Approve** 후 머지하면 그때부터 새 규칙이 적용됩니다.
 
-> 💡 아직 정하지 않은 것: **코드 스타일(포매터·린터)** 과 **자동 검사(CI)** 는 기술 스택이 확정되면 위 절차대로 추가합니다.
+> 💡 아직 정하지 않은 것: **코드 스타일(포매터·린터)** 은 필요해지면 위 절차대로 추가합니다.
 
 ---
 

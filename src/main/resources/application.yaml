@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: vibelog
+  datasource:
+    # 기본값은 sql/00-create-database.sql 로 만든 로컬 DB 계정이다.
+    # 내 MySQL 계정이 다르면 이 파일을 고치지 말고 환경 변수(DB_URL, DB_USERNAME, DB_PASSWORD)로 덮어쓴다.
+    url: ${DB_URL:jdbc:mysql://localhost:3306/vibelog}
+    username: ${DB_USERNAME:vibelog}
+    password: ${DB_PASSWORD:vibelog}
+  jpa:
+    show-sql: true
+    open-in-view: false
+    hibernate:
+      # 테이블은 DB 팀의 테이블 정의서를 기준으로 SQL 스크립트로 만든다. (Entity로 테이블을 만들지 않는다)
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
