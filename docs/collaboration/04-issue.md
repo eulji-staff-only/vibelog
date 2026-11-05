@@ -87,18 +87,18 @@
 
 ### 영역 — 1개 이상 (커밋 영역과 연결)
 
-| 라벨 | 커밋 영역(scope) |
-|---|---|
-| `area: 인증·회원` | `auth` |
-| `area: 코스·추천` | `course` |
-| `area: 수업·퀴즈` | `lesson`, `quiz` |
-| `area: 과제·에이전트` | `assignment`, `agent` |
-| `area: 포트폴리오` | `portfolio` |
-| `area: 모의고사·리포트` | `exam` |
-| `area: 커뮤니티` | `community`, `message` |
-| `area: 콘테스트` | `contest` |
-| `area: 관리자` | `admin` |
-| `area: 공통·설정` | `common`, `config` |
+| 라벨 | 명세서 업무 코드 | 커밋 영역(scope) |
+|---|---|---|
+| `area: 회원` | USR | `auth` |
+| `area: 진단·트랙·코스` | DGN, CRS | `course` |
+| `area: 수강·수업·퀴즈` | ENR, LSN | `lesson`, `quiz` |
+| `area: 모의고사·리포트` | EXM | `exam` |
+| `area: 포트폴리오` | PRT | `portfolio` |
+| `area: 커뮤니티·리뷰` | CMT, REV | `community` |
+| `area: 콘테스트·배지` | CTS, RWD | `contest` |
+| `area: 쪽지·신고·알림` | MSG, RPT, NTF | `message` |
+| `area: 백오피스` | ADM | `admin` |
+| `area: 공통·설정` | NFR · 인프라 | `common`, `config` |
 
 ### 상태 — 필요할 때만
 
