@@ -249,7 +249,7 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 
 | 파일 | 하는 일 |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | 우리 팀 규칙(코드 구조, 예외 처리, DB, Git, 확인 방법)을 Claude가 읽고 따릅니다 |
+| [`CLAUDE.md`](CLAUDE.md) | 우리 팀 규칙(코드 구조, 예외 처리, DB, Git, 확인 방법)을 Claude가 읽고 따릅니다. 다른 팀 담당 범위나 사람이 정할 일에 닿으면 **멈추고 붙여넣기용 요청서·상의 안건**을 만들어 줍니다 |
 | [`.claude/settings.json`](.claude/settings.json) | Claude가 `develop`·`main`에 직접 push 하거나 force push 하는 것, `.env`를 읽는 것을 막습니다 |
 
 - 처음 켜면 "이 폴더를 신뢰할까요?"라고 묻습니다. **신뢰(Trust)** 를 골라야 설정이 적용됩니다.
