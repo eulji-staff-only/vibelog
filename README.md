@@ -24,6 +24,35 @@
 
 ---
 
+## 📌 내 할 일 한눈에 보기
+
+| 바로가기 | 이럴 때 누르세요 |
+|---|---|
+| 👤 [**내 이슈**](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+assignee%3A%40me+sort%3Acreated-asc) | 나에게 배정된 열린 이슈 전부 (오래된 순) |
+| 👀 [**내 리뷰 요청**](https://github.com/eulji-staff-only/vibelog/pulls?q=is%3Aopen+is%3Apr+review-requested%3A%40me) | 내가 리뷰해야 할 PR |
+| 📍 [**단계별 진행률 (마일스톤)**](https://github.com/eulji-staff-only/vibelog/milestones) | 지금 몇 단계인지, 단계마다 몇 % 끝났는지 |
+| 🙋 [**담당 없는 이슈**](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+no%3Aassignee+sort%3Acreated-asc) | 가져갈 일감 찾기 (지금 단계 마일스톤 것부터) |
+| ⛔ [**막힌 이슈**](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+label%3A%22%E2%9B%94+blocked%22) | 누가 무엇을 기다리고 있는지 |
+
+### 영역 담당
+
+담당은 [#14 영역별 담당자 정하기](https://github.com/eulji-staff-only/vibelog/issues/14)에서 정합니다. 담당이 정해지면 그 영역 이슈의 **Assignees**에 담당자를 넣어 주세요. 그러면 위의 **내 이슈** 링크에 자동으로 나타납니다.
+
+| 영역 (라벨) | 패키지 · 커밋 영역 | 담당 | API 명세 이슈 | 이 영역 전체 |
+|---|---|---|---|---|
+| 회원 | `auth` | | #22 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+label%3A%22area%3A+%ED%9A%8C%EC%9B%90%22+sort%3Acreated-asc) |
+| 진단·트랙·코스 | `course` | | #23 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+label%3A%22area%3A+%EC%A7%84%EB%8B%A8%C2%B7%ED%8A%B8%EB%9E%99%C2%B7%EC%BD%94%EC%8A%A4%22+sort%3Acreated-asc) |
+| 수강·수업·퀴즈 | `lesson` · `quiz` | | #24 · #25 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+label%3A%22area%3A+%EC%88%98%EA%B0%95%C2%B7%EC%88%98%EC%97%85%C2%B7%ED%80%B4%EC%A6%88%22+sort%3Acreated-asc) |
+| 모의고사·리포트 | `exam` | | #26 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+label%3A%22area%3A+%EB%AA%A8%EC%9D%98%EA%B3%A0%EC%82%AC%C2%B7%EB%A6%AC%ED%8F%AC%ED%8A%B8%22+sort%3Acreated-asc) |
+| 포트폴리오 | `portfolio` | | #27 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+label%3A%22area%3A+%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4%22+sort%3Acreated-asc) |
+| 커뮤니티·리뷰 | `community` | | #28 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+label%3A%22area%3A+%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0%C2%B7%EB%A6%AC%EB%B7%B0%22+sort%3Acreated-asc) |
+| 백오피스 | `admin` | | #29 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+label%3A%22area%3A+%EB%B0%B1%EC%98%A4%ED%94%BC%EC%8A%A4%22+sort%3Acreated-asc) |
+| 공통·설정 | `common` · `config` · `sql/` | | #10 · #12 · #13 · #21 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aopen+label%3A%22area%3A+%EA%B3%B5%ED%86%B5%C2%B7%EC%84%A4%EC%A0%95%22+sort%3Acreated-asc) |
+
+> 💡 단계 순서는 [08. 작업 순서 (P1)](docs/collaboration/08-task-flow.md)를 보세요. 이슈를 새로 만들 때 **영역 라벨**과 **마일스톤**을 꼭 붙여야 위 링크에 나타납니다.
+
+---
+
 ## 🗺️ 한눈에 보는 작업 흐름
 
 ```mermaid
