@@ -1,0 +1,6 @@
+# 윈도우·맥이 섞여 있어도 저장소에는 LF로 저장해서, 줄바꿈만 바뀐 가짜 변경을 막는다
+* text=auto eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
+*.jpg binary

@@ -122,7 +122,7 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 | └ Dismiss stale pull request approvals when new commits are pushed | 선택 (켜면 더 안전하지만, 리뷰 반영할 때마다 재승인이 필요) |
 | └ Require conversation resolution before merging | ✅ |
 | └ Allowed merge methods | **Squash**, **Merge** (Merge는 hotfix 반영용) |
-| Require status checks to pass | 지금은 끔. 자동 검사(CI)를 추가하면 켭니다 |
+| Require status checks to pass | ✅ → **Add checks** 에서 `build` 선택 (`.github/workflows/build.yml`) |
 
 ### main 규칙
 
@@ -188,8 +188,6 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 
 | 항목 | 설명 |
 |---|---|
-| `.gitignore`, `.env.example` | 기술 스택이 정해지면 바로 추가 (`.env`는 반드시 ignore) |
 | 코드 스타일 도구 | 포매터·린터 설정을 `chore(config)` PR로 추가하고 규칙 문서에 반영 |
-| 자동 검사 (GitHub Actions) | 빌드·테스트·린트를 PR마다 실행 → Ruleset에서 **Require status checks** 켜기 |
-| `CODEOWNERS` | 폴더별 담당자를 자동으로 리뷰어 지정 (파트가 명확히 나뉘면) |
+| `CODEOWNERS` | 폴더별 담당자를 자동으로 리뷰어 지정. 비공개 저장소는 유료 플랜(또는 공개 전환)에서만 동작 |
 | README 분리 | 나중에 README에 프로젝트 소개를 넣을 때, 이 협업 규칙은 `CONTRIBUTING.md`로 옮기면 GitHub이 PR·이슈 화면에서 자동으로 링크해 줍니다 |
