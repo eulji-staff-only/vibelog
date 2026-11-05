@@ -243,6 +243,19 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 6. **팀 공용 AI 설정 파일**(`CLAUDE.md`, `AGENTS.md`, `.cursorrules` 등)을 추가·수정할 때는 별도 이슈와 PR로 팀 합의를 거칩니다. 나만 쓰는 개인 설정은 커밋하지 않습니다.
 7. PR 템플릿의 **"🤖 AI 활용"** 칸에 어떤 도구로 어느 부분을 만들었는지 적어 주면 리뷰어가 더 꼼꼼히 볼 수 있습니다. (선택)
 
+### Claude Code 팀 공용 설정
+
+저장소 폴더에서 Claude Code를 켜면 아래 두 파일이 **자동으로 적용**됩니다. 따로 설정할 것은 없습니다.
+
+| 파일 | 하는 일 |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | 우리 팀 규칙(코드 구조, 예외 처리, DB, Git, 확인 방법)을 Claude가 읽고 따릅니다. 다른 팀 담당 범위나 사람이 정할 일에 닿으면 **멈추고 붙여넣기용 요청서·상의 안건**을 만들어 줍니다 |
+| [`.claude/settings.json`](.claude/settings.json) | Claude가 `develop`·`main`에 직접 push 하거나 force push 하는 것, `.env`를 읽는 것을 막습니다 |
+
+- 처음 켜면 "이 폴더를 신뢰할까요?"라고 묻습니다. **신뢰(Trust)** 를 골라야 설정이 적용됩니다.
+- 나만 쓰고 싶은 규칙은 `CLAUDE.local.md`, 나만 쓰는 권한 설정은 `.claude/settings.local.json`에 적습니다. 둘 다 GitHub에 올라가지 않습니다.
+- `.claude/settings.json`의 차단은 실수를 막는 안전장치일 뿐, 모든 우회 방법을 막지는 못합니다. **규칙을 지키는 책임은 사람에게 있습니다.**
+
 ---
 
 ## 📁 협업 관련 파일 구성
@@ -251,6 +264,8 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 .
 ├── README.md                         ← 지금 보고 있는 문서 (협업 규칙 입구)
 ├── .gitmessage.txt                   ← 커밋 메시지 템플릿
+├── CLAUDE.md                         ← Claude Code 팀 공용 규칙
+├── .claude/settings.json             ← Claude Code 팀 공용 권한 (위험한 push 차단)
 ├── .github/
 │   ├── workflows/build.yml           ← PR마다 자동 빌드·테스트 (GitHub Actions)
 │   ├── pull_request_template.md      ← PR을 만들면 자동으로 채워지는 양식
