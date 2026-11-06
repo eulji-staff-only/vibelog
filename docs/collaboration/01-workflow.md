@@ -125,7 +125,7 @@ git push                                   # 두 번째부터는 이것만
 3. **제목**을 커밋 규칙대로 씁니다: `feat(quiz): 퀴즈 정답률 계산과 통과 판정 추가`
 4. **본문**은 자동으로 채워진 템플릿을 따라 작성합니다. 특히 `Closes #12`의 번호를 내 이슈 번호로 바꾸세요. 머지되면 이슈가 자동으로 닫힙니다.
 5. 오른쪽 사이드바를 채웁니다.
-   - **Reviewers**: 리뷰해 줄 팀원 1명 이상
+   - **Reviewers**: 자동 지정됩니다 (PM·형상관리, 다른 영역 파일을 바꿨으면 그 영역 담당도). 직접 고르지 않아도 됩니다
    - **Assignees**: 나
    - **Labels**: 이슈와 같은 라벨
    - **Projects**: 팀 보드
@@ -160,7 +160,8 @@ git push                                   # 두 번째부터는 이것만
 
 아래 조건이 **모두** 충족되면 **PR 작성자인 내가** 머지합니다.
 
-- [ ] Approve 1개 이상
+- [ ] PM·형상관리 중 1명 Approve (다른 영역 파일을 바꿨으면 그 영역 담당 Approve → `area-review` ✅)
+- [ ] `build` ✅
 - [ ] `[필수]` 코멘트가 모두 해결됨 (Resolve conversation)
 - [ ] "This branch has no conflicts with the base branch" 표시 (충돌 없음)
 

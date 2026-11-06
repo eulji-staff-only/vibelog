@@ -17,7 +17,7 @@
 | 4 | 라벨 만들기 (스크립트) |
 | 5 | 프로젝트 보드 만들기 |
 | 6 | 브랜치 보호 규칙(Ruleset) 설정 |
-| 7 | 협업 규칙 파일을 PR로 추가 → **전원 Approve = 규칙 동의** |
+| 7 | 협업 규칙 파일을 PR로 추가 → **전원 Approve = 규칙 동의** (최초 1회만. 그 뒤 규칙 변경은 일반 PR과 같은 승인 조건) |
 
 ---
 
@@ -133,7 +133,7 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 |---|---|
 | Ruleset Name | `protect-main` |
 | Target branches | `main` |
-| Required approvals | **1** (팀원이 4명 이상이면 **2** 권장) |
+| Required approvals | **1** (코드 오너 = PM·형상관리 중 1명) |
 | Allowed merge methods | **Merge**, **Squash** (Squash는 hotfix용) |
 | Require status checks | `build`만 (`area-review`는 넣지 않음 — develop→main 릴리스 PR은 모든 영역을 바꾸므로) |
 
@@ -179,7 +179,7 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
    ```
 
 5. **PR 만들기**: 제목 `docs: 협업 규칙 문서와 이슈·PR 템플릿 추가`, 본문에 `Closes #1`, Reviewers에 **팀원 전원** 지정
-6. **전원 Approve 후 머지** (Squash and merge). 승인 1명이면 머지 버튼이 활성화되지만, 이 PR만큼은 **모두가 Approve 할 때까지 기다립니다.**
+6. **전원 Approve 후 머지** (Squash and merge). 승인 1명이면 머지 버튼이 활성화되지만, 이 최초 PR만큼은 **모두가 Approve 할 때까지 기다립니다.** (규칙에 동의한다는 뜻. 이후 PR은 README "리뷰어 지정 약속"의 조건만 따릅니다)
 7. **확인**
    - **Issues → New issue** 에 양식 3개가 보이는지
    - 새 PR을 만들 때 템플릿이 자동으로 채워지는지
