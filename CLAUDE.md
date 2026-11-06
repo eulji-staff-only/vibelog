@@ -165,7 +165,8 @@ DB 설계·API 명세가 확정되기 전에도, 그 문서가 바뀌어도 다�
 - ⭕ 만든다: `templates/<영역>/*.html` 마크업, `static/css/<영역>.css`, 설계서의 화면 URL로 `@GetMapping` 하고 **화면 이름만 돌려주는** Controller, 샘플 문구를 직접 적은 화면, 화면 사이 링크, 화면 안에서만 도는 JS(탭 전환·모달·토스트)
 - ❌ 만들지 않는다 (③ 단계에서 명세대로): `th:text`·`th:each` 데이터 연결, `th:action`·입력 `name=`, POST Controller, Service·Entity·Repository·DTO, 서버를 부르는 JS, 로그인 상태별 분기, 백오피스(`/admin`) 화면
 - 색·글꼴·간격은 설계서 6장 디자인 토큰을 쓰고, 템플릿 안에 `<style>`을 쓰지 않는다. 공통 조각(버튼·배지·안내 상자·모달·토스트)이 있으면 새로 만들지 않고 가져다 쓴다.
-- **비회원으로 모든 화면을 열어 볼 수 있게** 한다. 이 단계에서는 로그인·권한·학습 조건(잠김 등) 검사를 넣지 않는다. 잠김·미인증 같은 상태는 샘플 화면으로 보여 준다. 실제 접근 제한(설계서 0-3)은 #12와 ③ 단계 기능 이슈에서 붙인다.
+- 화면에 로그인·권한·학습 조건(잠김 등) 검사를 넣지 않는다. 잠김·미인증 같은 상태는 샘플 화면으로 보여 준다. 로그인 여부(회원·운영자)는 `SecurityConfig`(#12)가 막으므로, 회원 화면은 `sql/02-seed.sql` 테스트 계정으로 로그인해서 확인한다. 학습 조건 검사는 ③ 단계 기능 이슈에서 붙인다.
+- 화면 테스트(`@WebMvcTest`)에는 `@WithMockUser`를 붙인다. `@WebMvcTest`는 `SecurityConfig`를 읽지 않고 기본 보안으로 모든 주소를 막아서, 비회원 화면도 없으면 401로 실패한다.
 
 ## 클래스 작성 방식
 
@@ -176,7 +177,7 @@ DB 설계·API 명세가 확정되기 전에도, 그 문서가 바뀌어도 다�
 - **상태 바꾸기:** Entity의 도메인 메서드(예: 수업 공개 `publish()`)로 바꾸고, `@Transactional` Service에서 호출한다. 변경 감지(dirty checking)로 저장되므로 `save()`를 다시 부르지 않는다.
 - **Entity ↔ DTO:** Entity → DTO는 DTO의 `static Xxx from(Entity)`, DTO → Entity는 `Entity.create(...)`. ModelMapper 같은 변환 라이브러리는 쓰지 않는다.
 - **Repository:** 메서드 이름 쿼리(`findByEmail`, `existsByEmail`)를 먼저 쓴다. 없을 수도 있는 1건 조회는 `Optional`로 받고, 없으면 Service에서 `BusinessException`을 던진다.
-- **Controller:** 화면만 보여주는 GET은 화면 이름(`String`)을 돌려준다. 로그인 회원은 Controller에서만 꺼낸다 (방법은 #12에서 정한 대로).
+- **Controller:** 화면만 보여주는 GET은 화면 이름(`String`)을 돌려준다. 로그인 회원은 Controller에서만 `@AuthenticationPrincipal LoginMember loginMember`로 꺼내고, Service에는 `loginMember.getMemberId()`만 넘긴다 (README "로그인 약속"). 로그인·운영자 여부는 `SecurityConfig`가 막으므로 직접 검사하지 않는다.
 - **Controller 이름:** 자기 영역 이름으로 시작한다 (예: `LessonPageController`, `ExamController`). 패키지가 달라도 클래스 이름이 같으면 Spring Bean 이름이 겹쳐 앱이 뜨지 않는다 (`ConflictingBeanDefinitionException`).
 - **주석:** 클래스 맨 위에 `global/` 클래스와 같은 형식으로 쓴다 — `/* [클래스명] 역할 : … 책임 : … */`.
 - **강의 코드에서 따라 하지 않는 것:**
@@ -186,7 +187,8 @@ DB 설계·API 명세가 확정되기 전에도, 그 문서가 바뀌어도 다�
   - 템플릿 안 `<style>` → `static/css`
   - 테이블·컬럼 이름 직접 짓기(`TBL_USER`), `Integer` id → `sql/01-schema.sql` 이름 그대로, id는 `Long`
   - 로그인 실패 시 어느 값이 틀렸는지 알려 주기 → PL-USR-007 문구 하나만
-  - CSRF 끄기, Remember Me 키를 코드에 적기 → 보안 방식은 #12에서 팀이 정하고, 키는 환경 변수
+  - CSRF 끄기 → 켜 둔다. POST 폼은 `th:action`으로 만들면 토큰이 자동으로 들어간다
+  - Remember Me 키를 코드에 적기 → 키는 환경 변수
 
 ## 예외 처리
 
