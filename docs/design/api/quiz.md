@@ -17,3 +17,11 @@
 
 - 약한 개념 = 개념 태그별 정답률 60% 미만 (PL-LSN-008).
 - 문항 표시 유형 값은 DB 설계서 4-3을 따른다 (`quiz_question.display_type`): `CODE_BLANK`, `CONCEPT`, `OUTPUT_PREDICT`, `TRICK`.
+
+## 영역 간 계약 (quiz 영역이 받는 것)
+
+[08. 작업 순서](../../collaboration/08-task-flow.md)의 계약 표 번호입니다. 인터페이스는 `domain/quiz/model/policy/`에 두고 quiz 영역이 구현합니다. DTO는 인터페이스와 같은 패키지의 `record`입니다. 없는 ID가 오면 quiz 영역이 자기 ErrorCode로 예외를 던집니다.
+
+| # | 인터페이스 (부르는 쪽) | 메서드 | 하는 일 |
+| --- | --- | --- | --- |
+| ⑤ | `LessonQuizScoreChecker` (lesson) | `BigDecimal getBestCorrectRate(Long memberId, Long activityId)` | 제출한 풀이 중 가장 높은 `correct_rate`. 없으면 `null` (API-LSN-01, PL-LSN-007) |
