@@ -1,12 +1,13 @@
 <!--
   common/main.html (U-01 메인 `/`)
-  역할: 비회원 기준 메인(랜딩) 화면. 트랙 · 코스 · 공지 · 추천 작품 · 콘테스트는
-        아직 해당 영역 기능이 구현되지 않아 화면 흐름 설계서의 "보여줄 데이터" 구성대로
-        샘플 문구로 채운다 (실제 데이터 연결은 각 영역 기능 이슈에서 처리).
-  참고: 로그인 상태별 헤더(회원 메뉴)는 #12 머지 후 추가한다 (이슈 #13 코멘트 기준).
+  역할: 메인(랜딩) 화면. 코스 · 공지 · 추천 작품 · 콘테스트는 아직 해당 영역 기능이 구현되지
+        않아 화면 흐름 설계서의 "보여줄 데이터" 구성대로 샘플 문구로 채운다 (실제 데이터 연결은
+        각 영역 기능 이슈에서 처리). 트랙 이름은 06 요구사항 112행 그대로 쓴다.
+  참고: 헤더는 common/layout.html 의 header fragment(sec:authorize, #132)를 그대로 쓴다.
+        "내 트랙 진단하기"는 비회원 → /signup(U-02), 회원 → /diagnosis(U-07) (설계서 U-01 "누르면").
 -->
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -25,7 +26,8 @@
             <h1>코드를 쓰는 감각부터, 끝까지 완주하는 학습까지</h1>
             <p class="vl-hero__lead">진단으로 내 트랙을 찾고, 수업과 퀴즈로 실력을 쌓고, 포트폴리오로 완성하세요.</p>
             <div class="vl-hero__cta">
-                <a class="vl-cta is-primary" href="/diagnosis">내 트랙 진단하기</a>
+                <a class="vl-cta is-primary" sec:authorize="isAnonymous()" href="/signup">내 트랙 진단하기</a>
+                <a class="vl-cta is-primary" sec:authorize="isAuthenticated()" href="/diagnosis">내 트랙 진단하기</a>
                 <a class="vl-cta is-outline" href="/courses">코스 둘러보기</a>
             </div>
         </div>
@@ -45,22 +47,22 @@
             <div class="vl-card-grid">
                 <article class="vl-card">
                     <p class="vl-card__badge">1단계</p>
-                    <h3><a href="/courses">웹 기초 트랙</a></h3>
+                    <h3><a href="/courses">Starter 트랙</a></h3>
                     <p>HTML·CSS·JS로 첫 화면을 만듭니다.</p>
                 </article>
                 <article class="vl-card">
                     <p class="vl-card__badge">2단계</p>
-                    <h3><a href="/courses">백엔드 입문 트랙</a></h3>
+                    <h3><a href="/courses">Controller 트랙</a></h3>
                     <p>Spring으로 서버와 DB를 연결합니다.</p>
                 </article>
                 <article class="vl-card">
                     <p class="vl-card__badge">3단계</p>
-                    <h3><a href="/courses">풀스택 심화 트랙</a></h3>
+                    <h3><a href="/courses">Builder 트랙</a></h3>
                     <p>바이브코딩 도구로 서비스를 완성합니다.</p>
                 </article>
                 <article class="vl-card">
                     <p class="vl-card__badge">4단계</p>
-                    <h3><a href="/courses">포트폴리오 트랙</a></h3>
+                    <h3><a href="/courses">Explorer 트랙</a></h3>
                     <p>완성한 결과물을 정리하고 공유합니다.</p>
                 </article>
             </div>
