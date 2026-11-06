@@ -5,6 +5,7 @@ import com.vibelog.domain.auth.model.dao.MemberRepository;
 import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.auth.model.dto.SignupRequest;
 import com.vibelog.domain.auth.model.entity.Member;
+import com.vibelog.domain.auth.model.entity.MemberStatus;
 import com.vibelog.global.exception.BusinessException;
 import com.vibelog.global.policy.BannedWordPolicy;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class MemberSignupService {
         if (memberRepository.existsByEmail(email)) {
             throw new BusinessException(AuthErrorCode.DUPLICATE_EMAIL);
         }
-        if (memberRepository.existsByNickname(request.getNickname())) {
+        if (memberRepository.existsByNicknameAndStatus(request.getNickname(), MemberStatus.ACTIVE)) {
             throw new BusinessException(AuthErrorCode.DUPLICATE_NICKNAME);
         }
         bannedWordPolicy.check(request.getNickname());

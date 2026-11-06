@@ -83,6 +83,13 @@ class SignupTest {
     }
 
     @Test
+    void 탈퇴한_회원의_닉네임은_겹쳐도_가입된다() throws Exception {
+        jdbcTemplate.update("INSERT INTO member (email, password_hash, nickname, status) VALUES (NULL, NULL, ?, 'WITHDRAWN')", "떠난닉네임");
+
+        signup("떠난닉네임", EMAIL, PASSWORD).andExpect(redirectedUrl("/signup?done=true"));
+    }
+
+    @Test
     void 금칙어가_든_닉네임은_막는다() throws Exception {
         jdbcTemplate.update("INSERT INTO banned_word (word) VALUES (?)", "가입금칙");
 
