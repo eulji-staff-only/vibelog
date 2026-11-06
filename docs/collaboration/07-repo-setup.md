@@ -18,6 +18,7 @@
 | 5 | 프로젝트 보드 만들기 |
 | 6 | 브랜치 보호 규칙(Ruleset) 설정 |
 | 7 | 협업 규칙 파일을 PR로 추가 → **전원 Approve = 규칙 동의** (최초 1회만. 그 뒤 규칙 변경은 일반 PR과 같은 승인 조건) |
+| 8 | AI 코드 리뷰(CodeRabbit) 연결 · Codex 리뷰 제외 |
 
 ---
 
@@ -184,6 +185,30 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
    - **Issues → New issue** 에 양식 3개가 보이는지
    - 새 PR을 만들 때 템플릿이 자동으로 채워지는지
    - 팀원 모두에게 README의 [최초 1회 세팅](../../README.md#-처음-합류했다면--최초-1회-세팅)을 하라고 공지
+
+---
+
+## 8. AI 코드 리뷰 (CodeRabbit)
+
+PR마다 AI가 1차 리뷰를 남기게 합니다. 팀원 사용법은 [05. PR 규칙 Part 3](05-pull-request.md#part-3-ai-리뷰-coderabbit)에 있습니다.
+**Public 저장소**여야 줄 단위 리뷰가 무료입니다 (Private 무료 플랜은 요약만). 우리 저장소는 Public입니다.
+
+### CodeRabbit 설치 (조직 Owner)
+
+1. [app.coderabbit.ai/login](https://app.coderabbit.ai/login) → **Login with GitHub** → **Authorize coderabbitai**
+2. 조직 선택에서 **eulji-staff-only** → 저장소 접근 범위 **Only select repositories** → `vibelog` 만 선택 → **Install & Authorize**
+3. 대시보드가 열리면 **Skip to App**
+4. 확인: 조직 **Settings → GitHub Apps** 에 `coderabbitai` 가 보이면 성공. 저장소를 넣고 뺄 때도 여기서 **Configure** 를 누릅니다.
+
+설정은 저장소 루트의 [`.coderabbit.yaml`](../../.coderabbit.yaml)이고, 고칠 때도 일반 PR로 합니다. PR 브랜치의 설정이 그 PR 리뷰에 바로 쓰이므로 설정 PR에서 결과를 확인할 수 있습니다.
+
+### Codex 리뷰 제외
+
+AI 리뷰어가 둘이면 같은 PR에 코멘트가 겹치고, 팀원이 답해야 할 코멘트가 두 배가 됩니다. 그래서 AI 리뷰는 CodeRabbit 하나만 씁니다.
+
+1. 조직 **Settings → GitHub Apps → ChatGPT Codex Connector → Configure**
+2. **Repository access** 를 **Only select repositories** 로 바꾸고 `vibelog` 를 **뺀** 저장소만 고른 뒤 **Save**. (다른 저장소도 Codex를 안 쓰면 맨 아래 **Uninstall**)
+3. 확인: 새 PR에 `chatgpt-codex-connector` 코멘트가 달리지 않으면 성공
 
 ---
 
