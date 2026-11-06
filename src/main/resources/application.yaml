@@ -24,6 +24,12 @@ spring:
       max-file-size: 20MB
       max-request-size: 30MB
 
+server:
+  servlet:
+    session:
+      # 2시간 동안 요청이 없으면 로그인이 풀린다 (PL-USR-006). "로그인 유지"를 체크했으면 쿠키로 14일 동안 다시 로그인된다
+      timeout: 2h
+
 vibelog:
   upload:
     # 업로드 파일 저장 폴더 (#79). 배포 서버에서는 환경 변수 UPLOAD_DIR 로 바꾼다

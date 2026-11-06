@@ -14,7 +14,9 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.RememberMeServices;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -27,13 +29,16 @@ import java.nio.charset.StandardCharsets;
  *          여기서는 "로그인 했나 / 운영자인가"만 본다. 이메일 인증·학습 조건(수업 열림 등)은 각 영역 Service 가 검사한다.
  *        - 비회원이 회원 화면에 오면 /login?redirect={원래 주소}, 학습자가 /admin 에 오면 메인으로 보낸다. (API 명세 0-2, 7-2)
  *        - CSRF 는 켜 둔다. 폼을 th:action 으로 만들면 토큰이 자동으로 들어간다.
- *        - 로그인에 성공한 뒤 어디로 보낼지는 auth 영역의 LoginSuccessHandler 가 정한다.
+ *        - 로그인 규칙은 auth 영역이 정한다: 성공 후 도착지(LoginSuccessHandler), 5회 잠금(LoginAuthenticationProvider), 실패 안내(LoginFailureHandler),
+ *          로그인 유지(LoginRememberMeServices). 2시간 동안 요청이 없으면 세션이 끝난다 (application.yaml, PL-USR-006).
  */
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final AuthenticationSuccessHandler loginSuccessHandler;
+    private final AuthenticationFailureHandler loginFailureHandler;
+    private final RememberMeServices loginRememberMeServices;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -58,7 +63,9 @@ public class SecurityConfig {
                         .loginPage("/login")
                         .usernameParameter("email")
                         .successHandler(loginSuccessHandler)
-                        .failureHandler(this::failLogin))
+                        .failureHandler(loginFailureHandler))
+                // 로그인 유지(rememberMe) 쿠키. 로그아웃하면 쿠키도 지운다
+                .rememberMe(remember -> remember.rememberMeServices(loginRememberMeServices))
                 .logout(logout -> logout.logoutSuccessUrl("/"))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(this::sendToLogin)
@@ -88,15 +95,6 @@ public class SecurityConfig {
         String query = request.getQueryString();
         String original = request.getRequestURI() + (query == null ? "" : "?" + query);
         response.sendRedirect("/login?redirect=" + URLEncoder.encode(original, StandardCharsets.UTF_8));
-    }
-
-    /* 로그인 실패 → 같은 폼 다시 + "이메일 또는 비밀번호가 맞지 않습니다" (PL-USR-007). 돌아갈 주소는 유지한다 */
-    private void failLogin(HttpServletRequest request, HttpServletResponse response,
-                           AuthenticationException e) throws IOException {
-        String redirect = request.getParameter("redirect");
-        response.sendRedirect(redirect == null || redirect.isBlank()
-                ? "/login?error"
-                : "/login?error&redirect=" + URLEncoder.encode(redirect, StandardCharsets.UTF_8));
     }
 
     /* 학습자가 백오피스에 옴 → 표시 없이 메인으로 (ADMIN_ONLY, FR-ADM-001). 그 밖(CSRF 토큰 없음 등)은 403 */

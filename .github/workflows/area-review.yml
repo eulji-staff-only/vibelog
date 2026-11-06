@@ -11,8 +11,9 @@ permissions:
   contents: read
   pull-requests: write
 
+# 그룹을 커밋별로 나눈다. PR별로 묶으면 옛 커밋의 재실행(area-review-rerun)이 새 커밋의 검사를 취소한다 (#134).
 concurrency:
-  group: area-review-${{ github.event.pull_request.number }}
+  group: area-review-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
   cancel-in-progress: true
 
 jobs:
