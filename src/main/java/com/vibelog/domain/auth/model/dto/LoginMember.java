@@ -18,6 +18,8 @@ import java.util.List;
 @Getter
 public class LoginMember extends User {
 
+    private static final SimpleGrantedAuthority ADMIN = new SimpleGrantedAuthority("ROLE_ADMIN");
+
     private final Long memberId;
 
     private LoginMember(Long memberId, String email, String passwordHash, String role) {
@@ -27,5 +29,9 @@ public class LoginMember extends User {
 
     public static LoginMember from(Member member) {
         return new LoginMember(member.getMemberId(), member.getEmail(), member.getPasswordHash(), member.getRole().name());
+    }
+
+    public boolean isAdmin() {
+        return getAuthorities().contains(ADMIN);
     }
 }

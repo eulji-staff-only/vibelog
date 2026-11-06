@@ -6,7 +6,7 @@
     <title>로그인</title>
 </head>
 <body>
-<!-- U-03 로그인. #12 에서는 동작하는 최소 폼만 둔다. 디자인은 #49, 로그인 유지·소셜 로그인은 #12 다음 작업에서 붙인다 -->
+<!-- U-03 로그인. #12 에서는 동작하는 최소 폼만 둔다. 디자인은 #49, 소셜 로그인은 #91 -->
 <main>
     <h1>로그인</h1>
 
@@ -17,7 +17,9 @@
         <input type="hidden" name="redirect" th:if="${param.redirect}" th:value="${param.redirect[0]}">
         <label>이메일 <input type="email" name="email" autocomplete="username" required></label>
         <label>비밀번호 <input type="password" name="password" autocomplete="current-password" required></label>
+        <label><input type="checkbox" name="rememberMe"> 로그인 유지(14일)</label>
         <p th:if="${param.error}">이메일 또는 비밀번호가 맞지 않습니다</p>
+        <p th:if="${param.locked}">로그인에 5번 실패해 5분 동안 로그인할 수 없습니다</p>
         <button type="submit">로그인</button>
     </form>
 </main>
