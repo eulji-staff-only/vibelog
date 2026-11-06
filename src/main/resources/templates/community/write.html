@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>글쓰기 | 바이브로그</title>
+    <title th:text="${editing} ? '글 수정 | 바이브로그' : '글쓰기 | 바이브로그'">글쓰기 | 바이브로그</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/community.css}">
     <script th:src="@{/js/community.js}" defer></script>
@@ -14,7 +14,7 @@
 <div th:replace="~{common/layout :: header}"></div>
 
 <section class="cm-band">
-    <h1 class="cm-title">글쓰기</h1>
+    <h1 class="cm-title" th:text="${editing} ? '글 수정' : '글쓰기'">글쓰기</h1>
     <p class="cm-lead">자유롭게 이야기하고, 만든 작품을 공유해 보세요.</p>
 </section>
 
@@ -71,7 +71,7 @@
             <div class="cm-actions">
                 <a class="cm-btn is-outline" href="/community">취소</a>
                 <!-- ③ 단계에서 type="submit" 으로 바꾼다 -->
-                <button class="cm-btn is-navy" type="button">등록</button>
+                <button class="cm-btn is-navy" type="button" th:text="${editing} ? '저장' : '등록'">등록</button>
             </div>
         </form>
     </div>

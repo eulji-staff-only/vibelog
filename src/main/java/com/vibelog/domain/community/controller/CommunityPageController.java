@@ -15,7 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
  * [CommunityPageController]
  * 역할 : 커뮤니티 화면 요청을 받는다.
  * 책임 : - 게시판 목록(U-21, API-CMT-01)·게시글 상세(U-22, API-CMT-02)를 보여 준다. 비회원도 연다 (PL-USR-008).
- *        - 글쓰기·수정(U-23)은 회원만 연다 (SecurityConfig). 저장은 #93 에서 붙인다.
+ *        - 글쓰기·수정(U-23)은 회원만 연다 (SecurityConfig). 같은 화면이고, 수정이면 editing 으로 제목·버튼 문구만 바꾼다.
+ *          저장과 기존 값 채우기는 #93 에서 붙인다.
  */
 @Controller
 @RequiredArgsConstructor
@@ -41,8 +42,15 @@ public class CommunityPageController {
         return "community/detail";
     }
 
-    @GetMapping({"/community/write", "/community/{postId}/edit"})
-    public String writePage() {
+    @GetMapping("/community/write")
+    public String writePage(Model model) {
+        model.addAttribute("editing", false);
+        return "community/write";
+    }
+
+    @GetMapping("/community/{postId}/edit")
+    public String editPage(Model model) {
+        model.addAttribute("editing", true);
         return "community/write";
     }
 }
