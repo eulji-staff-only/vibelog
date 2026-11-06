@@ -1,0 +1,174 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# 바이브로그 CodeRabbit(AI 코드 리뷰) 설정
+# 기술 스택: Java 21 · Spring Boot 3.5 · MySQL · JPA · Thymeleaf · Spring Security
+# 리뷰 초점: 역할과 책임 분리, 영역 분리, 유지보수성, 확장성
+# 루트의 CLAUDE.md도 리뷰 기준으로 자동 반영된다. 팀 규칙은 CLAUDE.md에, 리뷰 방식만 여기에 적는다.
+# 사용법·코멘트 처리 규칙: docs/collaboration/05-pull-request.md "Part 3. AI 리뷰(CodeRabbit)"
+
+language: "ko-KR"
+tone_instructions: "리뷰 대상은 Java·Spring(JPA, Security, Thymeleaf)을 배우는 부트캠프 수강생입니다. 쉬운 한국어로 왜 문제인지와 고친 코드 예시를 함께 보여 주세요. 전문 용어는 한글(영어)로 병기하고, 지금 필요 없는 과한 추상화는 제안하지 마세요."
+early_access: false
+
+reviews:
+  profile: "chill"                   # quiet / chill / assertive
+  high_level_summary: true           # PR 설명에 변경 요약 추가
+  high_level_summary_instructions: |
+    맨 첫 줄에 "변경 영역: auth, exam"처럼 이 PR이 수정한 영역(domain/<영역>/, templates/<영역>/)을 적는다.
+    이어서 변경 내용을 한국어 글머리표 3~5개로 요약한다.
+  collapse_walkthrough: false        # 변경 설명(Walkthrough)을 펼친 상태로 표시
+  sequence_diagrams: true            # 요청 흐름을 시퀀스 다이어그램으로 표시
+  estimate_code_review_effort: true
+  review_status: true
+  suggested_reviewers: false         # 리뷰어는 CODEOWNERS·area-review가 자동 지정한다
+  poem: false
+  in_progress_fortune: false
+  enable_prompt_for_ai_agents: true  # Claude Code에 붙여 넣을 수정 프롬프트 제공
+
+  auto_review:
+    enabled: true                    # 저장소 스타 10개 미만이면 자동 시작 안 됨 → PR에 "@coderabbitai review"
+    drafts: false                    # Draft PR은 리뷰하지 않음
+    ignore_title_keywords:
+      - "WIP"
+    # base_branches 없음: 기본 브랜치(develop)로 가는 PR만 리뷰한다. develop→main 배포 PR은 이미 리뷰된 코드라 뺀다.
+
+  path_filters:                      # 리뷰에서 뺄 파일 (빌드 결과물·IDE 설정·압축 라이브러리)
+    - "!**/build/**"
+    - "!**/out/**"
+    - "!**/.gradle/**"
+    - "!**/gradle/wrapper/**"
+    - "!**/gradlew"
+    - "!**/gradlew.bat"
+    - "!**/.idea/**"
+    - "!**/*.min.js"
+    - "!**/*.min.css"
+
+  path_instructions:
+    # ── 1. 모든 Java 코드: 설계 기준 ──
+    - path: "**/src/main/java/**/*.java"
+      instructions: |
+        [역할과 책임]
+        - 한 클래스나 메서드가 여러 일을 하면(예: 검증 + 저장 + 화면 데이터 가공) 어디로 나누면 좋을지 제안한다.
+        - 의존 방향은 Controller → Service → Repository(model/dao) 한 방향이어야 한다. 거꾸로 의존하거나 계층을 건너뛰면 지적한다.
+        - 자기 상태로 판단하는 규칙은 Entity 메서드에, 여러 데이터를 봐야 판단하는 규칙은 model/policy/에 둔다.
+        [영역 분리 · 협업]
+        - 패키지는 domain/<영역>/(auth, course, lesson, quiz, portfolio, exam, community, contest, message, admin) 단위로 나누고, 공통 코드는 global/에 둔다.
+        - 다른 영역의 Entity·Repository를 import 하면 지적한다. 다른 영역 데이터는 ID(Long)로 참조하고, 필요한 값은 model/policy/의 계약 인터페이스나 그 영역의 <영역>Reader를 주입해 받도록 안내한다.
+        - 영역끼리 서로를 참조하는 순환 의존(A → B → A)을 지적한다.
+        - global/에 특정 영역 전용 로직이 들어가면 해당 영역으로 옮기도록 안내한다.
+        [유지보수]
+        - 중복 코드, 설명 없는 숫자·문자열(매직 넘버)은 메서드 추출, 상수, Enum으로 바꾸도록 제안한다.
+        - 깊은 if 중첩은 조기 반환(early return)으로 줄이도록 제안한다.
+        - 이름은 역할을 드러내야 한다. 주석은 한글, 변수명·메서드명은 영어 camelCase, 클래스명은 PascalCase.
+        - System.out.println, e.printStackTrace()가 남아 있으면 @Slf4j 로그 사용을 안내한다.
+        - 실패를 null·0 반환이나 try-catch로 처리하면 BusinessException(<영역>ErrorCode.XXX)을 던지도록 안내한다. 오류 화면은 GlobalExceptionHandler가 만든다.
+        [확장성]
+        - 상태나 타입이 늘 때마다 if·switch를 고쳐야 하는 구조면 Enum에 동작을 담는 방식 등을 제안한다.
+        - 단, 지금 요구사항에 필요 없는 인터페이스·추상 클래스·디자인 패턴은 제안하지 않는다. (영역 간 계약 인터페이스와 Fake 구현은 팀 규칙이므로 지적하지 않는다)
+        [더 나은 방법 제안]
+        - 동작에 문제가 없는 코드라도 더 읽기 쉽고 관리하기 좋은 방법이 있으면 함께 알려 준다. 예: 직접 만든 입력 검증 → Bean Validation(@NotBlank 등), 단순 반복문 → Stream, 직접 구현한 페이징 → Pageable.
+        - 제안할 때는 현재 코드와 개선 코드를 나란히 보여 주고, 무엇이 좋아지는지(가독성, 유지보수, 성능, 안전성) 한 줄로 설명한다.
+        - 반드시 고쳐야 하는 문제는 "[필수]", 선택해도 되는 개선은 "[제안]"으로 시작해 구분한다.
+        - 수업 범위를 크게 벗어나는 기술(QueryDSL, 메시지 큐 등)이나 새 의존성을 도입하라고 제안하지 않는다.
+
+    # ── 2. 계층·기술별 기준 ──
+    - path: "**/*Controller.java"
+      instructions: |
+        - Controller는 요청 받기, 입력 검증, Service 호출, 화면 이름이나 redirect 반환만 한다. 비즈니스 로직과 Repository 직접 호출은 Service로 옮기도록 안내한다.
+        - 폼 입력은 Entity가 아닌 요청 DTO로 받고 @Valid와 BindingResult로 검증한다. Entity로 받으면 role 같은 필드를 사용자가 조작할 수 있는 위험을 설명한다.
+        - Model에 Entity를 그대로 담지 말고 화면용 DTO로 변환해 담도록 안내한다.
+        - 등록·수정 POST 처리 뒤에는 redirect로 응답해 새로고침 중복 제출을 막는다(PRG 패턴).
+        - 로그인 회원은 @AuthenticationPrincipal LoginMember로 꺼내고 Service에는 memberId만 넘긴다. 로그인·운영자 여부는 SecurityConfig가 막으므로 Controller에서 다시 검사하지 않는다.
+        - 클래스 이름은 자기 영역 이름으로 시작해야 한다(예: ExamPageController). 다른 패키지라도 이름이 같으면 Bean 이름이 겹쳐 앱이 뜨지 않는다.
+    - path: "**/model/service/**/*.java"
+      instructions: |
+        - 비즈니스 규칙과 권한·소유권 확인(예: 본인 글만 수정)은 Service에 둔다.
+        - 클래스에 @Transactional(readOnly = true), 데이터를 바꾸는 메서드에 @Transactional을 붙이는 구성을 확인한다.
+        - 생성자 주입(private final 필드 + @RequiredArgsConstructor)을 사용하고 필드 주입(@Autowired 필드)은 지적한다.
+        - Optional.get() 대신 orElseThrow(() -> new BusinessException(...))로 의미 있는 예외를 던지도록 안내한다.
+        - Entity 상태를 바꾼 뒤 save()를 다시 부르면, 변경 감지(dirty checking)로 저장되므로 필요 없다고 알려 준다.
+        - 하나의 Service가 여러 영역의 일을 떠안고 커지면 분리를 제안한다.
+        - <영역>Reader는 다른 영역에 주는 읽기 전용 창구다. Entity가 아닌 기본형·DTO만 돌려주고 데이터를 바꾸지 않는지 확인한다.
+    - path: "**/*Repository.java"
+      instructions: |
+        - Spring Data JPA 메서드 이름 쿼리(findByEmail 등)를 먼저 쓰고, @Query는 꼭 필요할 때만 쓰는지 확인한다. @Query에 문자열을 더해 조건을 만들면 SQL 인젝션 위험을 설명하고 파라미터 바인딩을 안내한다.
+        - 목록 조회에서 연관 엔티티를 반복 조회하는 N+1 문제 가능성이 보이면 fetch join이나 @EntityGraph를 안내한다.
+    - path: "**/entity/**/*.java"
+      instructions: |
+        - @Setter와 @Data 대신 의미 있는 변경 메서드(예: publish())로 상태를 바꾸게 한다.
+        - 기본 생성자는 @NoArgsConstructor(access = AccessLevel.PROTECTED)로 막고, 새 Entity는 정적 팩토리 create(...)로 만든다.
+        - BaseTimeEntity를 상속하고 created_at·updated_at 필드를 따로 만들지 않는다.
+        - 필드는 sql/01-schema.sql의 컬럼 이름·타입·NULL 여부와 맞아야 하고, id는 Long이다.
+        - @ManyToOne, @OneToOne은 fetch = FetchType.LAZY를 권장한다. 양방향 연관관계는 꼭 필요할 때만 쓰고, 다른 영역 Entity와는 연관관계 대신 ID(Long)로 참조한다.
+        - Enum 필드는 @Enumerated(EnumType.STRING)을 사용한다.
+        - Entity가 DTO, Controller, 화면 코드에 의존하지 않는지 확인한다.
+    - path: "**/dto/**/*.java"
+      instructions: |
+        - 요청 DTO와 응답 DTO를 나누고, 응답에 비밀번호 같은 민감 정보가 들어가지 않게 한다.
+        - Entity → DTO 변환은 DTO의 static from(Entity), DTO → Entity는 Entity.create(...)로 통일한다.
+    - path: "**/*{Security,UserDetails}*.java"
+      instructions: |
+        - SecurityFilterChain 빈으로 설정하는지 확인한다. Spring Security 6에서 제거된 WebSecurityConfigurerAdapter 방식은 지적한다.
+        - 비밀번호는 PasswordEncoder(BCrypt)로 암호화해 저장하고 비교한다.
+        - requestMatchers 권한 규칙에 빠진 URL이 없는지, permitAll이 너무 넓지 않은지 확인한다.
+        - CSRF는 켜 두는 것이 팀 규칙이다. 비활성화했다면 [필수]로 지적한다. Thymeleaf 폼(th:action)은 CSRF 토큰을 자동으로 넣어 준다.
+        - Remember Me 키 같은 비밀 값은 코드에 적지 않고 환경 변수로 받는다.
+
+    # ── 3. 화면 · 설정 · 테스트 ──
+    - path: "**/src/main/resources/templates/**/*.html"
+      instructions: |
+        - th:utext는 XSS 위험이 있으므로 꼭 필요한 경우가 아니면 th:text를 쓰게 한다.
+        - 계산이나 복잡한 조건 같은 비즈니스 로직은 템플릿이 아닌 Service나 DTO에서 처리하게 한다.
+        - 반복되는 헤더·메뉴 마크업은 templates/common/의 th:fragment를 th:replace로 가져다 쓰게 한다.
+        - 템플릿 안 <style>은 static/css/<영역>.css로 옮기게 한다.
+        - sec:authorize는 화면 표시만 제어한다. 서버의 권한 검사도 있어야 함을 알려 준다.
+    - path: "**/src/main/resources/**/application*.{yml,yaml,properties}"
+      instructions: |
+        - DB 비밀번호, API 키가 값으로 직접 들어 있으면 반드시 지적하고 환경 변수로 분리하게 한다. 단, ${DB_PASSWORD:vibelog}처럼 환경 변수 + 로컬 개발용 기본값(sql/00-create-database.sql의 로컬 계정)은 팀 규칙상 허용한다.
+        - spring.jpa.hibernate.ddl-auto는 none이어야 한다(테이블은 sql/ 스크립트로만 만든다). create·create-drop·update면 DB 데이터가 지워지거나 스키마가 어긋날 수 있음을 알린다.
+    - path: "**/src/test/**/*.java"
+      instructions: |
+        - 테스트 이름이 무엇을 검증하는지 드러나는지, 실패·예외 경우도 검증하는지 확인한다.
+        - @WebMvcTest 화면 테스트에는 @WithMockUser가 있어야 한다(없으면 기본 보안 때문에 401로 실패한다).
+
+  pre_merge_checks:
+    title:
+      mode: "warning"
+      requirements: "'타입(영역): 제목' 형식. 타입은 feat, fix, design, style, refactor, test, docs, chore 중 하나. 영역은 생략할 수 있고, 쓰면 auth, course, lesson, quiz, portfolio, exam, community, contest, message, admin, common, config 중 하나. 제목은 한국어로 50자 이내, 끝에 마침표 없음."
+    description:
+      mode: "warning"
+    docstrings:
+      mode: "off"                     # 주석 커버리지 경고는 끔
+    custom_checks:
+      - name: "계층 의존 방향"
+        mode: "warning"
+        instructions: |
+          변경된 Controller 클래스가 Repository를 직접 주입받거나 호출하면 실패.
+          Controller는 Service만 호출해야 한다. 변경된 Controller가 없으면 통과.
+      - name: "영역 범위"
+        mode: "warning"
+        instructions: |
+          변경된 파일(src/main/java/com/vibelog/domain/<영역>/, src/main/resources/templates/<영역>/ 기준, global·common 제외)이 서로 다른 영역 2개 이상에 걸쳐 있고, PR 본문 "리뷰 포인트"에 여러 영역을 함께 바꾼 이유가 없으면 실패.
+          영역 1개만 바꿨거나 이유가 적혀 있으면 통과.
+      - name: "비밀번호 암호화"
+        mode: "warning"
+        instructions: |
+          회원 비밀번호를 저장하거나 변경하는 코드가 바뀌었는데 PasswordEncoder로 인코딩하지 않으면 실패.
+          관련 코드 변경이 없으면 통과.
+
+  tools:
+    pmd:
+      enabled: true                  # Java 정적 분석
+    gitleaks:
+      enabled: true                  # 비밀번호·키 유출 탐지
+    languagetool:
+      enabled: false                 # 영어 문법 지적은 끔
+    markdownlint:
+      enabled: false                 # README 서식 지적은 끔
+
+chat:
+  auto_reply: true
+  allow_non_org_members: false       # 팀(조직) 멤버만 CodeRabbit과 대화 가능
+
+code_generation:
+  docstrings:
+    language: "ko-KR"                # Javadoc 생성 시 한국어
