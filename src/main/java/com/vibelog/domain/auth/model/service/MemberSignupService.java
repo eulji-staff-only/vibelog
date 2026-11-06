@@ -43,7 +43,7 @@ public class MemberSignupService {
         bannedWordPolicy.check(request.getNickname());
 
         Member member = memberRepository.save(
-                Member.signUp(email, passwordEncoder.encode(request.getPassword()), request.getNickname()));
+                Member.create(email, passwordEncoder.encode(request.getPassword()), request.getNickname()));
         return LoginMember.from(member);
     }
 }
