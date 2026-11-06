@@ -8,7 +8,6 @@ on:
 
 permissions:
   actions: write
-  pull-requests: read
 
 # 리뷰가 몰려 오면(AI 리뷰·답글 여러 개) 동시에 돌다가 "이미 실행 중"으로 실패한다 (#134).
 # 같은 PR·커밋은 하나씩 차례로 돌린다. 기다리는 실행은 마지막 하나만 남아도 결과는 같다.
@@ -22,10 +21,6 @@ jobs:
     steps:
       - name: Re-run area-review
         run: |
-          # 그사이 새 커밋이 올라왔으면 건너뛴다. 옛 커밋 실행을 다시 돌리면 새 커밋의 area-review가 취소된다
-          # (area-review는 PR마다 cancel-in-progress). 새 커밋은 자기 area-review가 최신 승인 상태로 검사한다.
-          head=$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)
-          if [ "$head" != "$SHA" ]; then echo "최신 커밋($head)이 아니라 건너뜁니다"; exit 0; fi
           # 같은 커밋을 다른 PR(예: develop→main)이 함께 쓸 수 있으므로 이 PR 번호의 실행만 고른다
           id=$(gh api "repos/$REPO/actions/workflows/area-review.yml/runs?event=pull_request&head_sha=$SHA" \
                  --jq "[.workflow_runs[] | select(any(.pull_requests[]; .number == $PR))][0].id // empty")
