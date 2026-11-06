@@ -20,7 +20,8 @@ owner_of() {
 }
 
 author=$(gh api "repos/$REPO/pulls/$PR" --jq '.user.login')
-files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[].filename')
+# 파일을 옮긴(rename) 경우 원래 위치(previous_filename)도 본다 — 다른 영역에서 파일을 빼 가는 것도 그 영역 변경이다
+files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[] | .filename, (.previous_filename // empty)')
 
 # 바뀐 파일 → 영역 이름
 areas=$(printf '%s\n' "$files" | sed -nE \
