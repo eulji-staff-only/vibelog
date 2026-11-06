@@ -18,5 +18,31 @@
       "Read(**/.env)",
       "Read(**/.env.*)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/check-develop.sh\" session",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/check-develop.sh\" prompt",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
   }
 }

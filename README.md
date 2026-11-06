@@ -318,8 +318,10 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 |---|---|
 | [`CLAUDE.md`](CLAUDE.md) | Claude가 작업 전에 **GitHub 저장소 상황(develop 최신 여부·이슈·열린 PR·현재 단계)을 먼저 확인**하고, 우리 팀 규칙(코드 구조, 예외 처리, DB, Git, API 명세)을 따릅니다. 다른 팀 담당 범위나 사람이 정할 일에 닿으면 **멈추고 붙여넣기용 요청서·상의 안건**을 만들어 줍니다 |
 | [`.claude/settings.json`](.claude/settings.json) | Claude가 `develop`·`main`에 직접 push 하거나 force push 하는 것, `.env`를 읽는 것을 막습니다 |
+| [`.claude/hooks/check-develop.sh`](.claude/hooks/check-develop.sh) | Claude Code를 켤 때와 작업 중(10분마다) **develop에 새 커밋이 생겼는지 확인**해서 `git pull`을 권합니다. `sql/`·`build.gradle`·`CLAUDE.md`·공통 코드가 바뀌었으면 pull 후 할 일(SQL 다시 실행, Gradle 새로고침, Claude 재시작 등)도 알려 줍니다. 최신이면 아무것도 뜨지 않습니다 |
 
 - 처음 켜면 "이 폴더를 신뢰할까요?"라고 묻습니다. **신뢰(Trust)** 를 골라야 설정이 적용됩니다.
+- develop 알림 훅은 bash로 돕니다. Windows는 Git for Windows(Git Bash)가 있으면 되고, 오프라인이거나 실패해도 작업을 막지 않습니다.
 - 나만 쓰고 싶은 규칙은 `CLAUDE.local.md`, 나만 쓰는 권한 설정은 `.claude/settings.local.json`에 적습니다. 둘 다 GitHub에 올라가지 않습니다.
 - `.claude/settings.json`의 차단은 실수를 막는 안전장치일 뿐, 모든 우회 방법을 막지는 못합니다. **규칙을 지키는 책임은 사람에게 있습니다.**
 

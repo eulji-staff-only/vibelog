@@ -216,6 +216,27 @@ DB 설계·API 명세가 확정되기 전에도, 그 문서가 바뀌어도 다�
 - PR은 `develop`으로, `.github/pull_request_template.md` 양식을 채운다. **"🤖 AI 활용" 칸에 Claude로 만든 부분을 적는다.**
 - 커밋 전에 `git status`와 `git diff`로 **이슈와 상관없는 변경이 없는지** 사용자와 함께 확인한다.
 
+## develop 변경 알리기 (pull 시점)
+
+- **받는 쪽:** `.claude/hooks/check-develop.sh` 훅이 Claude Code를 켤 때와 작업 중(10분마다)에 `origin/develop`을 확인한다. `[develop 변경 알림]` 컨텍스트가 오면 답변 처음에 한두 줄로 알리고 pull을 권한다. pull은 사용자가 원할 때만 하고, 커밋 안 한 변경이 있으면 먼저 커밋하게 한다. 알림에 적힌 "pull 후 할 일"(SQL 다시 실행, Gradle 새로고침, Claude 재시작 등)도 함께 안내한다.
+- **PR 올리기 직전:** 훅 알림과 상관없이 `git fetch origin` 후 develop보다 뒤처졌으면 `git pull origin develop`으로 반영하고 빌드한 뒤 올린다.
+- **보내는 쪽:** 내 PR이 아래 공유 파일을 바꾸면 PR 본문 "💬 기타"에 **📢 머지 후 팀 공지** 블록(팀 채팅에 그대로 붙여넣을 문구)을 넣고, 사용자에게 "머지되면 팀 채팅에 붙여넣기"를 안내한다.
+
+| 바뀐 파일 | 공지에 적을 할 일 |
+|---|---|
+| `sql/` | develop pull 후 `sql/01-schema.sql`·`02-seed.sql` 다시 실행 (로컬 데이터 초기화) |
+| `build.gradle`, `settings.gradle` | pull 후 IDE에서 Gradle 새로고침 |
+| `application.yaml` | pull 후 앱 재시작 |
+| `CLAUDE.md`, `.claude/` | pull 후 Claude Code 다시 시작 |
+| `global/`, `templates/common/`, `static/`, `model/policy/` 계약, `Fake*` | 공통 코드 변경 — 작업 중인 브랜치에 바로 `git pull origin develop` |
+| `docs/planning/`, `docs/design/` | 요구사항·정책·명세·화면 설계 변경 — 관련 이슈 확인 |
+
+```markdown
+📢 develop 변경 공지 — #<PR 번호> <제목>
+- 바뀐 것: <공유 파일과 한 줄 요약>
+- 할 일: `git pull origin develop` 후 <위 표의 할 일>
+```
+
 ## 완료 전 확인
 
 - 코드를 고쳤으면 `./gradlew build`(테스트 포함)를 실행하고 결과를 그대로 알린다. 실패를 숨기거나 "아마 될 것"이라고 하지 않는다.
