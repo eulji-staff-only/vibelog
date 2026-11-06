@@ -18,3 +18,13 @@
 
 - 작성 중 내용 임시 저장(FR-PRT-010, P2)은 브라우저에 한다. 서버 API가 없다.
 - 포트폴리오 제출은 "작성"이라 이메일 인증이 필요하다(PL-USR-003). 미인증 학습자는 제출 영역에 인증 안내를 보여준다.
+
+## 영역 간 계약 (portfolio 영역이 받는 것)
+
+[08. 작업 순서](../../collaboration/08-task-flow.md)의 계약 표 번호입니다. 인터페이스는 `domain/portfolio/model/policy/`에 두고 portfolio 영역이 구현합니다. DTO는 인터페이스와 같은 패키지의 `record`입니다. 없는 ID가 오면 portfolio 영역이 자기 ErrorCode로 예외를 던집니다.
+
+| # | 인터페이스 (부르는 쪽) | 메서드 | 하는 일 |
+| --- | --- | --- | --- |
+| ⑧ | `LessonPortfolioChecker` (lesson) | `boolean hasSubmitted(Long memberId, Long courseId)` | 삭제 표시(`deleted_at`) 없는 `portfolio`가 있음 (FR-ENR-002·004) |
+| ⑨ | `CourseAssignmentChecker` (course) | `boolean hasAssignment(Long courseId)` | `portfolio_assignment`가 있음 (FR-CRS-006) |
+| ⑩ | `MemberPortfolioCleaner` (auth) | `void deleteAllOf(Long memberId)` | 그 회원의 포트폴리오 전부 `deleted_at` 기록 (API-USR-16, DB 설계서 5-3) |
