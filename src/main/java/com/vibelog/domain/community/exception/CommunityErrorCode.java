@@ -13,7 +13,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum CommunityErrorCode implements ErrorCode {
-    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다.");
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다."),
+    SHOWCASE_LINK_REQUIRED(HttpStatus.BAD_REQUEST, "작품 공유 글은 작품 링크가 필요합니다.");
 
     private final HttpStatus status;
     private final String message;
