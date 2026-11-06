@@ -16,8 +16,9 @@ jobs:
     steps:
       - name: Re-run area-review
         run: |
-          id=$(gh run list -R "$REPO" --workflow area-review.yml --event pull_request --commit "$SHA" \
-                 --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          # 같은 커밋을 다른 PR(예: develop→main)이 함께 쓸 수 있으므로 이 PR 번호의 실행만 고른다
+          id=$(gh api "repos/$REPO/actions/workflows/area-review.yml/runs?event=pull_request&head_sha=$SHA" \
+                 --jq "[.workflow_runs[] | select(any(.pull_requests[]; .number == $PR))][0].id // empty")
           if [ -z "$id" ]; then echo "다시 돌릴 area-review 실행이 없습니다"; exit 0; fi
           gh run watch "$id" -R "$REPO" > /dev/null || true   # 아직 도는 중이면 끝날 때까지 기다린다
           gh run rerun "$id" -R "$REPO"
@@ -26,3 +27,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}
