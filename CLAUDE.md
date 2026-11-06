@@ -35,7 +35,7 @@
 | 코드 구조 · 예외 · DB · 리뷰어 규칙 | `README.md`의 "🧱 코드 구조 규칙" |
 | 브랜치 · 커밋 · PR 규칙 | `docs/collaboration/02-branch.md`, `03-commit.md`, `05-pull-request.md` |
 | 작업 순서 · 영역 간 계약 · 안 멈추는 규칙 | `docs/collaboration/08-task-flow.md` |
-| API 명세 (URL · 요청 · 응답 · 영역 간 계약 메서드) | `docs/planning/api/` (양식과 위치는 #21에서 확정) |
+| API 명세 (URL · 요청 · 응답 · 영역 간 계약 메서드) | `docs/design/api/` (양식은 #21에서 확정) |
 | 화면 URL · 화면 구성 · 디자인 토큰 (`U-12` 같은 화면 ID) | `docs/design/01-screen-flow.md` (화면 흐름 설계서, 프로토타입 링크 포함) |
 
 - 요구사항·정책 ID가 나오면 **해당 문서를 찾아 읽고** 그대로 구현한다. 문서에 없는 규칙(숫자, 문구, 동작)은 지어내지 말고 사용자에게 묻는다.

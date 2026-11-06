@@ -40,7 +40,7 @@
 |---|---|---|---|
 | **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | `sql/`이 바뀐 PR |
 | **형상관리** | `SeungBinYang` | 저장소·브랜치·빌드 검사, 공통 설정, 협업 규칙·Claude 규칙 | `build.gradle`, `application.yaml`, `.github/`, `global/`, `CLAUDE.md`가 바뀐 PR |
-| **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | `docs/planning/`(요구사항·정책·API 명세)이 바뀐 PR |
+| **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | `docs/planning/`(요구사항·정책), `docs/design/`(화면 흐름·API 명세)이 바뀐 PR |
 
 > 역할은 기능 구현과 별개입니다. 4명 모두 아래 **묶음 A~D** 중 하나를 구현합니다.
 
@@ -263,7 +263,9 @@ public class Quiz extends BaseTimeEntity { ... }
 |---|---|
 | `sql/` | DB 담당 (`Choyeonik`, `skinopero`) |
 | `build.gradle`, `application.yaml`, `.github/`, `global/`, `CLAUDE.md` | 형상관리 (`SeungBinYang`) |
-| `docs/planning/` (요구사항 · 정책 · API 명세) | PM (`dyryoo316`) |
+| `docs/planning/` (요구사항 · 정책) | PM (`dyryoo316`) |
+| `docs/design/` (화면 흐름 · API 명세) | PM (`dyryoo316`) |
+| `docs/design/` (DB 설계서 · 테이블 정의서) | DB 담당 (`Choyeonik`, `skinopero`) |
 
 > 비공개 무료 저장소에서는 `CODEOWNERS` 자동 지정이 동작하지 않아서, PR 작성자가 직접 지정합니다.
 
