@@ -16,7 +16,7 @@
 | 4 | 커밋 메시지는 `타입(영역): 한 일` | `feat(quiz): 정답률 계산 함수 추가` |
 | 5 | PR은 **`develop`** 으로 보낸다 | base: `develop` ← compare: `feat/12-quiz-grading` |
 | 6 | **PR 제목도 커밋 규칙과 똑같이** 쓴다 | `feat(quiz): 퀴즈 통과 판정 기능 추가` |
-| 7 | **1명 이상 승인(Approve)** 을 받아야 머지한다 | 리뷰 요청을 받으면 24시간 안에 첫 응답 |
+| 7 | **PM·형상관리 중 1명 승인**을 받아야 머지한다. 다른 영역 파일을 바꿨으면 **그 영역 담당 승인**도 | 리뷰어는 자동 지정 ([리뷰어 지정 약속](#-코드-구조-규칙)), 리뷰 요청을 받으면 24시간 안에 첫 응답 |
 | 8 | 머지는 승인 후 **PR 작성자가 직접** `Squash and merge` | 머지 후 브랜치 삭제 |
 | 9 | 작업 시작 전엔 **항상 최신 `develop`을 받는다** | `git pull origin develop` |
 | 10 | **비밀 정보는 절대 커밋하지 않는다** | `.env`, API 키, 비밀번호 ❌ / `.env.example` ⭕ |
@@ -36,11 +36,11 @@
 
 ### 팀 역할
 
-| 역할 | 담당 | 맡는 일 | 이런 PR엔 리뷰어로 꼭 넣기 |
+| 역할 | 담당 | 맡는 일 | 리뷰 (자동 지정) |
 |---|---|---|---|
-| **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | `sql/`이 바뀐 PR |
-| **형상관리** | `SeungBinYang` | 저장소·브랜치·빌드 검사, 공통 설정, 협업 규칙·Claude 규칙 | `build.gradle`, `application.yaml`, `.github/`, `global/`, `CLAUDE.md`가 바뀐 PR |
-| **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | `docs/planning/`(요구사항·정책), `docs/design/`(화면 흐름·API 명세)이 바뀐 PR |
+| **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | DB 팀이 아닌 사람이 `sql/`을 바꾼 PR → 둘 중 1명 승인 필요 |
+| **형상관리** | `SeungBinYang` | 저장소·브랜치·빌드 검사, 공통 설정, 협업 규칙·Claude 규칙 | **모든 PR** 기본 리뷰어 (PM과 둘 중 1명 승인) |
+| **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | **모든 PR** 기본 리뷰어 (형상관리와 둘 중 1명 승인) |
 
 > 역할은 기능 구현과 별개입니다. 4명 모두 아래 **묶음 A~D** 중 하나를 구현합니다.
 
@@ -267,15 +267,18 @@ public class Quiz extends BaseTimeEntity { ... }
 
 **리뷰어 지정 약속**
 
-| 이런 파일을 바꾸면 | 리뷰어에 꼭 넣을 사람 |
-|---|---|
-| `sql/` | DB 담당 (`Choyeonik`, `skinopero`) |
-| `build.gradle`, `application.yaml`, `.github/`, `global/`, `CLAUDE.md` | 형상관리 (`SeungBinYang`) |
-| `docs/planning/` (요구사항 · 정책) | PM (`dyryoo316`) |
-| `docs/design/` (화면 흐름 · API 명세) | PM (`dyryoo316`) |
-| `docs/design/` (DB 설계서 · 테이블 정의서) | DB 담당 (`Choyeonik`, `skinopero`) |
+리뷰어는 **GitHub이 자동으로 지정**합니다. 직접 고를 필요가 없습니다.
 
-> 비공개 무료 저장소에서는 `CODEOWNERS` 자동 지정이 동작하지 않아서, PR 작성자가 직접 지정합니다.
+| PR 종류 | 자동 지정되는 리뷰어 | 머지 조건 (GitHub이 강제) |
+|---|---|---|
+| 모든 PR | PM `dyryoo316` + 형상관리 `SeungBinYang` ([`CODEOWNERS`](.github/CODEOWNERS)) | 둘 중 1명 승인. 작성자 본인은 빠지므로 PM의 PR은 형상관리가, 형상관리의 PR은 PM이 승인 |
+| **영역 간 연동** — 다른 묶음 담당 영역의 파일(`domain/<영역>/`, `templates/<영역>/`, `static/*/<영역>.*`)을 바꾼 PR (예: 상대 영역에 `Fake` 추가) | 위 + **그 영역 담당** ([영역 담당](#영역-담당) 표) | 위 + 그 영역 담당 승인 (`area-review` 검사) |
+| `sql/`을 바꾼 PR (DB 팀이 아닌 사람이) | 위 + DB 팀 `Choyeonik`, `skinopero` | 위 + DB 팀 1명 승인 (`area-review` 검사) |
+
+- `area-review` 검사는 승인이 들어오면 다시 돌아서 ✅로 바뀝니다. 내 영역만 바꾼 PR은 바로 ✅입니다.
+- 공통 파일(`global/`, `templates/common/`, `static/css/common.css` 등)과 `contest`·`message`처럼 담당이 없는 영역은 기본 리뷰어만 봅니다.
+- 묶음 담당이 바뀌면 [영역 담당](#영역-담당) 표와 [`.github/scripts/area-review.sh`](.github/scripts/area-review.sh)의 담당 표를 같이 고칩니다.
+- 승인 조건은 **이 표가 전부**입니다. `CLAUDE.md`·`.claude/`·협업 문서 같은 팀 규칙 변경도 같은 조건으로 머지하고, 머지 후 팀 채팅에 공지합니다.
 
 **자동 빌드 검사 (GitHub Actions)**
 
@@ -290,7 +293,7 @@ PR을 올리면 MySQL을 띄우고 `sql/` 스크립트 실행 → `./gradlew bui
 | `main`·`develop`에 직접 커밋·push | 리뷰 없이 코드가 들어가 모두의 작업이 깨질 수 있어요 | 내 브랜치를 만들고 PR |
 | 공용 브랜치에 `git push --force` | 다른 사람의 커밋이 **영원히 사라질 수** 있어요 | `git pull` 후 다시 push. 정말 필요하면 팀에 먼저 물어보기 |
 | 다른 사람 브랜치에 말없이 push | 그 사람의 작업과 충돌하고 혼란이 생겨요 | 리뷰 코멘트로 제안하거나, 먼저 허락받기 |
-| 승인 없이 머지 | 리뷰는 버그를 막는 마지막 안전장치예요 | 최소 1명 Approve 후 머지 |
+| 승인 없이 머지 | 리뷰는 버그를 막는 마지막 안전장치예요 | PM·형상관리 중 1명(+ 다른 영역을 바꿨으면 그 담당) Approve 후 머지. GitHub이 머지 버튼을 막아 줍니다 |
 | `.env`, API 키, 비밀번호 커밋 | 한 번 올라가면 기록에 남아 **누구나 볼 수 있어요** | `.env.example`에 키 이름만 적어 공유 |
 | 이슈 범위 밖의 파일까지 한꺼번에 수정 | 리뷰가 어려워지고 다른 사람과 충돌이 늘어요 | 새 이슈로 분리 |
 | 이해하지 못한 AI 생성 코드 PR | 버그가 나도 아무도 고칠 수 없어요 | 이해될 때까지 읽고, 모르면 질문 |
@@ -337,6 +340,9 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 ├── .claude/settings.json             ← Claude Code 팀 공용 권한 (위험한 push 차단)
 ├── .github/
 │   ├── workflows/build.yml           ← PR마다 자동 빌드·테스트 (GitHub Actions)
+│   ├── workflows/area-review.yml     ← 다른 영역 파일을 바꾼 PR은 그 영역 담당 승인 필요
+│   ├── scripts/area-review.sh        ← 위 검사 스크립트 (영역 ↔ 담당 표)
+│   ├── CODEOWNERS                    ← 기본 리뷰어 자동 지정 (PM · 형상관리)
 │   ├── pull_request_template.md      ← PR을 만들면 자동으로 채워지는 양식
 │   └── ISSUE_TEMPLATE/
 │       ├── config.yml                ← 빈 이슈 금지 + 기획 문서 바로가기
@@ -363,14 +369,15 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 ## 📝 규칙에 동의하는 방법 · 규칙을 바꾸는 방법
 
 **동의하기**
-이 규칙들은 `docs/1-collaboration-rules` 같은 브랜치에서 **PR로 저장소에 추가**됩니다. 모든 팀원이 내용을 읽고 그 PR에 **Approve**를 누르면 "규칙에 동의했다"는 뜻입니다. 전원이 Approve 한 뒤에 머지합니다.
+처음 규칙은 `docs/1-collaboration-rules` 브랜치의 PR에 모든 팀원이 **Approve**를 눌러 동의했습니다. (최초 1회만 전원 동의. 그 뒤 변경은 아래 절차)
 
 **바꾸기**
 규칙이 불편하거나 더 좋은 방법이 떠오르면 언제든 바꿀 수 있습니다. 단, 말로만 바꾸지 않습니다.
 
 1. `🔧 작업` 이슈를 만들어 무엇을 왜 바꾸고 싶은지 적습니다.
 2. `docs/이슈번호-설명` 브랜치에서 문서를 수정하고 PR을 올립니다.
-3. **전원 Approve** 후 머지하면 그때부터 새 규칙이 적용됩니다.
+3. 다른 PR과 같은 조건(**PM·형상관리 중 1명 승인**)으로 머지하면 그때부터 새 규칙이 적용됩니다.
+4. 머지 후 팀 채팅에 "무엇이 바뀌었는지"를 공지합니다. 반대 의견이 있으면 같은 절차로 다시 바꿉니다.
 
 > 💡 아직 정하지 않은 것: **코드 스타일(포매터·린터)** 은 필요해지면 위 절차대로 추가합니다.
 
