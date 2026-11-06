@@ -209,8 +209,8 @@ src/main/java/com/vibelog/
 │           ├── dao/                  ← Repository (JpaRepository 상속)
 │           ├── dto/                  ← 화면 ↔ 서버 입력·출력 값 + 입력 검증(@Valid)
 │           ├── entity/               ← 테이블과 매핑되는 클래스 + 자기 상태로 판단하는 도메인 규칙
-│           ├── policy/               ← 여러 데이터를 봐야 판단할 수 있는 비즈니스 규칙
-│           └── service/              ← 트랜잭션과 흐름 조립
+│           ├── policy/               ← 여러 데이터를 봐야 판단할 수 있는 비즈니스 규칙 · 다른 영역에 주는 계약 인터페이스 (08 문서)
+│           └── service/              ← 트랜잭션과 흐름 조립 · 다른 영역에 주는 QuizReader (읽기 전용)
 └── global/
     ├── config/                       ← 공통 설정
     ├── controller/MainController     ← 메인 화면 `/` (어느 영역에도 속하지 않는 화면)

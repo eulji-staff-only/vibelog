@@ -23,3 +23,11 @@
 | API-DGN-04 | 진단 결과 | GET | `/diagnosis/result` | 회원 | - | U-08 + 추천 트랙(이름, 단계, 설명), 추천 이유, 그 트랙의 공개 코스 카드, 다른 트랙 3개 요약 | 결과 없음·건너뜀 → `/diagnosis` | FR-DGN-002 |
 
 - 응답은 저장하지 않으므로(PL-DGN-001) 추천 이유(고른 보기 설명)는 API-DGN-02가 redirect할 때 flash로 넘긴 보기 목록으로 만든다. 나중에 다시 열면 트랙 설명만 보여준다.
+
+## 영역 간 계약 (course 영역이 받는 것)
+
+[08. 작업 순서](../../collaboration/08-task-flow.md)의 계약 표 번호입니다. 인터페이스는 `domain/course/model/policy/`에 두고 course 영역이 구현합니다. DTO는 인터페이스와 같은 패키지의 `record`입니다. 없는 ID가 오면 course 영역이 자기 ErrorCode로 예외를 던집니다.
+
+| # | 인터페이스 (부르는 쪽) | 메서드 | 하는 일 |
+| --- | --- | --- | --- |
+| ⑫ | `LoginDiagnosisChecker` (auth) | `boolean hasDiagnosisRecord(Long memberId)` | `diagnosis_result`(`COMPLETED`·`SKIPPED`)가 있음 (API-USR-05) |
