@@ -246,6 +246,33 @@ public enum QuizErrorCode implements ErrorCode {
 }
 ```
 
+**로그인 약속** (#12)
+
+- 로그인·로그아웃·접근 권한은 Spring Security가 처리합니다 ([`SecurityConfig`](src/main/java/com/vibelog/global/config/SecurityConfig.java)). Controller·Service에서 로그인 여부·운영자 여부를 직접 검사하지 않습니다.
+  - `SecurityConfig`에는 비회원에게 열린 화면(화면 흐름 설계서 0-3 "전체")만 적혀 있습니다. **나머지는 모두 로그인해야** 열리고, `/admin/**`은 운영자만 열립니다.
+  - 이메일 인증·학습 조건(수업 열림 등)은 Security가 보지 않습니다. 각 영역 Service가 검사합니다.
+- **로그인 회원은 Controller에서만 꺼냅니다.** Service에는 `memberId`(Long)만 넘깁니다.
+
+```java
+@GetMapping("/my/learning")
+public String myLearning(@AuthenticationPrincipal LoginMember loginMember, Model model) {
+    Long memberId = loginMember.getMemberId();   // Service 에는 memberId 만 넘긴다
+    ...
+}
+```
+
+- 비회원도 열리는 화면(`/courses/{courseId}` 등)에서는 비회원이면 `loginMember`가 `null`입니다.
+- 화면에서 로그인 여부로 나눌 때는 `sec:authorize`를 씁니다. 로그아웃은 `POST /logout` 폼입니다.
+
+```html
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<a sec:authorize="isAnonymous()" th:href="@{/login}">로그인</a>
+<form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post"><button>로그아웃</button></form>
+```
+
+- POST 폼은 **`th:action`** 으로 만듭니다. CSRF 토큰이 자동으로 들어갑니다. `action=`으로 쓰면 토큰이 없어 403이 납니다.
+- 개발 중 회원 화면은 `sql/02-seed.sql`의 테스트 계정(학습자 `learner@vibelog.test`, 운영자 `admin@vibelog.test`)으로 로그인해서 확인합니다. 비밀번호는 팀 채팅에 있습니다.
+
 **DB 약속**
 
 - 테이블은 DB 팀의 테이블 정의서를 기준으로 SQL 스크립트(`sql/`)로 만듭니다. `ddl-auto`는 `none`이라 Entity가 테이블을 만들거나 바꾸지 않습니다.
