@@ -9,7 +9,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -42,8 +44,12 @@ class CommunityPageControllerTest {
 
     @ParameterizedTest
     @WithMockUser
-    @CsvSource({"/community/write", "/community/1/edit"})
-    void 회원은_글쓰기와_수정을_연다(String url) throws Exception {
-        mockMvc.perform(get(url)).andExpect(status().isOk()).andExpect(view().name("community/write"));
+    @CsvSource({"/community/write, 글쓰기, 등록", "/community/1/edit, 글 수정, 저장"})
+    void 회원은_글쓰기와_수정을_열고_수정이면_문구가_다르다(String url, String title, String button) throws Exception {
+        mockMvc.perform(get(url))
+                .andExpect(status().isOk())
+                .andExpect(view().name("community/write"))
+                .andExpect(content().string(containsString("<h1 class=\"cm-title\">" + title + "</h1>")))
+                .andExpect(content().string(containsString(">" + button + "</button>")));
     }
 }
