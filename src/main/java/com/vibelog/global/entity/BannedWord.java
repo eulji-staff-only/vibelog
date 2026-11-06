@@ -1,5 +1,6 @@
 package com.vibelog.global.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -23,5 +24,6 @@ public class BannedWord extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long bannedWordId;
 
+    @Column(nullable = false, length = 50)
     private String word;
 }
