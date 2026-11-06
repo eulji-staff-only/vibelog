@@ -391,8 +391,9 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 3. **PR 올리기 전에 `git diff`로 변경 내용을 꼭 확인하세요.** AI가 부탁하지 않은 파일을 바꾸거나 지우는 일이 자주 있습니다. 이슈와 상관없는 변경은 되돌립니다.
 4. **비밀 정보를 AI에게 붙여넣지 마세요.** API 키, 비밀번호, 실제 사용자 개인정보는 프롬프트에 넣지 않습니다.
 5. **프로젝트 전체를 한 번에 포맷하거나 갈아엎지 마세요.** 수백 개 파일이 바뀌면 리뷰도, 충돌 해결도 불가능해집니다.
-6. **팀 공용 AI 설정 파일**(`CLAUDE.md`, `AGENTS.md`, `.cursorrules` 등)을 추가·수정할 때는 별도 이슈와 PR로 팀 합의를 거칩니다. 나만 쓰는 개인 설정은 커밋하지 않습니다.
+6. **팀 공용 AI 설정 파일**(`CLAUDE.md`, `.coderabbit.yaml`, `AGENTS.md`, `.cursorrules` 등)을 추가·수정할 때는 별도 이슈와 PR로 팀 합의를 거칩니다. 나만 쓰는 개인 설정은 커밋하지 않습니다.
 7. PR 템플릿의 **"🤖 AI 활용"** 칸에 어떤 도구로 어느 부분을 만들었는지 적어 주면 리뷰어가 더 꼼꼼히 볼 수 있습니다. (선택)
+8. PR에는 **AI 리뷰어 CodeRabbit**이 1차 리뷰를 남깁니다. AI 코멘트에도 **반영 · 반영 안 함(이유) · 질문** 중 하나로 꼭 답합니다. 사용법: [05. PR 규칙 Part 3](docs/collaboration/05-pull-request.md#part-3-ai-리뷰-coderabbit)
 
 ### Claude Code 팀 공용 설정
 
@@ -419,6 +420,7 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 ├── .gitmessage.txt                   ← 커밋 메시지 템플릿
 ├── CLAUDE.md                         ← Claude Code 팀 공용 규칙
 ├── .claude/settings.json             ← Claude Code 팀 공용 권한 (위험한 push 차단)
+├── .coderabbit.yaml                  ← AI 코드 리뷰(CodeRabbit) 설정 — 한국어·학습용 리뷰 기준
 ├── .github/
 │   ├── workflows/build.yml           ← PR마다 자동 빌드·테스트 (GitHub Actions)
 │   ├── workflows/area-review.yml     ← 다른 영역 파일을 바꾼 PR은 그 영역 담당 승인 필요
