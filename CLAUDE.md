@@ -23,6 +23,7 @@
    - develop보다 뒤처짐 → `git pull origin develop` 먼저 제안
    - 이슈가 닫혔거나, 다른 사람이 담당이거나, 같은 작업의 PR이 이미 있음 → 진행 여부를 묻는다
    - 지금 단계가 아닌 작업 (예: ② API 명세 확정 전에 기능 구현) → 08 문서의 단계를 알려 주고, 구현을 시작하지 않는다
+   - **예외: 화면 선행 작업** (`🎨 design` 라벨 이슈) → ①·② 단계에도 진행한다. 아래 "화면 선행 작업" 범위 안에서만 만든다
 - `gh`가 없거나 로그인 안 되어 있으면 1번만 하고, `gh auth login`을 안내한다. 이슈 번호를 모르면 사용자에게 묻는다.
 
 ## 먼저 읽을 문서
@@ -35,9 +36,11 @@
 | 브랜치 · 커밋 · PR 규칙 | `docs/collaboration/02-branch.md`, `03-commit.md`, `05-pull-request.md` |
 | 작업 순서 · 영역 간 계약 · 안 멈추는 규칙 | `docs/collaboration/08-task-flow.md` |
 | API 명세 (URL · 요청 · 응답 · 영역 간 계약 메서드) | `docs/planning/api/` (양식과 위치는 #21에서 확정) |
+| 화면 URL · 화면 구성 · 디자인 토큰 (`U-12` 같은 화면 ID) | `docs/design/01-screen-flow.md` (화면 흐름 설계서, 프로토타입 링크 포함) |
 
 - 요구사항·정책 ID가 나오면 **해당 문서를 찾아 읽고** 그대로 구현한다. 문서에 없는 규칙(숫자, 문구, 동작)은 지어내지 말고 사용자에게 묻는다.
-- **URL, 요청 값, 응답, 계약 메서드는 확정된 API 명세에 있는 그대로만** 만든다. 명세에 없거나 명세가 아직 없으면 지어내지 않는다.
+- **화면 URL**(브라우저 주소창에 보이는 주소)은 화면 흐름 설계서에 있는 그대로 쓴다.
+- **데이터를 주고받는 URL(폼 전송 등), 요청 값, 응답, 계약 메서드는 확정된 API 명세에 있는 그대로만** 만든다. 명세에 없거나 명세가 아직 없으면 지어내지 않는다.
 - **PL-CST-001: 서비스 기능에서 사용량 과금 AI API를 호출하지 않는다.** 채점·리포트·랭킹은 규칙 기반으로 만든다.
 
 ## 작업 범위
@@ -147,9 +150,40 @@ com.vibelog
 └── global/                          ← 공통 (config, entity, exception)
 
 templates/<영역>/*.html               ← 화면도 영역별 폴더
+templates/common/                    ← 공통 레이아웃·UI 조각 (th:fragment, #13·#46)
+templates/error/                     ← 오류 화면
+static/css/<영역>.css · static/js/    ← CSS·JS는 파일로 분리 (공통은 #13·#46이 만든 것을 쓴다)
 ```
 
 - 다른 영역의 **Entity·Repository를 import 하지 않는다.** 다른 영역 데이터는 ID(`Long`)로 참조하고, 필요한 값은 계약 인터페이스로 받는다 (기본형·DTO로 주고받음).
+
+## 화면 선행 작업 (`🎨 design` 이슈, ①·② 단계에도 진행)
+
+DB 설계·API 명세가 확정되기 전에도, 그 문서가 바뀌어도 다시 짤 필요가 없는 화면 부분은 만든다. 기준은 화면 흐름 설계서다.
+
+- ⭕ 만든다: `templates/<영역>/*.html` 마크업, `static/css/<영역>.css`, 설계서의 화면 URL로 `@GetMapping` 하고 **화면 이름만 돌려주는** Controller, 샘플 문구를 직접 적은 화면, 화면 사이 링크, 화면 안에서만 도는 JS(탭 전환·모달·토스트)
+- ❌ 만들지 않는다 (③ 단계에서 명세대로): `th:text`·`th:each` 데이터 연결, `th:action`·입력 `name=`, POST Controller, Service·Entity·Repository·DTO, 서버를 부르는 JS, 로그인 상태별 분기, 백오피스(`/admin`) 화면
+- 색·글꼴·간격은 설계서 6장 디자인 토큰을 쓰고, 템플릿 안에 `<style>`을 쓰지 않는다. 공통 조각(버튼·배지·안내 상자·모달·토스트)이 있으면 새로 만들지 않고 가져다 쓴다.
+
+## 클래스 작성 방식
+
+강의 실습(Spring Security 세션 모듈)의 방식 중 우리 규칙과 맞는 것을 따른다.
+
+- **의존성 주입:** `src/main` 클래스(Controller·Service·Component)는 `@RequiredArgsConstructor` + `private final` 필드로 받는다 (생성자 주입). 테스트 클래스는 `@Autowired`를 써도 된다.
+- **Entity 만들기:** `@NoArgsConstructor(access = AccessLevel.PROTECTED)`. 새 Entity는 정적 팩토리 `Xxx.create(...)`로 만든다 (안쪽은 private 생성자나 `@Builder(access = AccessLevel.PRIVATE)` 중 편한 것). id(DB가 채움)와 `created_at`·`updated_at`(BaseTimeEntity가 채움)은 받지 않는다.
+- **상태 바꾸기:** Entity의 도메인 메서드(예: `increaseLoginFailCount()`)로 바꾸고, `@Transactional` Service에서 호출한다. 변경 감지(dirty checking)로 저장되므로 `save()`를 다시 부르지 않는다.
+- **Entity ↔ DTO:** Entity → DTO는 DTO의 `static Xxx from(Entity)`, DTO → Entity는 `Entity.create(...)`. ModelMapper 같은 변환 라이브러리는 쓰지 않는다.
+- **Repository:** 메서드 이름 쿼리(`findByEmail`, `existsByEmail`)를 먼저 쓴다. 없을 수도 있는 1건 조회는 `Optional`로 받고, 없으면 Service에서 `BusinessException`을 던진다.
+- **Controller:** 화면만 보여주는 GET은 화면 이름(`String`)을 돌려준다. 로그인 회원은 Controller에서만 꺼낸다 (방법은 #12에서 정한 대로).
+- **주석:** 클래스 맨 위에 `global/` 클래스와 같은 형식으로 쓴다 — `/* [클래스명] 역할 : … 책임 : … */`.
+- **강의 코드에서 따라 하지 않는 것:**
+  - 실패를 `null`·`0` 반환이나 `try-catch`로 처리 → `BusinessException`을 던진다
+  - `System.out.println`, `e.printStackTrace()` → 필요하면 `@Slf4j` 로그
+  - 실행 클래스를 `global/config`로 옮기고 `@ComponentScan`·`@EnableJpaRepositories`로 스캔 범위 지정 → 실행 클래스는 루트에 두므로 필요 없다
+  - 템플릿 안 `<style>` → `static/css`
+  - 테이블·컬럼 이름 직접 짓기(`TBL_USER`), `Integer` id → `sql/01-schema.sql` 이름 그대로, id는 `Long`
+  - 로그인 실패 시 어느 값이 틀렸는지 알려 주기 → PL-USR-007 문구 하나만
+  - CSRF 끄기, Remember Me 키를 코드에 적기 → 보안 방식은 #12에서 팀이 정하고, 키는 환경 변수
 
 ## 예외 처리
 
