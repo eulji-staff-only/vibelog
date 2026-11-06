@@ -819,14 +819,14 @@
 | notification_id | BIGINT | N | PK | 자동 증가 | 알림 번호 |
 | member_id | BIGINT | N | FK → member |  | 알림 받는 회원 |
 | notification_type | VARCHAR(20) | N |  |  | 알림 종류 (상태값 정의 참고) |
-| target_type | VARCHAR(20) | N |  |  | 눌렀을 때 이동할 화면 종류. 값은 API 설계와 함께 정함 |
+| target_type | VARCHAR(20) | N |  |  | 눌렀을 때 이동할 화면 종류 (상태값 정의 참고) |
 | target_id | BIGINT | N |  |  | 이동할 대상 번호. FK 아님 |
 | content | VARCHAR(255) | N |  |  | 알림 문구 |
 | read_at | DATETIME | Y |  |  | 읽은 일시 |
 | created_at | DATETIME | N |  | 현재 시각 | 알림 생성 일시 |
 | updated_at | DATETIME | N |  | 현재 시각, 수정 시 갱신 | 수정일 |
 
-제약: `ck_notification_type` CHECK(notification_type IN ('RECOMMEND', 'COMMENT', 'REPLY', 'REVIEW', 'MESSAGE', 'BADGE', 'NOTICE', 'HIDDEN'))
+제약: `ck_notification_type` CHECK(notification_type IN ('RECOMMEND', 'COMMENT', 'REPLY', 'REVIEW', 'MESSAGE', 'BADGE', 'NOTICE', 'HIDDEN')), `ck_notification_target_type` CHECK(target_type IN ('POST', 'COMMENT', 'PORTFOLIO', 'REVIEW', 'MESSAGE', 'CONTEST_AWARD', 'NOTICE'))
 
 메모: 90일이 지나면 배치로 행을 지워요. 대상이 있는지는 FK가 아니라 앱에서 확인해요.
 
@@ -918,6 +918,13 @@
 |  |  | BADGE | 콘테스트 수상 |  |
 |  |  | NOTICE | 공지 |  |
 |  |  | HIDDEN | 내 글이 신고로 숨겨짐 |  |
+| notification.target_type | 없음 | POST | 게시글 | API 설계 10장 |
+|  |  | COMMENT | 댓글 |  |
+|  |  | PORTFOLIO | 포트폴리오 |  |
+|  |  | REVIEW | 동료 리뷰 (`peer_review`) |  |
+|  |  | MESSAGE | 쪽지 |  |
+|  |  | CONTEST_AWARD | 콘테스트 수상·배지 (`contest_award_id`) |  |
+|  |  | NOTICE | 공지 |  |
 | report.target_type | 없음 | POST | 게시글 | DBA 공유용 6장 |
 |  |  | PORTFOLIO | 포트폴리오 |  |
 |  |  | COMMENT | 댓글 |  |
@@ -939,8 +946,6 @@
 - `portfolio.portfolio_type`: COURSE는 코스 과제 제출, PERSONAL은 코스와 상관없는 개인 작품이에요. 개인 작품 등록은 P2(FR-PRT-011)라 P1에서는 COURSE만 들어가요.
 - 수강 상태는 컬럼이 아니라 `enrollment.completed_at`·`dropped_at`으로 판단해요(5장 표 참고).
 
-- `notification.target_type`은 이동할 화면 종류라 값 목록을 API 설계와 함께 정해요.
-
 ## 15. 확정안과의 관계
 
 이 정의서는 **엔티티 확정안(2026-11-04)에 있는 컬럼만** 담았어요. 확정안에 없는 컬럼은 넣지 않았어요.
@@ -961,7 +966,6 @@
 
 | 항목 | 지금 정의서 | 확인할 것 | 누가 |
 | --- | --- | --- | --- |
-| `notification.target_type` 값 | 값 목록 비움 | API 설계와 함께 정하고 CHECK 추가 | DBA · 개발 |
 | 인덱스 | PK·FK·UNIQUE만 적음 | 게시판 최신순, 내 학습, 주간 추천 랭킹 조회에 맞춰 추가 (DBA 공유용 3장 6번) | DBA |
 | concept_bookmark 삭제 방식 | 해제 시 행 삭제 | 확정안·DBA 공유용 5-1에 없어 DBA가 정함. 기획 담당에게 공유 | DBA → 기획 |
 

@@ -187,7 +187,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 - FK 삭제 옵션은 모두 `ON DELETE RESTRICT`. 삭제는 5장 정책대로 앱에서 처리
 - 키 표기는 PK, FK(→ 가리키는 테이블), UK(단일 컬럼 유일). 여러 컬럼 UNIQUE와 CHECK는 표 아래 제약에 이름과 함께 적음
 
-### 4-3. 상태·종류 컬럼 (14개)
+### 4-3. 상태·종류 컬럼 (16개)
 
 | 테이블.컬럼 | 기본값 | 값 |
 | --- | --- | --- |
@@ -203,6 +203,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 | post.category | 없음 | FREE / QNA / SHOWCASE |
 | member_suspension.level | 없음 | WARNING / DAYS_7 / DAYS_30 / PERMANENT |
 | notification.notification_type | 없음 | RECOMMEND / COMMENT / REPLY / REVIEW / MESSAGE / BADGE / NOTICE / HIDDEN |
+| notification.target_type | 없음 | POST / COMMENT / PORTFOLIO / REVIEW / MESSAGE / CONTEST_AWARD / NOTICE |
 | report.target_type | 없음 | POST / PORTFOLIO / COMMENT / REVIEW / MESSAGE |
 | report.reason | 없음 | SPAM / ABUSE / PLAGIARISM / PRIVACY / ETC |
 | report.status | 'PENDING' | PENDING / HIDDEN / REJECTED |
@@ -387,11 +388,10 @@ P1 테이블 5개(member, email_verification, post, comment, quiz_attempt)는 P1
 
 ## 8. 남은 확인 사항
 
-세 가지가 아직 정해지지 않았다.
+두 가지가 아직 정해지지 않았다.
 
 | 항목 | 지금 설계 | 확인할 것 | 누가 |
 | --- | --- | --- | --- |
-| `notification.target_type` 값 | 값 목록 비움 | API 설계와 함께 정하고 CHECK 추가 | DBA · 개발 |
 | `concept_bookmark` 삭제 방식 | 해제 시 행 삭제 | 확정안·DBA 공유용 5-1에 없어 DBA가 정함. 기획 담당에게 공유 | DBA → 기획 |
 | 인덱스 추가 | 6-2의 13개 | 운영 뒤 실제 조회 패턴으로 재검토 | DBA |
 

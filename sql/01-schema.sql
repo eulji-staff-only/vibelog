@@ -764,7 +764,6 @@ CREATE TABLE message (
     INDEX idx_message_created_at (created_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '쪽지';
 
--- target_type 값 목록은 API 설계와 함께 정한 뒤 CHECK 를 추가한다 (03 테이블 정의서 16장)
 CREATE TABLE notification (
     notification_id   BIGINT       NOT NULL AUTO_INCREMENT,
     member_id         BIGINT       NOT NULL,
@@ -778,6 +777,7 @@ CREATE TABLE notification (
     CONSTRAINT pk_notification PRIMARY KEY (notification_id),
     CONSTRAINT fk_notification_member_id FOREIGN KEY (member_id) REFERENCES member (member_id) ON DELETE RESTRICT,
     CONSTRAINT ck_notification_type CHECK (notification_type IN ('RECOMMEND', 'COMMENT', 'REPLY', 'REVIEW', 'MESSAGE', 'BADGE', 'NOTICE', 'HIDDEN')),
+    CONSTRAINT ck_notification_target_type CHECK (target_type IN ('POST', 'COMMENT', 'PORTFOLIO', 'REVIEW', 'MESSAGE', 'CONTEST_AWARD', 'NOTICE')),
     INDEX idx_notification_member_id_read_at (member_id, read_at, created_at),
     INDEX idx_notification_created_at (created_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '알림';
