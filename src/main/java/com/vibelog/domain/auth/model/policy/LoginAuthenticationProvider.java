@@ -1,0 +1,62 @@
+package com.vibelog.domain.auth.model.policy;
+
+import com.vibelog.domain.auth.model.dao.MemberRepository;
+import com.vibelog.domain.auth.model.entity.Member;
+import com.vibelog.domain.auth.model.entity.MemberStatus;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+/*
+ * [LoginAuthenticationProvider]
+ * 역할 : 폼 로그인에서 비밀번호를 비교하기 전에 5회 연속 실패 잠금을 적용한다. (PL-USR-007, NFR-SEC-005)
+ * 책임 : - 비교 전에 시도를 센다(LoginLockPolicy). 같은 이메일로 동시에 보내도 5번까지만 비교한다.
+ *        - 잠겨 있거나 이번 실패로 잠기면 LockedException → LoginFailureHandler 가 /login?locked 로 보낸다.
+ *        - 없는 이메일도 똑같이 세고 잠근다. 그래야 잠금 안내로 가입 여부가 드러나지 않는다.
+ *        - 로그인 유지(remember-me) 자동 로그인은 비밀번호를 비교하지 않으므로 여기를 거치지 않는다.
+ */
+@Component
+public class LoginAuthenticationProvider extends DaoAuthenticationProvider {
+
+    private final MemberRepository memberRepository;
+    private final LoginLockPolicy loginLockPolicy;
+
+    public LoginAuthenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder,
+                                       MemberRepository memberRepository, LoginLockPolicy loginLockPolicy) {
+        super(userDetailsService);
+        setPasswordEncoder(passwordEncoder);
+        this.memberRepository = memberRepository;
+        this.loginLockPolicy = loginLockPolicy;
+    }
+
+    @Override
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        String key = lockKey(authentication.getName());
+        if (!loginLockPolicy.tryAttempt(key)) {
+            throw new LockedException("로그인 잠김");
+        }
+        try {
+            return super.authenticate(authentication);
+        } catch (AuthenticationException e) {
+            if (loginLockPolicy.isLocked(key)) {
+                throw new LockedException("로그인 잠김", e);
+            }
+            throw e;
+        }
+    }
+
+    /*
+     * DB 는 대소문자·악센트만 다른 이메일도 같은 회원으로 찾는다 (utf8mb4_0900_ai_ci).
+     * 입력값 그대로 세면 "A@x.com", "á@x.com" 처럼 바꿔 가며 잠금을 피할 수 있으므로, 가입된 이메일이면 DB 에 저장된 값으로 센다.
+     */
+    private String lockKey(String email) {
+        String input = email == null ? "" : email.strip();
+        return memberRepository.findByEmailAndStatus(input, MemberStatus.ACTIVE)
+                .map(Member::getEmail)
+                .orElse(input);
+    }
+}

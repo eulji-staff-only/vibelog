@@ -161,6 +161,17 @@ class SecurityConfigTest {
         login(email, password, null, null).andExpect(redirectedUrl("/login?locked"));
     }
 
+    @Test
+    void 네_번_틀려도_다섯_번째에_비밀번호가_맞으면_로그인된다() throws Exception {
+        String email = "fifth-ok-test@vibelog.test";
+        insertMember(email, "LEARNER");
+
+        for (int i = 0; i < 4; i++) {
+            login(email, "wrong", null, null).andExpect(redirectedUrl("/login?error"));
+        }
+        login(email, password, null, null).andExpect(redirectedUrl("/courses"));
+    }
+
     private void insertMember(String email, String role) {
         jdbcTemplate.update("INSERT INTO member (email, password_hash, nickname, role) VALUES (?, ?, ?, ?)",
                 email, passwordEncoder.encode(password), "보안테스트", role);

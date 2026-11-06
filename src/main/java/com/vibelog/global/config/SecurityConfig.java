@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
  *          여기서는 "로그인 했나 / 운영자인가"만 본다. 이메일 인증·학습 조건(수업 열림 등)은 각 영역 Service 가 검사한다.
  *        - 비회원이 회원 화면에 오면 /login?redirect={원래 주소}, 학습자가 /admin 에 오면 메인으로 보낸다. (API 명세 0-2, 7-2)
  *        - CSRF 는 켜 둔다. 폼을 th:action 으로 만들면 토큰이 자동으로 들어간다.
- *        - 로그인 규칙은 auth 영역이 정한다: 성공 후 도착지(LoginSuccessHandler), 실패·5회 잠금(LoginFailureHandler),
+ *        - 로그인 규칙은 auth 영역이 정한다: 성공 후 도착지(LoginSuccessHandler), 5회 잠금(LoginAuthenticationProvider), 실패 안내(LoginFailureHandler),
  *          로그인 유지(LoginRememberMeServices). 2시간 동안 요청이 없으면 세션이 끝난다 (application.yaml, PL-USR-006).
  */
 @Configuration
