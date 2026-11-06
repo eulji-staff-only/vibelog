@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>코스 완료 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/course-complete.css}" href="/css/course-complete.css">
+</head>
+<body>
+<!-- U-18 코스 완료. 화면 선행 작업(#47): 완료 조건·일시·리포트 목록은 샘플이고, 완료 여부 계산(PL-ENR-003)은
+     ③ 단계(API 명세)에서 붙인다. 리포트(U-16)·수업(U-13) 주소에는 lessonId 가 필요해 ③ 단계에서 연결하고,
+     지금은 href="#" 로 자리만 둔다. 공통 헤더·푸터(#13)와 배지·안내 상자 조각(#46)이 머지되면 그것으로 바꾼다. -->
+<div class="cc-page">
+
+    <section class="cc-band">
+        <span class="cc-eyebrow">[웹 개발 트랙] · [코스] 자바로 배우는 바이브코딩 기초</span>
+        <h1 class="cc-title">코스를 완료했습니다</h1>
+        <p class="cc-lead">모든 수업의 모의고사와 오답 분석 리포트, 포트폴리오 제출까지 모두 마쳤습니다. 수고하셨습니다!</p>
+    </section>
+
+    <main class="cc-main">
+        <div class="cc-panel">
+
+            <!-- 예외: 조건이 남은 경우의 참고용 모습 (설계서 U-18 예외). ③ 단계에서 실제 조건으로 둘 중 하나만 보여 준다. -->
+            <div class="cc-notice" data-cc-remaining hidden>
+                <strong>코스 완료까지 한 걸음 남았어요.</strong>
+                <p>남은 조건을 모두 마치면 이 코스가 완료 처리됩니다.</p>
+                <a class="cc-link" href="#">포트폴리오로 가기</a>
+            </div>
+
+            <section class="cc-section" aria-labelledby="cc-cond-h">
+                <h2 class="cc-h2" id="cc-cond-h">완료 조건</h2>
+                <ul class="cc-conditions">
+                    <li class="cc-condition">
+                        <span class="cc-badge cc-badge-success">완료</span>
+                        <span class="cc-condition-name">모든 공개 수업 모의고사 응시</span>
+                    </li>
+                    <li class="cc-condition">
+                        <span class="cc-badge cc-badge-success">완료</span>
+                        <span class="cc-condition-name">모든 공개 수업 오답 분석 리포트 확인</span>
+                    </li>
+                    <li class="cc-condition">
+                        <span class="cc-badge cc-badge-success">완료</span>
+                        <span class="cc-condition-name">포트폴리오 제출</span>
+                    </li>
+                </ul>
+                <p class="cc-muted">완료 일시: <strong>2026.10.20 14:32</strong></p>
+            </section>
+
+            <section class="cc-section" aria-labelledby="cc-report-h">
+                <h2 class="cc-h2" id="cc-report-h">수업별 리포트</h2>
+                <ul class="cc-report-list">
+                    <li class="cc-report-item">
+                        <span class="cc-report-name">[수업 1] 변수와 자료형</span>
+                        <a class="cc-btn cc-btn-outline cc-btn-s" href="#">리포트 보기</a>
+                    </li>
+                    <li class="cc-report-item">
+                        <span class="cc-report-name">[수업 2] 조건문으로 분기 만들기</span>
+                        <a class="cc-btn cc-btn-outline cc-btn-s" href="#">리포트 보기</a>
+                    </li>
+                    <li class="cc-report-item">
+                        <span class="cc-report-name">[수업 3] 반복문으로 코드 줄이기</span>
+                        <a class="cc-btn cc-btn-outline cc-btn-s" href="#">리포트 보기</a>
+                    </li>
+                </ul>
+            </section>
+
+            <div class="cc-actions">
+                <a class="cc-btn cc-btn-navy" href="/my/portfolios">내 포트폴리오 보기</a>
+                <div class="cc-actions-sub">
+                    <a class="cc-btn cc-btn-outline" href="/courses">다음 코스 찾기</a>
+                    <a class="cc-btn cc-btn-outline" href="/my/learning">내 학습으로</a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+</body>
+</html>
