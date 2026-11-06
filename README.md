@@ -40,7 +40,7 @@
 |---|---|---|---|
 | **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | `sql/`이 바뀐 PR |
 | **형상관리** | `SeungBinYang` | 저장소·브랜치·빌드 검사, 공통 설정, 협업 규칙·Claude 규칙 | `build.gradle`, `application.yaml`, `.github/`, `global/`, `CLAUDE.md`가 바뀐 PR |
-| **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | `docs/planning/`(요구사항·정책·API 명세)이 바뀐 PR |
+| **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | `docs/planning/`(요구사항·정책), `docs/design/`(화면 흐름·API 명세)이 바뀐 PR |
 
 > 역할은 기능 구현과 별개입니다. 4명 모두 아래 **묶음 A~D** 중 하나를 구현합니다.
 
@@ -203,7 +203,7 @@ src/main/java/com/vibelog/
 ├── VibelogApplication.java
 ├── domain/
 │   └── quiz/                         ← 영역 하나 = 패키지 하나
-│       ├── controller/               ← 요청을 받고 화면 이름을 돌려준다
+│       ├── controller/               ← 요청을 받고 화면 이름을 돌려준다. 클래스 이름은 영역 이름으로 시작 (QuizController)
 │       ├── exception/QuizErrorCode   ← 이 영역의 에러 목록 (ErrorCode 구현 enum)
 │       └── model/
 │           ├── dao/                  ← Repository (JpaRepository 상속)
@@ -213,12 +213,20 @@ src/main/java/com/vibelog/
 │           └── service/              ← 트랜잭션과 흐름 조립
 └── global/
     ├── config/                       ← 공통 설정
+    ├── controller/MainController     ← 메인 화면 `/` (어느 영역에도 속하지 않는 화면)
+    ├── entity/                       ← BaseTimeEntity (created_at · updated_at)
     └── exception/                    ← BusinessException · ErrorCode · GlobalExceptionHandler
 
 src/main/resources/
 ├── application.yaml
-├── templates/<영역>/*.html            ← 화면도 영역별 폴더 (예: templates/quiz/result.html)
-└── static/css · js · images
+├── templates/
+│   ├── <영역>/*.html                 ← 화면도 영역별 폴더 (예: templates/quiz/result.html)
+│   ├── common/                       ← 공통 레이아웃·UI 조각 (th:fragment)
+│   └── error/error.html              ← 오류 화면 한 장 (status 로 404·403·500 을 나눠 그림)
+└── static/
+    ├── css/                          ← 공통 CSS + <영역>.css (템플릿 안에 <style> 쓰지 않음)
+    ├── js/
+    └── images/
 sql/                                  ← DB 스크립트 (00-create-database.sql, 확정 후 01-schema.sql …)
 ```
 
@@ -263,7 +271,9 @@ public class Quiz extends BaseTimeEntity { ... }
 |---|---|
 | `sql/` | DB 담당 (`Choyeonik`, `skinopero`) |
 | `build.gradle`, `application.yaml`, `.github/`, `global/`, `CLAUDE.md` | 형상관리 (`SeungBinYang`) |
-| `docs/planning/` (요구사항 · 정책 · API 명세) | PM (`dyryoo316`) |
+| `docs/planning/` (요구사항 · 정책) | PM (`dyryoo316`) |
+| `docs/design/` (화면 흐름 · API 명세) | PM (`dyryoo316`) |
+| `docs/design/` (DB 설계서 · 테이블 정의서) | DB 담당 (`Choyeonik`, `skinopero`) |
 
 > 비공개 무료 저장소에서는 `CODEOWNERS` 자동 지정이 동작하지 않아서, PR 작성자가 직접 지정합니다.
 

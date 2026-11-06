@@ -35,7 +35,7 @@
 | 코드 구조 · 예외 · DB · 리뷰어 규칙 | `README.md`의 "🧱 코드 구조 규칙" |
 | 브랜치 · 커밋 · PR 규칙 | `docs/collaboration/02-branch.md`, `03-commit.md`, `05-pull-request.md` |
 | 작업 순서 · 영역 간 계약 · 안 멈추는 규칙 | `docs/collaboration/08-task-flow.md` |
-| API 명세 (URL · 요청 · 응답 · 영역 간 계약 메서드) | `docs/planning/api/` (양식과 위치는 #21에서 확정) |
+| API 명세 (URL · 요청 · 응답 · 영역 간 계약 메서드) | `docs/design/api/` (양식은 #21에서 확정) |
 | 화면 URL · 화면 구성 · 디자인 토큰 (`U-12` 같은 화면 ID) | `docs/design/01-screen-flow.md` (화면 흐름 설계서, 프로토타입 링크 포함) |
 
 - 요구사항·정책 ID가 나오면 **해당 문서를 찾아 읽고** 그대로 구현한다. 문서에 없는 규칙(숫자, 문구, 동작)은 지어내지 말고 사용자에게 묻는다.
@@ -72,7 +72,7 @@
 | 다른 사람의 담당 범위를 바꿔야 함 — 다른 영역 코드(Fake 추가 제외), `sql/`(DB 팀), `build.gradle`·`global/`(형상관리) | **A. 다른 팀 요청서** |
 | 위 "기다리지 않는 방법"으로도 진행할 수 없음 (예: #10 전에 DB 테스트) | 할 수 있는 다른 작업 제안 + 이슈에 `⛔ blocked` 라벨 안내 |
 | 요구사항·정책 문서에 답이 없거나, 문서끼리 내용이 다름 | **B. 팀 상의 안건** |
-| API 명세에 없는 URL·값이 필요하거나, 명세와 다르게 만들어야 함 | **B. 팀 상의 안건** (명세 수정이 먼저) |
+| API 명세에 없는 데이터 URL(폼 전송 등)·값이 필요하거나, 명세와 다르게 만들어야 함 (화면 URL은 화면 흐름 설계서 기준) | **B. 팀 상의 안건** (명세 수정이 먼저) |
 | 테이블 구조 변경, 의존성 추가, 보안·권한 방식 결정 | **B. 팀 상의 안건** |
 | 머지 충돌이 다른 사람의 코드에서 남 | **B. 팀 상의 안건** |
 | 승인·머지·배포처럼 규칙상 사람이 해야 하는 일 | 할 일만 한 줄로 안내 |
@@ -147,11 +147,12 @@ com.vibelog
 │       ├── entity/                  ← BaseTimeEntity 상속 + 자기 상태로 판단하는 도메인 규칙
 │       ├── policy/                  ← 여러 데이터를 봐야 판단하는 비즈니스 규칙
 │       └── service/                 ← @Transactional, 흐름 조립
-└── global/                          ← 공통 (config, entity, exception)
+└── global/                          ← 공통 (config, controller, entity, exception)
+    └── controller/MainController    ← 메인 화면 `/` (어느 영역에도 속하지 않는 화면, #13)
 
 templates/<영역>/*.html               ← 화면도 영역별 폴더
 templates/common/                    ← 공통 레이아웃·UI 조각 (th:fragment, #13·#46)
-templates/error/                     ← 오류 화면
+templates/error/error.html           ← 오류 화면 한 장. GlobalExceptionHandler가 모든 오류를 여기로 보내므로 `status`(404·403·500)로 나눠 그린다
 static/css/<영역>.css · static/js/    ← CSS·JS는 파일로 분리 (공통은 #13·#46이 만든 것을 쓴다)
 ```
 
@@ -164,6 +165,7 @@ DB 설계·API 명세가 확정되기 전에도, 그 문서가 바뀌어도 다�
 - ⭕ 만든다: `templates/<영역>/*.html` 마크업, `static/css/<영역>.css`, 설계서의 화면 URL로 `@GetMapping` 하고 **화면 이름만 돌려주는** Controller, 샘플 문구를 직접 적은 화면, 화면 사이 링크, 화면 안에서만 도는 JS(탭 전환·모달·토스트)
 - ❌ 만들지 않는다 (③ 단계에서 명세대로): `th:text`·`th:each` 데이터 연결, `th:action`·입력 `name=`, POST Controller, Service·Entity·Repository·DTO, 서버를 부르는 JS, 로그인 상태별 분기, 백오피스(`/admin`) 화면
 - 색·글꼴·간격은 설계서 6장 디자인 토큰을 쓰고, 템플릿 안에 `<style>`을 쓰지 않는다. 공통 조각(버튼·배지·안내 상자·모달·토스트)이 있으면 새로 만들지 않고 가져다 쓴다.
+- **비회원으로 모든 화면을 열어 볼 수 있게** 한다. 이 단계에서는 로그인·권한·학습 조건(잠김 등) 검사를 넣지 않는다. 잠김·미인증 같은 상태는 샘플 화면으로 보여 준다. 실제 접근 제한(설계서 0-3)은 #12와 ③ 단계 기능 이슈에서 붙인다.
 
 ## 클래스 작성 방식
 
@@ -171,10 +173,11 @@ DB 설계·API 명세가 확정되기 전에도, 그 문서가 바뀌어도 다�
 
 - **의존성 주입:** `src/main` 클래스(Controller·Service·Component)는 `@RequiredArgsConstructor` + `private final` 필드로 받는다 (생성자 주입). 테스트 클래스는 `@Autowired`를 써도 된다.
 - **Entity 만들기:** `@NoArgsConstructor(access = AccessLevel.PROTECTED)`. 새 Entity는 정적 팩토리 `Xxx.create(...)`로 만든다 (안쪽은 private 생성자나 `@Builder(access = AccessLevel.PRIVATE)` 중 편한 것). id(DB가 채움)와 `created_at`·`updated_at`(BaseTimeEntity가 채움)은 받지 않는다.
-- **상태 바꾸기:** Entity의 도메인 메서드(예: `increaseLoginFailCount()`)로 바꾸고, `@Transactional` Service에서 호출한다. 변경 감지(dirty checking)로 저장되므로 `save()`를 다시 부르지 않는다.
+- **상태 바꾸기:** Entity의 도메인 메서드(예: 수업 공개 `publish()`)로 바꾸고, `@Transactional` Service에서 호출한다. 변경 감지(dirty checking)로 저장되므로 `save()`를 다시 부르지 않는다.
 - **Entity ↔ DTO:** Entity → DTO는 DTO의 `static Xxx from(Entity)`, DTO → Entity는 `Entity.create(...)`. ModelMapper 같은 변환 라이브러리는 쓰지 않는다.
 - **Repository:** 메서드 이름 쿼리(`findByEmail`, `existsByEmail`)를 먼저 쓴다. 없을 수도 있는 1건 조회는 `Optional`로 받고, 없으면 Service에서 `BusinessException`을 던진다.
 - **Controller:** 화면만 보여주는 GET은 화면 이름(`String`)을 돌려준다. 로그인 회원은 Controller에서만 꺼낸다 (방법은 #12에서 정한 대로).
+- **Controller 이름:** 자기 영역 이름으로 시작한다 (예: `LessonPageController`, `ExamController`). 패키지가 달라도 클래스 이름이 같으면 Spring Bean 이름이 겹쳐 앱이 뜨지 않는다 (`ConflictingBeanDefinitionException`).
 - **주석:** 클래스 맨 위에 `global/` 클래스와 같은 형식으로 쓴다 — `/* [클래스명] 역할 : … 책임 : … */`.
 - **강의 코드에서 따라 하지 않는 것:**
   - 실패를 `null`·`0` 반환이나 `try-catch`로 처리 → `BusinessException`을 던진다
