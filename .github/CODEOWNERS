@@ -1,0 +1,4 @@
+# 모든 PR의 기본 리뷰어: PM(dyryoo316) + 형상관리(SeungBinYang). 둘 중 1명 승인이 필요하다.
+# (PR 작성자 본인은 리뷰어에서 빠지므로 PM의 PR은 형상관리가, 형상관리의 PR은 PM이 승인한다)
+# 다른 묶음 영역의 파일을 바꾼 PR은 area-review 검사가 그 영역 담당을 추가로 지정하고 승인을 요구한다.
+* @dyryoo316 @SeungBinYang

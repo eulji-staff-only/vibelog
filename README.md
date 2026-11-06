@@ -259,13 +259,18 @@ public class Quiz extends BaseTimeEntity { ... }
 
 **리뷰어 지정 약속**
 
-| 이런 파일을 바꾸면 | 리뷰어에 꼭 넣을 사람 |
-|---|---|
-| `sql/` | DB 담당 (`Choyeonik`, `skinopero`) |
-| `build.gradle`, `application.yaml`, `.github/`, `global/`, `CLAUDE.md` | 형상관리 (`SeungBinYang`) |
-| `docs/planning/` (요구사항 · 정책 · API 명세) | PM (`dyryoo316`) |
+리뷰어는 **GitHub이 자동으로 지정**합니다. 직접 고를 필요가 없습니다.
 
-> 비공개 무료 저장소에서는 `CODEOWNERS` 자동 지정이 동작하지 않아서, PR 작성자가 직접 지정합니다.
+| PR 종류 | 자동 지정되는 리뷰어 | 머지 조건 (GitHub이 강제) |
+|---|---|---|
+| 모든 PR | PM `dyryoo316` + 형상관리 `SeungBinYang` ([`CODEOWNERS`](.github/CODEOWNERS)) | 둘 중 1명 승인. 작성자 본인은 빠지므로 PM의 PR은 형상관리가, 형상관리의 PR은 PM이 승인 |
+| **영역 간 연동** — 다른 묶음 담당 영역의 파일(`domain/<영역>/`, `templates/<영역>/`, `static/*/<영역>.*`)을 바꾼 PR (예: 상대 영역에 `Fake` 추가) | 위 + **그 영역 담당** ([영역 담당](#영역-담당) 표) | 위 + 그 영역 담당 승인 (`area-review` 검사) |
+| `sql/`을 바꾼 PR (DB 팀이 아닌 사람이) | 위 + DB 팀 `Choyeonik`, `skinopero` | 위 + DB 팀 1명 승인 (`area-review` 검사) |
+
+- `area-review` 검사는 승인이 들어오면 다시 돌아서 ✅로 바뀝니다. 내 영역만 바꾼 PR은 바로 ✅입니다.
+- 공통 파일(`global/`, `templates/common/`, `static/css/common.css` 등)과 `contest`·`message`처럼 담당이 없는 영역은 기본 리뷰어만 봅니다.
+- 묶음 담당이 바뀌면 [영역 담당](#영역-담당) 표와 [`.github/scripts/area-review.sh`](.github/scripts/area-review.sh)의 담당 표를 같이 고칩니다.
+- `CLAUDE.md`·`.claude/` 같은 팀 규칙 변경은 GitHub 조건과 별개로 **전원 승인** 후 머지합니다.
 
 **자동 빌드 검사 (GitHub Actions)**
 
@@ -325,6 +330,9 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 ├── .claude/settings.json             ← Claude Code 팀 공용 권한 (위험한 push 차단)
 ├── .github/
 │   ├── workflows/build.yml           ← PR마다 자동 빌드·테스트 (GitHub Actions)
+│   ├── workflows/area-review.yml     ← 다른 영역 파일을 바꾼 PR은 그 영역 담당 승인 필요
+│   ├── scripts/area-review.sh        ← 위 검사 스크립트 (영역 ↔ 담당 표)
+│   ├── CODEOWNERS                    ← 기본 리뷰어 자동 지정 (PM · 형상관리)
 │   ├── pull_request_template.md      ← PR을 만들면 자동으로 채워지는 양식
 │   └── ISSUE_TEMPLATE/
 │       ├── config.yml                ← 빈 이슈 금지 + 기획 문서 바로가기

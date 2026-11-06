@@ -120,9 +120,10 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 | Require a pull request before merging | ✅ |
 | └ Required approvals | **1** |
 | └ Dismiss stale pull request approvals when new commits are pushed | 선택 (켜면 더 안전하지만, 리뷰 반영할 때마다 재승인이 필요) |
+| └ Require review from Code Owners | ✅ (`.github/CODEOWNERS` — PM·형상관리 중 1명) |
 | └ Require conversation resolution before merging | ✅ |
 | └ Allowed merge methods | **Squash**, **Merge** (Merge는 hotfix 반영용) |
-| Require status checks to pass | ✅ → **Add checks** 에서 `build` 선택 (`.github/workflows/build.yml`) |
+| Require status checks to pass | ✅ → **Add checks** 에서 `build`, `area-review` 선택 (`.github/workflows/build.yml`, `area-review.yml`) |
 
 ### main 규칙
 
@@ -134,10 +135,12 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 | Target branches | `main` |
 | Required approvals | **1** (팀원이 4명 이상이면 **2** 권장) |
 | Allowed merge methods | **Merge**, **Squash** (Squash는 hotfix용) |
+| Require status checks | `build`만 (`area-review`는 넣지 않음 — develop→main 릴리스 PR은 모든 영역을 바꾸므로) |
 
 > ⚠️ **비공개(Private) 저장소 + 무료 플랜**에서는 규칙이 실제로 강제되지 않을 수 있습니다.
 > 공개 저장소로 운영하거나, 학생이라면 [GitHub Education](https://education.github.com/) 혜택을 확인해 보세요.
 > 강제되지 않더라도 **규칙은 똑같이 지킵니다.**
+> 우리 저장소는 2026-11 공개로 전환해 두 규칙이 실제로 강제됩니다 (#15, #68).
 
 ---
 
@@ -189,5 +192,4 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 | 항목 | 설명 |
 |---|---|
 | 코드 스타일 도구 | 포매터·린터 설정을 `chore(config)` PR로 추가하고 규칙 문서에 반영 |
-| `CODEOWNERS` | 폴더별 담당자를 자동으로 리뷰어 지정. 비공개 저장소는 유료 플랜(또는 공개 전환)에서만 동작 |
 | README 분리 | 나중에 README에 프로젝트 소개를 넣을 때, 이 협업 규칙은 `CONTRIBUTING.md`로 옮기면 GitHub이 PR·이슈 화면에서 자동으로 링크해 줍니다 |
