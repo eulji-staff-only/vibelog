@@ -23,7 +23,7 @@ class LoginLockPolicyTest {
     private static final String EMAIL = "lock@vibelog.test";
 
     private final AtomicReference<Instant> now = new AtomicReference<>(Instant.parse("2026-11-06T00:00:00Z"));
-    private final LoginLockPolicy policy = new LoginLockPolicy(now::get, 100);
+    private final LoginLockPolicy policy = new LoginLockPolicy(now::get);
 
     @Test
     void 다섯_번째_시도에서_잠기고_여섯_번째부터는_비교하지_않는다() {
@@ -91,15 +91,33 @@ class LoginLockPolicyTest {
     }
 
     @Test
-    void 기록이_한도를_넘으면_잠기지_않은_기록만_지운다() {
-        tryFiveTimes(EMAIL);
-        for (int i = 0; i < 200; i++) {
+    void 다른_이메일_기록이_많아도_실패_횟수와_잠금을_유지한다() {
+        String locked = "locked@vibelog.test";
+        tryFiveTimes(locked);
+        for (int i = 0; i < 4; i++) {
+            policy.tryAttempt(EMAIL);
+        }
+        for (int i = 0; i < 20_000; i++) {
             policy.tryAttempt("other" + i + "@vibelog.test");
         }
 
-        assertThat(policy.size()).isLessThanOrEqualTo(100);
+        assertThat(policy.isLocked(locked)).isTrue();
+        policy.tryAttempt(EMAIL);
         assertThat(policy.isLocked(EMAIL)).isTrue();
-        assertThat(policy.tryAttempt(EMAIL)).isFalse();
+    }
+
+    @Test
+    void 마지막_시도부터_5분이_지난_기록은_지우고_처음부터_센다() {
+        for (int i = 0; i < 4; i++) {
+            policy.tryAttempt(EMAIL);
+        }
+        policy.tryAttempt("old@vibelog.test");
+
+        later(Duration.ofMinutes(5));
+        policy.tryAttempt(EMAIL);
+
+        assertThat(policy.isLocked(EMAIL)).isFalse();
+        assertThat(policy.size()).isEqualTo(1);
     }
 
     private void tryFiveTimes(String email) {

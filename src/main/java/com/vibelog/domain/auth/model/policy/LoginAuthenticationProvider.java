@@ -52,11 +52,11 @@ public class LoginAuthenticationProvider extends DaoAuthenticationProvider {
     /*
      * DB 는 대소문자·악센트만 다른 이메일도 같은 회원으로 찾는다 (utf8mb4_0900_ai_ci).
      * 입력값 그대로 세면 "A@x.com", "á@x.com" 처럼 바꿔 가며 잠금을 피할 수 있으므로, 가입된 이메일이면 DB 에 저장된 값으로 센다.
+     * 입력값은 인증 필터가 다듬은(trim) 그대로 쓴다. 따로 다듬으면 비밀번호를 비교하는 회원과 세는 회원이 달라질 수 있다.
      */
     private String lockKey(String email) {
-        String input = email == null ? "" : email.strip();
-        return memberRepository.findByEmailAndStatus(input, MemberStatus.ACTIVE)
+        return memberRepository.findByEmailAndStatus(email, MemberStatus.ACTIVE)
                 .map(Member::getEmail)
-                .orElse(input);
+                .orElse(email);
     }
 }
