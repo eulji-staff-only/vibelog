@@ -40,20 +40,20 @@
 |---|---|---|---|
 | **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | `sql/`이 바뀐 PR |
 | **형상관리** | `SeungBinYang` | 저장소·브랜치·빌드 검사, 공통 설정, 협업 규칙·Claude 규칙 | `build.gradle`, `application.yaml`, `.github/`, `global/`, `CLAUDE.md`가 바뀐 PR |
-| **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | `docs/planning/`(요구사항·정책·API 명세)이 바뀐 PR |
+| **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | `docs/planning/`(요구사항·정책), `docs/design/`(화면 흐름·API 명세)이 바뀐 PR |
 
 > 역할은 기능 구현과 별개입니다. 4명 모두 아래 **묶음 A~D** 중 하나를 구현합니다.
 
 ### 영역 담당
 
-4명이 **비슷한 양**을 맡도록 P1 기능을 4묶음으로 나눴습니다. 그래야 병렬로 진행했을 때 비슷한 시기에 끝납니다. 영역은 쪼개지 않았습니다. 누가 어느 묶음을 맡을지는 [#14 영역별 담당자 정하기](https://github.com/eulji-staff-only/vibelog/issues/14)에서 정하고, 정해지면 그 묶음 이슈 전부의 **Assignees**에 담당자를 넣습니다. 그러면 위의 **내 이슈** 링크에 자동으로 나타납니다.
+4명이 **비슷한 양**을 맡도록 P1 기능을 4묶음으로 나눴습니다. 그래야 병렬로 진행했을 때 비슷한 시기에 끝납니다. 영역은 쪼개지 않았습니다. 묶음 담당은 [#14 영역별 담당자 정하기](https://github.com/eulji-staff-only/vibelog/issues/14)에서 정했고, 그 묶음 이슈 전부의 **Assignees**에 담당자를 넣었습니다. 그러면 위의 **내 이슈** 링크에 자동으로 나타납니다.
 
 | 묶음 | 담당 | 영역 | 지금 있는 이슈 | P1 기능 수 | 작업량 점수 |
 |---|---|---|---|---|---|
-| **A** | | auth (회원) + community (게시판) | #22 · #28 · #12 | 8 + 4 | 23 |
-| **B** | | course (진단·트랙·코스) + quiz (퀴즈) | #23 · #25 | 10 + 4 | 22 |
-| **C** | | lesson (수강·수업) + admin (백오피스) | #24 · #29 · #13 | 8 + 2 | 23 |
-| **D** | | exam (모의고사·리포트) + portfolio (포트폴리오) | #26 · #27 | 5 + 9 | 22 |
+| **A** | `SeungBinYang` | auth (회원) + community (게시판) | #22 · #28 · #12 | 8 + 4 | 23 |
+| **B** | `skinopero` | course (진단·트랙·코스) + quiz (퀴즈) | #23 · #25 | 10 + 4 | 22 |
+| **C** | `dyryoo316` | lesson (수강·수업) + admin (백오피스) | #24 · #29 · #13 | 8 + 2 | 23 |
+| **D** | `Choyeonik` | exam (모의고사·리포트) + portfolio (포트폴리오) | #26 · #27 | 5 + 9 | 22 |
 | 공통 | `SeungBinYang` (형상관리) · `Choyeonik`, `skinopero` (DB) · `dyryoo316` (PM) | 설정 · 빌드 · `sql/` · 일정 | #10 (DB) · #15 · #21 (형상관리) · #14 (PM) | - | - |
 
 > **작업량 점수:** P1 기능마다 단순(목록·상세·간단한 등록) 1점, 보통(검증·상태 변경이 있는 등록·수정) 2점, 복잡(채점·잠금·진행률 계산, 외부 연동) 3점을 매겨 더했습니다. 기능별 점수는 [#14 코멘트](https://github.com/eulji-staff-only/vibelog/issues/14)에 있습니다. 구현하다가 한 묶음이 크게 밀리면 #14에서 다시 나눕니다.
@@ -203,7 +203,7 @@ src/main/java/com/vibelog/
 ├── VibelogApplication.java
 ├── domain/
 │   └── quiz/                         ← 영역 하나 = 패키지 하나
-│       ├── controller/               ← 요청을 받고 화면 이름을 돌려준다
+│       ├── controller/               ← 요청을 받고 화면 이름을 돌려준다. 클래스 이름은 영역 이름으로 시작 (QuizController)
 │       ├── exception/QuizErrorCode   ← 이 영역의 에러 목록 (ErrorCode 구현 enum)
 │       └── model/
 │           ├── dao/                  ← Repository (JpaRepository 상속)
@@ -213,12 +213,20 @@ src/main/java/com/vibelog/
 │           └── service/              ← 트랜잭션과 흐름 조립
 └── global/
     ├── config/                       ← 공통 설정
+    ├── controller/MainController     ← 메인 화면 `/` (어느 영역에도 속하지 않는 화면)
+    ├── entity/                       ← BaseTimeEntity (created_at · updated_at)
     └── exception/                    ← BusinessException · ErrorCode · GlobalExceptionHandler
 
 src/main/resources/
 ├── application.yaml
-├── templates/<영역>/*.html            ← 화면도 영역별 폴더 (예: templates/quiz/result.html)
-└── static/css · js · images
+├── templates/
+│   ├── <영역>/*.html                 ← 화면도 영역별 폴더 (예: templates/quiz/result.html)
+│   ├── common/                       ← 공통 레이아웃·UI 조각 (th:fragment)
+│   └── error/error.html              ← 오류 화면 한 장 (status 로 404·403·500 을 나눠 그림)
+└── static/
+    ├── css/                          ← 공통 CSS + <영역>.css (템플릿 안에 <style> 쓰지 않음)
+    ├── js/
+    └── images/
 sql/                                  ← DB 스크립트 (00-create-database.sql, 확정 후 01-schema.sql …)
 ```
 
@@ -263,7 +271,9 @@ public class Quiz extends BaseTimeEntity { ... }
 |---|---|
 | `sql/` | DB 담당 (`Choyeonik`, `skinopero`) |
 | `build.gradle`, `application.yaml`, `.github/`, `global/`, `CLAUDE.md` | 형상관리 (`SeungBinYang`) |
-| `docs/planning/` (요구사항 · 정책 · API 명세) | PM (`dyryoo316`) |
+| `docs/planning/` (요구사항 · 정책) | PM (`dyryoo316`) |
+| `docs/design/` (화면 흐름 · API 명세) | PM (`dyryoo316`) |
+| `docs/design/` (DB 설계서 · 테이블 정의서) | DB 담당 (`Choyeonik`, `skinopero`) |
 
 > 비공개 무료 저장소에서는 `CODEOWNERS` 자동 지정이 동작하지 않아서, PR 작성자가 직접 지정합니다.
 
