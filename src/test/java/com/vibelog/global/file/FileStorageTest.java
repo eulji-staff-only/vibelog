@@ -82,7 +82,7 @@ class FileStorageTest {
     }
 
     @Test
-    void 설정_파일은_md_json_yaml_txt만_받고_실행_파일은_거부한다() {
+    void 설정_파일은_UTF8_글자로_된_md_json_yaml_txt만_받는다() {
         byte[] text = "# 평가 에이전트".getBytes();
 
         assertThat(storage().saveDocument(file("agent.md", text))).endsWith(".md");
@@ -90,6 +90,7 @@ class FileStorageTest {
         assertInvalid(() -> storage().saveDocument(file("run.sh", text)));
         assertInvalid(() -> storage().saveDocument(file("app.exe", EXE)));
         assertInvalid(() -> storage().saveDocument(file("app.txt", EXE)));
+        assertInvalid(() -> storage().saveDocument(file("broken.txt", new byte[]{'a', (byte) 0xC3, (byte) 0x28})));   // 깨진 UTF-8
     }
 
     @Test

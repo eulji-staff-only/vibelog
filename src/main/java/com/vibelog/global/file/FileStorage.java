@@ -11,6 +11,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -64,8 +67,7 @@ public class FileStorage implements WebMvcConfigurer {
     public String saveDocument(MultipartFile file) {
         byte[] bytes = readWithinLimit(file);
         String extension = extensionOf(file);
-        // 글자 파일에는 0 바이트가 없다. 실행 파일 이름만 .txt 로 바꾼 것도 막는다
-        if (!DOCUMENT_EXTENSIONS.contains(extension) || containsZeroByte(bytes)) {
+        if (!DOCUMENT_EXTENSIONS.contains(extension) || !isUtf8Text(bytes)) {
             throw new BusinessException(CommonErrorCode.INVALID_FILE);
         }
         return store(bytes, extension);
@@ -114,12 +116,16 @@ public class FileStorage implements WebMvcConfigurer {
         return true;
     }
 
-    private static boolean containsZeroByte(byte[] bytes) {
-        for (byte b : bytes) {
-            if (b == 0) {
-                return true;
-            }
+    /*
+     * 설정 파일은 UTF-8 글자 파일만 받는다 (md·json·yaml·txt 는 보통 UTF-8, JSON 은 표준이 UTF-8).
+     * 깨진 바이트나 0 바이트가 있으면 글자 파일이 아니다. 실행 파일 이름만 .txt 로 바꾼 것도 여기서 막는다
+     */
+    private static boolean isUtf8Text(byte[] bytes) {
+        try {
+            // newDecoder() 는 잘못된 바이트를 만나면 예외를 던진다 (CodingErrorAction.REPORT)
+            return StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).chars().noneMatch(c -> c == 0);
+        } catch (CharacterCodingException e) {
+            return false;
         }
-        return false;
     }
 }
