@@ -332,12 +332,12 @@ public class Quiz extends BaseTimeEntity { ... }
 <section class="vl-ui-panel"> ... </section>
 
 <!-- 탭: data-ui-tabs 로 버튼들을 묶어야 ui.js 가 찾는다. 선택 안 된 패널은 hidden 으로 시작한다 -->
-<div role="tablist" data-ui-tabs>
+<div class="vl-ui-tabs" role="tablist" data-ui-tabs>
     <button th:replace="~{common/ui :: tabButton('panel-a', '수강 중', true)}"></button>
     <button th:replace="~{common/ui :: tabButton('panel-b', '완료', false)}"></button>
 </div>
-<div id="panel-a" class="vl-ui-tabpanel" role="tabpanel"> ... </div>
-<div id="panel-b" class="vl-ui-tabpanel" role="tabpanel" hidden> ... </div>
+<div id="panel-a" class="vl-ui-tabpanel" role="tabpanel" aria-labelledby="panel-a-tab"> ... </div>
+<div id="panel-b" class="vl-ui-tabpanel" role="tabpanel" aria-labelledby="panel-b-tab" hidden> ... </div>
 
 <!-- 확인 모달: 여는 버튼 + 모달 fragment. id 를 맞춘다 -->
 <button type="button" class="vl-ui-btn is-outline" data-ui-modal-open="delete-confirm">삭제</button>
