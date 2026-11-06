@@ -368,6 +368,7 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 ├── .github/
 │   ├── workflows/build.yml           ← PR마다 자동 빌드·테스트 (GitHub Actions)
 │   ├── workflows/area-review.yml     ← 다른 영역 파일을 바꾼 PR은 그 영역 담당 승인 필요
+│   ├── workflows/area-review-rerun.yml ← 승인이 들어오면 위 검사를 다시 돌림
 │   ├── scripts/area-review.sh        ← 위 검사 스크립트 (영역 ↔ 담당 표)
 │   ├── CODEOWNERS                    ← 기본 리뷰어 자동 지정 (PM · 형상관리)
 │   ├── pull_request_template.md      ← PR을 만들면 자동으로 채워지는 양식
