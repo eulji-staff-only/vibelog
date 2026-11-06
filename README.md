@@ -203,7 +203,7 @@ src/main/java/com/vibelog/
 ├── VibelogApplication.java
 ├── domain/
 │   └── quiz/                         ← 영역 하나 = 패키지 하나
-│       ├── controller/               ← 요청을 받고 화면 이름을 돌려준다
+│       ├── controller/               ← 요청을 받고 화면 이름을 돌려준다. 클래스 이름은 영역 이름으로 시작 (QuizController)
 │       ├── exception/QuizErrorCode   ← 이 영역의 에러 목록 (ErrorCode 구현 enum)
 │       └── model/
 │           ├── dao/                  ← Repository (JpaRepository 상속)
@@ -213,12 +213,20 @@ src/main/java/com/vibelog/
 │           └── service/              ← 트랜잭션과 흐름 조립
 └── global/
     ├── config/                       ← 공통 설정
+    ├── controller/MainController     ← 메인 화면 `/` (어느 영역에도 속하지 않는 화면)
+    ├── entity/                       ← BaseTimeEntity (created_at · updated_at)
     └── exception/                    ← BusinessException · ErrorCode · GlobalExceptionHandler
 
 src/main/resources/
 ├── application.yaml
-├── templates/<영역>/*.html            ← 화면도 영역별 폴더 (예: templates/quiz/result.html)
-└── static/css · js · images
+├── templates/
+│   ├── <영역>/*.html                 ← 화면도 영역별 폴더 (예: templates/quiz/result.html)
+│   ├── common/                       ← 공통 레이아웃·UI 조각 (th:fragment)
+│   └── error/error.html              ← 오류 화면 한 장 (status 로 404·403·500 을 나눠 그림)
+└── static/
+    ├── css/                          ← 공통 CSS + <영역>.css (템플릿 안에 <style> 쓰지 않음)
+    ├── js/
+    └── images/
 sql/                                  ← DB 스크립트 (00-create-database.sql, 확정 후 01-schema.sql …)
 ```
 
