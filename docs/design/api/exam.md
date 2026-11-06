@@ -16,3 +16,11 @@
 
 - 제한 시간 없음(PL-EXM-005), 통과 점수 없음(PL-EXM-001). 다시 응시는 API-EXM-01을 다시 부른다.
 - API-EXM-05는 GET이지만 기록을 남긴다. 명세가 "리포트 화면을 열면 확인 처리"로 정했다(PQ22). 같은 응시를 다시 열면 기록하지 않는다.
+
+## 영역 간 계약 (exam 영역이 받는 것)
+
+[08. 작업 순서](../../collaboration/08-task-flow.md)의 계약 표 번호입니다. 인터페이스는 `domain/exam/model/policy/`에 두고 exam 영역이 구현합니다. DTO는 인터페이스와 같은 패키지의 `record`입니다. 없는 ID가 오면 exam 영역이 자기 ErrorCode로 예외를 던집니다.
+
+| # | 인터페이스 (부르는 쪽) | 메서드 | 하는 일 |
+| --- | --- | --- | --- |
+| ④ | `LessonExamStatusChecker` (lesson) | `Map<Long, Integer> getLatestSubmittedAttemptNos(Long memberId, Collection<Long> lessonIds)` | 수업별로 마지막에 제출한 응시의 `attempt_no`. 제출한 응시가 없는 수업은 빠진다 (API-ENR-02 "응시함", API-ENR-03 리포트 링크) |

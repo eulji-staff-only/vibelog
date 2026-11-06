@@ -20,3 +20,22 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | API-LSN-01 | 수업 화면 | GET | `/courses/{courseId}/lessons/{lessonId}` | 조건(수업 열림) | path `courseId`, `lessonId`, query `activity`(선택, 없으면 진행 중 활동) | U-13 + 활동 목록(개념·퀴즈·모의고사, 각 완료·진행 중·잠김), 선택한 활동: 개념이면 제목·본문·본문 형식·개념 태그·도구 노트 링크 / 퀴즈면 안내와 최고 점수 / 모의고사면 안내. 잠긴 활동을 고르면 잠김 안내와 앞 활동 링크 | `LESSON_LOCKED` → `/my/learning` + toast "이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다", 수강 안 함 → `/courses/{courseId}` | FR-LSN-001, 002, 009 |
 | API-LSN-02 | 개념 읽기 완료 | POST | `/courses/{courseId}/lessons/{lessonId}/activities/{activityId}/complete` | 조건(활동 열림) | path 3개 | 개념 완료 일시 기록(처음 한 번), 바로 뒤 퀴즈 열림 → `/courses/{courseId}/lessons/{lessonId}/quizzes/{뒤 퀴즈 activityId}` | `ACTIVITY_LOCKED` | FR-LSN-002 |
+
+## 영역 간 계약 (lesson 영역이 받는 것)
+
+[08. 작업 순서](../../collaboration/08-task-flow.md)의 계약 표 번호입니다. 인터페이스는 `domain/lesson/model/policy/`에 두고 lesson 영역이 구현합니다. DTO는 인터페이스와 같은 패키지의 `record`입니다. 없는 ID가 오면 lesson 영역이 자기 ErrorCode로 예외를 던집니다.
+
+| # | 인터페이스 (부르는 쪽) | 메서드 | 하는 일 |
+| --- | --- | --- | --- |
+| ① | `QuizActivityProgress` (quiz) | `QuizActivityInfo getQuizActivity(Long memberId, Long activityId)` | `QuizActivityInfo(Long courseId, Long lessonId, boolean unlocked, int passRate)`. `unlocked` = 수강 중이고 그 활동의 `activity_progress.unlocked_at`이 있음, `passRate` = `activity.pass_rate` (API-LSN-03~06) |
+| ① | 〃 | `NextStep recordQuizPassed(Long memberId, Long activityId)` | 퀴즈 활동 `completed_at`(처음 한 번), 다음 개념 `unlocked_at` 기록. `NextStep(String type, Long courseId, Long lessonId, Long activityId)`, `type` = `CONCEPT`·`EXAM`·`NONE` (API-LSN-06 `next`). `EXAM`·`NONE`이면 `activityId`는 `null` |
+| ② | `ExamLessonProgress` (exam) | `boolean isExamOpen(Long memberId, Long lessonId)` | 그 수업 마지막 퀴즈 활동의 `completed_at`이 있음 (FR-EXM-001) |
+| ③ | 〃 | `ReportNextStep recordReportViewed(Long memberId, Long lessonId)` | `lesson_progress.completed_at`, 다음 수업 `unlocked_at`, 마지막 수업이면 `enrollment.portfolio_unlocked_at` 기록. 이미 기록돼 있으면 기록하지 않고 다음 행동만 돌려준다. `ReportNextStep(String type, Long courseId, Long nextLessonId)`, `type` = `NEXT_LESSON`·`PORTFOLIO` (API-EXM-05) |
+| ⑥ | `PortfolioEnrollmentProgress` (portfolio) | `PortfolioAccess getAccess(Long memberId, Long courseId)` | `PortfolioAccess(boolean enrolled, boolean unlocked)`. `unlocked` = `enrollment.portfolio_unlocked_at`이 있음 (API-PRT-01~04) |
+| ⑦ | 〃 | `void recordSubmitted(Long memberId, Long courseId)` | 모든 공개 수업의 `lesson_progress.completed_at`이 있으면 `enrollment.completed_at` 기록 (처음 한 번, FR-ENR-004) |
+| ⑦ | 〃 | `void recordDeleted(Long memberId, Long courseId)` | `enrollment.completed_at` 비움 (API-PRT-07, PL-ENR-003) |
+| ⑨ | `CourseLessonInfo` (course) | `boolean hasPublicLesson(Long courseId)` | 공개 수업이 하나 이상 있음 (FR-CRS-006) |
+| ⑪ | 〃 | `String getEnrollmentStatus(Long memberId, Long courseId)` | `NONE`·`ENROLLED`·`COMPLETED` (`enrollment`·`completed_at`으로 계산, API-CRS-03) |
+| ⑪ | 〃 | `List<LessonSummary> getPublicLessons(Long courseId)` | `LessonSummary(Long lessonId, String title, String goal, int conceptCount, int quizCount, int estimatedMinutes)`, `sort_order` 순 (API-CRS-03). 공개 수업은 모두 모의고사가 있다 (API-ADM-33) |
+| ⑪ | 〃 | `Map<Long, Integer> countPublicLessons(Collection<Long> courseIds)` | 코스 카드의 수업 수 (API-CRS-01·02) |
+| ⑫ | `LoginEnrollmentChecker` (auth) | `boolean hasActiveEnrollment(Long memberId)` | `completed_at`·`dropped_at`이 모두 비어 있는 수강이 있음 (API-USR-05·07) |
