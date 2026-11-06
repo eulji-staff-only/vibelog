@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>내 학습 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/my-learning.css}" href="/css/my-learning.css">
+    <script th:src="@{/js/my-learning.js}" src="/js/my-learning.js" defer></script>
+</head>
+<body>
+<!-- U-12 내 학습. 화면 선행 작업(#47): 문구·진행률·수업 상태는 샘플이고, 코스·수업·모의고사·포트폴리오 상태와
+     진행률 계산(PL-ENR-006)은 ③ 단계(API 명세)에서 붙인다. 탭 전환은 서버를 부르지 않는 자바스크립트로만 한다
+     (설계서 U-12 "전환"). 수업(U-13)·모의고사(U-15)·리포트(U-16)·포트폴리오(U-17) 주소에는 courseId·lessonId 가
+     필요해 ③ 단계에서 연결하고, 지금은 href="#" 로 자리만 둔다.
+     공통 헤더·푸터(#13)와 배지·안내 상자 조각(#46)이 머지되면 그것으로 바꾼다. -->
+<div class="ml-page">
+
+    <section class="ml-band">
+        <span class="ml-eyebrow">내 학습</span>
+        <h1 class="ml-title">내 학습</h1>
+        <p class="ml-lead">수강 중인 코스의 진행 상황을 확인하고 이어서 학습하세요.</p>
+    </section>
+
+    <main class="ml-main">
+        <div class="ml-panel">
+
+            <!-- 탭 (수강 중 / 완료). URL 의 tab 쿼리를 읽어 처음 보여줄 탭을 고른다 -->
+            <div class="ml-tabs" role="tablist" aria-label="내 학습 탭" data-tab-nav>
+                <button type="button" class="ml-tab" role="tab" aria-selected="false" data-tab-btn data-tab="enrolled">수강 중</button>
+                <button type="button" class="ml-tab" role="tab" aria-selected="false" data-tab-btn data-tab="completed">완료</button>
+            </div>
+
+            <!-- 수강 중 탭 -->
+            <section class="ml-tabpanel" role="tabpanel" aria-label="수강 중" data-tab-panel="enrolled" hidden>
+                <ul class="ml-course-list">
+
+                    <!-- 코스 1: 진행 중(수업 3이 잠김) -->
+                    <li>
+                        <article class="ml-course">
+                            <header class="ml-course-head">
+                                <div class="ml-course-info">
+                                    <span class="ml-course-track">[웹 개발 트랙]</span>
+                                    <h2 class="ml-course-name">[코스] 자바로 배우는 바이브코딩 기초</h2>
+                                </div>
+                                <a class="ml-btn ml-btn-navy" href="#">학습하기</a>
+                            </header>
+
+                            <div class="ml-progress">
+                                <div class="ml-progress-top">
+                                    <span class="ml-progress-label">진행률</span>
+                                    <span class="ml-progress-value">60%</span>
+                                </div>
+                                <div class="ml-bar" role="img" aria-label="진행률 60%"><div class="ml-bar-fill" style="width: 60%"></div></div>
+                                <p class="ml-progress-next">다음에 할 일: <strong>[수업 2] 조건문으로 분기 만들기</strong> 리포트 확인하기</p>
+                            </div>
+
+                            <details class="ml-accordion" open>
+                                <summary class="ml-accordion-summary">수업 목록 <span class="ml-course-count">3개 수업</span></summary>
+
+                                <ul class="ml-lesson-list">
+                                    <li class="ml-lesson">
+                                        <div class="ml-lesson-info">
+                                            <span class="ml-lesson-no">1</span>
+                                            <span class="ml-lesson-name">[수업 1] 변수와 자료형</span>
+                                        </div>
+                                        <div class="ml-lesson-status">
+                                            <span class="ml-badge ml-badge-success">완료</span>
+                                            <span class="ml-badge ml-badge-success">리포트 확인</span>
+                                        </div>
+                                        <a class="ml-link" href="#">다시 보기</a>
+                                    </li>
+                                    <li class="ml-lesson">
+                                        <div class="ml-lesson-info">
+                                            <span class="ml-lesson-no">2</span>
+                                            <span class="ml-lesson-name">[수업 2] 조건문으로 분기 만들기</span>
+                                        </div>
+                                        <div class="ml-lesson-status">
+                                            <span class="ml-badge ml-badge-strong">진행 중</span>
+                                            <span class="ml-badge ml-badge-strong">모의고사 응시함</span>
+                                        </div>
+                                        <a class="ml-link" href="#">리포트 확인하기</a>
+                                    </li>
+                                    <li class="ml-lesson is-locked">
+                                        <div class="ml-lesson-info">
+                                            <span class="ml-lesson-no" aria-hidden="true">🔒</span>
+                                            <span class="ml-lesson-name">[수업 3] 반복문으로 코드 줄이기</span>
+                                        </div>
+                                        <div class="ml-lesson-status">
+                                            <span class="ml-badge ml-badge-locked">잠김</span>
+                                        </div>
+                                    </li>
+                                    <!-- 잠긴 수업 안내 (설계서 U-12 예외) -->
+                                    <li class="ml-lesson-notice">
+                                        <div class="ml-notice">
+                                            <strong>이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다.</strong>
+                                            <a class="ml-link" href="#">이전 수업으로</a>
+                                        </div>
+                                    </li>
+                                </ul>
+
+                                <div class="ml-portfolio-row">
+                                    <span class="ml-portfolio-label">포트폴리오</span>
+                                    <span class="ml-badge ml-badge-locked">잠김</span>
+                                    <p class="ml-muted">마지막 수업의 오답 분석 리포트를 확인하면 열립니다.</p>
+                                </div>
+
+                                <div class="ml-remaining">
+                                    <strong class="ml-remaining-title">남은 완료 조건</strong>
+                                    <ul class="ml-remaining-list">
+                                        <li>[수업 3] 모의고사 응시</li>
+                                        <li>[수업 3] 오답 분석 리포트 확인</li>
+                                        <li>포트폴리오 제출</li>
+                                    </ul>
+                                </div>
+                            </details>
+                        </article>
+                    </li>
+
+                    <!-- 코스 2: 시작한 지 얼마 안 됨 -->
+                    <li>
+                        <article class="ml-course">
+                            <header class="ml-course-head">
+                                <div class="ml-course-info">
+                                    <span class="ml-course-track">[데이터 분석 트랙]</span>
+                                    <h2 class="ml-course-name">[코스] 파이썬으로 시작하는 데이터 분석</h2>
+                                </div>
+                                <a class="ml-btn ml-btn-navy" href="#">학습하기</a>
+                            </header>
+
+                            <div class="ml-progress">
+                                <div class="ml-progress-top">
+                                    <span class="ml-progress-label">진행률</span>
+                                    <span class="ml-progress-value">0%</span>
+                                </div>
+                                <div class="ml-bar" role="img" aria-label="진행률 0%"><div class="ml-bar-fill" style="width: 0%"></div></div>
+                                <p class="ml-progress-next">다음에 할 일: <strong>[수업 1] 파이썬 시작하기</strong> 학습하기</p>
+                            </div>
+
+                            <details class="ml-accordion">
+                                <summary class="ml-accordion-summary">수업 목록 <span class="ml-course-count">2개 수업</span></summary>
+                                <ul class="ml-lesson-list">
+                                    <li class="ml-lesson">
+                                        <div class="ml-lesson-info">
+                                            <span class="ml-lesson-no">1</span>
+                                            <span class="ml-lesson-name">[수업 1] 파이썬 시작하기</span>
+                                        </div>
+                                        <div class="ml-lesson-status">
+                                            <span class="ml-badge ml-badge-strong">진행 중</span>
+                                        </div>
+                                        <a class="ml-link" href="#">학습하기</a>
+                                    </li>
+                                    <li class="ml-lesson is-locked">
+                                        <div class="ml-lesson-info">
+                                            <span class="ml-lesson-no" aria-hidden="true">🔒</span>
+                                            <span class="ml-lesson-name">[수업 2] 데이터 다루기</span>
+                                        </div>
+                                        <div class="ml-lesson-status">
+                                            <span class="ml-badge ml-badge-locked">잠김</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                                <div class="ml-portfolio-row">
+                                    <span class="ml-portfolio-label">포트폴리오</span>
+                                    <span class="ml-badge ml-badge-locked">잠김</span>
+                                    <p class="ml-muted">마지막 수업의 오답 분석 리포트를 확인하면 열립니다.</p>
+                                </div>
+                            </details>
+                        </article>
+                    </li>
+                </ul>
+
+                <!-- 빈 상태 참고용 (실제로는 수강 중 코스가 없을 때만 보여준다, ③ 단계) -->
+                <div class="ml-empty" data-ml-empty hidden>
+                    <div class="ml-notice ml-notice-empty">
+                        <strong>아직 수강 중인 코스가 없습니다.</strong>
+                        <p>트랙을 고르고 코스를 시작하면 여기에서 진행 상황을 볼 수 있습니다.</p>
+                        <a class="ml-btn ml-btn-outline" href="/courses">코스 찾아보기</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 완료 탭 -->
+            <section class="ml-tabpanel" role="tabpanel" aria-label="완료" data-tab-panel="completed" hidden>
+                <ul class="ml-course-list">
+                    <li>
+                        <article class="ml-course">
+                            <header class="ml-course-head">
+                                <div class="ml-course-info">
+                                    <span class="ml-course-track">[웹 개발 트랙]</span>
+                                    <h2 class="ml-course-name">[코스] HTML·CSS 로 만드는 첫 웹페이지</h2>
+                                    <span class="ml-badge ml-badge-success">완료</span>
+                                </div>
+                            </header>
+                            <p class="ml-muted">완료일 2026.10.12</p>
+                            <div class="ml-course-actions">
+                                <a class="ml-btn ml-btn-outline" href="#">결과 보기</a>
+                                <a class="ml-btn ml-btn-outline" href="/my/portfolios">내 포트폴리오 보기</a>
+                            </div>
+                        </article>
+                    </li>
+                </ul>
+                <div class="ml-tabpanel-footer">
+                    <a class="ml-link" href="/courses">다른 코스 찾기</a>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+</body>
+</html>
