@@ -67,7 +67,8 @@ public class FileStorage implements WebMvcConfigurer {
     public String saveDocument(MultipartFile file) {
         byte[] bytes = readWithinLimit(file);
         String extension = extensionOf(file);
-        if (!DOCUMENT_EXTENSIONS.contains(extension) || !isUtf8Text(bytes)) {
+        // #! 로 시작하면 실행 스크립트다 (PL-PRT-010 .sh 금지). 이름만 .txt 로 바꾼 것도 막는다
+        if (!DOCUMENT_EXTENSIONS.contains(extension) || !isUtf8Text(bytes) || startsWith(bytes, 0, '#', '!')) {
             throw new BusinessException(CommonErrorCode.INVALID_FILE);
         }
         return store(bytes, extension);

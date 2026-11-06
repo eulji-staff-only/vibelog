@@ -91,6 +91,7 @@ class FileStorageTest {
         assertInvalid(() -> storage().saveDocument(file("app.exe", EXE)));
         assertInvalid(() -> storage().saveDocument(file("app.txt", EXE)));
         assertInvalid(() -> storage().saveDocument(file("broken.txt", new byte[]{'a', (byte) 0xC3, (byte) 0x28})));   // 깨진 UTF-8
+        assertInvalid(() -> storage().saveDocument(file("run.txt", "#!/bin/sh\nrm -rf /\n".getBytes())));            // 이름만 바꾼 셸 스크립트
     }
 
     @Test
