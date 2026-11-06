@@ -328,9 +328,16 @@ public class Quiz extends BaseTimeEntity { ... }
 <!-- 진행 막대 -->
 <div th:replace="~{common/ui :: progress('문항', 3, 10)}"></div>
 
-<!-- 패널(흰 박스)·탭 패널은 fragment 가 아니라 클래스로 직접 쓴다 (내용이 화면마다 다르기 때문) -->
+<!-- 패널(흰 박스)은 fragment 가 아니라 클래스로 직접 쓴다 (내용이 화면마다 다르기 때문) -->
 <section class="vl-ui-panel"> ... </section>
+
+<!-- 탭: data-ui-tabs 로 버튼들을 묶어야 ui.js 가 찾는다. 선택 안 된 패널은 hidden 으로 시작한다 -->
+<div role="tablist" data-ui-tabs>
+    <button th:replace="~{common/ui :: tabButton('panel-a', '수강 중', true)}"></button>
+    <button th:replace="~{common/ui :: tabButton('panel-b', '완료', false)}"></button>
+</div>
 <div id="panel-a" class="vl-ui-tabpanel" role="tabpanel"> ... </div>
+<div id="panel-b" class="vl-ui-tabpanel" role="tabpanel" hidden> ... </div>
 
 <!-- 확인 모달: 여는 버튼 + 모달 fragment. id 를 맞춘다 -->
 <button type="button" class="vl-ui-btn is-outline" data-ui-modal-open="delete-confirm">삭제</button>
@@ -343,7 +350,7 @@ public class Quiz extends BaseTimeEntity { ... }
 ```
 
 - 비활성 버튼 + 이유 문구(설계서 5-2)는 버튼에 `aria-disabled="true"`를 얹고 바로 아래 `common/ui :: btnReason(text)`를 붙입니다.
-- 탭 버튼은 `common/ui :: tabButton(targetId, label, active)`을 `th:each`로 반복해서 만들고, 전환은 `static/js/ui.js`가 `role="tab"`·`aria-controls`를 보고 처리합니다.
+- 탭 버튼은 `common/ui :: tabButton(targetId, label, active)`을 `th:each`로 반복해서 만들되, 반드시 `data-ui-tabs`를 가진 묶음 요소 안에 넣습니다. `static/js/ui.js`가 그 안의 `role="tab"`·`aria-controls`를 보고 전환을 처리하므로, 묶음 요소가 없으면 눌러도 아무 일도 안 일어납니다. 선택 안 된 패널은 `hidden`으로 시작합니다.
 - 오류 화면(404·403·500)은 `templates/error/error.html`의 `errorBody(status, message)` fragment를 그대로 쓰므로 새로 만들 필요가 없습니다.
 
 **리뷰어 지정 약속**

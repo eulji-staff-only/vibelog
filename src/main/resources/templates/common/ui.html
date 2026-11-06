@@ -62,7 +62,7 @@
 
 <!-- 진행 막대 (ProgressBar) — current/total 로 값과 퍼센트를 같이 그린다 -->
 <div th:fragment="progress(label, current, total)" class="vl-ui-progress"
-     role="progressbar" th:attr="aria-valuenow=${current},aria-valuemin=0,aria-valuemax=${total}">
+     role="progressbar" th:attr="aria-valuenow=${current},aria-valuemin=0,aria-valuemax=${total},aria-label=${label}">
     <div class="vl-ui-progress__top">
         <span class="vl-ui-progress__label" th:text="${label}">진행</span>
         <span class="vl-ui-progress__value" th:text="${current + ' / ' + total}">0 / 0</span>

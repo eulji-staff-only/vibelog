@@ -9,6 +9,8 @@
  *   duration(ms), actionLabel, onAction }. variant 'danger' 는 "다시 시도" 버튼과 함께 닫을 때까지
  *   유지하고(5-3), 그 밖에는 기본 3초 뒤 사라진다.
  * - data-ui-back / data-ui-reload: 오류 화면(E-01~E-03)의 "이전 페이지로" · "다시 시도" 버튼.
+ * - aria-disabled="true" 버튼은 마우스·키보드 클릭을 모두 막는다 (common.css 의 pointer-events:none
+ *   은 마우스만 막아서, 키보드 Enter/Space 로 눌리는 것까지 여기서 막는다).
  */
 (function () {
     'use strict';
@@ -123,12 +125,28 @@
 
     window.VLToast = { show: showToast };
 
+    /* ---- 비활성 버튼(aria-disabled) ---- */
+    function initDisabledGuard() {
+        // pointer-events:none(common.css)은 마우스 클릭만 막는다. 키보드(Tab + Enter/Space)로는
+        // 그대로 클릭 이벤트가 발생하므로, 캡처 단계에서 먼저 막아 폼 제출·링크 이동을 모두 차단한다.
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('[aria-disabled="true"]')) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+            }
+        }, true);
+    }
+
     /* ---- 오류 화면: 이전 페이지로 · 다시 시도 ---- */
     function initPageActions() {
         document.addEventListener('click', (e) => {
             if (e.target.closest('[data-ui-back]')) {
                 e.preventDefault();
-                history.back();
+                if (history.length > 1) {
+                    history.back();
+                } else {
+                    location.href = '/';
+                }
             }
             if (e.target.closest('[data-ui-reload]')) {
                 e.preventDefault();
@@ -140,6 +158,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         initModals();
         initTabs();
+        initDisabledGuard();
         initPageActions();
     });
 })();
