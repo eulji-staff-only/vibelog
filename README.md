@@ -214,8 +214,10 @@ src/main/java/com/vibelog/
 └── global/
     ├── config/                       ← 공통 설정
     ├── controller/MainController     ← 메인 화면 `/` (어느 영역에도 속하지 않는 화면)
-    ├── entity/                       ← BaseTimeEntity (created_at · updated_at)
-    └── exception/                    ← BusinessException · ErrorCode · GlobalExceptionHandler
+    ├── dao/                          ← 공통 Repository (BannedWordRepository)
+    ├── entity/                       ← BaseTimeEntity (created_at · updated_at), BannedWord
+    ├── exception/                    ← BusinessException · ErrorCode · CommonErrorCode(공통 에러) · GlobalExceptionHandler
+    └── policy/BannedWordPolicy       ← 금칙어 검사 (모든 영역 공통)
 
 src/main/resources/
 ├── application.yaml
@@ -245,6 +247,23 @@ public enum QuizErrorCode implements ErrorCode {
     private final String message;
 }
 ```
+
+- 여러 영역이 같이 쓰는 공통 에러(API 명세 `_template.md` 7-2, 예: `BANNED_WORD`)는 `global/exception/CommonErrorCode`에 있습니다.
+
+**금칙어 검사** (#80)
+
+- 닉네임·게시글·댓글·포트폴리오처럼 사용자가 쓴 글은 저장하기 전에 `BannedWordPolicy`로 검사합니다 (PL-SEC-003). 금칙어가 들어 있으면 `BusinessException(BANNED_WORD)`이 납니다.
+- 검사할 칸을 한 번에 넘깁니다. 비어 있는(`null`) 칸은 건너뛰고, 대소문자는 구분하지 않습니다.
+
+```java
+@Transactional
+public Long write(Long memberId, PostWriteRequest request) {
+    bannedWordPolicy.check(request.title(), request.body());   // 걸리면 여기서 멈춘다
+    ...
+}
+```
+
+- 금칙어 목록은 `banned_word` 테이블입니다. 로컬에서 확인할 때는 `INSERT INTO banned_word (word) VALUES ('테스트금칙어');`로 넣어 봅니다.
 
 **로그인 약속** (#12)
 
