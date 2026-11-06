@@ -1,0 +1,40 @@
+<!--
+  common/layout.html
+  모든 화면이 함께 쓰는 헤더 · 푸터 fragment.
+  사용법: th:replace="~{common/layout :: header}" / "~{common/layout :: footer}"
+  주의: 지금은 비회원 메뉴만 둔다. 로그인 상태별 메뉴(1-5 회원·운영자 메뉴)는
+        로그인·권한 이슈(#12)가 머지된 뒤 Controller에서 로그인 회원을 꺼내 추가한다.
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"></head>
+<body>
+
+<header th:fragment="header" class="vl-header">
+    <div class="vl-content vl-header__inner">
+        <a class="vl-header__logo" href="/">바이브로그</a>
+        <nav class="vl-header__nav">
+            <a href="/courses">코스</a>
+            <a href="/community">커뮤니티</a>
+            <a href="/notices">공지사항</a>
+            <a href="/contests/current">콘테스트</a>
+        </nav>
+        <form class="vl-header__search" action="/courses" method="get">
+            <input type="search" name="q" placeholder="코스 검색" aria-label="코스 검색">
+        </form>
+        <div class="vl-header__auth">
+            <a class="is-text" href="/login">로그인</a>
+            <a class="is-primary" href="/signup">회원가입</a>
+        </div>
+    </div>
+</header>
+
+<footer th:fragment="footer" class="vl-footer">
+    <div class="vl-footer__inner">
+        <p>바이브로그 — 바이브코딩 학습 플랫폼</p>
+        <p>문의 <a href="mailto:support@vibelog.example">support@vibelog.example</a></p>
+    </div>
+</footer>
+
+</body>
+</html>
