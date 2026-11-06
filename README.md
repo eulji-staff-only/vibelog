@@ -308,8 +308,43 @@ public class Quiz extends BaseTimeEntity { ... }
 
 - 디자인 토큰(색상·글꼴·간격)은 `common.css`의 CSS 변수(`--navy-900`, `--space-5` 등)를 그대로 씁니다.
 - 화면 안쪽 너비를 본문 최대 폭(1200px)으로 맞추려면 `vl-content` 클래스를 씁니다.
-- 버튼·배지·안내 상자 같은 공통 UI 조각은 #46에서 추가됩니다.
 - 로그인 상태별 메뉴(회원·운영자 헤더)는 #12 머지 후 Controller에서 로그인 회원을 꺼내 추가합니다.
+
+**공통 UI 조각 쓰는 법** (#46)
+
+버튼·배지·안내 상자·진행 막대·탭 버튼·확인 모달은 `templates/common/ui.html`에 fragment로 있고, 모달·토스트를 여닫는 동작은 `static/js/ui.js`가 합니다. 새 화면에서는 CSS(`common.css`)만 링크하면 바로 가져다 씁니다.
+
+```html
+<!-- 버튼 (variant: navy · glow · outline · text, size: 빈 문자열(기본) · s · xl) -->
+<a th:replace="~{common/ui :: btnLink('/courses', '코스 보기', 'navy', '')}"></a>
+<button th:replace="~{common/ui :: btnButton('다시 풀기', 'outline', 's')}"></button>
+
+<!-- 배지 (variant: strong · neutral · success · danger · locked) -->
+<span th:replace="~{common/ui :: badge('locked', '잠김')}"></span>
+
+<!-- 안내 상자 (variant: info · empty · success, title은 없으면 null) -->
+<div th:replace="~{common/ui :: notice('info', null, '진단 중 나가면 응답이 저장되지 않습니다.')}"></div>
+
+<!-- 진행 막대 -->
+<div th:replace="~{common/ui :: progress('문항', 3, 10)}"></div>
+
+<!-- 패널(흰 박스)·탭 패널은 fragment 가 아니라 클래스로 직접 쓴다 (내용이 화면마다 다르기 때문) -->
+<section class="vl-ui-panel"> ... </section>
+<div id="panel-a" class="vl-ui-tabpanel" role="tabpanel"> ... </div>
+
+<!-- 확인 모달: 여는 버튼 + 모달 fragment. id 를 맞춘다 -->
+<button type="button" class="vl-ui-btn is-outline" data-ui-modal-open="delete-confirm">삭제</button>
+<div th:replace="~{common/ui :: confirmModal('delete-confirm', '포트폴리오를 삭제할까요?', '코스 완료 조건이 다시 미충족됩니다.', '삭제', '취소')}"></div>
+
+<!-- 토스트: 화면에 한 번만 넣고, JS에서 VLToast.show(...) 로 띄운다 -->
+<div th:replace="~{common/ui :: toastContainer}"></div>
+<script th:src="@{/js/ui.js}"></script>
+<script>VLToast.show('저장되었습니다');</script>
+```
+
+- 비활성 버튼 + 이유 문구(설계서 5-2)는 버튼에 `aria-disabled="true"`를 얹고 바로 아래 `common/ui :: btnReason(text)`를 붙입니다.
+- 탭 버튼은 `common/ui :: tabButton(targetId, label, active)`을 `th:each`로 반복해서 만들고, 전환은 `static/js/ui.js`가 `role="tab"`·`aria-controls`를 보고 처리합니다.
+- 오류 화면(404·403·500)은 `templates/error/error.html`의 `errorBody(status, message)` fragment를 그대로 쓰므로 새로 만들 필요가 없습니다.
 
 **리뷰어 지정 약속**
 

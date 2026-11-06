@@ -1,0 +1,114 @@
+<!--
+  common/ui.html
+  모든 화면이 같이 쓰는 공통 UI 조각(th:fragment). 스타일은 static/css/common.css, 모달·토스트를
+  여닫는 동작은 static/js/ui.js 에 있다 (#46). 쓰는 법은 README "공통 UI 조각 쓰는 법" 참고.
+
+  - 버튼 · 배지 · 안내 상자 · 진행 막대 · 탭 버튼 · 확인 모달은 바로 가져다 쓰는 fragment 다.
+  - 패널("흰 패널" 박스)과 탭 패널 영역은 화면마다 내용이 달라 fragment 대신 CSS 클래스
+    (.vl-ui-panel, .vl-ui-tabpanel)로 제공한다. 그 안 내용은 이 fragment 를 쓰는 화면이 채운다.
+  - 여기 버튼·모달 안의 "확인"류 버튼은 아직 서버를 부르지 않는다 (화면 선행 작업, ③ 단계에서 연결).
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"></head>
+<body>
+
+<!--
+  버튼 (Button: navy · glow · outline · text, s(작게) · ''(기본) · xl(크게))
+  variant: navy | glow | outline | text
+  size: '' | s | xl
+-->
+<a th:fragment="btnLink(href, label, variant, size)"
+   th:href="${href}"
+   class="vl-ui-btn"
+   th:classappend="${'is-' + variant + (size != null and !#strings.isEmpty(size) ? ' is-' + size : '')}"
+   th:text="${label}">버튼</a>
+
+<button th:fragment="btnButton(label, variant, size)"
+        type="button"
+        class="vl-ui-btn"
+        th:classappend="${'is-' + variant + (size != null and !#strings.isEmpty(size) ? ' is-' + size : '')}"
+        th:text="${label}">버튼</button>
+
+<button th:fragment="btnSubmit(label, variant, size)"
+        type="submit"
+        class="vl-ui-btn"
+        th:classappend="${'is-' + variant + (size != null and !#strings.isEmpty(size) ? ' is-' + size : '')}"
+        th:text="${label}">버튼</button>
+
+<!--
+  비활성 버튼 + 이유 문구 (설계서 5-2: "제목과 올바른 URL을 입력하면 제출할 수 있습니다" 같은 안내).
+  버튼 자체는 위 btnButton/btnSubmit 에 aria-disabled="true" 를 얹어 쓰고, 이유 문구만 이 fragment 로 붙인다.
+-->
+<p th:fragment="btnReason(text)" class="vl-ui-btn-reason" th:text="${text}">이유 문구</p>
+
+<!--
+  배지 (Badge: strong · neutral · success · danger · locked)
+  locked 배지는 잠금 상태를 뜻한다 (회색 배지 + 자물쇠, 5-2).
+-->
+<span th:fragment="badge(variant, label)"
+      class="vl-ui-badge"
+      th:classappend="${'is-' + variant}"
+      th:text="${label}">배지</span>
+
+<!--
+  안내 상자 (Notice: info · empty · success)
+  title 은 선택이다. 없으면(null·빈 문자열) 제목 없이 본문만 보여준다.
+-->
+<div th:fragment="notice(variant, title, body)" class="vl-ui-notice" th:classappend="${'is-' + variant}">
+    <p class="vl-ui-notice__title" th:if="${title != null and !#strings.isEmpty(title)}" th:text="${title}">안내 제목</p>
+    <p th:text="${body}">안내 내용</p>
+</div>
+
+<!-- 진행 막대 (ProgressBar) — current/total 로 값과 퍼센트를 같이 그린다 -->
+<div th:fragment="progress(label, current, total)" class="vl-ui-progress"
+     role="progressbar" th:attr="aria-valuenow=${current},aria-valuemin=0,aria-valuemax=${total}">
+    <div class="vl-ui-progress__top">
+        <span class="vl-ui-progress__label" th:text="${label}">진행</span>
+        <span class="vl-ui-progress__value" th:text="${current + ' / ' + total}">0 / 0</span>
+    </div>
+    <div class="vl-ui-progress__track">
+        <div class="vl-ui-progress__fill" th:style="${'width: ' + (total > 0 ? (current * 100 / total) : 0) + '%'}"></div>
+    </div>
+</div>
+
+<!--
+  탭 버튼 (Tabs) — groupId 를 가진 탭 묶음 안에서 반복해서 쓴다. 전환 동작은 ui.js 가
+  data-ui-tabs(묶음)/data-ui-tab(버튼)/data-ui-tabpanel(내용, id 로 연결) 속성으로 찾아 처리한다.
+  탭 내용 영역은 화면마다 달라 fragment 가 아니라 class="vl-ui-tabpanel" 로 직접 둔다 (예시는 README).
+-->
+<button th:fragment="tabButton(targetId, label, active)"
+        type="button" role="tab" class="vl-ui-tab" data-ui-tab
+        th:id="${targetId + '-tab'}"
+        th:attr="aria-controls=${targetId},aria-selected=${active}"
+        th:text="${label}">탭</button>
+
+<!--
+  확인 모달 (Modal, M-01~M-13 공통 꼴) — 삭제·탈퇴·건너뛰기 같은 "확인" 동작에 쓴다 (5-1).
+  id 는 열기 버튼의 data-ui-modal-open 값과 같아야 한다. 모바일 폭에서는 아래 시트로 바뀐다 (7장).
+  확인 버튼은 지금은 모양만 보여주고 닫기만 한다 (data-ui-modal-close). 실제 삭제·제출 동작(폼
+  action·요청)은 ③ 단계 기능 이슈에서 이 fragment 를 복사해 button 을 th:action 폼으로 바꿔 연결한다.
+-->
+<div th:fragment="confirmModal(id, title, body, confirmLabel, cancelLabel)"
+     class="vl-ui-modal" hidden
+     th:id="${id}"
+     role="dialog" aria-modal="true"
+     th:attr="data-ui-modal=${id},aria-labelledby=${id + '-title'}">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" th:id="${id + '-title'}" tabindex="-1" th:text="${title}">확인</h2>
+        <p class="vl-ui-modal__body" th:text="${body}">정말 진행할까요?</p>
+        <div class="vl-ui-modal__actions">
+            <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close th:text="${cancelLabel}">취소</button>
+            <button type="button" class="vl-ui-btn is-navy" data-ui-modal-close th:text="${confirmLabel}">확인</button>
+        </div>
+    </div>
+</div>
+
+<!--
+  토스트 (Toast) — 화면마다 한 번만 넣는다 (common/layout 의 header·footer 처럼 각 화면이 직접 추가).
+  띄우는 방법은 static/js/ui.js 의 VLToast.show(message, options) 참고.
+-->
+<div th:fragment="toastContainer" class="vl-ui-toasts" data-ui-toasts aria-live="polite"></div>
+
+</body>
+</html>
