@@ -1,5 +1,5 @@
 -- 바이브로그 테이블 생성 (MySQL 8.0, InnoDB, utf8mb4)
--- 기준: docs/planning/09-table-definition.md (컬럼·제약), docs/planning/08-db-design.md 6-2 (조회용 인덱스 13개)
+-- 기준: docs/design/03-table-definition.md (컬럼·제약), docs/design/02-database.md 6-2 (조회용 인덱스 13개)
 -- 몇 번을 실행해도 같은 결과가 나온다. 기존 테이블과 데이터는 모두 지워진다.
 -- 실행 순서: 00-create-database.sql(최초 1회) → 01-schema.sql → 02-seed.sql
 
@@ -764,7 +764,7 @@ CREATE TABLE message (
     INDEX idx_message_created_at (created_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '쪽지';
 
--- target_type 값 목록은 API 설계와 함께 정한 뒤 CHECK 를 추가한다 (09 정의서 16장)
+-- target_type 값 목록은 API 설계와 함께 정한 뒤 CHECK 를 추가한다 (03 테이블 정의서 16장)
 CREATE TABLE notification (
     notification_id   BIGINT       NOT NULL AUTO_INCREMENT,
     member_id         BIGINT       NOT NULL,
