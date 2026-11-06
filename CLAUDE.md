@@ -147,8 +147,6 @@ com.vibelog
 │       ├── entity/                  ← BaseTimeEntity 상속 + 자기 상태로 판단하는 도메인 규칙
 │       ├── policy/                  ← 여러 데이터를 봐야 판단하는 비즈니스 규칙
 │       └── service/                 ← @Transactional, 흐름 조립
-├── domain/auth/config/              ← (auth만) SecurityConfig — #12에서 Security를 쓰기로 정한 뒤
-├── domain/auth/handler/             ← (auth만) 로그인 성공·실패 핸들러 — #12에서 정한 뒤
 └── global/                          ← 공통 (config, entity, exception)
 
 templates/<영역>/*.html               ← 화면도 영역별 폴더
@@ -171,13 +169,13 @@ DB 설계·API 명세가 확정되기 전에도, 그 문서가 바뀌어도 다�
 
 강의 실습(Spring Security 세션 모듈)의 방식 중 우리 규칙과 맞는 것을 따른다.
 
-- **의존성 주입:** `@RequiredArgsConstructor` + `private final` 필드 (생성자 주입). `@Autowired` 필드 주입은 쓰지 않는다.
-- **Entity 만들기:** `@NoArgsConstructor(access = AccessLevel.PROTECTED)` + `@AllArgsConstructor(access = AccessLevel.PRIVATE)`. 새 Entity는 정적 팩토리 `Xxx.create(...)`로만 만든다. id(DB가 채움)와 `created_at`·`updated_at`(BaseTimeEntity가 채움)은 받지 않는다.
+- **의존성 주입:** `src/main` 클래스(Controller·Service·Component)는 `@RequiredArgsConstructor` + `private final` 필드로 받는다 (생성자 주입). 테스트 클래스는 `@Autowired`를 써도 된다.
+- **Entity 만들기:** `@NoArgsConstructor(access = AccessLevel.PROTECTED)`. 새 Entity는 정적 팩토리 `Xxx.create(...)`로 만든다 (안쪽은 private 생성자나 `@Builder(access = AccessLevel.PRIVATE)` 중 편한 것). id(DB가 채움)와 `created_at`·`updated_at`(BaseTimeEntity가 채움)은 받지 않는다.
 - **상태 바꾸기:** Entity의 도메인 메서드(예: `increaseLoginFailCount()`)로 바꾸고, `@Transactional` Service에서 호출한다. 변경 감지(dirty checking)로 저장되므로 `save()`를 다시 부르지 않는다.
 - **Entity ↔ DTO:** Entity → DTO는 DTO의 `static Xxx from(Entity)`, DTO → Entity는 `Entity.create(...)`. ModelMapper 같은 변환 라이브러리는 쓰지 않는다.
 - **Repository:** 메서드 이름 쿼리(`findByEmail`, `existsByEmail`)를 먼저 쓴다. 없을 수도 있는 1건 조회는 `Optional`로 받고, 없으면 Service에서 `BusinessException`을 던진다.
-- **Controller:** 화면만 보여주는 GET은 화면 이름(`String`)을 돌려준다. 로그인 회원은 `@AuthenticationPrincipal`로 Controller에서만 꺼낸다 (#12 이후).
-- **주석:** 클래스 맨 위에 `global/` 클래스와 같은 형식으로 쓴다 — `/* [클래스명] 역할 : … 책임 : … */`. 여러 클래스를 거치는 흐름(로그인, 채점 등)은 `[로그인 ③]`처럼 흐름 이름과 번호를 붙여 이어 읽을 수 있게 한다.
+- **Controller:** 화면만 보여주는 GET은 화면 이름(`String`)을 돌려준다. 로그인 회원은 Controller에서만 꺼낸다 (방법은 #12에서 정한 대로).
+- **주석:** 클래스 맨 위에 `global/` 클래스와 같은 형식으로 쓴다 — `/* [클래스명] 역할 : … 책임 : … */`.
 - **강의 코드에서 따라 하지 않는 것:**
   - 실패를 `null`·`0` 반환이나 `try-catch`로 처리 → `BusinessException`을 던진다
   - `System.out.println`, `e.printStackTrace()` → 필요하면 `@Slf4j` 로그
