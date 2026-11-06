@@ -1,6 +1,5 @@
 package com.vibelog.global.config;
 
-import com.vibelog.domain.course.model.policy.LoginDiagnosisChecker;
 import com.vibelog.domain.lesson.model.policy.LoginEnrollmentChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,9 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /*
- * 접근 권한(비회원·학습자·운영자), 로그인 도착지(API-USR-05 ①~⑤), 로그인 유지(PL-USR-006), 5회 실패 잠금(PL-USR-007)을 확인한다. (#12)
+ * 접근 권한(비회원·학습자·운영자), 로그인 도착지(API-USR-05 ①②④⑤), 로그인 유지(PL-USR-006), 5회 실패 잠금(PL-USR-007)을 확인한다. (#12)
  * 로그인 테스트용 회원은 테스트마다 넣고 끝나면 되돌린다(@Transactional). 비밀번호는 매번 무작위로 만든다.
- * 계약 ⑫(진단 기록·진행 중 수강)는 테스트마다 값을 정하려고 가짜(Mock)로 바꿔 둔다. 기본값은 "진단함, 수강 중인 코스 없음".
+ * 계약 ⑫(진행 중 수강)는 테스트마다 값을 정하려고 가짜(Mock)로 바꿔 둔다. 기본값은 "수강 중인 코스 없음".
  * 로컬 MySQL 이 켜져 있고 sql/01-schema.sql 로 member 테이블이 만들어져 있어야 통과한다.
  */
 @SpringBootTest
@@ -53,16 +52,12 @@ class SecurityConfigTest {
     PasswordEncoder passwordEncoder;
 
     @MockitoBean
-    LoginDiagnosisChecker loginDiagnosisChecker;
-
-    @MockitoBean
     LoginEnrollmentChecker loginEnrollmentChecker;
 
     private final String password = UUID.randomUUID().toString();
 
     @BeforeEach
-    void 진단은_했고_수강_중인_코스는_없는_회원으로_둔다() {
-        given(loginDiagnosisChecker.hasDiagnosisRecord(anyLong())).willReturn(true);
+    void 수강_중인_코스가_없는_회원으로_둔다() {
         given(loginEnrollmentChecker.hasActiveEnrollment(anyLong())).willReturn(false);
     }
 
@@ -105,14 +100,6 @@ class SecurityConfigTest {
         insertMember(EMAIL, "ADMIN");
 
         login(null).andExpect(redirectedUrl("/admin"));
-    }
-
-    @Test
-    void 진단_기록이_없으면_진단으로_간다() throws Exception {
-        insertMember(EMAIL, "LEARNER");
-        given(loginDiagnosisChecker.hasDiagnosisRecord(anyLong())).willReturn(false);
-
-        login(null).andExpect(redirectedUrl("/diagnosis"));
     }
 
     @Test
