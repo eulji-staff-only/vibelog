@@ -1,12 +1,11 @@
 # 다른 묶음 담당 영역의 파일을 바꾼 PR은 그 영역 담당의 승인을 받아야 통과한다.
-# 승인(리뷰)이 들어오면 다시 돌아서 결과가 바뀐다. 자세한 규칙은 README "리뷰어 지정 약속".
+# 승인(리뷰)이 들어오면 area-review-rerun.yml 이 이 실행을 다시 돌려 결과를 바꾼다. 자세한 규칙은 README "리뷰어 지정 약속".
+# 승인 이벤트로 따로 실행하면 처음 실패 기록이 남아 머지를 계속 막는다 (#130). 그래서 트리거는 PR 이벤트만 둔다.
 name: area-review
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-  pull_request_review:
-    types: [submitted, dismissed]
 
 permissions:
   contents: read
