@@ -29,4 +29,11 @@ public class MemberReader {
         return memberRepository.findAllById(memberIds).stream()
                 .collect(Collectors.toMap(Member::getMemberId, Member::getNickname));
     }
+
+    /* 회원 ID 1건 → 닉네임. 공통 헤더(#132)처럼 로그인 회원 1명의 닉네임만 필요할 때 쓴다. 없는 ID면 빈 문자열 */
+    public String getNickname(Long memberId) {
+        return memberRepository.findById(memberId)
+                .map(Member::getNickname)
+                .orElse("");
+    }
 }
