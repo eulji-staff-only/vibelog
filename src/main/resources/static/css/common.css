@@ -1,0 +1,230 @@
+/*
+ * common.css
+ * 모든 화면이 같이 쓰는 디자인 토큰(색상·글꼴·간격)과 공통 레이아웃(헤더·푸터·페이지 틀) 스타일.
+ * 값 출처: docs/design/01-screen-flow.md 6장 디자인 시스템
+ * 참고: 버튼·배지·안내 상자 같은 공통 UI 조각(VL-Button, VL-Badge ...)은 #46에서 추가한다.
+ *       여기서는 헤더·푸터에 바로 필요한 최소 스타일만 둔다.
+ */
+
+:root {
+  /* 6-1. 색상 */
+  --navy-900: #0f1b3d; /* --ink */
+  --ink: #0f1b3d;
+  --navy-800: #1b2a55;
+  --navy-700: #2d3e6e;
+  --glow: #8ab4ff;
+  --on-navy: #ffffff;
+  --on-navy-muted: #c9d3ea;
+  --surface: #eef2f8;
+  --surface-raised: #ffffff;
+  --tint: #e5ecfa;
+  --line: #dce3ef;
+  --line-soft: #e7ecf4;
+  --line-strong: #7e8ba8;
+  --ink-muted: #4a5878;
+  --link: #2563eb;
+  --link-hover: #1d4ed8;
+  --success: #0e7490;
+  --success-soft: #e0f2f7;
+  --danger: #c2410c;
+  --danger-soft: #fdede4;
+
+  /* 6-3. 여백 · 모양 (문서에 적힌 값만) */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 20px;
+  --space-7: 24px;
+  --space-8: 28px;
+  --space-9: 36px;
+  --space-10: 56px;
+
+  --radius-card: 16px;
+  --radius-panel: 18px;
+  --radius-large: 24px;
+  --radius-pill: 999px;
+
+  --content-max: 1200px;
+  --hero-max: 880px;
+
+  --control-h: 44px;
+  --tab-h: 46px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+.vl-content {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+/* 헤더 — 1-5. 네비게이션 메뉴 구조 (비회원 메뉴만, 로그인 상태 분기는 #12 이후) */
+.vl-header {
+  background: var(--navy-900);
+  color: var(--on-navy);
+}
+
+.vl-header__inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  height: 64px;
+}
+
+.vl-header__logo {
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--on-navy);
+  white-space: nowrap;
+}
+
+.vl-header__nav {
+  display: flex;
+  gap: var(--space-6);
+  flex: 1;
+}
+
+.vl-header__nav a {
+  color: var(--on-navy-muted);
+  font-weight: 700;
+  padding: var(--space-2) 0;
+}
+
+.vl-header__nav a:hover,
+.vl-header__nav a.is-active {
+  color: var(--on-navy);
+}
+
+.vl-header__search {
+  display: flex;
+}
+
+.vl-header__search input[type="search"] {
+  height: 36px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--navy-700);
+  background: var(--navy-800);
+  color: var(--on-navy);
+  padding: 0 var(--space-5);
+  min-width: 160px;
+}
+
+.vl-header__search input[type="search"]::placeholder {
+  color: var(--on-navy-muted);
+}
+
+.vl-header__auth {
+  display: flex;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+
+.vl-header__auth a {
+  height: var(--control-h);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+}
+
+.vl-header__auth a.is-primary {
+  background: var(--glow);
+  color: var(--navy-900);
+}
+
+.vl-header__auth a.is-text {
+  color: var(--on-navy);
+}
+
+/* 푸터 */
+.vl-footer {
+  background: var(--navy-900);
+  color: var(--on-navy-muted);
+  margin-top: var(--space-10);
+}
+
+.vl-footer__inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 13px;
+}
+
+.vl-footer a {
+  color: var(--on-navy);
+}
+
+/* 오류 화면(error/error.html) — 자세한 레이아웃(E-01~E-03)은 #46에서 채운다 */
+.vl-error {
+  padding-top: var(--space-10);
+  padding-bottom: var(--space-10);
+  text-align: center;
+}
+
+/* 모바일: 상단 메뉴는 햄버거로 바뀌어야 하지만(7장), 메뉴 축소까지는 #46/#12 이후에 다룬다.
+   여기서는 좁은 화면에서 줄바꿈되지 않게 최소한의 반응형만 둔다. */
+@media (max-width: 767px) {
+  .vl-header__inner {
+    flex-wrap: wrap;
+    height: auto;
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .vl-header__nav {
+    order: 3;
+    width: 100%;
+    gap: var(--space-5);
+    overflow-x: auto;
+  }
+
+  .vl-header__search {
+    display: none;
+  }
+
+  .vl-content {
+    padding: 0 var(--space-5);
+  }
+}

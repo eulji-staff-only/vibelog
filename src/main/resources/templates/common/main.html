@@ -1,0 +1,114 @@
+<!--
+  common/main.html (U-01 메인 `/`)
+  역할: 비회원 기준 메인(랜딩) 화면. 트랙 · 코스 · 공지 · 추천 작품 · 콘테스트는
+        아직 해당 영역 기능이 구현되지 않아 화면 흐름 설계서의 "보여줄 데이터" 구성대로
+        샘플 문구로 채운다 (실제 데이터 연결은 각 영역 기능 이슈에서 처리).
+  참고: 로그인 상태별 헤더(회원 메뉴)는 #12 머지 후 추가한다 (이슈 #13 코멘트 기준).
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>바이브로그 — 바이브코딩 학습 플랫폼</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+
+<div th:replace="~{common/layout :: header}"></div>
+
+<main>
+    <section class="vl-hero">
+        <div class="vl-content vl-hero__inner">
+            <p class="vl-eyebrow">바이브코딩 학습 플랫폼</p>
+            <h1>코드를 쓰는 감각부터, 끝까지 완주하는 학습까지</h1>
+            <p class="vl-hero__lead">진단으로 내 트랙을 찾고, 수업과 퀴즈로 실력을 쌓고, 포트폴리오로 완성하세요.</p>
+            <div class="vl-hero__cta">
+                <a class="vl-cta is-primary" href="/diagnosis">내 트랙 진단하기</a>
+                <a class="vl-cta is-outline" href="/courses">코스 둘러보기</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="vl-content vl-segment">
+        <div class="vl-tabs" role="tablist">
+            <button type="button" class="vl-tab is-active" role="tab" data-target="panel-track">트랙</button>
+            <button type="button" class="vl-tab" role="tab" data-target="panel-course">코스</button>
+            <button type="button" class="vl-tab" role="tab" data-target="panel-way">학습 방식</button>
+            <button type="button" class="vl-tab" role="tab" data-target="panel-community">커뮤니티</button>
+            <button type="button" class="vl-tab" role="tab" data-target="panel-notice">공지·콘테스트</button>
+        </div>
+
+        <div id="panel-track" class="vl-panel" role="tabpanel">
+            <h2>트랙으로 둘러보기</h2>
+            <div class="vl-card-grid">
+                <article class="vl-card">
+                    <p class="vl-card__badge">1단계</p>
+                    <h3><a href="/courses">웹 기초 트랙</a></h3>
+                    <p>HTML·CSS·JS로 첫 화면을 만듭니다.</p>
+                </article>
+                <article class="vl-card">
+                    <p class="vl-card__badge">2단계</p>
+                    <h3><a href="/courses">백엔드 입문 트랙</a></h3>
+                    <p>Spring으로 서버와 DB를 연결합니다.</p>
+                </article>
+                <article class="vl-card">
+                    <p class="vl-card__badge">3단계</p>
+                    <h3><a href="/courses">풀스택 심화 트랙</a></h3>
+                    <p>바이브코딩 도구로 서비스를 완성합니다.</p>
+                </article>
+                <article class="vl-card">
+                    <p class="vl-card__badge">4단계</p>
+                    <h3><a href="/courses">포트폴리오 트랙</a></h3>
+                    <p>완성한 결과물을 정리하고 공유합니다.</p>
+                </article>
+            </div>
+        </div>
+
+        <div id="panel-course" class="vl-panel" role="tabpanel" hidden>
+            <h2>대표 코스</h2>
+            <div class="vl-card-grid">
+                <article class="vl-card">
+                    <h3><a href="/courses">바이브코딩으로 시작하는 첫 웹 서비스</a></h3>
+                    <p>처음 코딩을 배우는 분께 추천합니다.</p>
+                    <p class="vl-card__meta">예상 기간 2주</p>
+                </article>
+            </div>
+            <p><a href="/courses">전체 코스 보기 →</a></p>
+        </div>
+
+        <div id="panel-way" class="vl-panel" role="tabpanel" hidden>
+            <h2>이렇게 배워요</h2>
+            <p>진단 → 추천 트랙 코스 수강 → 수업·퀴즈 → 모의고사 리포트 → 포트폴리오 순서로 학습합니다.</p>
+        </div>
+
+        <div id="panel-community" class="vl-panel" role="tabpanel" hidden>
+            <h2>이번 주 추천 작품</h2>
+            <ol class="vl-list">
+                <li><a href="/community">나만의 할 일 관리 앱 — 홍길동 (추천 12)</a></li>
+                <li><a href="/community">Spring으로 만든 방명록 — 김바이브 (추천 9)</a></li>
+                <li><a href="/community">첫 포트폴리오 사이트 — 이코딩 (추천 7)</a></li>
+            </ol>
+            <p><a href="/community">커뮤니티 더 보기 →</a></p>
+        </div>
+
+        <div id="panel-notice" class="vl-panel" role="tabpanel" hidden>
+            <h2>공지사항</h2>
+            <ul class="vl-list">
+                <li><a href="/notices/1">바이브로그 오픈 안내</a> <span class="vl-card__meta">2026-11-01</span></li>
+            </ul>
+            <p><a href="/notices">공지 더보기 →</a></p>
+
+            <h2>이달의 콘테스트</h2>
+            <p>주제: 내가 만든 첫 서비스 소개하기 · 마감 2026-11-30</p>
+            <p><a href="/contests/current">결과물 제출하기 →</a></p>
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

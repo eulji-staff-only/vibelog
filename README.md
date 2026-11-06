@@ -265,6 +265,25 @@ public class Quiz extends BaseTimeEntity { ... }
 - `sql/` 파일이 바뀐 PR이 머지되면 작성자가 팀에 **"develop pull 받고 01·02 다시 실행하세요"** 라고 공지합니다. (데이터는 초기화됩니다)
 - 테이블 구조를 바꿔야 하면 Entity만 고치지 말고 **📐 요구사항·정책 변경 요청** 이슈로 DB 팀과 먼저 합의한 뒤, `sql/` 수정과 Entity 수정을 **같은 PR**에 올립니다.
 
+**새 화면 만들 때 레이아웃 쓰는 법** (#13)
+
+공통 헤더·푸터는 `templates/common/layout.html`에 fragment로 있습니다. 새 화면은 아래처럼 가져다 씁니다.
+
+```html
+<link rel="stylesheet" th:href="@{/css/common.css}">
+...
+<div th:replace="~{common/layout :: header}"></div>
+<main class="vl-content">
+    <!-- 이 화면의 내용 -->
+</main>
+<div th:replace="~{common/layout :: footer}"></div>
+```
+
+- 디자인 토큰(색상·글꼴·간격)은 `common.css`의 CSS 변수(`--navy-900`, `--space-5` 등)를 그대로 씁니다.
+- 화면 안쪽 너비를 본문 최대 폭(1200px)으로 맞추려면 `vl-content` 클래스를 씁니다.
+- 버튼·배지·안내 상자 같은 공통 UI 조각은 #46에서 추가됩니다.
+- 로그인 상태별 메뉴(회원·운영자 헤더)는 #12 머지 후 Controller에서 로그인 회원을 꺼내 추가합니다.
+
 **리뷰어 지정 약속**
 
 리뷰어는 **GitHub이 자동으로 지정**합니다. 직접 고를 필요가 없습니다.

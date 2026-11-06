@@ -1,16 +1,29 @@
+<!--
+  error/error.html
+  역할: GlobalExceptionHandler 가 모든 오류를 보내는 화면 한 장.
+        상태코드(404·403·500 등)로 나눠 그리는 자세한 문구(E-01~E-03)는 #46에서 채운다.
+        여기서는 #13 범위대로 공통 헤더·푸터만 입힌다.
+-->
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>오류 발생</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
 </head>
 <body>
-<main>
+
+<div th:replace="~{common/layout :: header}"></div>
+
+<main class="vl-content vl-error">
     <h1 th:text="${status}">500</h1>
     <p th:text="${message}">오류가 발생했습니다.</p>
     <button type="button" onclick="history.back()">뒤로가기</button>
     <a href="/">홈으로</a>
 </main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+
 </body>
 </html>
