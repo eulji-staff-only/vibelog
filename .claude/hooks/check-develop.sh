@@ -66,7 +66,8 @@ context="[develop 변경 알림] 현재 브랜치 ${branch} 가 origin/develop �
 ${commits}
 pull 후 할 일:${todo}"
 
-json() { printf '%s' "$1" | tr -d '\r' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | awk 'NR>1{printf "\\n"} {printf "%s", $0}'; }
+# JSON 문자열로 바꾼다: 탭은 공백으로, 줄바꿈을 뺀 나머지 제어 문자는 지워서 JSON 이 깨지지 않게 한다
+json() { printf '%s' "$1" | tr '\t' ' ' | tr -d '\000-\010\013-\037' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | awk 'NR>1{printf "\\n"} {printf "%s", $0}'; }
 if [ "$mode" = "prompt" ]; then event="UserPromptSubmit"; else event="SessionStart"; fi
 printf '{"systemMessage":"%s","hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s"}}\n' \
   "$(json "$user_msg")" "$event" "$(json "$context")"
