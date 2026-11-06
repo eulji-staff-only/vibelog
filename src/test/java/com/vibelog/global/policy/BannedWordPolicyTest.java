@@ -52,6 +52,14 @@ class BannedWordPolicyTest {
         assertThatCode(() -> bannedWordPolicy.check("정상 제목", null, "정상 본문")).doesNotThrowAnyException();
     }
 
+    @Test
+    void 빈_금칙어가_있어도_모든_글을_막지는_않는다() {
+        jdbcTemplate.update("INSERT INTO banned_word (word) VALUES (?), (?)", "", " ");
+
+        assertThatCode(() -> bannedWordPolicy.check("정상 제목 정상 본문")).doesNotThrowAnyException();
+        assertBanned("테스트금칙어");
+    }
+
     private void assertBanned(String... texts) {
         assertThatThrownBy(() -> bannedWordPolicy.check(texts))
                 .isInstanceOf(BusinessException.class)
