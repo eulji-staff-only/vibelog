@@ -1,0 +1,105 @@
+/*
+ * 포트폴리오 영역 화면 (U-17).
+ * 색·글꼴·간격은 화면 흐름 설계서 6장 토큰 이름(var(--…))만 쓴다. 값은 공통 CSS(#13)가 정한다.
+ * 버튼·안내 상자 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
+ */
+
+.pf-page { min-height: 100vh; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+/* display 를 준 요소도 hidden 속성이면 숨긴다 (잠김 안내) */
+.pf-page [hidden] { display: none; }
+.pf-muted { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-muted); }
+.pf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 상단 네이비 띠 + 제목 */
+.pf-band { background: var(--navy-900); color: var(--on-navy); padding: 48px var(--space-6) calc(var(--band-tail) + 28px);
+    display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
+.pf-eyebrow { font-size: 14px; font-weight: 700; padding: var(--space-1\.5) 14px; border-radius: var(--radius-pill);
+    border: 1px solid var(--navy-700); color: var(--glow); }
+.pf-title { margin: 0; font-size: 36px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.pf-lead { margin: 0; max-width: var(--hero-text-max); font-size: 17px; line-height: 1.7; color: var(--on-navy-muted); }
+
+/* 띠에 겹쳐 올라오는 흰 패널 (포트폴리오는 폭 880px, 설계서 6-3) */
+.pf-main { max-width: 880px; margin: 0 auto; padding: 0 var(--space-6) 64px; }
+.pf-panel { margin-top: calc(var(--hero-overlap) * -1); position: relative; background: var(--surface-raised);
+    border-radius: var(--radius-xl); padding: var(--space-9); box-shadow: var(--shadow-panel); }
+.pf-body, .pf-locked { display: flex; flex-direction: column; gap: 32px; }
+.pf-locked { gap: var(--space-4); }
+.pf-section { display: flex; flex-direction: column; gap: 14px; }
+.pf-section + .pf-section { padding-top: 32px; border-top: 1px solid var(--line-soft); }
+.pf-section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+.pf-h2 { margin: 0; font-size: 24px; line-height: 1.4; font-weight: 900; }
+
+/* 과제 */
+.pf-task { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; font-size: 15px; line-height: 1.65; }
+.pf-task dt { font-weight: 700; color: var(--ink-muted); }
+.pf-task dd { margin: 0; }
+
+/* 스텝 가이드 */
+.pf-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.pf-step { display: flex; align-items: flex-start; gap: var(--space-3); min-height: var(--control-h); padding: 14px var(--space-4);
+    box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--radius-md); font-size: 15px; line-height: 1.6; cursor: pointer; }
+.pf-step input { flex: 0 0 auto; width: 20px; height: 20px; margin: 2px 0 0; }
+.pf-step strong { display: block; }
+.pf-step:has(input:checked) { background: var(--tint); }
+
+/* 평가 에이전트 안내 (펼침 목록은 브라우저 기본 details 사용) */
+.pf-accordion { border-top: 1px solid var(--line-soft); }
+.pf-accordion details { border-bottom: 1px solid var(--line-soft); }
+.pf-accordion summary { min-height: 60px; display: flex; align-items: center; padding: 0 var(--space-1); font-size: 16px; font-weight: 700; cursor: pointer; }
+.pf-accordion details p { margin: 0; padding: 0 var(--space-1) var(--space-5); font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
+
+/* 안내 상자 (공통 조각 #46 전까지) */
+.pf-notice { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) 20px;
+    border-radius: var(--radius-md); background: var(--tint); font-size: 15px; line-height: 1.6; }
+.pf-notice p { margin: 0; }
+.pf-link { align-self: flex-start; color: var(--link); font-weight: 700; }
+.pf-link:hover { color: var(--link-hover); }
+
+/* 버튼 (공통 조각 #46 전까지) */
+.pf-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: var(--control-h);
+    padding: 11px 18px; font: inherit; font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none;
+    border: 1px solid transparent; border-radius: var(--radius-pill); cursor: pointer; white-space: nowrap; }
+.pf-btn-s { min-height: 40px; padding: 9px 16px; font-size: 14px; }
+.pf-btn-navy { background: var(--navy-900); color: var(--on-navy); }
+.pf-btn-navy:hover { background: var(--navy-800); }
+.pf-btn-outline { background: var(--surface-raised); color: var(--ink); border-color: var(--line-strong); }
+.pf-btn-outline:hover { background: var(--surface); }
+.pf-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; pointer-events: none; }
+
+/* 제출 양식 */
+.pf-form { display: flex; flex-direction: column; gap: 22px; padding: var(--space-6); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); background: var(--surface); }
+.pf-field { display: flex; flex-direction: column; gap: var(--space-2); }
+.pf-label { font-size: 14px; font-weight: 700; }
+.pf-label em { font-style: normal; color: var(--danger); margin-left: 2px; }
+.pf-input { box-sizing: border-box; width: 100%; min-height: var(--control-h); padding: 12px var(--space-4); font: inherit; font-size: 15px;
+    line-height: 1.5; color: var(--ink); background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: var(--radius-md); }
+.pf-input::placeholder { color: var(--ink-muted); }
+.pf-input[aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
+.pf-textarea { min-height: 160px; resize: vertical; line-height: 1.65; }
+.pf-msg { font-size: 13px; line-height: 1.5; color: var(--ink-muted); }
+.pf-msg.is-error { color: var(--danger); font-weight: 700; }
+.pf-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.pf-chip { min-height: var(--control-h); padding: 10px var(--space-4); font: inherit; font-size: 14px; font-weight: 700; color: var(--ink);
+    background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: var(--radius-pill); cursor: pointer; }
+.pf-chip[aria-pressed="true"] { background: var(--navy-900); border-color: var(--navy-900); color: var(--on-navy); }
+.pf-divider { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--line-soft); }
+.pf-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 10px var(--space-4); padding: var(--space-4) 18px;
+    border: 1px dashed var(--line-strong); border-radius: var(--radius-md); background: var(--surface-raised); }
+.pf-upload:focus-within .pf-btn { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.pf-submit { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); }
+
+/* 키보드 포커스 (설계서 5-2) */
+.pf-page :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* 모바일 (설계서 7장) */
+@media (max-width: 767px) {
+    .pf-band { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .pf-title { font-size: 26px; }
+    .pf-main { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .pf-panel { padding: var(--space-6) 20px; }
+    .pf-form { padding: var(--space-4); }
+    .pf-task { grid-template-columns: 1fr; gap: var(--space-1); }
+    .pf-task dd + dt { margin-top: var(--space-2); }
+    .pf-submit .pf-btn { width: 100%; }
+}
