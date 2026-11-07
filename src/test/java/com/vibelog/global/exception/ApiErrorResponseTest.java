@@ -25,6 +25,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -67,13 +68,14 @@ class ApiErrorResponseTest {
         mockMvc.perform(post("/api/test/valid").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{깨진 JSON"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
-        // 잘못된 메서드·Content-Type 도 서버 오류가 아니라 입력 오류다
+        // 잘못된 메서드·Content-Type 은 서버 오류가 아니라 405·415 (헤더도 그대로)
         mockMvc.perform(get("/api/test/valid"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(header().string("Allow", "POST"))
+                .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
         mockMvc.perform(post("/api/test/valid").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("name"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_MEDIA_TYPE"));
     }
 
     @Test

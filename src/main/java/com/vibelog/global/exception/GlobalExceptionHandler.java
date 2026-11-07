@@ -1,6 +1,7 @@
 package com.vibelog.global.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -62,15 +63,23 @@ public class GlobalExceptionHandler {
         return error(request, HttpStatus.BAD_REQUEST, INVALID_INPUT, message);
     }
 
-    /*
-     * 필수 파라미터 누락 / 타입 불일치 / JSON 본문을 읽을 수 없음 / 잘못된 HTTP 메서드·Content-Type.
-     * 모두 요청을 잘못 보낸 경우라 서버 오류(500)가 아니라 INVALID_INPUT 으로 답한다 (D-08 표의 INVALID_INPUT = 400)
-     */
+    /* 필수 파라미터 누락 / 타입 불일치 / JSON 본문을 읽을 수 없음 */
     @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class,
-            HttpMessageNotReadableException.class, HttpRequestMethodNotSupportedException.class,
-            HttpMediaTypeNotSupportedException.class})
+            HttpMessageNotReadableException.class})
     public ModelAndView handleBadRequest(Exception e, HttpServletRequest request) {
         return error(request, HttpStatus.BAD_REQUEST, INVALID_INPUT, "요청 값을 확인해주세요.");
+    }
+
+    /*
+     * 지원하지 않는 HTTP 메서드(405 METHOD_NOT_ALLOWED) / Content-Type(415 UNSUPPORTED_MEDIA_TYPE).
+     * 요청을 잘못 보낸 경우라 서버 오류(500)로 바꾸지 않고 Spring 이 정한 상태와 헤더(Allow·Accept)를 그대로 보낸다
+     */
+    @ExceptionHandler({HttpRequestMethodNotSupportedException.class, HttpMediaTypeNotSupportedException.class})
+    public ModelAndView handleUnsupported(Exception e, HttpServletRequest request, HttpServletResponse response) {
+        org.springframework.web.ErrorResponse spring = (org.springframework.web.ErrorResponse) e;
+        spring.getHeaders().forEach((name, values) -> values.forEach(value -> response.addHeader(name, value)));
+        HttpStatus status = HttpStatus.valueOf(spring.getStatusCode().value());
+        return error(request, status, status.name(), "요청 방식을 확인해주세요.");
     }
 
     /* 정책으로 걸러지지 않은 DB 제약조건 위반 (FK, UNIQUE 등). INVALID_INPUT 은 400 이라 409 는 CONFLICT 로 따로 둔다 (D-08) */
