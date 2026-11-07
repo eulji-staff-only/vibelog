@@ -67,11 +67,11 @@ public class GlobalExceptionHandler {
         return error(request, HttpStatus.BAD_REQUEST, INVALID_INPUT, "요청 값을 확인해주세요.");
     }
 
-    /* 정책으로 걸러지지 않은 DB 제약조건 위반 (FK, UNIQUE 등) */
+    /* 정책으로 걸러지지 않은 DB 제약조건 위반 (FK, UNIQUE 등). INVALID_INPUT 은 400 이라 409 는 CONFLICT 로 따로 둔다 (D-08) */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ModelAndView handleDataIntegrity(DataIntegrityViolationException e, HttpServletRequest request) {
         log.warn("DB 제약조건 위반", e);
-        return error(request, HttpStatus.CONFLICT, INVALID_INPUT, "요청을 처리할 수 없습니다. 입력 값을 확인해주세요.");
+        return error(request, HttpStatus.CONFLICT, "CONFLICT", "요청을 처리할 수 없습니다. 입력 값을 확인해주세요.");
     }
 
     /* 존재하지 않는 URL */

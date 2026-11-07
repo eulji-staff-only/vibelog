@@ -259,6 +259,7 @@ public enum QuizErrorCode implements ErrorCode {
 | --- | --- |
 | `BusinessException` | 에러 코드의 상태 · 에러 코드 이름 |
 | `@Valid` 검증 실패, 읽을 수 없는 JSON | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
+| 정책으로 걸러지지 않은 DB 제약 위반 (UNIQUE 등) | 409 · `CONFLICT` |
 | 없는 주소 | 404 · `NOT_FOUND` |
 | 비로그인 | 401 · `LOGIN_REQUIRED` |
 | 학습자가 `/api/admin/**` | 403 · `ADMIN_ONLY` |

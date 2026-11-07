@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -99,6 +100,22 @@ class ApiErrorResponseTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
+    void 운영자의_CSRF_없는_요청은_ADMIN_ONLY_가_아니라_FORBIDDEN() throws Exception {
+        mockMvc.perform(post("/api/admin/anything"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    @WithMockUser
+    void DB_제약_위반은_409_CONFLICT() throws Exception {
+        mockMvc.perform(get("/api/test/conflict"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONFLICT"));
+    }
+
+    @Test
     @WithMockUser
     void 화면_요청의_오류는_그대로_오류_화면이다() throws Exception {
         mockMvc.perform(get("/no-such-page"))
@@ -138,6 +155,11 @@ class ApiErrorResponseTest {
 
         @PostMapping("/api/test/valid")
         void valid(@Valid @RequestBody NameRequest request) {
+        }
+
+        @GetMapping("/api/test/conflict")
+        void conflict() {
+            throw new DataIntegrityViolationException("중복");
         }
 
         @GetMapping("/api/test/boom")

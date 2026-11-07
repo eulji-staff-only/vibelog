@@ -20,6 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.RememberMeServices;
+import org.springframework.security.web.csrf.CsrfException;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -101,19 +102,21 @@ public class SecurityConfig {
     /*
      * 학습자가 백오피스에 옴 → 표시 없이 메인으로 (ADMIN_ONLY, FR-ADM-001). 그 밖(CSRF 토큰 없음 등)은 403.
      * /api 요청은 JSON 으로: 운영자 API 는 ADMIN_ONLY, 그 밖(대개 CSRF 토큰 없음·만료)은 FORBIDDEN (7장 표에 이름이 없어 D-08 에서 정함)
+     * CSRF 실패는 운영자도 겪으므로 권한 부족(ADMIN_ONLY·메인으로)으로 보지 않는다
      */
     private void denyAccess(HttpServletRequest request, HttpServletResponse response,
                             AccessDeniedException e) throws IOException {
         String uri = request.getRequestURI();
-        if (uri.startsWith("/api/admin/")) {
-            sendJson(response, HttpStatus.FORBIDDEN, "ADMIN_ONLY", "운영자만 쓸 수 있습니다.");
-            return;
-        }
+        boolean csrf = e instanceof CsrfException;
         if (ErrorResponse.isApiRequest(request)) {
-            sendJson(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "요청을 처리할 수 없습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.");
+            if (!csrf && uri.startsWith("/api/admin/")) {
+                sendJson(response, HttpStatus.FORBIDDEN, "ADMIN_ONLY", "운영자만 쓸 수 있습니다.");
+            } else {
+                sendJson(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "요청을 처리할 수 없습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.");
+            }
             return;
         }
-        if (uri.startsWith("/admin")) {
+        if (!csrf && uri.startsWith("/admin")) {
             response.sendRedirect("/");
             return;
         }
