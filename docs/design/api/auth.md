@@ -32,7 +32,7 @@
 | API-USR-13 | 비밀번호 재설정 화면 | GET | `/password/reset` | 전체 | query `token` | U-06 | `TOKEN_EXPIRED`·`TOKEN_USED`(30분, 1회, PL-USR-004) → U-06 만료 상태 + U-05 바로가기 | FR-USR-005 |
 | API-USR-14 | 비밀번호 재설정 | POST | `/password/reset` | 전체 | form `token`, `newPassword`, `newPasswordConfirm` | → `/login` + toast "비밀번호가 변경되었습니다" | `INVALID_INPUT`(PL-USR-001, 확인 불일치) → 같은 폼 다시, `TOKEN_EXPIRED`·`TOKEN_USED` → U-06 만료 상태 | FR-USR-005 |
 
-- API-USR-10 의 `RESEND_TOO_SOON`·`ALREADY_VERIFIED`는 로그인한 본인에게만 돌려준다. 비회원 요청은 응답으로 가입 여부를 알 수 없게, 가입하지 않은 이메일과 마찬가지로 아무것도 보내지 않고 성공(204)으로 끝낸다 (#89 리뷰).
+- API-USR-10 의 `RESEND_TOO_SOON`·`ALREADY_VERIFIED`는 로그인한 본인에게만 돌려준다. 비회원 요청의 응답은 가입 여부·인증 여부·간격과 관계없이 항상 성공(204)이다. 메일은 가입했고 아직 인증하지 않았으며 마지막 발송에서 1분이 지난 이메일에만 보낸다 (응답으로 가입 여부를 알 수 없게, #89 리뷰).
 
 ## 마이페이지 · 탈퇴
 
