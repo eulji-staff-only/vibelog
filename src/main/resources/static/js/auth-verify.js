@@ -39,7 +39,8 @@
                 setTimeout(() => { button.disabled = false; wait.hidden = true; }, 60_000);
                 return;
             }
-            showError((await response.json()).message);
+            const body = await response.json().catch(() => null);
+            showError(body?.message ?? '요청을 처리하지 못했습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.');
         } catch (e) {
             showError('요청을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.');
         }

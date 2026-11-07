@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 역할 : 인증 메일 다시 받기 (API-USR-10). 화면이 바뀌지 않으므로 JSON 으로 답한다 (D-08).
  * 책임 : - 로그인 상태면 로그인 회원의 이메일로, 아니면 받은 email 로 보낸다.
  *        - 성공하면 204 (명세에 돌려줄 값이 없다). 실패는 GlobalExceptionHandler 가 {code, message} 로 보낸다
- *          (RESEND_TOO_SOON 429, ALREADY_VERIFIED 409, INVALID_INPUT 400).
+ *          (RESEND_TOO_SOON 429·ALREADY_VERIFIED 409 는 로그인한 본인에게만, INVALID_INPUT 400).
  */
 @RestController
 @RequiredArgsConstructor
@@ -31,7 +31,7 @@ public class AuthVerificationApiController {
                        @AuthenticationPrincipal LoginMember loginMember) {
         String email = loginMember != null ? loginMember.getUsername() : request == null ? null : request.email();
         if (email != null && !email.isBlank()) {
-            emailVerifyService.resend(email.strip());
+            emailVerifyService.resend(email.strip(), loginMember != null);
         }
     }
 }

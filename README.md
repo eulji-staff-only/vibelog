@@ -289,7 +289,7 @@ public Long write(Long memberId, PostWriteRequest request) {
 | 상황 | 상태 · code |
 | --- | --- |
 | `BusinessException` | 에러 코드의 상태 · 에러 코드 이름 |
-| `@Valid` 검증 실패, 읽을 수 없는 JSON | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
+| `@Valid` 검증 실패, 읽을 수 없는 JSON, 잘못된 메서드·Content-Type | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
 | 정책으로 걸러지지 않은 DB 제약 위반 (UNIQUE 등) | 409 · `CONFLICT` |
 | 없는 주소 | 404 · `NOT_FOUND` |
 | 비로그인 | 401 · `LOGIN_REQUIRED` |
