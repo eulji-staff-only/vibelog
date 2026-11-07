@@ -26,13 +26,13 @@
 | ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | API-USR-09 | 이메일 인증 | GET | `/auth/verify` | 전체 | query `token`(선택) | 인증 처리(`email_verified_at`) → U-04 성공 상태. `token` 없이 열면(콘테스트 "인증 메일 받기") U-04 다시 받기 상태 | `TOKEN_EXPIRED`·`TOKEN_USED`(24시간, PL-USR-004) → U-04 만료 상태 + 다시 받기 | FR-USR-002 |
-| API-USR-10 | 인증 메일 다시 받기 | POST | `/api/auth/verification-mail` | 전체 | json `email` (로그인 상태면 생략) | 204(본문 없음). 이전 링크는 무효 처리. 화면은 안내 상자 "인증 메일을 다시 보냈습니다" | `RESEND_TOO_SOON`(1분 간격, PL-CST-002)·`ALREADY_VERIFIED`는 로그인한 본인에게만 (비회원은 204, 아래 설명), `INVALID_INPUT`(이메일 형식) | FR-USR-002 |
+| API-USR-10 | 인증 메일 다시 받기 | POST | `/api/auth/verification-mail` | 전체 | json `email` (로그인 상태면 생략) | 204(본문 없음). 새 링크를 보내면 이전 링크는 무효 처리. 화면은 안내 상자 "인증 메일을 다시 보냈습니다"(로그인 상태) | `RESEND_TOO_SOON`(1분 간격, PL-CST-002)·`ALREADY_VERIFIED`는 로그인한 본인에게만 (비회원은 204, 아래 설명), `INVALID_INPUT`(이메일 형식) | FR-USR-002 |
 | API-USR-11 | 비밀번호 찾기 화면 | GET | `/password/find` | 전체 | query `sent`(선택) | U-05. `sent=true`면 "메일을 보냈습니다" 단계 | - | FR-USR-005 |
 | API-USR-12 | 재설정 메일 보내기 | POST | `/password/find` | 전체 | form `email` | 가입 여부와 관계없이 → `/password/find?sent=true` (소셜 가입 계정이면 소셜 로그인 안내 메일) | `INVALID_INPUT` → 같은 폼 다시 | FR-USR-005 |
 | API-USR-13 | 비밀번호 재설정 화면 | GET | `/password/reset` | 전체 | query `token` | U-06 | `TOKEN_EXPIRED`·`TOKEN_USED`(30분, 1회, PL-USR-004) → U-06 만료 상태 + U-05 바로가기 | FR-USR-005 |
 | API-USR-14 | 비밀번호 재설정 | POST | `/password/reset` | 전체 | form `token`, `newPassword`, `newPasswordConfirm` | → `/login` + toast "비밀번호가 변경되었습니다" | `INVALID_INPUT`(PL-USR-001, 확인 불일치) → 같은 폼 다시, `TOKEN_EXPIRED`·`TOKEN_USED` → U-06 만료 상태 | FR-USR-005 |
 
-- API-USR-10 의 `RESEND_TOO_SOON`·`ALREADY_VERIFIED`는 로그인한 본인에게만 돌려준다. 올바른 형식의 비회원 요청은 가입 여부·인증 여부·간격과 관계없이 항상 성공(204, 본문 없음)이다. 이메일이 비어 있으면 아무것도 하지 않고 204, 비어 있지 않은데 형식이 틀리면 400 `INVALID_INPUT`이다. 메일은 가입했고 아직 인증하지 않았으며 마지막 발송에서 1분이 지난 이메일에만 보낸다 (응답 상태로 가입 여부를 알 수 없게, #89 리뷰).
+- API-USR-10 의 `RESEND_TOO_SOON`·`ALREADY_VERIFIED`는 로그인한 본인에게만 돌려준다. 올바른 형식의 비회원 요청은 가입 여부·인증 여부·간격과 관계없이 항상 성공(204, 본문 없음)이다. 이메일이 비어 있으면 아무것도 하지 않고 204, 비어 있지 않은데 형식이 틀리면 400 `INVALID_INPUT`이다. 메일은 가입했고 아직 인증하지 않았으며 마지막 발송에서 1분이 지난 이메일에만 보낸다 (응답 상태로 가입 여부를 알 수 없게, #89 리뷰). 그래서 비회원 화면은 보냈는지 단정하지 않고 "가입했고 아직 인증 전인 이메일이면 새 인증 메일이 도착합니다"로 안내한다.
 
 ## 마이페이지 · 탈퇴
 
