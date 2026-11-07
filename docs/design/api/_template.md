@@ -87,6 +87,7 @@
 | `LOGIN_LOCKED` | 429 | 로그인에 5번 실패해 5분 동안 로그인할 수 없습니다. | ④ | PL-USR-007 |
 | `SOCIAL_ACCOUNT_EMAIL` / `SOCIAL_EMAIL_CONFLICT` | 409 | 처음 가입한 방식(이메일·GitHub·구글)으로 로그인해 주세요. | ④ / → `/login` | PL-USR-005 |
 | `SOCIAL_ACCOUNT` | 409 | 구글·깃허브로 가입한 계정은 비밀번호가 없습니다. | ④ | U-24 |
+| `PASSWORD_MISMATCH` | 400 | 현재 비밀번호가 맞지 않습니다. | ④ | API-USR-17 (#116 리뷰) |
 | `SUSPENDED_CANNOT_WITHDRAW` | 409 | 이용 정지 중에는 탈퇴할 수 없습니다. (P2) | ③ | PL-USR-010 |
 | `CONTEST_ENTERED` | 409 | 콘테스트에 출품한 작품은 수정할 수 없습니다. (P2) | ④ | PL-PRT-007 |
 | `TOKEN_EXPIRED` / `TOKEN_USED` | 400 | 링크가 만료되었습니다. | 화면 안 상태 | PL-USR-004 |

@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 /*
  * [MypageService]
  * 역할 : 마이페이지의 내 정보·비밀번호 변경·회원 탈퇴 (FR-USR-008, API-USR-15~17).
- * 책임 : - 비밀번호 변경은 이메일 가입 회원만. 소셜 가입 회원은 SOCIAL_ACCOUNT.
+ * 책임 : - 비밀번호 변경은 이메일 가입 회원만(소셜 가입 회원은 SOCIAL_ACCOUNT), 현재 비밀번호가 맞아야 한다(PASSWORD_MISMATCH).
  *        - 탈퇴는 DB 설계서 5-3 대로 한 트랜잭션에서: 계정 정보 비우기(Member.withdraw), 소셜 연결 삭제,
  *          포트폴리오 삭제 표시(계약 ⑩ MemberPortfolioCleaner), 그 이메일의 인증·재설정 링크 기록 삭제.
  *          게시글·댓글은 그대로 두고 작성자가 "탈퇴한 사용자"로 보인다 (PL-USR-009). 정지 중 탈퇴 불가는 P2.
@@ -46,10 +46,13 @@ public class MypageService {
 
     /* API-USR-17 */
     @Transactional
-    public void changePassword(Long memberId, String newPassword) {
+    public void changePassword(Long memberId, String currentPassword, String newPassword) {
         Member member = getMember(memberId);
         if (!member.hasPassword()) {
             throw new BusinessException(AuthErrorCode.SOCIAL_ACCOUNT);
+        }
+        if (!passwordEncoder.matches(currentPassword, member.getPasswordHash())) {
+            throw new BusinessException(AuthErrorCode.PASSWORD_MISMATCH);
         }
         member.changePassword(passwordEncoder.encode(newPassword));
     }

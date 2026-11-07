@@ -81,7 +81,8 @@ class MypageTest {
 
     @Test
     void 비밀번호를_바꾸면_토스트와_함께_내_정보로_돌아온다() throws Exception {
-        mockMvc.perform(post("/mypage/password").with(as(EMAIL)).with(csrf()).param("newPassword", "newpass5678"))
+        mockMvc.perform(post("/mypage/password").with(as(EMAIL)).with(csrf())
+                        .param("currentPassword", "oldpass1234").param("newPassword", "newpass5678"))
                 .andExpect(redirectedUrl("/mypage?tab=info"))
                 .andExpect(flash().attribute("toast", "비밀번호를 변경했습니다"));
 
@@ -89,11 +90,17 @@ class MypageTest {
     }
 
     @Test
-    void 규칙에_맞지_않거나_소셜_계정이면_같은_화면에_메시지를_보여준다() throws Exception {
-        mockMvc.perform(post("/mypage/password").with(as(EMAIL)).with(csrf()).param("newPassword", "short"))
+    void 규칙에_맞지_않거나_현재_비밀번호가_틀리거나_소셜_계정이면_같은_화면에_메시지를_보여준다() throws Exception {
+        mockMvc.perform(post("/mypage/password").with(as(EMAIL)).with(csrf())
+                        .param("currentPassword", "oldpass1234").param("newPassword", "short"))
                 .andExpect(view().name("auth/mypage"))
                 .andExpect(model().attributeHasFieldErrors("passwordChangeRequest", "newPassword"));
-        mockMvc.perform(post("/mypage/password").with(as(SOCIAL_EMAIL)).with(csrf()).param("newPassword", "newpass5678"))
+        mockMvc.perform(post("/mypage/password").with(as(EMAIL)).with(csrf())
+                        .param("currentPassword", "wrongpass99").param("newPassword", "newpass5678"))
+                .andExpect(model().attributeHasFieldErrorCode("passwordChangeRequest", "currentPassword", "PASSWORD_MISMATCH"))
+                .andExpect(content().string(containsString("현재 비밀번호가 맞지 않습니다.")));
+        mockMvc.perform(post("/mypage/password").with(as(SOCIAL_EMAIL)).with(csrf())
+                        .param("currentPassword", "anything12").param("newPassword", "newpass5678"))
                 .andExpect(model().attributeHasFieldErrorCode("passwordChangeRequest", "newPassword", "SOCIAL_ACCOUNT"));
 
         assertThat(passwordEncoder.matches("oldpass1234", passwordHash(EMAIL))).isTrue();

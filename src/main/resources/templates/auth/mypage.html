@@ -49,6 +49,12 @@
                 <form class="au-form" th:if="${info.hasPassword()}" th:action="@{/mypage/password}" th:object="${passwordChangeRequest}"
                       method="post" novalidate>
                     <div class="au-field">
+                        <label class="au-label" for="currentPassword">현재 비밀번호</label>
+                        <input class="au-input" id="currentPassword" type="password" autocomplete="current-password" required
+                               th:field="*{currentPassword}" th:attrappend="aria-invalid=${#fields.hasErrors('currentPassword')} ? 'true'">
+                        <p class="au-hint is-error" role="alert" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}">현재 비밀번호 오류</p>
+                    </div>
+                    <div class="au-field">
                         <label class="au-label" for="newPassword">새 비밀번호</label>
                         <input class="au-input" id="newPassword" type="password" autocomplete="new-password" required
                                th:field="*{newPassword}" th:attrappend="aria-invalid=${#fields.hasErrors('newPassword')} ? 'true'">

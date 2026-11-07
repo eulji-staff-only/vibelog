@@ -62,12 +62,13 @@ public class AuthMypageController {
             return view("info", memberId, model);
         }
         try {
-            mypageService.changePassword(memberId, passwordChangeRequest.getNewPassword());
+            mypageService.changePassword(memberId, passwordChangeRequest.getCurrentPassword(), passwordChangeRequest.getNewPassword());
         } catch (BusinessException e) {
-            if (e.getErrorCode() != AuthErrorCode.SOCIAL_ACCOUNT) {
+            if (e.getErrorCode() != AuthErrorCode.SOCIAL_ACCOUNT && e.getErrorCode() != AuthErrorCode.PASSWORD_MISMATCH) {
                 throw e;
             }
-            bindingResult.rejectValue("newPassword", e.getErrorCode().toString(), e.getMessage());
+            String field = e.getErrorCode() == AuthErrorCode.PASSWORD_MISMATCH ? "currentPassword" : "newPassword";
+            bindingResult.rejectValue(field, e.getErrorCode().toString(), e.getMessage());
             return view("info", memberId, model);
         }
         redirectAttributes.addFlashAttribute("toast", "비밀번호를 변경했습니다");
