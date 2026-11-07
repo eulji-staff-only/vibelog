@@ -57,6 +57,13 @@ public class Member extends BaseTimeEntity {
         return member;
     }
 
+    /* 구글·깃허브로 처음 로그인한 학습자 (FR-USR-003). 비밀번호가 없고, 이메일은 인증된 것으로 본다 (PL-USR-003) */
+    public static Member createSocial(String email, String nickname, LocalDateTime now) {
+        Member member = create(email, null, nickname);
+        member.emailVerifiedAt = now;
+        return member;
+    }
+
     /* 소셜 가입 회원은 비밀번호가 없다 (password_hash NULL) */
     public boolean hasPassword() {
         return passwordHash != null;

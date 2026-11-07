@@ -37,3 +37,9 @@ vibelog:
   base-url: ${APP_BASE_URL:http://localhost:8080}
   mail:
     from: ${MAIL_FROM:no-reply@vibelog.example}
+  oauth:
+    # 구글·깃허브 로그인 키 (#91). 환경 변수로만 넣는다. 비어 있으면 그 로그인을 켜지 않고 버튼도 숨긴다 (README 최초 세팅 10)
+    google-client-id: ${GOOGLE_CLIENT_ID:}
+    google-client-secret: ${GOOGLE_CLIENT_SECRET:}
+    github-client-id: ${GITHUB_CLIENT_ID:}
+    github-client-secret: ${GITHUB_CLIENT_SECRET:}

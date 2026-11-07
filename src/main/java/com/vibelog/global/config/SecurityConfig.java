@@ -16,6 +16,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -36,6 +40,7 @@ import java.nio.charset.StandardCharsets;
  *        - /api/** 요청은 비로그인 401 LOGIN_REQUIRED, 권한 없음 403 도 JSON {code, message} 로 답한다 (D-08).
  *        - 로그인 규칙은 auth 영역이 정한다: 성공 후 도착지(LoginSuccessHandler), 5회 잠금(LoginAuthenticationProvider), 실패 안내(LoginFailureHandler),
  *          로그인 유지(LoginRememberMeServices). 2시간 동안 요청이 없으면 세션이 끝난다 (application.yaml, PL-USR-006).
+ *        - 구글·깃허브 로그인(#91)은 키가 있을 때만 켠다. 회원 찾기·만들기와 도착지는 auth 영역 Social* 클래스가 정한다.
  */
 @Configuration
 @RequiredArgsConstructor
@@ -44,6 +49,11 @@ public class SecurityConfig {
     private final AuthenticationSuccessHandler loginSuccessHandler;
     private final AuthenticationFailureHandler loginFailureHandler;
     private final RememberMeServices loginRememberMeServices;
+    // 구글·깃허브 로그인 (#91). 아래 네 개는 auth 영역(model/policy)의 Social* 클래스다
+    private final ClientRegistrationRepository socialLoginRegistrations;
+    private final OAuth2UserService<OAuth2UserRequest, OAuth2User> socialLoginUserService;
+    private final AuthenticationSuccessHandler socialLoginSuccessHandler;
+    private final AuthenticationFailureHandler socialLoginFailureHandler;
     private final ObjectMapper objectMapper;
 
     @Bean
@@ -73,6 +83,15 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(this::sendToLogin)
                         .accessDeniedHandler(this::denyAccess));
+        // 구글·깃허브 로그인 (API-USR-06·07). 키(환경 변수)가 하나도 없으면 켜지 않는다
+        if (socialLoginRegistrations instanceof Iterable<?> registrations && registrations.iterator().hasNext()) {
+            http.oauth2Login(oauth -> oauth
+                    .loginPage("/login")
+                    .clientRegistrationRepository(socialLoginRegistrations)
+                    .userInfoEndpoint(user -> user.userService(socialLoginUserService))
+                    .successHandler(socialLoginSuccessHandler)
+                    .failureHandler(socialLoginFailureHandler));
+        }
         return http.build();
     }
 
