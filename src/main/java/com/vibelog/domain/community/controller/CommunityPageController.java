@@ -119,7 +119,7 @@ public class CommunityPageController {
         model.addAttribute("editing", postId != null);
         model.addAttribute("postId", postId);
         model.addAttribute("canWrite", postWriteService.canWrite(loginMember.getMemberId()));
-        model.addAttribute("existingImages", postId == null ? List.of() : postWriteService.getImages(postId));
+        model.addAttribute("existingImages", postId == null ? List.of() : postWriteService.getImages(postId, loginMember.getMemberId()));
         return WRITE_VIEW;
     }
 

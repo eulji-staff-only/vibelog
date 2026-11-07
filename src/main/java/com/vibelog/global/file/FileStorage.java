@@ -16,6 +16,8 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -49,18 +51,17 @@ public class FileStorage implements WebMvcConfigurer {
 
     /* 게시글 사진, 포트폴리오 스크린샷, 개념 이미지 */
     public String saveImage(MultipartFile file) {
-        byte[] bytes = readWithinLimit(file);
-        String extension = extensionOf(file);
-        boolean formatMatches = switch (extension) {
-            case "jpg", "jpeg" -> startsWith(bytes, 0, 0xFF, 0xD8, 0xFF);
-            case "png" -> startsWith(bytes, 0, 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n');
-            case "webp" -> startsWith(bytes, 0, 'R', 'I', 'F', 'F') && startsWith(bytes, 8, 'W', 'E', 'B', 'P');
-            default -> false;
-        };
-        if (!formatMatches) {
-            throw new BusinessException(CommonErrorCode.INVALID_FILE);
+        return store(readImage(file), extensionOf(file));
+    }
+
+    /* 여러 장은 모두 검사한 뒤에 저장한다. 한 장이라도 틀리면 아무 파일도 남지 않는다 */
+    public List<String> saveImages(List<MultipartFile> files) {
+        List<byte[]> images = files.stream().map(this::readImage).toList();
+        List<String> urls = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            urls.add(store(images.get(i), extensionOf(files.get(i))));
         }
-        return store(bytes, extension);
+        return urls;
     }
 
     /* 평가 에이전트 설정 파일 */
@@ -77,6 +78,20 @@ public class FileStorage implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler(URL_PREFIX + "**").addResourceLocations(dir.toUri().toString());
+    }
+
+    private byte[] readImage(MultipartFile file) {
+        byte[] bytes = readWithinLimit(file);
+        boolean formatMatches = switch (extensionOf(file)) {
+            case "jpg", "jpeg" -> startsWith(bytes, 0, 0xFF, 0xD8, 0xFF);
+            case "png" -> startsWith(bytes, 0, 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n');
+            case "webp" -> startsWith(bytes, 0, 'R', 'I', 'F', 'F') && startsWith(bytes, 8, 'W', 'E', 'B', 'P');
+            default -> false;
+        };
+        if (!formatMatches) {
+            throw new BusinessException(CommonErrorCode.INVALID_FILE);
+        }
+        return bytes;
     }
 
     private byte[] readWithinLimit(MultipartFile file) {

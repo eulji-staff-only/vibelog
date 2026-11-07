@@ -15,6 +15,8 @@ import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequ
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -132,12 +134,24 @@ class CommunityPostWriteTest {
     }
 
     @Test
+    void 사진_한_장이_틀리면_앞의_사진도_저장하지_않는다() throws Exception {
+        long before = uploadedFiles();
+        MockMultipartFile fake = new MockMultipartFile("images", "fake.png", "image/png", new byte[]{'M', 'Z', 0, 0});
+
+        write(as(verified), "FREE", "틀린 사진 글", "본문", null, image("ok.png"), fake)
+                .andExpect(model().attributeHasFieldErrorCode("postWriteRequest", "images", "INVALID_FILE"));
+        assertThat(uploadedFiles()).isEqualTo(before);
+    }
+
+    @Test
     void 남의_글은_수정하거나_삭제할_수_없다() throws Exception {
         long postId = postOf(verified, "남의 글");
         RequestPostProcessor other = as(member(true));
 
         mockMvc.perform(get("/community/" + postId + "/edit").with(other)).andExpect(status().isForbidden());
         write(multipart("/community/" + postId + "/edit"), other, "FREE", "바꾼 제목", "본문", null)
+                .andExpect(status().isForbidden());
+        write(multipart("/community/" + postId + "/edit"), other, "FREE", "", "본문", null)   // 입력 오류여도 폼(사진)을 내주지 않는다
                 .andExpect(status().isForbidden());
         mockMvc.perform(post("/community/" + postId + "/delete").with(other).with(csrf())).andExpect(status().isForbidden());
 
@@ -179,6 +193,8 @@ class CommunityPostWriteTest {
 
         assertThat(jdbcTemplate.queryForObject("SELECT deleted_at IS NOT NULL FROM post WHERE post_id = ?", Boolean.class, postId)).isTrue();
         mockMvc.perform(get("/community/" + postId)).andExpect(status().isNotFound());
+        write(multipart("/community/" + postId + "/edit"), as(verified), "FREE", "", "본문", null)
+                .andExpect(status().isNotFound());
     }
 
     private ResultActions write(RequestPostProcessor member, String category, String title, String body, String workUrl,
@@ -213,6 +229,13 @@ class CommunityPostWriteTest {
         jdbcTemplate.update("INSERT INTO post (member_id, category, title, body) "
                 + "SELECT member_id, 'FREE', ?, '본문' FROM member WHERE email = ?", title, email);
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+    }
+
+    private long uploadedFiles() throws Exception {
+        Path dir = Path.of("build/test-uploads");
+        try (var files = Files.list(dir)) {
+            return files.count();
+        }
     }
 
     private int postCount(String title) {

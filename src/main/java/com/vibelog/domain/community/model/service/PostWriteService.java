@@ -52,7 +52,7 @@ public class PostWriteService {
         if (images.size() > MAX_IMAGES) {
             throw new BusinessException(CommonErrorCode.INVALID_FILE);
         }
-        List<String> imageUrls = images.stream().map(fileStorage::saveImage).toList();
+        List<String> imageUrls = fileStorage.saveImages(images);
 
         Post post = postRepository.save(Post.create(memberId, request.getCategory(), request.getTitle().strip(),
                 request.getBody(), strip(request.getWorkUrl()), strip(request.getTools())));
@@ -63,11 +63,17 @@ public class PostWriteService {
     /* 수정 화면 (API-CMT-05). 기존 내용과 사진을 채운다 */
     public PostWriteRequest getEditForm(Long postId, Long memberId) {
         Post post = getOwnPost(postId, memberId);
-        List<Long> imageIds = getImages(postId).stream().map(PostImageView::postImageId).toList();
+        List<Long> imageIds = imagesOf(postId).stream().map(PostImageView::postImageId).toList();
         return PostWriteRequest.from(post, imageIds);
     }
 
-    public List<PostImageView> getImages(Long postId) {
+    /* 수정 폼의 기존 사진. 입력 오류로 폼을 다시 그릴 때도 작성자인지 먼저 본다 (남의 글·삭제된 글 사진을 내주지 않는다) */
+    public List<PostImageView> getImages(Long postId, Long memberId) {
+        getOwnPost(postId, memberId);
+        return imagesOf(postId);
+    }
+
+    private List<PostImageView> imagesOf(Long postId) {
         return postImageRepository.findByPostIdOrderBySortOrder(postId).stream().map(PostImageView::from).toList();
     }
 
@@ -85,7 +91,7 @@ public class PostWriteService {
         if (kept.size() + newImages.size() > MAX_IMAGES) {
             throw new BusinessException(CommonErrorCode.INVALID_FILE);
         }
-        List<String> imageUrls = newImages.stream().map(fileStorage::saveImage).toList();
+        List<String> imageUrls = fileStorage.saveImages(newImages);
 
         postImageRepository.deleteAllInBatch(existing.stream().filter(image -> !kept.contains(image)).toList());
         // 남긴 사진 뒤에 붙인다. 번호 사이가 비어도 순서는 그대로다 (uk_post_image_post_sort 와 겹치지 않게 번호를 다시 매기지 않는다)
