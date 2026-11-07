@@ -1,5 +1,6 @@
 package com.vibelog.global.config;
 
+import com.vibelog.domain.course.model.policy.LoginDiagnosisChecker;
 import com.vibelog.domain.lesson.model.policy.LoginEnrollmentChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,10 +55,14 @@ class SecurityConfigTest {
     @MockitoBean
     LoginEnrollmentChecker loginEnrollmentChecker;
 
+    @MockitoBean
+    LoginDiagnosisChecker loginDiagnosisChecker;
+
     private final String password = UUID.randomUUID().toString();
 
     @BeforeEach
-    void 수강_중인_코스가_없는_회원으로_둔다() {
+    void 진단은_했고_수강_중인_코스가_없는_회원으로_둔다() {
+        given(loginDiagnosisChecker.hasDiagnosisRecord(anyLong())).willReturn(true);
         given(loginEnrollmentChecker.hasActiveEnrollment(anyLong())).willReturn(false);
     }
 
@@ -100,6 +105,24 @@ class SecurityConfigTest {
         insertMember(EMAIL, "ADMIN");
 
         login(null).andExpect(redirectedUrl("/admin"));
+    }
+
+    @Test
+    void 진단_기록이_없으면_수강_중이어도_진단으로_간다() throws Exception {
+        insertMember(EMAIL, "LEARNER");
+        given(loginDiagnosisChecker.hasDiagnosisRecord(anyLong())).willReturn(false);
+        given(loginEnrollmentChecker.hasActiveEnrollment(anyLong())).willReturn(true);
+
+        login(null).andExpect(redirectedUrl("/diagnosis"));
+    }
+
+    @Test
+    void 운영자는_진단_기록이_없어도_백오피스로_가고_redirect_가_있으면_그_화면이다() throws Exception {
+        insertMember(EMAIL, "ADMIN");
+        given(loginDiagnosisChecker.hasDiagnosisRecord(anyLong())).willReturn(false);
+
+        login(null).andExpect(redirectedUrl("/admin"));
+        login("/community").andExpect(redirectedUrl("/community"));
     }
 
     @Test
