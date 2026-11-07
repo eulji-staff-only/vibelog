@@ -101,14 +101,14 @@ public class GlobalExceptionHandler {
     /* 존재하지 않는 URL */
     @ExceptionHandler(NoResourceFoundException.class)
     public ModelAndView handleNoResource(NoResourceFoundException e, HttpServletRequest request) {
-        return error(request, HttpStatus.NOT_FOUND, "NOT_FOUND", "페이지를 찾을 수 없습니다.");
+        return error(request, HttpStatus.NOT_FOUND, "NOT_FOUND", "요청하신 페이지를 찾을 수 없습니다.");
     }
 
     /* 그 외 모든 예외 */
     @ExceptionHandler(Exception.class)
     public ModelAndView handleException(Exception e, HttpServletRequest request) {
         log.error("예상하지 못한 예외", e);
-        return error(request, HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_ERROR", "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        return error(request, HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_ERROR", "잠시 후 다시 시도해 주세요.");
     }
 
     private ModelAndView error(HttpServletRequest request, HttpStatus status, String code, String message) {
