@@ -55,20 +55,26 @@ public class EmailTokenService {
 
     /* 쓸 수 있는 링크인지만 보고 이메일을 돌려준다 (재설정 화면을 열 때) */
     public String check(String token, VerificationPurpose purpose) {
-        return find(token, purpose, LocalDateTime.now()).getEmail();
+        return find(token, purpose, LocalDateTime.now(), false).getEmail();
     }
 
     /* 링크를 쓴 것으로 기록하고 이메일을 돌려준다 */
     @Transactional
     public String use(String token, VerificationPurpose purpose) {
         LocalDateTime now = LocalDateTime.now();
-        EmailVerification verification = find(token, purpose, now);
+        EmailVerification verification = find(token, purpose, now, true);
         verification.use(now);
         return verification.getEmail();
     }
 
-    private EmailVerification find(String token, VerificationPurpose purpose, LocalDateTime now) {
-        EmailVerification verification = token == null ? null : emailVerificationRepository.findByTokenHash(hash(token))
+    /* forUpdate 면 행을 잠그고 읽는다. 동시에 같은 링크를 써도 두 번째 요청은 첫 번째가 끝난 뒤 "사용함"을 본다 */
+    private EmailVerification find(String token, VerificationPurpose purpose, LocalDateTime now, boolean forUpdate) {
+        if (token == null) {
+            throw new BusinessException(AuthErrorCode.TOKEN_USED);
+        }
+        EmailVerification verification = (forUpdate
+                ? emailVerificationRepository.findByTokenHashForUpdate(hash(token))
+                : emailVerificationRepository.findByTokenHash(hash(token)))
                 .filter(found -> found.getPurpose() == purpose)
                 .orElse(null);
         if (verification == null || verification.isUsed()) {

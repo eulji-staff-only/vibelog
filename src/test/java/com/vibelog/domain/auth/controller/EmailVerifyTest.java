@@ -101,7 +101,7 @@ class EmailVerifyTest {
     void 다시_받기는_1분_간격이고_이전_링크는_쓸_수_없다() throws Exception {
         String oldToken = signupAndGetToken();
 
-        resend(EMAIL).andExpect(status().isTooManyRequests()).andExpect(jsonPath("$.code").value("RESEND_TOO_SOON"));
+        resendAsMember().andExpect(status().isTooManyRequests()).andExpect(jsonPath("$.code").value("RESEND_TOO_SOON"));
 
         oneMinuteLater();
         clearInvocations(javaMailSender);
@@ -112,7 +112,20 @@ class EmailVerifyTest {
         mockMvc.perform(get("/auth/verify").param("token", newToken)).andExpect(model().attribute("state", "verified"));
 
         oneMinuteLater();
-        resend(EMAIL).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("ALREADY_VERIFIED"));
+        resendAsMember().andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("ALREADY_VERIFIED"));
+    }
+
+    @Test
+    void 비회원_요청은_1분_안이거나_이미_인증했어도_같은_성공_응답이고_메일은_가지_않는다() throws Exception {
+        signupAndGetToken();
+        clearInvocations(javaMailSender);
+
+        resend(EMAIL).andExpect(status().isNoContent());   // 1분 안
+        jdbcTemplate.update("UPDATE member SET email_verified_at = NOW() WHERE email = ?", EMAIL);
+        oneMinuteLater();
+        resend(EMAIL).andExpect(status().isNoContent());   // 이미 인증함
+
+        verify(javaMailSender, never()).send(any(SimpleMailMessage.class));
     }
 
     @Test
@@ -152,6 +165,12 @@ class EmailVerifyTest {
         Matcher matcher = TOKEN.matcher(message.getText());
         assertThat(matcher.find()).isTrue();
         return matcher.group(1);
+    }
+
+    /* 로그인한 본인이 다시 받기 (email 없이) */
+    private ResultActions resendAsMember() throws Exception {
+        return mockMvc.perform(post("/api/auth/verification-mail").with(user(memberLoginService.loadUserByUsername(EMAIL))).with(csrf())
+                .contentType(MediaType.APPLICATION_JSON).content("{}"));
     }
 
     private ResultActions resend(String email) throws Exception {
