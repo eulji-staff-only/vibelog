@@ -99,6 +99,8 @@ class SocialLoginTest {
         socialLoginSuccessHandler.onAuthenticationSuccess(new MockHttpServletRequest(), response, new TestingAuthenticationToken(first, null));
         assertThat(response.getRedirectedUrl()).isEqualTo("/diagnosis");
 
+        // 진단을 건너뛴 기록을 넣어 둔다. 진단 기록이 없으면 도착지 ③(#12)에 따라 /diagnosis 로 가기 때문이다
+        jdbcTemplate.update("INSERT INTO diagnosis_result (member_id, recommended_track_id, status) VALUES (?, NULL, 'SKIPPED')", first.getMemberId());
         LoginMember again = socialMemberService.login(SocialProvider.GOOGLE, "g-6", "dest@vibelog.test", "도착지");
         response = new MockHttpServletResponse();
         socialLoginSuccessHandler.onAuthenticationSuccess(new MockHttpServletRequest(), response, new TestingAuthenticationToken(again, null));
