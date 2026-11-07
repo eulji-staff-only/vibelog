@@ -8,6 +8,8 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
+import java.net.URI;
+
 /*
  * [AuthMailSender]
  * 역할 : 회원 영역의 메일(이메일 인증 #89, 비밀번호 재설정 #90)을 보낸다.
@@ -34,6 +36,12 @@ public class AuthMailSender {
         this.baseUrl = baseUrl;
     }
 
+    /* 사이트 주소의 호스트가 정확히 localhost·127.0.0.1 일 때만 로컬 개발로 본다 ("localhost.example.com" 은 아니다) */
+    private boolean isLocal() {
+        String host = URI.create(baseUrl).getHost();
+        return "localhost".equals(host) || "127.0.0.1".equals(host);
+    }
+
     /* "/auth/verify?token=..." → "https://사이트주소/auth/verify?token=..." */
     public String link(String pathAndQuery) {
         return baseUrl + pathAndQuery;
@@ -42,7 +50,7 @@ public class AuthMailSender {
     public void send(String to, String subject, String text) {
         JavaMailSender sender = javaMailSender.getIfAvailable();
         if (sender == null) {
-            if (baseUrl.startsWith("http://localhost")) {
+            if (isLocal()) {
                 log.warn("메일 서버 설정(SPRING_MAIL_HOST)이 없어 메일 대신 로그로 남깁니다 (로컬 개발용). to={}, subject={}\n{}", to, subject, text);
             } else {
                 log.error("메일 서버 설정(SPRING_MAIL_HOST)이 없어 메일을 보내지 못했습니다. subject={}", subject);
