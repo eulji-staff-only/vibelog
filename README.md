@@ -265,6 +265,60 @@ public Long write(Long memberId, PostWriteRequest request) {
 
 - 금칙어 목록은 `banned_word` 테이블입니다. 로컬에서 확인할 때는 `INSERT INTO banned_word (word) VALUES ('테스트금칙어');`로 넣어 봅니다.
 
+**JSON API 약속** (D-08, #152)
+
+- 화면이 바뀌지 않는 동작만 JSON으로 답하고, 주소는 `/api/`로 시작합니다 (운영자는 `/api/admin/`). Controller는 `@RestController`로 만들고 **명세에 적힌 값을 담은 DTO를 그대로** 돌려줍니다. 감싸는 틀(`{data: …}`)을 만들지 않습니다.
+- 실패는 화면과 똑같이 `BusinessException`을 던지기만 합니다. `/api/**` 요청이면 `GlobalExceptionHandler`가 에러 코드의 상태 코드와 아래 JSON으로 바꿔 보냅니다.
+
+```json
+{ "code": "NOT_OWNER", "message": "본인만 할 수 있습니다." }
+```
+
+| 상황 | 상태 · code |
+| --- | --- |
+| `BusinessException` | 에러 코드의 상태 · 에러 코드 이름 |
+| `@Valid` 검증 실패, 읽을 수 없는 JSON | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
+| 정책으로 걸러지지 않은 DB 제약 위반 (UNIQUE 등) | 409 · `CONFLICT` |
+| 없는 주소 | 404 · `NOT_FOUND` |
+| 비로그인 | 401 · `LOGIN_REQUIRED` |
+| 학습자가 `/api/admin/**` | 403 · `ADMIN_ONLY` |
+| CSRF 토큰 없음·만료 | 403 · `FORBIDDEN` |
+| 그 밖의 오류 | 500 · `SERVER_ERROR` (내부 정보는 보내지 않음) |
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class PortfolioGuideApiController {
+
+    private final GuideStepService guideStepService;
+
+    @PostMapping("/api/guide-steps/{guideStepId}/check")
+    public GuideStepCheckResponse check(@PathVariable Long guideStepId, @Valid @RequestBody GuideStepCheckRequest request,
+                                        @AuthenticationPrincipal LoginMember loginMember) {
+        return guideStepService.check(loginMember.getMemberId(), guideStepId, request.checked());   // → {"checkedCount": 2, "totalCount": 5}
+    }
+}
+```
+
+- JSON으로 POST 하려면 **CSRF 토큰을 헤더로** 보내야 합니다 (안 보내면 403 `FORBIDDEN`). 그 화면의 `<head>`에 토큰을 두고 `fetch`에서 꺼내 씁니다.
+
+```html
+<meta name="_csrf" th:content="${_csrf.token}">
+<meta name="_csrf_header" th:content="${_csrf.headerName}">
+```
+
+```js
+const token = document.querySelector('meta[name="_csrf"]').content;
+const header = document.querySelector('meta[name="_csrf_header"]').content;
+const response = await fetch('/api/guide-steps/3/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', [header]: token },
+    body: JSON.stringify({ checked: true }),
+});
+const body = await response.json();
+if (!response.ok) { alert(body.message); }   // 실패: {code, message}
+```
+
 **로그인 약속** (#12)
 
 - 로그인·로그아웃·접근 권한은 Spring Security가 처리합니다 ([`SecurityConfig`](src/main/java/com/vibelog/global/config/SecurityConfig.java)). Controller·Service에서 로그인 여부·운영자 여부를 직접 검사하지 않습니다.
