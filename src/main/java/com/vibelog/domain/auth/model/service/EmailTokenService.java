@@ -47,6 +47,17 @@ public class EmailTokenService {
         return token;
     }
 
+    /*
+     * 링크 없이 메일을 보낸 시각만 남긴다 (소셜 가입 회원에게 보내는 비밀번호 찾기 안내, #90).
+     * 다시 보내기 간격(lastIssuedAt)을 같은 방식으로 세려고 한 행을 만들고 바로 사용 처리한다. 토큰은 메일에 넣지 않아 쓸 수 없다.
+     */
+    @Transactional
+    public void recordSent(String email, VerificationPurpose purpose) {
+        issue(email, purpose, Duration.ZERO);
+        LocalDateTime now = LocalDateTime.now();
+        emailVerificationRepository.findByEmailAndPurposeAndUsedAtIsNull(email, purpose).forEach(row -> row.use(now));
+    }
+
     /* 마지막으로 링크를 보낸 시각 (다시 받기 간격 확인용) */
     public Optional<LocalDateTime> lastIssuedAt(String email, VerificationPurpose purpose) {
         return emailVerificationRepository.findFirstByEmailAndPurposeOrderByEmailVerificationIdDesc(email, purpose)

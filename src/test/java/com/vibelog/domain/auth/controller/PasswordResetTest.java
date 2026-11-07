@@ -128,6 +128,10 @@ class PasswordResetTest {
         find("social-reset@vibelog.test").andExpect(redirectedUrl("/password/find?sent=true"));
         SimpleMailMessage mail = lastMail();
         assertThat(mail.getText()).contains("구글·깃허브").doesNotContain("token=");
+
+        // 안내 메일도 1분 안에 다시 요청하면 보내지 않는다
+        find("social-reset@vibelog.test").andExpect(redirectedUrl("/password/find?sent=true"));
+        verify(javaMailSender, times(1)).send(any(SimpleMailMessage.class));
     }
 
     @Test
