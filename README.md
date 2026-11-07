@@ -258,7 +258,9 @@ public enum QuizErrorCode implements ErrorCode {
 | 상황 | 상태 · code |
 | --- | --- |
 | `BusinessException` | 에러 코드의 상태 · 에러 코드 이름 |
-| `@Valid` 검증 실패, 읽을 수 없는 JSON, 잘못된 메서드·Content-Type | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
+| `@Valid` 검증 실패 | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
+| 읽을 수 없는 JSON, 필수 값 없음, 타입 불일치 | 400 · `INVALID_INPUT` ("요청 값을 확인해주세요.") |
+| 지원하지 않는 메서드 / Content-Type | 405 · `METHOD_NOT_ALLOWED` (`Allow` 헤더) / 415 · `UNSUPPORTED_MEDIA_TYPE` |
 | 정책으로 걸러지지 않은 DB 제약 위반 (UNIQUE 등) | 409 · `CONFLICT` |
 | 없는 주소 | 404 · `NOT_FOUND` |
 | 비로그인 | 401 · `LOGIN_REQUIRED` |
