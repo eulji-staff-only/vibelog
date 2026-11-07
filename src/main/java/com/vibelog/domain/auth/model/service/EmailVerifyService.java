@@ -19,7 +19,8 @@ import java.time.LocalDateTime;
  * 책임 : - 가입하면 인증 메일을 보낸다. 링크는 24시간 쓸 수 있다 (PL-USR-004).
  *        - 링크를 열면 member.email_verified_at 을 채운다. 인증 전에도 로그인·학습은 되고, 작성만 막힌다 (PL-USR-003).
  *        - 다시 받기는 1분 간격(RESEND_TOO_SOON, PL-CST-002), 이미 인증했으면 ALREADY_VERIFIED. 이전 링크는 무효가 된다.
- *        - 가입하지 않은 이메일로 다시 받기를 눌러도 같은 성공 응답을 준다 (가입 여부를 알리지 않는다).
+ *        - 두 오류는 로그인한 본인에게만 알린다. 비회원 요청은 가입하지 않은 이메일·인증한 이메일·1분 안 재요청 모두
+ *          아무것도 보내지 않고 같은 성공 응답으로 끝낸다 (응답으로 가입 여부를 알 수 없게, API-USR-10).
  */
 @Service
 @RequiredArgsConstructor
@@ -55,22 +56,23 @@ public class EmailVerifyService {
         member.verifyEmail(LocalDateTime.now());
     }
 
-    /* API-USR-10 */
+    /* API-USR-10. loggedIn 이 false 면(비회원) 오류를 알리지 않고 조용히 끝낸다 */
     @Transactional
-    public void resend(String email) {
+    public void resend(String email, boolean loggedIn) {
         Member member = memberRepository.findByEmailAndStatus(email, MemberStatus.ACTIVE).orElse(null);
         if (member == null) {
             return;
         }
-        if (member.isEmailVerified()) {
-            throw new BusinessException(AuthErrorCode.ALREADY_VERIFIED);
-        }
         LocalDateTime now = LocalDateTime.now();
-        emailTokenService.lastIssuedAt(email, VerificationPurpose.SIGNUP)
+        boolean tooSoon = emailTokenService.lastIssuedAt(email, VerificationPurpose.SIGNUP)
                 .filter(issuedAt -> now.isBefore(issuedAt.plus(RESEND_INTERVAL)))
-                .ifPresent(issuedAt -> {
-                    throw new BusinessException(AuthErrorCode.RESEND_TOO_SOON);
-                });
+                .isPresent();
+        if (member.isEmailVerified() || tooSoon) {
+            if (!loggedIn) {
+                return;
+            }
+            throw new BusinessException(member.isEmailVerified() ? AuthErrorCode.ALREADY_VERIFIED : AuthErrorCode.RESEND_TOO_SOON);
+        }
         sendSignupMail(email);
     }
 }

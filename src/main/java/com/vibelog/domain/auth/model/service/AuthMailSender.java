@@ -11,8 +11,9 @@ import org.springframework.stereotype.Component;
 /*
  * [AuthMailSender]
  * 역할 : 회원 영역의 메일(이메일 인증 #89, 비밀번호 재설정 #90)을 보낸다.
- * 책임 : - 메일 서버는 환경 변수(SPRING_MAIL_HOST 등)로만 켠다. 설정이 없으면 Spring 이 JavaMailSender 를 만들지 않으므로,
- *          메일 대신 내용을 로그에 남긴다. 로컬 개발에서 링크를 로그에서 복사해 확인한다.
+ * 책임 : - 메일 서버는 환경 변수(SPRING_MAIL_HOST 등)로만 켠다. 설정이 없으면 Spring 이 JavaMailSender 를 만들지 않는다.
+ *          그때 사이트 주소(vibelog.base-url)가 localhost 면(로컬 개발) 메일 내용을 로그에 남겨 링크를 복사해 쓰게 하고,
+ *          그 밖(배포 서버에서 설정을 빠뜨림)에는 링크·받는 사람을 남기지 않고 오류만 남긴다. 로그로 링크가 새지 않게 하기 위해서다.
  *        - 보내기에 실패해도 요청은 실패시키지 않고 로그만 남긴다. 사용자는 다시 받기로 새 링크를 받는다.
  *        - 링크 앞부분은 설정(vibelog.base-url)으로 만든다. 요청의 Host 헤더를 믿지 않는다.
  */
@@ -41,7 +42,11 @@ public class AuthMailSender {
     public void send(String to, String subject, String text) {
         JavaMailSender sender = javaMailSender.getIfAvailable();
         if (sender == null) {
-            log.warn("메일 서버 설정(SPRING_MAIL_HOST)이 없어 메일 대신 로그로 남깁니다 (개발용). to={}, subject={}\n{}", to, subject, text);
+            if (baseUrl.startsWith("http://localhost")) {
+                log.warn("메일 서버 설정(SPRING_MAIL_HOST)이 없어 메일 대신 로그로 남깁니다 (로컬 개발용). to={}, subject={}\n{}", to, subject, text);
+            } else {
+                log.error("메일 서버 설정(SPRING_MAIL_HOST)이 없어 메일을 보내지 못했습니다. subject={}", subject);
+            }
             return;
         }
         SimpleMailMessage message = new SimpleMailMessage();

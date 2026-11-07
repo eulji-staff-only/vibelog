@@ -23,6 +23,8 @@ spring:
     properties:
       "[mail.smtp.auth]": true
       "[mail.smtp.starttls.enable]": true
+      # 암호화(STARTTLS)를 못 하면 보내지 않는다. 계정 비밀번호·링크가 평문으로 나가지 않게
+      "[mail.smtp.starttls.required]": true
       "[mail.smtp.connectiontimeout]": 5000
       "[mail.smtp.timeout]": 5000
       "[mail.smtp.writetimeout]": 5000

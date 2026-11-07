@@ -47,6 +47,17 @@ public class EmailTokenService {
         return token;
     }
 
+    /*
+     * 링크 없이 메일을 보낸 시각만 남긴다 (소셜 가입 회원에게 보내는 비밀번호 찾기 안내, #90).
+     * 다시 보내기 간격(lastIssuedAt)을 같은 방식으로 세려고 한 행을 만들고 바로 사용 처리한다. 토큰은 메일에 넣지 않아 쓸 수 없다.
+     */
+    @Transactional
+    public void recordSent(String email, VerificationPurpose purpose) {
+        issue(email, purpose, Duration.ZERO);
+        LocalDateTime now = LocalDateTime.now();
+        emailVerificationRepository.findByEmailAndPurposeAndUsedAtIsNull(email, purpose).forEach(row -> row.use(now));
+    }
+
     /* 마지막으로 링크를 보낸 시각 (다시 받기 간격 확인용) */
     public Optional<LocalDateTime> lastIssuedAt(String email, VerificationPurpose purpose) {
         return emailVerificationRepository.findFirstByEmailAndPurposeOrderByEmailVerificationIdDesc(email, purpose)
@@ -55,20 +66,26 @@ public class EmailTokenService {
 
     /* 쓸 수 있는 링크인지만 보고 이메일을 돌려준다 (재설정 화면을 열 때) */
     public String check(String token, VerificationPurpose purpose) {
-        return find(token, purpose, LocalDateTime.now()).getEmail();
+        return find(token, purpose, LocalDateTime.now(), false).getEmail();
     }
 
     /* 링크를 쓴 것으로 기록하고 이메일을 돌려준다 */
     @Transactional
     public String use(String token, VerificationPurpose purpose) {
         LocalDateTime now = LocalDateTime.now();
-        EmailVerification verification = find(token, purpose, now);
+        EmailVerification verification = find(token, purpose, now, true);
         verification.use(now);
         return verification.getEmail();
     }
 
-    private EmailVerification find(String token, VerificationPurpose purpose, LocalDateTime now) {
-        EmailVerification verification = token == null ? null : emailVerificationRepository.findByTokenHash(hash(token))
+    /* forUpdate 면 행을 잠그고 읽는다. 동시에 같은 링크를 써도 두 번째 요청은 첫 번째가 끝난 뒤 "사용함"을 본다 */
+    private EmailVerification find(String token, VerificationPurpose purpose, LocalDateTime now, boolean forUpdate) {
+        if (token == null) {
+            throw new BusinessException(AuthErrorCode.TOKEN_USED);
+        }
+        EmailVerification verification = (forUpdate
+                ? emailVerificationRepository.findByTokenHashForUpdate(hash(token))
+                : emailVerificationRepository.findByTokenHash(hash(token)))
                 .filter(found -> found.getPurpose() == purpose)
                 .orElse(null);
         if (verification == null || verification.isUsed()) {
