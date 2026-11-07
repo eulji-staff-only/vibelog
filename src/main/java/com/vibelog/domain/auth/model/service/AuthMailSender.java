@@ -28,7 +28,7 @@ public class AuthMailSender {
     private final ObjectProvider<JavaMailSender> javaMailSender;
     private final String from;
     private final String baseUrl;
-    private final boolean logBody;
+    private final boolean logBody;      // MAIL_LOG_BODY 를 켰고 사이트 주소도 localhost 일 때만 true
 
     public AuthMailSender(ObjectProvider<JavaMailSender> javaMailSender,
                           @Value("${vibelog.mail.from}") String from,
@@ -37,13 +37,9 @@ public class AuthMailSender {
         this.javaMailSender = javaMailSender;
         this.from = from;
         this.baseUrl = baseUrl;
-        this.logBody = logBody;
-    }
-
-    /* 사이트 주소의 호스트가 정확히 localhost·127.0.0.1 인지 ("localhost.example.com" 은 아니다) */
-    private boolean isLocalHost() {
+        // 주소는 켤 때 한 번만 읽는다. 형식이 틀린 주소면 앱이 뜨지 않아 바로 알 수 있다
         String host = URI.create(baseUrl).getHost();
-        return "localhost".equals(host) || "127.0.0.1".equals(host);
+        this.logBody = logBody && ("localhost".equals(host) || "127.0.0.1".equals(host));
     }
 
     /* "/auth/verify?token=..." → "https://사이트주소/auth/verify?token=..." */
@@ -54,8 +50,8 @@ public class AuthMailSender {
     public void send(String to, String subject, String text) {
         JavaMailSender sender = javaMailSender.getIfAvailable();
         if (sender == null) {
-            if (logBody && isLocalHost()) {
-                log.warn("메일 서버 설정(SPRING_MAIL_HOST)이 없어 메일 대신 로그로 남깁니다 (로컬 개발용). to={}, subject={}\n{}", to, subject, text);
+            if (logBody) {
+                log.warn("메일 서버 설정(SPRING_MAIL_HOST)이 없어 메일 대신 로그로 남깁니다 (로컬 개발용). subject={}\n{}", subject, text);
             } else {
                 log.error("메일 서버 설정(SPRING_MAIL_HOST)이 없어 메일을 보내지 못했습니다. subject={}", subject);
             }
