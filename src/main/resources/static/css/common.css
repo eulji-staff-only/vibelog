@@ -364,6 +364,8 @@ img {
 
   .vl-header__nickname {
     width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .vl-content {
