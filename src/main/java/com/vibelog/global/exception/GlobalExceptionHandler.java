@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -60,9 +62,13 @@ public class GlobalExceptionHandler {
         return error(request, HttpStatus.BAD_REQUEST, INVALID_INPUT, message);
     }
 
-    /* 필수 파라미터 누락 / 타입 불일치 / JSON 본문을 읽을 수 없음 */
+    /*
+     * 필수 파라미터 누락 / 타입 불일치 / JSON 본문을 읽을 수 없음 / 잘못된 HTTP 메서드·Content-Type.
+     * 모두 요청을 잘못 보낸 경우라 서버 오류(500)가 아니라 INVALID_INPUT 으로 답한다 (D-08 표의 INVALID_INPUT = 400)
+     */
     @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class,
-            HttpMessageNotReadableException.class})
+            HttpMessageNotReadableException.class, HttpRequestMethodNotSupportedException.class,
+            HttpMediaTypeNotSupportedException.class})
     public ModelAndView handleBadRequest(Exception e, HttpServletRequest request) {
         return error(request, HttpStatus.BAD_REQUEST, INVALID_INPUT, "요청 값을 확인해주세요.");
     }
