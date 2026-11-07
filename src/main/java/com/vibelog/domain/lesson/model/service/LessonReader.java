@@ -1,9 +1,11 @@
 package com.vibelog.domain.lesson.model.service;
 
+import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
+import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 public class LessonReader {
 
     private final EnrollmentRepository enrollmentRepository;
+    private final ActivityRepository activityRepository;
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
 
@@ -45,6 +48,12 @@ public class LessonReader {
     public Map<Long, String> getLessonTitles(Collection<Long> lessonIds) {
         return lessonRepository.findAllById(lessonIds).stream()
                 .collect(Collectors.toMap(Lesson::getLessonId, Lesson::getTitle));
+    }
+
+    /* 활동 ID → 활동 제목. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 퀴즈 결과(auth #119)가 쓴다 */
+    public Map<Long, String> getActivityTitles(Collection<Long> activityIds) {
+        return activityRepository.findAllById(activityIds).stream()
+                .collect(Collectors.toMap(Activity::getActivityId, Activity::getTitle));
     }
 
     private MemberEnrollmentSummary summaryOf(Enrollment enrollment) {

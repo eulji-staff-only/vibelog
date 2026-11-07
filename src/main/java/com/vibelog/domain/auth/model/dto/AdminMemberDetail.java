@@ -4,19 +4,23 @@ import com.vibelog.domain.auth.model.entity.Member;
 import com.vibelog.domain.auth.model.entity.MemberRole;
 import com.vibelog.domain.auth.model.entity.MemberStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /*
- * 운영자 회원 상세 (API-ADM-38). 수강·모의고사·포트폴리오는 각 영역 Reader 에서 받은 값이다.
- * 코스 이름과 퀴즈 결과는 course·quiz 영역이 아직 없어 담지 않는다 (#119 후속).
+ * 운영자 회원 상세 (API-ADM-38). 수강·퀴즈·모의고사·포트폴리오는 각 영역 Reader 에서 받은 값이다.
  */
 public record AdminMemberDetail(Long memberId, String nickname, String email, String roleLabel, boolean withdrawn,
                                 boolean emailVerified, LocalDateTime joinedAt, List<Enrollment> enrollments,
-                                List<ExamResult> examResults, long portfolioCount) {
+                                List<QuizResult> quizResults, List<ExamResult> examResults, long portfolioCount) {
 
     /* 수강 코스 하나. status 는 "수강 중"·"완료"·"포기" */
-    public record Enrollment(Long courseId, LocalDateTime startedAt, int progressPercent, String status) {
+    public record Enrollment(String courseTitle, LocalDateTime startedAt, int progressPercent, String status) {
+    }
+
+    /* 제출한 퀴즈 풀이 한 번. correctRate 는 정답률(%) */
+    public record QuizResult(String activityTitle, BigDecimal correctRate, boolean passed, LocalDateTime submittedAt) {
     }
 
     /* 제출한 모의고사 한 번 */
@@ -27,9 +31,10 @@ public record AdminMemberDetail(Long memberId, String nickname, String email, St
         return member.getRole() == MemberRole.ADMIN ? "운영자" : "학습자";
     }
 
-    public static AdminMemberDetail of(Member member, List<Enrollment> enrollments, List<ExamResult> examResults, long portfolioCount) {
+    public static AdminMemberDetail of(Member member, List<Enrollment> enrollments, List<QuizResult> quizResults,
+                                       List<ExamResult> examResults, long portfolioCount) {
         return new AdminMemberDetail(member.getMemberId(), member.getNickname(), member.getEmail(), roleLabel(member),
                 member.getStatus() == MemberStatus.WITHDRAWN, member.getEmailVerifiedAt() != null, member.getCreatedAt(),
-                enrollments, examResults, portfolioCount);
+                enrollments, quizResults, examResults, portfolioCount);
     }
 }

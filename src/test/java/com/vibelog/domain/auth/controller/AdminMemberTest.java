@@ -55,12 +55,12 @@ class AdminMemberTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void 상세에_수강_진행률과_제출한_모의고사_결과가_보인다() throws Exception {
+    void 상세에_수강_코스와_진행률_제출한_퀴즈와_모의고사_결과가_보인다() throws Exception {
         long memberId = memberOf("상세회원", "detail@vibelog.test", "ACTIVE");
         jdbcTemplate.update("INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9301, '트랙', '대상', '설명', 9301)");
         jdbcTemplate.update("INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9301, '카테고리', 9301)");
         jdbcTemplate.update("INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days, is_public) "
-                + "VALUES (9301, 9301, 9301, '코스', '요약', '설명', '대상', '목표', 7, TRUE)");
+                + "VALUES (9301, 9301, 9301, '자바로 배우는 바이브코딩', '요약', '설명', '대상', '목표', 7, TRUE)");
         jdbcTemplate.update("INSERT INTO lesson (lesson_id, course_id, title, intro, goal, contents, estimated_minutes, sort_order, is_public) VALUES "
                 + "(9301, 9301, '변수와 자료형', '소개', '목표', '본문', 30, 1, TRUE), "
                 + "(9302, 9301, '조건문', '소개', '목표', '본문', 30, 2, TRUE), "
@@ -69,13 +69,18 @@ class AdminMemberTest {
         long enrollmentId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
         jdbcTemplate.update("INSERT INTO lesson_progress (enrollment_id, lesson_id, unlocked_at, completed_at) VALUES (?, 9301, NOW(), NOW()), (?, 9302, NOW(), NULL)",
                 enrollmentId, enrollmentId);
+        jdbcTemplate.update("INSERT INTO activity (activity_id, lesson_id, activity_type, title, body, body_format, estimated_minutes, pass_rate, sort_order) VALUES "
+                + "(9301, 9301, 'QUIZ', '변수 퀴즈', NULL, NULL, 10, 50, 1), (9302, 9301, 'QUIZ', '자료형 퀴즈', NULL, NULL, 10, 50, 2)");
+        jdbcTemplate.update("INSERT INTO quiz_attempt (member_id, activity_id, started_at, correct_rate, is_passed, submitted_at) VALUES "
+                + "(?, 9301, NOW(), 75.00, TRUE, NOW()), (?, 9302, NOW(), NULL, NULL, NULL)", memberId, memberId);
         jdbcTemplate.update("INSERT INTO exam_attempt (member_id, lesson_id, attempt_no, started_at, score, correct_rate, submitted_at) VALUES "
                 + "(?, 9301, 1, NOW(), 85, 85.00, NOW()), (?, 9302, 1, NOW(), NULL, NULL, NULL)", memberId, memberId);
 
         mockMvc.perform(get("/admin/members/" + memberId))
-                .andExpect(content().string(allOf(containsString("detail@vibelog.test"), containsString("코스 9301"),
-                        containsString("33%"), containsString("수강 중"), containsString("변수와 자료형"), containsString("85점"),
-                        not(containsString("조건문")), containsString("0개"))));
+                .andExpect(content().string(allOf(containsString("detail@vibelog.test"), containsString("자바로 배우는 바이브코딩"),
+                        containsString("33%"), containsString("수강 중"), containsString("변수 퀴즈"), containsString("75%"),
+                        containsString("통과"), not(containsString("자료형 퀴즈")), containsString("변수와 자료형"),
+                        containsString("85점"), not(containsString("조건문")), containsString("0개"))));
     }
 
     @Test
