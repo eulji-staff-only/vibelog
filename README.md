@@ -186,6 +186,18 @@ Gradle은 설치하지 않아도 됩니다. 저장소에 들어 있는 `gradlew`
 
 또는 IntelliJ에서 `VibelogApplication`의 `main`을 실행합니다. `http://localhost:8080` 에 접속해 **404 에러 화면**이 나오면 정상입니다. (아직 화면이 하나도 없어서예요)
 
+> 💡 **메일 (선택, #89)** — 가입 인증·비밀번호 재설정 메일은 메일 서버 환경 변수가 있을 때만 실제로 보냅니다.
+> 없으면 메일 대신 **앱 로그에 메일 내용과 링크**가 찍히니, 로컬에서는 그 링크를 복사해 열면 됩니다.
+> 실제로 보내려면 실행 설정의 Environment variables 에 아래를 넣습니다 (Gmail 은 앱 비밀번호 사용).
+>
+> | 환경 변수 | 예 |
+> | --- | --- |
+> | `SPRING_MAIL_HOST` | `smtp.gmail.com` |
+> | `SPRING_MAIL_USERNAME` | 보내는 계정 |
+> | `SPRING_MAIL_PASSWORD` | 앱 비밀번호 |
+> | `MAIL_FROM` | 보내는 사람 주소 (기본 `no-reply@vibelog.example`) |
+> | `APP_BASE_URL` | 메일 링크의 사이트 주소 (기본 `http://localhost:8080`, 배포 서버는 실제 주소) |
+
 여기까지 됐다면 준비 끝입니다. 🎉 이제 [01. 작업 흐름](docs/collaboration/01-workflow.md)을 따라 첫 작업을 시작하세요.
 
 ---
