@@ -32,7 +32,6 @@ import java.security.Principal;
  *        - 회원가입(API-USR-03)을 받아 가입한 회원을 바로 로그인 상태로 만든다.
  *        - 로그인 처리(POST /login)·로그아웃(POST /logout)은 Spring Security 가 한다 (SecurityConfig).
  *        - 이메일 인증 링크(API-USR-09)를 처리해 성공·만료·다시 받기 상태 중 하나를 보여 준다 (#89).
- *        - 재설정 처리와 token 확인은 #90 에서 붙인다.
  */
 @Controller
 @RequiredArgsConstructor
@@ -101,16 +100,6 @@ public class AuthController {
             model.addAttribute("state", "expired");
         }
         return "auth/verify";
-    }
-
-    @GetMapping("/password/find")
-    public String passwordFindPage() {
-        return "auth/password-find";
-    }
-
-    @GetMapping("/password/reset")
-    public String passwordResetPage() {
-        return "auth/password-reset";
     }
 
     /* 폼 로그인과 같게: 비밀번호 해시를 지우고, 세션 ID 를 새로 발급하고(세션 고정 공격 방지), 로그인 정보를 세션에 저장한다 */

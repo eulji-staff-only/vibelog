@@ -57,6 +57,16 @@ public class Member extends BaseTimeEntity {
         return member;
     }
 
+    /* 소셜 가입 회원은 비밀번호가 없다 (password_hash NULL) */
+    public boolean hasPassword() {
+        return passwordHash != null;
+    }
+
+    /* 비밀번호 재설정(#90)·변경(#116). BCrypt 해시를 받는다 */
+    public void changePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
     public boolean isEmailVerified() {
         return emailVerifiedAt != null;
     }
