@@ -3,6 +3,8 @@ package com.vibelog.domain.lesson.model.service;
 import com.vibelog.domain.course.model.policy.CourseReader;
 import com.vibelog.domain.course.model.policy.CourseSummary;
 import com.vibelog.domain.exam.model.policy.LessonExamStatusChecker;
+import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
+import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
@@ -11,6 +13,7 @@ import com.vibelog.domain.lesson.model.dto.LessonStatus;
 import com.vibelog.domain.lesson.model.dto.MyLearningCourseCard;
 import com.vibelog.domain.lesson.model.dto.MyLearningLessonCard;
 import com.vibelog.domain.lesson.model.dto.PortfolioStatus;
+import com.vibelog.domain.lesson.model.entity.ActivityType;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
 import com.vibelog.domain.lesson.model.entity.LessonProgress;
@@ -39,6 +42,8 @@ public class MyLearningService {
     private final EnrollmentRepository enrollmentRepository;
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final ActivityRepository activityRepository;
+    private final ActivityProgressRepository activityProgressRepository;
     private final CourseReader courseReader;
     private final LessonExamStatusChecker lessonExamStatusChecker;
     private final LessonPortfolioChecker lessonPortfolioChecker;
@@ -79,7 +84,7 @@ public class MyLearningService {
         for (Lesson lesson : publicLessons) {
             LessonProgress progress = progressByLessonId.get(lesson.getLessonId());
             LessonStatus status = toLessonStatus(progress);
-            LessonExamStatus examStatus = toExamStatus(status, lesson.getLessonId(), latestSubmittedAttemptNos);
+            LessonExamStatus examStatus = toExamStatus(status, enrollmentId, lesson.getLessonId(), latestSubmittedAttemptNos);
 
             lessonCards.add(new MyLearningLessonCard(lesson.getLessonId(), order++, lesson.getTitle(), status, examStatus));
             addLessonRemainingCondition(remainingConditions, lesson, status, examStatus);
@@ -120,15 +125,32 @@ public class MyLearningService {
         return LessonStatus.IN_PROGRESS;
     }
 
-    /* 수업이 잠기면 모의고사도 잠김, 수업이 완료(리포트 확인)면 리포트 확인, 그 외 열린 수업은 응시 여부로 판단 */
-    private LessonExamStatus toExamStatus(LessonStatus status, Long lessonId, Map<Long, Integer> latestSubmittedAttemptNos) {
+    /* 수업이 잠기면 모의고사도 잠김, 수업이 완료(리포트 확인)면 리포트 확인.
+       그 외(수업은 열렸음)에는 PL-LSN-002대로 "마지막 퀴즈를 통과해야 모의고사가 열린다"를 따로 확인한다 —
+       수업이 열려 있다고 마지막 퀴즈까지 통과한 건 아니기 때문이다. */
+    private LessonExamStatus toExamStatus(LessonStatus status, Long enrollmentId, Long lessonId,
+                                           Map<Long, Integer> latestSubmittedAttemptNos) {
         if (status == LessonStatus.LOCKED) {
             return LessonExamStatus.LOCKED;
         }
         if (status == LessonStatus.COMPLETED) {
             return LessonExamStatus.REPORT_CONFIRMED;
         }
+        if (!lastQuizPassed(enrollmentId, lessonId)) {
+            return LessonExamStatus.LOCKED;
+        }
         return latestSubmittedAttemptNos.containsKey(lessonId) ? LessonExamStatus.ATTEMPTED : LessonExamStatus.OPEN;
+    }
+
+    /* 계약 ②(ExamLessonProgress.isExamOpen)와 같은 계산 — 그 수업 마지막 퀴즈 활동의 completed_at 이 있음.
+       Spring이 주입하는 그 계약 인터페이스를 직접 쓰지 않고 Repository로 계산한다 (lessonContractService가
+       여러 계약을 한 빈으로 구현해서, 그 중 하나만 모킹하는 테스트가 있으면 다른 계약도 같이 깨지기 때문, #107). */
+    private boolean lastQuizPassed(Long enrollmentId, Long lessonId) {
+        return activityRepository
+                .findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(lessonId, ActivityType.QUIZ)
+                .flatMap(lastQuiz -> activityProgressRepository.findByEnrollmentIdAndActivityId(enrollmentId, lastQuiz.getActivityId()))
+                .map(ap -> ap.isCompleted())
+                .orElse(false);
     }
 
     private PortfolioStatus toPortfolioStatus(Enrollment enrollment, boolean submitted) {
@@ -143,7 +165,9 @@ public class MyLearningService {
         if (status == LessonStatus.LOCKED) {
             remainingConditions.add("[" + lesson.getTitle() + "] 잠김 — 이전 수업을 완료하면 열립니다");
         } else if (status == LessonStatus.IN_PROGRESS) {
-            if (examStatus == LessonExamStatus.OPEN) {
+            if (examStatus == LessonExamStatus.LOCKED) {
+                remainingConditions.add("[" + lesson.getTitle() + "] 마지막 퀴즈를 통과하면 모의고사가 열립니다");
+            } else if (examStatus == LessonExamStatus.OPEN) {
                 remainingConditions.add("[" + lesson.getTitle() + "] 모의고사 응시하기");
             } else if (examStatus == LessonExamStatus.ATTEMPTED) {
                 remainingConditions.add("[" + lesson.getTitle() + "] 오답 분석 리포트 확인하기");

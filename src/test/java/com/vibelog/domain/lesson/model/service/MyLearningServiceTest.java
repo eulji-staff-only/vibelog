@@ -1,5 +1,6 @@
 package com.vibelog.domain.lesson.model.service;
 
+import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dto.LessonExamStatus;
@@ -7,6 +8,7 @@ import com.vibelog.domain.lesson.model.dto.LessonStatus;
 import com.vibelog.domain.lesson.model.dto.MyLearningCourseCard;
 import com.vibelog.domain.lesson.model.dto.MyLearningLessonCard;
 import com.vibelog.domain.lesson.model.dto.PortfolioStatus;
+import com.vibelog.domain.lesson.model.entity.ActivityProgress;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.LessonProgress;
 import jakarta.persistence.EntityManager;
@@ -44,7 +46,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         "INSERT INTO lesson (lesson_id, course_id, title, intro, goal, contents, estimated_minutes, sort_order, is_public) VALUES "
                 + "(9101, 9101, '수업 1', '소개', '목표', '본문', 30, 1, TRUE), "
                 + "(9102, 9101, '수업 2', '소개', '목표', '본문', 20, 2, TRUE), "
-                + "(9103, 9101, '수업 3', '소개', '목표', '본문', 10, 3, TRUE)"
+                + "(9103, 9101, '수업 3', '소개', '목표', '본문', 10, 3, TRUE)",
+        "INSERT INTO activity (activity_id, lesson_id, activity_type, title, sort_order) VALUES "
+                + "(9102, 9102, 'QUIZ', '수업 2 마지막 퀴즈', 1)"
 })
 class MyLearningServiceTest {
 
@@ -58,6 +62,7 @@ class MyLearningServiceTest {
     @Autowired MyLearningService myLearningService;
     @Autowired EnrollmentRepository enrollmentRepository;
     @Autowired LessonProgressRepository lessonProgressRepository;
+    @Autowired ActivityProgressRepository activityProgressRepository;
     @Autowired EntityManager em;
 
     @Test
@@ -80,6 +85,7 @@ class MyLearningServiceTest {
         Enrollment enrollment = enroll(LEARNER, COURSE_B);
         completeLesson(enrollment, LESSON_1);
         unlockLesson(enrollment, LESSON_2);
+        completeLastQuiz(enrollment, 9102L); // 마지막 퀴즈를 통과해야 모의고사가 열린다 (PL-LSN-002)
 
         MyLearningCourseCard card = myLearningService.getActiveCourses(LEARNER).get(0);
         MyLearningLessonCard lesson1 = findLesson(card, LESSON_1);
@@ -95,6 +101,20 @@ class MyLearningServiceTest {
 
         assertThat(lesson3.status()).isEqualTo(LessonStatus.LOCKED);
         assertThat(lesson3.examStatus()).isEqualTo(LessonExamStatus.LOCKED);
+    }
+
+    @Test
+    void 수업이_열려도_마지막_퀴즈를_통과하기_전에는_모의고사가_잠긴다() {
+        // PL-LSN-002: 마지막 퀴즈를 통과해야 모의고사가 열린다. 수업이 열려 있다고 바로 열리는 게 아니다.
+        Enrollment enrollment = enroll(LEARNER, COURSE_B);
+        unlockLesson(enrollment, LESSON_2);
+
+        MyLearningCourseCard card = myLearningService.getActiveCourses(LEARNER).get(0);
+        MyLearningLessonCard lesson2 = findLesson(card, LESSON_2);
+
+        assertThat(lesson2.status()).isEqualTo(LessonStatus.IN_PROGRESS);
+        assertThat(lesson2.examStatus()).isEqualTo(LessonExamStatus.LOCKED);
+        assertThat(card.remainingConditions()).anyMatch(condition -> condition.contains("마지막 퀴즈를 통과하면"));
     }
 
     @Test
@@ -140,5 +160,11 @@ class MyLearningServiceTest {
         LessonProgress progress = LessonProgress.create(enrollment.getEnrollmentId(), lessonId, LocalDateTime.now());
         progress.complete();
         lessonProgressRepository.saveAndFlush(progress);
+    }
+
+    private void completeLastQuiz(Enrollment enrollment, long activityId) {
+        ActivityProgress progress = ActivityProgress.create(enrollment.getEnrollmentId(), activityId, LocalDateTime.now());
+        progress.complete();
+        activityProgressRepository.saveAndFlush(progress);
     }
 }
