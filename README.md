@@ -186,6 +186,18 @@ Gradle은 설치하지 않아도 됩니다. 저장소에 들어 있는 `gradlew`
 
 또는 IntelliJ에서 `VibelogApplication`의 `main`을 실행합니다. `http://localhost:8080` 에 접속해 **404 에러 화면**이 나오면 정상입니다. (아직 화면이 하나도 없어서예요)
 
+> 💡 **메일 (선택, #89)** — 가입 인증·비밀번호 재설정 메일은 메일 서버 환경 변수가 있을 때만 실제로 보냅니다.
+> 로컬에서 메일 서버 없이 링크를 확인하려면 환경 변수 `MAIL_LOG_BODY=true`를 넣습니다. 그러면 **앱 로그에 메일 내용과 링크**가 찍히니 복사해 열면 됩니다 (배포 서버에는 넣지 않습니다).
+> 실제로 보내려면 실행 설정의 Environment variables 에 아래를 넣습니다 (Gmail 은 앱 비밀번호 사용).
+>
+> | 환경 변수 | 예 |
+> | --- | --- |
+> | `SPRING_MAIL_HOST` | `smtp.gmail.com` |
+> | `SPRING_MAIL_USERNAME` | 보내는 계정 |
+> | `SPRING_MAIL_PASSWORD` | 앱 비밀번호 |
+> | `MAIL_FROM` | 보내는 사람 주소 (기본 `no-reply@vibelog.example`) |
+> | `APP_BASE_URL` | 메일 링크의 사이트 주소 (기본 `http://localhost:8080`, 배포 서버는 실제 주소) |
+
 여기까지 됐다면 준비 끝입니다. 🎉 이제 [01. 작업 흐름](docs/collaboration/01-workflow.md)을 따라 첫 작업을 시작하세요.
 
 ---
@@ -214,8 +226,10 @@ src/main/java/com/vibelog/
 └── global/
     ├── config/                       ← 공통 설정
     ├── controller/MainController     ← 메인 화면 `/` (어느 영역에도 속하지 않는 화면)
-    ├── entity/                       ← BaseTimeEntity (created_at · updated_at)
-    └── exception/                    ← BusinessException · ErrorCode · GlobalExceptionHandler
+    ├── dao/                          ← 공통 Repository (BannedWordRepository)
+    ├── entity/                       ← BaseTimeEntity (created_at · updated_at), BannedWord
+    ├── exception/                    ← BusinessException · ErrorCode · CommonErrorCode(공통 에러) · GlobalExceptionHandler
+    └── policy/BannedWordPolicy       ← 금칙어 검사 (모든 영역 공통)
 
 src/main/resources/
 ├── application.yaml
@@ -244,6 +258,79 @@ public enum QuizErrorCode implements ErrorCode {
     private final HttpStatus status;
     private final String message;
 }
+```
+
+- 여러 영역이 같이 쓰는 공통 에러(API 명세 `_template.md` 7-2, 예: `BANNED_WORD`)는 `global/exception/CommonErrorCode`에 있습니다.
+
+**금칙어 검사** (#80)
+
+- 닉네임·게시글·댓글·포트폴리오처럼 사용자가 쓴 글은 저장하기 전에 `BannedWordPolicy`로 검사합니다 (PL-SEC-003). 금칙어가 들어 있으면 `BusinessException(BANNED_WORD)`이 납니다.
+- 검사할 칸을 한 번에 넘깁니다. 비어 있는(`null`) 칸은 건너뛰고, 대소문자는 구분하지 않습니다.
+
+```java
+@Transactional
+public Long write(Long memberId, PostWriteRequest request) {
+    bannedWordPolicy.check(request.title(), request.body());   // 걸리면 여기서 멈춘다
+    ...
+}
+```
+
+- 금칙어 목록은 `banned_word` 테이블입니다. 로컬에서 확인할 때는 `INSERT INTO banned_word (word) VALUES ('테스트금칙어');`로 넣어 봅니다.
+
+**JSON API 약속** (D-08, #152)
+
+- 화면이 바뀌지 않는 동작만 JSON으로 답하고, 주소는 `/api/`로 시작합니다 (운영자는 `/api/admin/`). Controller는 `@RestController`로 만들고 **명세에 적힌 값을 담은 DTO를 그대로** 돌려줍니다. 감싸는 틀(`{data: …}`)을 만들지 않습니다. 돌려줄 값이 없으면 `@ResponseStatus(HttpStatus.NO_CONTENT)`로 204(본문 없음)를 보냅니다. 받는 쪽은 204일 때만 `response.json()`을 건너뛰고, 실패 응답은 항상 JSON(`{code, message}`)이라 읽어서 `message`를 보여 줍니다.
+- 실패는 화면과 똑같이 `BusinessException`을 던지기만 합니다. `/api/**` 요청이면 `GlobalExceptionHandler`가 에러 코드의 상태 코드와 아래 JSON으로 바꿔 보냅니다.
+
+```json
+{ "code": "NOT_OWNER", "message": "본인만 할 수 있습니다." }
+```
+
+| 상황 | 상태 · code |
+| --- | --- |
+| `BusinessException` | 에러 코드의 상태 · 에러 코드 이름 |
+| `@Valid` 검증 실패 | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
+| 읽을 수 없는 JSON, 필수 값 없음, 타입 불일치 | 400 · `INVALID_INPUT` ("요청 값을 확인해주세요.") |
+| 지원하지 않는 메서드 / Content-Type / Accept | 405 · `METHOD_NOT_ALLOWED` (`Allow` 헤더) / 415 · `UNSUPPORTED_MEDIA_TYPE` / 406 · `NOT_ACCEPTABLE` |
+| 정책으로 걸러지지 않은 DB 제약 위반 (UNIQUE 등) | 409 · `CONFLICT` |
+| 없는 주소 | 404 · `NOT_FOUND` |
+| 비로그인 | 401 · `LOGIN_REQUIRED` |
+| 학습자가 `/api/admin/**` | 403 · `ADMIN_ONLY` |
+| CSRF 토큰 없음·만료 | 403 · `FORBIDDEN` |
+| 그 밖의 오류 | 500 · `SERVER_ERROR` (내부 정보는 보내지 않음) |
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class PortfolioGuideApiController {
+
+    private final GuideStepService guideStepService;
+
+    @PostMapping("/api/guide-steps/{guideStepId}/check")
+    public GuideStepCheckResponse check(@PathVariable Long guideStepId, @Valid @RequestBody GuideStepCheckRequest request,
+                                        @AuthenticationPrincipal LoginMember loginMember) {
+        return guideStepService.check(loginMember.getMemberId(), guideStepId, request.checked());   // → {"checkedCount": 2, "totalCount": 5}
+    }
+}
+```
+
+- JSON으로 POST 하려면 **CSRF 토큰을 헤더로** 보내야 합니다 (안 보내면 403 `FORBIDDEN`). 그 화면의 `<head>`에 토큰을 두고 `fetch`에서 꺼내 씁니다.
+
+```html
+<meta name="_csrf" th:content="${_csrf.token}">
+<meta name="_csrf_header" th:content="${_csrf.headerName}">
+```
+
+```js
+const token = document.querySelector('meta[name="_csrf"]').content;
+const header = document.querySelector('meta[name="_csrf_header"]').content;
+const response = await fetch('/api/guide-steps/3/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', [header]: token },
+    body: JSON.stringify({ checked: true }),
+});
+const body = await response.json();
+if (!response.ok) { alert(body.message); }   // 실패: {code, message}
 ```
 
 **로그인 약속** (#12)
