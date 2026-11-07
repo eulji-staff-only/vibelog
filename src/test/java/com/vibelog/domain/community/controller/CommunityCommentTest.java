@@ -87,11 +87,17 @@ class CommunityCommentTest {
     }
 
     @Test
-    void 다른_글의_댓글에는_답글을_달_수_없다() throws Exception {
+    void 다른_글의_댓글이나_삭제된_댓글에는_답글을_달_수_없다() throws Exception {
         long otherParent = commentOf(writer, postOf(writer), null);
 
         comment(as(writer), postId, "엉뚱한 답글", otherParent).andExpect(status().isNotFound());
         assertThat(commentCount("엉뚱한 답글")).isZero();
+
+        // 삭제된 댓글에도 답글을 달 수 없다
+        long deletedParent = commentOf(writer, postId, null);
+        jdbcTemplate.update("UPDATE comment SET deleted_at = NOW() WHERE comment_id = ?", deletedParent);
+        comment(as(writer), postId, "삭제된 댓글의 답글", deletedParent).andExpect(status().isNotFound());
+        assertThat(commentCount("삭제된 댓글의 답글")).isZero();
     }
 
     @Test

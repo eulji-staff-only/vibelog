@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 역할 : 댓글·답글 쓰기, 댓글 수정·삭제 (API-CMT-08~10, FR-CMT-004).
  * 책임 : - 쓰기는 이메일 인증한 회원만 (PL-USR-003, EMAIL_NOT_VERIFIED), 수정·삭제는 작성자만 (NOT_OWNER, NFR-SEC-003).
  *        - 답글은 댓글에만 단다. 답글에 답글은 REPLY_DEPTH_EXCEEDED (PL-CMT-006). 금칙어는 BANNED_WORD (PL-SEC-003).
- *        - 없거나 삭제된 글·댓글, 다른 글의 댓글에 단 답글은 POST_NOT_FOUND (7장 표에 댓글용 이름이 없어 같은 404 를 쓴다).
+ *        - 없거나 삭제된 글·댓글, 다른 글의 댓글·삭제된 댓글에 단 답글은 POST_NOT_FOUND (7장 표에 댓글용 이름이 없어 같은 404 를 쓴다).
  *        - 삭제는 deleted_at 만 채운다. 답글이 달린 댓글도 "삭제된 댓글입니다"로 자리가 남는다 (PL-CMT-006, PL-DAT-002).
  *        - 수정·삭제는 댓글이 달린 글 ID 를 돌려준다. 끝나면 그 글로 돌아가기 때문이다.
  */
@@ -41,7 +41,7 @@ public class CommentService {
         }
         if (parentCommentId != null) {
             Comment parent = commentRepository.findById(parentCommentId)
-                    .filter(comment -> comment.getPostId().equals(postId))
+                    .filter(comment -> comment.getPostId().equals(postId) && !comment.isDeleted())
                     .orElseThrow(() -> new BusinessException(CommunityErrorCode.POST_NOT_FOUND));
             if (parent.isReply()) {
                 throw new BusinessException(CommunityErrorCode.REPLY_DEPTH_EXCEEDED);
