@@ -6,6 +6,7 @@ import com.vibelog.domain.auth.model.dao.MemberRepository;
 import com.vibelog.domain.auth.model.dao.SocialAccountRepository;
 import com.vibelog.domain.auth.model.dto.MypageInfo;
 import com.vibelog.domain.auth.model.entity.Member;
+import com.vibelog.domain.auth.model.entity.MemberStatus;
 import com.vibelog.domain.auth.model.entity.SocialProvider;
 import com.vibelog.domain.portfolio.model.policy.MemberPortfolioCleaner;
 import com.vibelog.global.exception.BusinessException;
@@ -64,9 +65,10 @@ public class MypageService {
         memberPortfolioCleaner.deleteAllOf(memberId);
     }
 
-    /* 로그인한 회원이라 없을 수 없다. 그 사이 탈퇴했다면 일반 오류로 본다 */
+    /* 이용 중인 회원만. 다른 기기에 남은 세션으로 탈퇴한 회원이 오면 USER_NOT_FOUND (다시 탈퇴·비밀번호 변경을 막는다) */
     private Member getMember(Long memberId) {
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalStateException("로그인 회원을 찾을 수 없습니다: " + memberId));
+                .filter(member -> member.getStatus() == MemberStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(AuthErrorCode.USER_NOT_FOUND));
     }
 }

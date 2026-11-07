@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 /*
@@ -120,6 +121,7 @@ class MypageTest {
     @Test
     void 탈퇴하면_계정_정보를_비우고_로그아웃하고_글은_탈퇴한_사용자로_남는다() throws Exception {
         long post = postOf(memberId, "탈퇴 전에 쓴 글", false);
+        var staleSession = memberLoginService.loadUserByUsername(EMAIL);
         jdbcTemplate.update("INSERT INTO email_verification (email, token_hash, purpose, expires_at) VALUES (?, 'hash-mypage', 'SIGNUP', NOW())", EMAIL);
 
         mockMvc.perform(post("/mypage/withdraw").with(as(EMAIL)).with(csrf()))
@@ -135,6 +137,10 @@ class MypageTest {
         assertThat(row.get("withdrawn_at")).isNotNull();
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM email_verification WHERE email = ?", Integer.class, EMAIL)).isZero();
         mockMvc.perform(get("/community/" + post)).andExpect(content().string(containsString("탈퇴한 사용자")));
+
+        // 다른 기기에 남은 세션(탈퇴 전 로그인 정보)으로는 마이페이지·다시 탈퇴를 쓸 수 없다
+        mockMvc.perform(get("/mypage").with(user(staleSession))).andExpect(status().isNotFound());
+        mockMvc.perform(post("/mypage/withdraw").with(user(staleSession)).with(csrf())).andExpect(status().isNotFound());
 
         // 같은 이메일로 다시 가입할 수 있다
         mockMvc.perform(post("/signup").with(csrf()).param("nickname", "다시가입").param("email", EMAIL).param("password", "again1234"))
