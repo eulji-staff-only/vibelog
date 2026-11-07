@@ -94,7 +94,10 @@ class EmailVerifyTest {
     void token_없이_열면_다시_받기_상태다() throws Exception {
         mockMvc.perform(get("/auth/verify"))
                 .andExpect(model().attribute("state", "resend"))
-                .andExpect(content().string(containsString("data-resend-button")));
+                .andExpect(content().string(containsString("data-resend-button")))
+                // 비회원에게는 보냈다고 단정하지 않는다 (가입 여부를 숨김)
+                .andExpect(content().string(containsString("인증 메일 요청을 받았습니다")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("인증 메일을 다시 보냈습니다"))));
     }
 
     @Test
