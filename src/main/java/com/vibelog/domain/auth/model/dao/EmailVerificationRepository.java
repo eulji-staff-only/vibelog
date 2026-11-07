@@ -16,4 +16,7 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
 
     /* 아직 쓰지 않은 링크. 새 링크를 보내면 모두 무효로 만든다 */
     List<EmailVerification> findByEmailAndPurposeAndUsedAtIsNull(String email, VerificationPurpose purpose);
+
+    /* 탈퇴하면 그 이메일로 보낸 링크 기록도 지운다 (계정 정보 Hard Delete, PL-DAT-002) */
+    void deleteByEmail(String email);
 }
