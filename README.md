@@ -187,7 +187,7 @@ Gradle은 설치하지 않아도 됩니다. 저장소에 들어 있는 `gradlew`
 또는 IntelliJ에서 `VibelogApplication`의 `main`을 실행합니다. `http://localhost:8080` 에 접속해 **404 에러 화면**이 나오면 정상입니다. (아직 화면이 하나도 없어서예요)
 
 > 💡 **메일 (선택, #89)** — 가입 인증·비밀번호 재설정 메일은 메일 서버 환경 변수가 있을 때만 실제로 보냅니다.
-> 없으면 메일 대신 **앱 로그에 메일 내용과 링크**가 찍히니, 로컬에서는 그 링크를 복사해 열면 됩니다.
+> 로컬에서 메일 서버 없이 링크를 확인하려면 환경 변수 `MAIL_LOG_BODY=true`를 넣습니다. 그러면 **앱 로그에 메일 내용과 링크**가 찍히니 복사해 열면 됩니다 (배포 서버에는 넣지 않습니다).
 > 실제로 보내려면 실행 설정의 Environment variables 에 아래를 넣습니다 (Gmail 은 앱 비밀번호 사용).
 >
 > | 환경 변수 | 예 |
@@ -301,7 +301,7 @@ public Long write(Long memberId, PostWriteRequest request) {
 | `BusinessException` | 에러 코드의 상태 · 에러 코드 이름 |
 | `@Valid` 검증 실패 | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
 | 읽을 수 없는 JSON, 필수 값 없음, 타입 불일치 | 400 · `INVALID_INPUT` ("요청 값을 확인해주세요.") |
-| 지원하지 않는 메서드 / Content-Type | 405 · `METHOD_NOT_ALLOWED` (`Allow` 헤더) / 415 · `UNSUPPORTED_MEDIA_TYPE` |
+| 지원하지 않는 메서드 / Content-Type / Accept | 405 · `METHOD_NOT_ALLOWED` (`Allow` 헤더) / 415 · `UNSUPPORTED_MEDIA_TYPE` / 406 · `NOT_ACCEPTABLE` |
 | 정책으로 걸러지지 않은 DB 제약 위반 (UNIQUE 등) | 409 · `CONFLICT` |
 | 없는 주소 | 404 · `NOT_FOUND` |
 | 비로그인 | 401 · `LOGIN_REQUIRED` |
