@@ -1,0 +1,129 @@
+/*
+ * 내 학습 화면 (U-12).
+ * 색·글꼴·간격은 화면 흐름 설계서 6장 토큰 이름(var(--…))만 쓴다. 값은 공통 CSS(#13)가 정한다.
+ * 탭·배지·안내 상자 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
+ */
+
+.ml-page { min-height: 100vh; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+/* display 를 준 요소도 hidden 속성이면 숨긴다 (탭 전환·빈 상태) */
+.ml-page [hidden] { display: none; }
+.ml-muted { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-muted); }
+
+/* 상단 네이비 띠 + 제목 */
+.ml-band { background: var(--navy-900); color: var(--on-navy); padding: 48px var(--space-6) calc(var(--band-tail) + 28px);
+    display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
+.ml-eyebrow { font-size: 14px; font-weight: 700; padding: var(--space-1\.5) 14px; border-radius: var(--radius-pill);
+    border: 1px solid var(--navy-700); color: var(--glow); }
+.ml-title { margin: 0; font-size: 36px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.ml-lead { margin: 0; max-width: var(--hero-text-max); font-size: 17px; line-height: 1.7; color: var(--on-navy-muted); }
+
+/* 띠에 겹쳐 올라오는 흰 패널 */
+.ml-main { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-6) 64px; }
+.ml-panel { margin-top: calc(var(--hero-overlap) * -1); position: relative; background: var(--surface-raised);
+    border-radius: var(--radius-xl); padding: var(--space-9); box-shadow: var(--shadow-panel);
+    display: flex; flex-direction: column; gap: var(--space-7); }
+
+/* 탭 (공통 조각 #46 전까지) */
+.ml-tabs { display: flex; gap: var(--space-2); border-bottom: 1px solid var(--line-soft); }
+.ml-tab { min-height: var(--tab-h); padding: 0 var(--space-5); font: inherit; font-size: 15px; font-weight: 700;
+    color: var(--ink-muted); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; }
+.ml-tab:hover { color: var(--ink); }
+.ml-tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--navy-900); }
+
+.ml-tabpanel { display: flex; flex-direction: column; gap: var(--space-6); }
+
+/* 코스 카드 목록 */
+.ml-course-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-6); }
+.ml-course { display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-6); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); background: var(--surface-raised); }
+.ml-course-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-4); }
+.ml-course-info { display: flex; flex-direction: column; gap: var(--space-1); align-items: flex-start; }
+.ml-course-track { font-size: 13px; font-weight: 700; color: var(--link); }
+.ml-course-name { margin: 0; font-size: 20px; line-height: 1.4; font-weight: 900; }
+.ml-course-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+
+/* 진행률 */
+.ml-progress { display: flex; flex-direction: column; gap: var(--space-2); }
+.ml-progress-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; font-weight: 700; }
+.ml-progress-label { color: var(--ink-muted); }
+.ml-progress-value { font-size: 17px; color: var(--ink); }
+.ml-bar { height: 10px; background: var(--tint); border-radius: var(--radius-pill); overflow: hidden; }
+.ml-bar-fill { height: 100%; background: var(--success); border-radius: var(--radius-pill); }
+.ml-progress-next { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-muted); }
+.ml-progress-next strong { color: var(--ink); }
+
+/* 수업 목록 펼침 (브라우저 기본 details 사용) */
+.ml-accordion { border-top: 1px solid var(--line-soft); padding-top: var(--space-4); }
+.ml-accordion-summary { display: flex; align-items: center; gap: var(--space-2); font-size: 15px; font-weight: 700; cursor: pointer; }
+.ml-course-count { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.ml-accordion[open] .ml-accordion-summary { margin-bottom: var(--space-4); }
+
+.ml-lesson-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.ml-lesson { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); min-height: var(--control-h);
+    padding: var(--space-3) var(--space-4); box-sizing: border-box; border: 1px solid var(--line-soft); border-radius: var(--radius-md); }
+.ml-lesson.is-locked { color: var(--ink-muted); }
+.ml-lesson-info { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: var(--space-3); }
+.ml-lesson-no { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--tint); font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; }
+.ml-lesson.is-locked .ml-lesson-no { background: var(--line-soft); font-size: 12px; }
+.ml-lesson-name { font-size: 14px; font-weight: 700; }
+.ml-lesson-status { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* 배지 (공통 조각 #46 전까지) */
+.ml-badge { flex: 0 0 auto; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.ml-badge-success { background: var(--success-soft); color: var(--success); }
+.ml-badge-strong { background: var(--navy-900); color: var(--on-navy); }
+.ml-badge-locked { background: var(--line-soft); color: var(--ink-muted); }
+
+/* 잠긴 수업 안내 (공통 조각 #46 전까지) */
+.ml-lesson-notice { list-style: none; }
+.ml-notice { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-md); background: var(--tint); font-size: 14px; line-height: 1.6; }
+.ml-notice p { margin: 0; color: var(--ink-muted); }
+.ml-notice-empty { align-items: center; text-align: center; }
+
+/* 포트폴리오 상태 · 남은 완료 조건 */
+.ml-portfolio-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-4);
+    padding-top: var(--space-4); border-top: 1px solid var(--line-soft); }
+.ml-portfolio-label { font-size: 14px; font-weight: 700; }
+.ml-remaining { margin-top: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md);
+    background: var(--danger-soft); display: flex; flex-direction: column; gap: var(--space-2); }
+.ml-remaining-title { font-size: 14px; color: var(--danger); }
+.ml-remaining-list { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* 완료 탭 */
+.ml-tabpanel-footer { display: flex; justify-content: center; }
+
+/* 링크 (공통 조각 #46 전까지) */
+.ml-link { padding: 0; font: inherit; font-size: 14px; font-weight: 700; color: var(--link); background: none; border: none;
+    text-decoration: none; cursor: pointer; }
+.ml-link:hover { color: var(--link-hover); }
+
+/* 버튼 (공통 조각 #46 전까지) */
+.ml-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: var(--control-h);
+    padding: 11px 18px; font: inherit; font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none;
+    border: 1px solid transparent; border-radius: var(--radius-pill); cursor: pointer; white-space: nowrap; }
+.ml-btn-navy { background: var(--navy-900); color: var(--on-navy); }
+.ml-btn-navy:hover { background: var(--navy-800); }
+.ml-btn-outline { background: var(--surface-raised); color: var(--ink); border-color: var(--line-strong); }
+.ml-btn-outline:hover { background: var(--surface); }
+
+/* 키보드 포커스 (설계서 5-2) */
+.ml-page :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* 태블릿: 코스 카드 2열 (설계서 7장) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .ml-course-list { display: grid; grid-template-columns: repeat(2, 1fr); align-items: start; }
+}
+
+/* 모바일 (설계서 7장) */
+@media (max-width: 767px) {
+    .ml-band { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .ml-title { font-size: 26px; }
+    .ml-main { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .ml-panel { padding: var(--space-6) 20px; }
+    .ml-course-head { flex-direction: column; align-items: stretch; }
+    .ml-course-head .ml-btn { width: 100%; }
+    .ml-course-actions .ml-btn { flex: 1 1 auto; }
+    .ml-lesson { flex-direction: column; align-items: flex-start; }
+}
