@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -71,10 +72,11 @@ public class GlobalExceptionHandler {
     }
 
     /*
-     * 지원하지 않는 HTTP 메서드(405 METHOD_NOT_ALLOWED) / Content-Type(415 UNSUPPORTED_MEDIA_TYPE).
+     * 지원하지 않는 HTTP 메서드(405 METHOD_NOT_ALLOWED) / Content-Type(415 UNSUPPORTED_MEDIA_TYPE) / 응답 형식 Accept(406 NOT_ACCEPTABLE).
      * 요청을 잘못 보낸 경우라 서버 오류(500)로 바꾸지 않고 Spring 이 정한 상태와 헤더(Allow·Accept)를 그대로 보낸다
      */
-    @ExceptionHandler({HttpRequestMethodNotSupportedException.class, HttpMediaTypeNotSupportedException.class})
+    @ExceptionHandler({HttpRequestMethodNotSupportedException.class, HttpMediaTypeNotSupportedException.class,
+            HttpMediaTypeNotAcceptableException.class})
     public ModelAndView handleUnsupported(Exception e, HttpServletRequest request, HttpServletResponse response) {
         org.springframework.web.ErrorResponse spring = (org.springframework.web.ErrorResponse) e;
         spring.getHeaders().forEach((name, values) -> values.forEach(value -> response.addHeader(name, value)));
