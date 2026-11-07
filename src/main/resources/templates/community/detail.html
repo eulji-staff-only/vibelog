@@ -9,7 +9,7 @@
     <script th:src="@{/js/community.js}" defer></script>
 </head>
 <body class="cm-page">
-<!-- U-22 게시글 상세 (API-CMT-02, #92). 수정(U-23)·삭제(M-05)는 #93. 댓글 등록·답글·수정·삭제는 #94 에서 붙인다. -->
+<!-- U-22 게시글 상세 (API-CMT-02, #92). 수정(U-23)·삭제(M-05)는 #93. 댓글 하나의 모양·답글·수정·삭제는 community/comment.html (#94). -->
 <div th:replace="~{common/layout :: header}"></div>
 
 <section class="cm-band">
@@ -54,42 +54,30 @@
         <section class="cm-comments" aria-labelledby="cm-comments-h">
             <h2 class="cm-h2" id="cm-comments-h" th:text="|댓글 ${post.commentCount()}|">댓글 0</h2>
 
-            <!-- 댓글 입력 (500자, PL-CMT-006). 등록은 #94 에서 붙인다 -->
-            <form class="cm-form">
-                <textarea class="cm-input cm-textarea is-short" maxlength="500" placeholder="댓글을 남겨 보세요" aria-label="댓글"></textarea>
+            <!-- 댓글 입력 (500자, PL-CMT-006). 비회원은 로그인, 미인증 회원은 인증 안내 (U-22 예외, PL-USR-003) -->
+            <div class="cm-notice" th:unless="${loggedIn}">
+                <p>댓글은 로그인 후 남길 수 있습니다</p>
+                <a class="cm-link" th:href="@{/login(redirect=|/community/${post.postId()}|)}">로그인</a>
+            </div>
+            <div class="cm-notice" th:if="${loggedIn and !canComment}">
+                <p>이메일 인증 후 댓글을 남길 수 있습니다</p>
+                <a class="cm-link" href="/auth/verify">인증 메일 받기</a>
+            </div>
+            <form class="cm-form" id="comment-form" method="post" th:if="${canComment}"
+                  th:action="@{/community/{id}/comments(id=${post.postId()})}">
+                <p class="cm-hint is-error" role="alert" th:if="${commentTarget == 'new'}" th:text="${commentError}">오류</p>
+                <textarea class="cm-input cm-textarea is-short" name="content" maxlength="500" required
+                          placeholder="댓글을 남겨 보세요" aria-label="댓글"
+                          th:text="${commentTarget == 'new'} ? ${commentDraft} : ''"></textarea>
                 <div class="cm-row">
                     <p class="cm-hint">500자까지 쓸 수 있습니다</p>
-                    <button class="cm-btn is-navy is-s" type="button">댓글 등록</button>
+                    <button class="cm-btn is-navy is-s" type="submit">댓글 등록</button>
                 </div>
             </form>
 
             <ul class="cm-comment-list" th:unless="${post.comments().empty}">
-                <!-- 삭제된 댓글은 작성자·내용을 보여 주지 않는다 -->
-                <li class="cm-comment" th:each="comment : ${post.comments()}" th:classappend="${comment.deleted()} ? 'is-deleted'">
-                    <p th:if="${comment.deleted()}">삭제된 댓글입니다</p>
-                    <th:block th:unless="${comment.deleted()}">
-                        <div class="cm-comment__head">
-                            <strong th:text="${comment.nickname()}">작성자</strong>
-                            <span th:text="${#temporals.format(comment.createdAt(), 'yyyy.MM.dd HH:mm')}">작성일</span>
-                            <span th:if="${comment.edited()}">수정됨</span>
-                        </div>
-                        <p th:text="${comment.content()}">댓글 내용</p>
-                    </th:block>
-                    <!-- 답글은 한 단계까지만 (PL-CMT-006) -->
-                    <ul class="cm-replies" th:unless="${comment.replies().empty}">
-                        <li class="cm-comment" th:each="reply : ${comment.replies()}" th:classappend="${reply.deleted()} ? 'is-deleted'">
-                            <p th:if="${reply.deleted()}">삭제된 댓글입니다</p>
-                            <th:block th:unless="${reply.deleted()}">
-                                <div class="cm-comment__head">
-                                    <strong th:text="${reply.nickname()}">작성자</strong>
-                                    <span th:text="${#temporals.format(reply.createdAt(), 'yyyy.MM.dd HH:mm')}">작성일</span>
-                                    <span th:if="${reply.edited()}">수정됨</span>
-                                </div>
-                                <p th:text="${reply.content()}">답글 내용</p>
-                            </th:block>
-                        </li>
-                    </ul>
-                </li>
+                <!-- th:replace 가 th:each 보다 먼저 돌아서, 반복은 바깥 th:block 에 둔다 -->
+                <th:block th:each="comment : ${post.comments()}"><li th:replace="~{community/comment :: item(${comment}, false)}"></li></th:block>
             </ul>
 
             <p class="cm-muted" th:if="${post.comments().empty}">아직 댓글이 없습니다. 첫 댓글을 남겨 보세요.</p>

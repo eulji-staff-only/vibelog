@@ -77,6 +77,6 @@ public class PostService {
 
         long commentCount = comments.stream().filter(comment -> !comment.isDeleted()).count();
         return PostDetail.of(post, nicknames.get(post.getMemberId()), imageUrls, commentCount,
-                CommentView.tree(comments, nicknames), Objects.equals(post.getMemberId(), loginMemberId));
+                CommentView.tree(comments, nicknames, loginMemberId), Objects.equals(post.getMemberId(), loginMemberId));
     }
 }

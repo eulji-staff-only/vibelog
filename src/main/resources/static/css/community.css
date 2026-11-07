@@ -92,6 +92,13 @@
 .cm-comment__head strong { font-size: 14px; color: var(--ink); }
 .cm-comment__actions { display: flex; gap: var(--space-1); }
 .cm-comment.is-deleted p { color: var(--ink-muted); }
+/* 댓글 아래 답글·수정·삭제 (#94). 답글·수정 입력란은 <details> 로 접어 두고, 열면 버튼 줄 아래 한 줄을 다 쓴다 */
+.cm-comment__tools { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-1); }
+.cm-inline > summary { list-style: none; cursor: pointer; }
+.cm-inline > summary::-webkit-details-marker { display: none; }
+.cm-inline[open] { order: 1; flex-basis: 100%; }
+.cm-inline__form { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); }
+.cm-inline__form .cm-btn { align-self: flex-end; }
 .cm-replies { list-style: none; margin: var(--space-3) 0 0; padding: 0 0 0 var(--space-6); border-left: 2px solid var(--line-soft);
     display: flex; flex-direction: column; gap: var(--space-4); }
 
