@@ -39,3 +39,5 @@ vibelog:
   base-url: ${APP_BASE_URL:http://localhost:8080}
   mail:
     from: ${MAIL_FROM:no-reply@vibelog.example}
+    # 메일 서버가 없을 때 메일 내용(링크)을 로그에 남길지. 로컬에서만 MAIL_LOG_BODY=true 로 켠다 (배포 서버는 끈 채로 둔다)
+    log-body: ${MAIL_LOG_BODY:false}

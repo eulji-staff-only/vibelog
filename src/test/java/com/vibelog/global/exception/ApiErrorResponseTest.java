@@ -76,6 +76,9 @@ class ApiErrorResponseTest {
         mockMvc.perform(post("/api/test/valid").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("name"))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_MEDIA_TYPE"));
+        mockMvc.perform(get("/api/test/ok").accept(MediaType.APPLICATION_XML))
+                .andExpect(status().isNotAcceptable())
+                .andExpect(jsonPath("$.code").value("NOT_ACCEPTABLE"));
     }
 
     @Test
