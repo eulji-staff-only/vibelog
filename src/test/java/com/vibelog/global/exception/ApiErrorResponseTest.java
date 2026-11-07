@@ -67,6 +67,13 @@ class ApiErrorResponseTest {
         mockMvc.perform(post("/api/test/valid").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{깨진 JSON"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        // 잘못된 메서드·Content-Type 도 서버 오류가 아니라 입력 오류다
+        mockMvc.perform(get("/api/test/valid"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        mockMvc.perform(post("/api/test/valid").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("name"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
     @Test
