@@ -100,6 +100,18 @@ class LessonActivityServiceTest {
                 .isInstanceOf(BusinessException.class);
     }
 
+    @Test
+    void 퀴즈_활동은_개념_완료_요청으로_완료되지_않는다() {
+        // 퀴즈는 정답률을 통과해야 완료된다 (퀴즈 영역 몫). 이 엔드포인트로 완료 처리하면 안 된다
+        Enrollment enrollment = enroll();
+        unlockActivity(enrollment, QUIZ);
+
+        assertThatThrownBy(() -> lessonActivityService.completeConcept(LEARNER, COURSE, LESSON, QUIZ))
+                .isInstanceOf(BusinessException.class);
+        assertThat(activityProgressRepository.findByEnrollmentIdAndActivityId(enrollment.getEnrollmentId(), QUIZ)
+                .orElseThrow().isCompleted()).isFalse();
+    }
+
     private Enrollment enroll() {
         return enrollmentRepository.saveAndFlush(Enrollment.create(LEARNER, COURSE, LocalDateTime.now()));
     }

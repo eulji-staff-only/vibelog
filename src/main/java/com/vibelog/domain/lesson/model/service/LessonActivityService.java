@@ -41,6 +41,10 @@ public class LessonActivityService {
     public CompleteActivityResult completeConcept(Long memberId, Long courseId, Long lessonId, Long activityId) {
         getLesson(lessonId, courseId);
         Activity activity = getActivity(activityId, lessonId);
+        if (!activity.isConcept()) {
+            // 퀴즈는 정답률을 통과해야만 완료된다 (퀴즈 영역 몫). 이 요청으로 완료 처리하지 않는다
+            throw new BusinessException(LessonErrorCode.ACTIVITY_NOT_FOUND);
+        }
 
         Optional<Enrollment> enrollmentOpt = enrollmentRepository.findByMemberIdAndCourseId(memberId, courseId);
         Optional<ActivityProgress> progressOpt = enrollmentOpt.flatMap(enrollment ->
