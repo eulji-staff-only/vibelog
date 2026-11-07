@@ -46,6 +46,7 @@ class EnrollmentServiceTest {
     static final long COURSE = 8001L;
     static final long LESSON_1 = 8001L;
     static final long LESSON_2 = 8002L;
+    static final long LESSON_3 = 8003L;
     static final long FIRST_ACTIVITY = 8001L;
 
     @Autowired EnrollmentService enrollmentService;
@@ -64,6 +65,9 @@ class EnrollmentServiceTest {
         LessonProgress lesson2Progress = lessonProgress(enrollment, LESSON_2);
         assertThat(lesson1Progress.isUnlocked()).isTrue();
         assertThat(lesson2Progress.isUnlocked()).isFalse();
+        // 비공개 수업(수업 3)은 공개 수업이 아니라서 진도 자체가 생기지 않는다
+        assertThat(lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollment.getEnrollmentId(), LESSON_3))
+                .isEmpty();
 
         ActivityProgress firstActivityProgress = activityProgressRepository
                 .findByEnrollmentIdAndActivityId(enrollment.getEnrollmentId(), FIRST_ACTIVITY)
