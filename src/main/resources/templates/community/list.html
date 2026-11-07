@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>커뮤니티 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
+</head>
+<body class="cm-page">
+<!-- U-21 커뮤니티 (게시판 목록, API-CMT-01, #92). 최신순(PL-CMT-005), 한 페이지 20개. 카테고리를 바꿔도 검색어는 유지한다. -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="cm-band">
+    <h1 class="cm-title">커뮤니티</h1>
+    <p class="cm-lead">학습하며 만든 작품과 궁금한 점을 나눠 보세요.</p>
+</section>
+
+<main class="cm-main" th:with="cat=${category != null ? category.name() : ''}">
+    <div class="cm-panel">
+        <!-- 글을 지우고 돌아왔을 때 (API-CMT-07). ponytail: 공통 토스트(#46)가 머지되면 그것으로 바꾼다 -->
+        <div class="cm-notice is-toast" role="status" th:if="${toast}"><p th:text="${toast}">알림</p></div>
+        <div class="cm-notice" sec:authorize="isAnonymous()">
+            <p>게시글은 누구나 볼 수 있습니다. 글 작성·댓글·추천은 로그인 후 할 수 있습니다</p>
+            <a class="cm-link" href="/login?redirect=/community">로그인</a>
+        </div>
+
+        <div class="cm-toolbar">
+            <nav class="cm-chips" aria-label="카테고리">
+                <a class="cm-chip" th:href="@{/community(q=${q})}" th:attr="aria-current=${category == null} ? 'page'">전체</a>
+                <a class="cm-chip" th:each="c : ${categories}" th:href="@{/community(category=${c.name()}, q=${q})}"
+                   th:attr="aria-current=${category == c} ? 'page'" th:text="${c.label}">카테고리</a>
+            </nav>
+            <a class="cm-btn is-navy" href="/community/write">글쓰기</a>
+        </div>
+
+        <form class="cm-search" role="search" action="/community" method="get">
+            <input type="hidden" name="category" th:value="${cat}" th:if="${category != null}">
+            <input class="cm-input" type="search" name="q" maxlength="100" th:value="${q}" placeholder="제목 검색" aria-label="제목 검색">
+            <button class="cm-btn is-outline" type="submit">검색</button>
+        </form>
+
+        <ul class="cm-list" th:unless="${posts.empty}">
+            <li th:each="item : ${posts.content}">
+                <a class="cm-item" th:href="@{/community/{id}(id=${item.postId()})}">
+                    <span class="cm-badge" th:classappend="${item.category().name() == 'SHOWCASE'} ? 'is-showcase'"
+                          th:text="${item.category().label}">카테고리</span>
+                    <span class="cm-item__title" th:text="${item.title()}">제목</span>
+                    <span class="cm-item__count" th:text="|댓글 ${item.commentCount()}|">댓글 0</span>
+                    <p class="cm-item__meta" th:text="|${item.nickname()} · ${#temporals.format(item.createdAt(), 'yyyy.MM.dd')}|">작성자 · 작성일</p>
+                </a>
+            </li>
+        </ul>
+
+        <div class="cm-empty" th:if="${posts.empty}">
+            <p class="cm-muted">조건에 맞는 글이 없습니다</p>
+            <a class="cm-btn is-outline" href="/community">필터 초기화</a>
+        </div>
+
+        <!-- 현재 페이지 앞뒤로 최대 10개 번호를 보여 준다 -->
+        <nav class="cm-pages" aria-label="페이지" th:if="${posts.totalPages > 1}"
+             th:with="current=${posts.number + 1},
+                      start=${T(java.lang.Math).max(1, current - 4)},
+                      end=${T(java.lang.Math).min(posts.totalPages, start + 9)}">
+            <a th:each="n : ${#numbers.sequence(start, end)}" th:href="@{/community(category=${cat}, q=${q}, page=${n})}"
+               th:attr="aria-current=${n == current} ? 'page'" th:text="${n}">1</a>
+        </nav>
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>
