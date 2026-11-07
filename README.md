@@ -279,7 +279,7 @@ public Long write(Long memberId, PostWriteRequest request) {
 
 **JSON API 약속** (D-08, #152)
 
-- 화면이 바뀌지 않는 동작만 JSON으로 답하고, 주소는 `/api/`로 시작합니다 (운영자는 `/api/admin/`). Controller는 `@RestController`로 만들고 **명세에 적힌 값을 담은 DTO를 그대로** 돌려줍니다. 감싸는 틀(`{data: …}`)을 만들지 않습니다.
+- 화면이 바뀌지 않는 동작만 JSON으로 답하고, 주소는 `/api/`로 시작합니다 (운영자는 `/api/admin/`). Controller는 `@RestController`로 만들고 **명세에 적힌 값을 담은 DTO를 그대로** 돌려줍니다. 감싸는 틀(`{data: …}`)을 만들지 않습니다. 돌려줄 값이 없으면 `@ResponseStatus(HttpStatus.NO_CONTENT)`로 204(본문 없음)를 보내고, 받는 쪽은 `response.ok`만 보고 `response.json()`을 부르지 않습니다.
 - 실패는 화면과 똑같이 `BusinessException`을 던지기만 합니다. `/api/**` 요청이면 `GlobalExceptionHandler`가 에러 코드의 상태 코드와 아래 JSON으로 바꿔 보냅니다.
 
 ```json
