@@ -20,7 +20,6 @@ import com.vibelog.domain.lesson.model.entity.BodyFormat;
 import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
-import com.vibelog.domain.lesson.model.policy.ExamLessonProgress;
 import com.vibelog.domain.quiz.model.policy.LessonQuizScoreChecker;
 import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -58,7 +57,6 @@ public class LessonPageService {
     private final ConceptTagRepository conceptTagRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
-    private final ExamLessonProgress examLessonProgress;
     private final LessonQuizScoreChecker lessonQuizScoreChecker;
 
     public LessonPageResult getPage(Long memberId, Long courseId, Long lessonId, String activityQuery) {
@@ -90,7 +88,7 @@ public class LessonPageService {
         for (Activity activity : activities) {
             cards.add(toCard(memberId, activity, progressByActivityId.get(activity.getActivityId())));
         }
-        cards.add(toExamCard(memberId, lessonId));
+        cards.add(toExamCard(enrollment.getEnrollmentId(), lessonId));
 
         cards = applySelection(cards, activityQuery);
 
@@ -129,8 +127,16 @@ public class LessonPageService {
                 null, null, null, null, null, bestCorrectRate, null, null);
     }
 
-    private LessonActivityCard toExamCard(Long memberId, Long lessonId) {
-        boolean open = examLessonProgress.isExamOpen(memberId, lessonId);
+    /* 계약 ②(ExamLessonProgress.isExamOpen)와 같은 계산이지만, 이 데이터를 전부 가진 lesson이
+       같은 조회 안에서 자기 계약 인터페이스를 다시 불러쓰면 그 인터페이스를 모킹하는 다른 테스트
+       (예: SecurityConfigTest)가 lessonContractService 빈을 다른 타입으로 바꿔치기할 때 이 조회가
+       같이 깨진다. 그래서 여기서는 리포지토리로 직접 계산한다. */
+    private LessonActivityCard toExamCard(Long enrollmentId, Long lessonId) {
+        boolean open = activityRepository
+                .findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(lessonId, ActivityType.QUIZ)
+                .flatMap(lastQuiz -> activityProgressRepository.findByEnrollmentIdAndActivityId(enrollmentId, lastQuiz.getActivityId()))
+                .map(ActivityProgress::isCompleted)
+                .orElse(false);
         if (open) {
             return new LessonActivityCard(null, LessonActivityCard.EXAM, "모의고사", ActivityStatus.IN_PROGRESS, false,
                     null, null, null, null, null, null, "/lessons/" + lessonId + "/exam", null);

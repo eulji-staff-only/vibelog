@@ -247,11 +247,8 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
                 .orElseThrow(() -> new BusinessException(LessonErrorCode.ENROLLMENT_NOT_FOUND));
     }
 
-    /*
-     * 활동 진도가 없으면 만들면서 열고, 있으면 그대로 연다 (unlock 은 처음 한 번만 기록).
-     * 개념 완료(API-LSN-02, LessonActivityService)도 "다음 활동 열기"가 똑같이 필요해 패키지 전용으로 둔다 (복사 대신 재사용, #107).
-     */
-    void unlockActivity(Long enrollmentId, Activity activity) {
+    /* 활동 진도가 없으면 만들면서 열고, 있으면 그대로 연다 (unlock 은 처음 한 번만 기록). */
+    private void unlockActivity(Long enrollmentId, Activity activity) {
         activityProgressRepository.findByEnrollmentIdAndActivityId(enrollmentId, activity.getActivityId())
                 .orElseGet(() -> activityProgressRepository.save(
                         ActivityProgress.create(enrollmentId, activity.getActivityId(), null)))
