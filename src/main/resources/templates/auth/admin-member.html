@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${member.nickname()} + ' | 바이브로그 백오피스'">회원 상세 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/auth-admin.css}">
+</head>
+<body>
+<!-- A-08 회원 상세 (API-ADM-38, #119). 수강 코스·진행률, 모의고사 결과, 포트폴리오 수.
+     코스 이름과 퀴즈 결과는 course·quiz 영역이 붙으면 넣는다. 이용 정지(P2)·신고 이력(P3)은 없다. -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<main class="am-main">
+    <a class="am-muted" href="/admin/members">← 회원 목록</a>
+    <h1 class="am-title" th:text="${member.nickname()}">닉네임</h1>
+
+    <dl class="am-info">
+        <dt>이메일</dt><dd th:text="${member.withdrawn()} ? '탈퇴한 회원' : ${member.email()}">learner@vibelog.test</dd>
+        <dt>역할</dt><dd th:text="${member.roleLabel()}">학습자</dd>
+        <dt>이메일 인증</dt><dd th:text="${member.emailVerified()} ? '인증' : '미인증'">인증</dd>
+        <dt>가입일</dt><dd th:text="${#temporals.format(member.joinedAt(), 'yyyy.MM.dd')}">2026.11.01</dd>
+        <dt>포트폴리오</dt><dd th:text="|${member.portfolioCount()}개|">0개</dd>
+    </dl>
+
+    <h2 class="am-h2">수강 코스</h2>
+    <p class="am-muted" th:if="${member.enrollments().empty}">수강한 코스가 없습니다</p>
+    <div class="am-scroll" th:unless="${member.enrollments().empty}">
+        <table class="am-table">
+            <thead><tr><th>코스</th><th>시작일</th><th>진행률</th><th>상태</th></tr></thead>
+            <tbody>
+            <tr th:each="e : ${member.enrollments()}">
+                <td th:text="|코스 ${e.courseId()}|">코스 1</td>
+                <td th:text="${#temporals.format(e.startedAt(), 'yyyy.MM.dd')}">2026.11.01</td>
+                <td th:text="|${e.progressPercent()}%|">50%</td>
+                <td th:text="${e.status()}">수강 중</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="am-h2">모의고사 결과</h2>
+    <p class="am-muted" th:if="${member.examResults().empty}">제출한 모의고사가 없습니다</p>
+    <div class="am-scroll" th:unless="${member.examResults().empty}">
+        <table class="am-table">
+            <thead><tr><th>수업</th><th>회차</th><th>점수</th><th>제출</th></tr></thead>
+            <tbody>
+            <tr th:each="r : ${member.examResults()}">
+                <td th:text="${r.lessonTitle()}">수업</td>
+                <td th:text="|${r.attemptNo()}회|">1회</td>
+                <td th:text="|${r.score()}점|">80점</td>
+                <td th:text="${#temporals.format(r.submittedAt(), 'yyyy.MM.dd HH:mm')}">2026.11.01 10:00</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>
