@@ -60,7 +60,7 @@
 
 `/api/**` 요청은 어떤 실패든 ⑤로 보낸다. 아래 "방식"은 화면 요청일 때다.
 
-⑤ JSON 응답 모양 (D-08, #152): 성공은 명세에 적힌 값을 그대로 담은 JSON(감싸지 않음), 실패는 에러 코드의 HTTP 상태 + `{"code": "에러 코드", "message": "보여 줄 문구"}`. 아래 표에 이름이 없는 실패는 `NOT_FOUND`(404, 없는 주소), `FORBIDDEN`(403, CSRF 토큰 없음·만료), `CONFLICT`(409, 정책으로 걸러지지 않은 DB 제약 위반), `METHOD_NOT_ALLOWED`(405)·`UNSUPPORTED_MEDIA_TYPE`(415)·`NOT_ACCEPTABLE`(406, 지원하지 않는 메서드·Content-Type·Accept), `SERVER_ERROR`(500)로 보낸다. 자세한 표는 README "JSON API 약속".
+⑤ JSON 응답 모양 (D-08, #152): 성공은 명세에 적힌 값을 그대로 담은 JSON(감싸지 않음)이고, 돌려줄 값이 없으면 204(본문 없음)다. 실패는 에러 코드의 HTTP 상태 + `{"code": "에러 코드", "message": "보여 줄 문구"}`. 아래 표에 이름이 없는 실패는 `NOT_FOUND`(404, 없는 주소), `FORBIDDEN`(403, CSRF 토큰 없음·만료), `CONFLICT`(409, 정책으로 걸러지지 않은 DB 제약 위반), `METHOD_NOT_ALLOWED`(405)·`UNSUPPORTED_MEDIA_TYPE`(415)·`NOT_ACCEPTABLE`(406, 지원하지 않는 메서드·Content-Type·Accept), `SERVER_ERROR`(500)로 보낸다. 자세한 표는 README "JSON API 약속".
 
 ### 7-2. 공통
 
