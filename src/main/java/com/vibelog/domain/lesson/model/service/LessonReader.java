@@ -1,5 +1,6 @@
 package com.vibelog.domain.lesson.model.service;
 
+import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
@@ -8,6 +9,7 @@ import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
+import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +56,13 @@ public class LessonReader {
     public Map<Long, String> getActivityTitles(Collection<Long> activityIds) {
         return activityRepository.findAllById(activityIds).stream()
                 .collect(Collectors.toMap(Activity::getActivityId, Activity::getTitle));
+    }
+
+    /* 수업이 속한 코스 ID. 없는 수업이면 LESSON_NOT_FOUND. 모의고사 화면의 수업 화면 링크(exam #110)가 쓴다 */
+    public Long getCourseId(Long lessonId) {
+        return lessonRepository.findById(lessonId)
+                .map(Lesson::getCourseId)
+                .orElseThrow(() -> new BusinessException(LessonErrorCode.LESSON_NOT_FOUND));
     }
 
     private MemberEnrollmentSummary summaryOf(Enrollment enrollment) {
