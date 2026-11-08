@@ -38,7 +38,7 @@
 
 | 역할 | 담당 | 맡는 일 | 리뷰 (자동 지정) |
 |---|---|---|---|
-| **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | DB 팀이 아닌 사람이 `sql/`을 바꾼 PR → `Choyeonik` 승인 필요 |
+| **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | `Choyeonik`이 아닌 사람이 `sql/`을 바꾼 PR → `Choyeonik` 승인 필요 |
 | **형상관리** | `SeungBinYang` | 저장소·브랜치·빌드 검사, 공통 설정, 협업 규칙·Claude 규칙 | **모든 PR** 기본 리뷰어 (PM과 둘 중 1명 승인) |
 | **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | **모든 PR** 기본 리뷰어 (형상관리와 둘 중 1명 승인) |
 
@@ -476,7 +476,7 @@ public class Quiz extends BaseTimeEntity { ... }
 |---|---|---|
 | 모든 PR | PM `dyryoo316` + 형상관리 `SeungBinYang` ([`CODEOWNERS`](.github/CODEOWNERS)) | 둘 중 1명 승인. 작성자 본인은 빠지므로 PM의 PR은 형상관리가, 형상관리의 PR은 PM이 승인 |
 | **영역 간 연동** — 다른 묶음 담당 영역의 파일(`domain/<영역>/`, `templates/<영역>/`, `static/*/<영역>.*`)을 바꾼 PR (예: 상대 영역에 `Fake` 추가) | 위 + **그 영역 담당** ([영역 담당](#영역-담당) 표) | 위 + 그 영역 담당 승인 (`area-review` 검사) |
-| `sql/`을 바꾼 PR (DB 팀이 아닌 사람이) | 위 + DB 팀 `Choyeonik` | 위 + `Choyeonik` 승인 (`area-review` 검사) |
+| `sql/`을 바꾼 PR (`Choyeonik`이 아닌 사람이) | 위 + DB 팀 `Choyeonik` | 위 + `Choyeonik` 승인 (`area-review` 검사) |
 
 - `area-review` 검사는 승인이 들어오면 다시 돌아서 ✅로 바뀝니다. 내 영역만 바꾼 PR은 바로 ✅입니다.
 - 공통 파일(`global/`, `templates/common/`, `static/css/common.css` 등)과 `contest`·`message`처럼 담당이 없는 영역은 기본 리뷰어만 봅니다.
