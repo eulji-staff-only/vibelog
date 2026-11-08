@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  * [EmailVerification]
  * 역할 : 이메일 인증·비밀번호 재설정 테이블(email_verification)과 매핑된다. 메일로 보낸 링크 1개 = 1행.
  * 책임 : 컬럼은 sql/01-schema.sql 의 email_verification 그대로 둔다.
- *        토큰 원문은 저장하지 않고 해시만 저장한다. 만료·사용 처리 메서드는 인증·비밀번호 찾기 이슈에서 추가한다.
+ *        토큰 원문은 저장하지 않고 해시만 저장한다. 쓰거나 새 링크를 보내 무효로 만들면 used_at 을 채운다 (PL-USR-004).
  */
 @Getter
 @Entity
@@ -49,5 +49,18 @@ public class EmailVerification extends BaseTimeEntity {
     public static EmailVerification create(String email, String tokenHash, VerificationPurpose purpose,
                                            LocalDateTime expiresAt) {
         return new EmailVerification(email, tokenHash, purpose, expiresAt);
+    }
+
+    public boolean isExpired(LocalDateTime now) {
+        return !now.isBefore(expiresAt);
+    }
+
+    public boolean isUsed() {
+        return usedAt != null;
+    }
+
+    /* 링크를 썼거나, 새 링크를 보내 이전 링크를 무효로 만들 때 */
+    public void use(LocalDateTime now) {
+        this.usedAt = now;
     }
 }

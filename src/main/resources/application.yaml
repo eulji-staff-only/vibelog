@@ -16,6 +16,19 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  mail:
+    # 메일 서버는 환경 변수로만 켠다: SPRING_MAIL_HOST, SPRING_MAIL_USERNAME, SPRING_MAIL_PASSWORD (README 최초 세팅 10).
+    # 없으면 메일을 보내지 않고 링크를 로그에 남긴다 (로컬 개발용, AuthMailSender)
+    port: 587
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+      # 암호화(STARTTLS)를 못 하면 보내지 않는다. 계정 비밀번호·링크가 평문으로 나가지 않게
+      "[mail.smtp.starttls.required]": true
+      "[mail.smtp.connectiontimeout]": 5000
+      "[mail.smtp.timeout]": 5000
+      "[mail.smtp.writetimeout]": 5000
+
   servlet:
     multipart:
       # 파일 규칙(장당 5MB)은 FileStorage 가 검사해 INVALID_FILE 로 안내한다 (#79).
@@ -31,6 +44,13 @@ server:
       timeout: 2h
 
 vibelog:
+  # 메일 링크의 앞부분. 요청의 Host 헤더로 만들지 않는다 (재설정 링크를 다른 사이트 주소로 바꾸는 공격 방지)
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+  mail:
+    from: ${MAIL_FROM:no-reply@vibelog.example}
+    # 메일 서버가 없을 때 메일 내용(링크)을 로그에 남길지. 로컬에서만 MAIL_LOG_BODY=true 로 켠다 (배포 서버는 끈 채로 둔다)
+    log-body: ${MAIL_LOG_BODY:false}
+
   upload:
     # 업로드 파일 저장 폴더 (#79). 배포 서버에서는 환경 변수 UPLOAD_DIR 로 바꾼다
     dir: ${UPLOAD_DIR:uploads}
