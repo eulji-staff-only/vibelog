@@ -52,9 +52,6 @@
 .ls-panel-desc { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
 .ls-panel-body { display: flex; flex-direction: column; gap: var(--space-4); font-size: 15px; line-height: 1.65; }
 .ls-panel-body p { margin: 0; }
-.ls-figure { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }
-.ls-figure img { width: 100%; border-radius: var(--radius-md); border: 1px solid var(--line); }
-.ls-figure figcaption { font-size: 13px; color: var(--ink-muted); }
 .ls-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .ls-tag { padding: 4px 12px; border-radius: var(--radius-pill); background: var(--tint); font-size: 13px; font-weight: 700; color: var(--ink); }
 .ls-tool-link { align-self: flex-start; color: var(--link); font-weight: 700; }

@@ -247,7 +247,7 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
                 .orElseThrow(() -> new BusinessException(LessonErrorCode.ENROLLMENT_NOT_FOUND));
     }
 
-    /* 활동 진도가 없으면 만들면서 열고, 있으면 그대로 연다 (unlock 은 처음 한 번만 기록) */
+    /* 활동 진도가 없으면 만들면서 열고, 있으면 그대로 연다 (unlock 은 처음 한 번만 기록). */
     private void unlockActivity(Long enrollmentId, Activity activity) {
         activityProgressRepository.findByEnrollmentIdAndActivityId(enrollmentId, activity.getActivityId())
                 .orElseGet(() -> activityProgressRepository.save(
