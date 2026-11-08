@@ -65,6 +65,8 @@ class SuspensionTest {
         jdbcTemplate.update("INSERT INTO member (email, password_hash, nickname, email_verified_at) VALUES (?, ?, '정지대상', NOW())",
                 LEARNER, hash);
         learnerId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        // 진단 기록이 없으면 로그인 도착지가 /diagnosis 라서(#12), 건너뛴 기록을 넣어 /courses 로 가게 한다
+        jdbcTemplate.update("INSERT INTO diagnosis_result (member_id, recommended_track_id, status) VALUES (?, NULL, 'SKIPPED')", learnerId);
         jdbcTemplate.update("INSERT INTO member (email, password_hash, nickname, role, email_verified_at) VALUES (?, ?, '정지운영자', 'ADMIN', NOW())",
                 ADMIN, hash);
         adminId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
