@@ -8,60 +8,52 @@
     <link rel="stylesheet" th:href="@{/css/course-complete.css}" href="/css/course-complete.css">
 </head>
 <body>
-<!-- U-18 코스 완료. 화면 선행 작업(#47): 완료 조건·일시·리포트 목록은 샘플이고, 완료 여부 계산(PL-ENR-003)은
-     ③ 단계(API 명세)에서 붙인다. 리포트(U-16)·수업(U-13) 주소에는 lessonId 가 필요해 ③ 단계에서 연결하고,
-     지금은 href="#" 로 자리만 둔다. 공통 헤더·푸터(#13)와 배지·안내 상자 조각(#46)이 머지되면 그것으로 바꾼다. -->
+
+<div th:replace="~{common/layout :: header}"></div>
+
+<!-- U-18 코스 완료 (API-ENR-03, #115). CourseCompletePageController 가 담아 주는 courseComplete 로 그린다.
+     완료 여부·완료 일시는 계약 ⑦이 이미 기록한 enrollment.completed_at 을 그대로 보여준다 (PL-ENR-003).
+     배지·안내 상자 모양은 공통 조각(#46)이 머지되면 그것으로 바꾼다. -->
 <div class="cc-page">
 
     <section class="cc-band">
-        <span class="cc-eyebrow">[웹 개발 트랙] · [코스] 자바로 배우는 바이브코딩 기초</span>
-        <h1 class="cc-title">코스를 완료했습니다</h1>
-        <p class="cc-lead">모든 수업의 모의고사와 오답 분석 리포트, 포트폴리오 제출까지 모두 마쳤습니다. 수고하셨습니다!</p>
+        <span class="cc-eyebrow" th:text="'[' + ${courseComplete.trackName()} + '] · [코스] ' + ${courseComplete.courseName()}">[트랙] · [코스] 코스 이름</span>
+        <h1 class="cc-title" th:text="${courseComplete.completed()} ? '코스를 완료했습니다' : '코스 완료까지 한 걸음 남았어요'">코스를 완료했습니다</h1>
+        <p class="cc-lead" th:if="${courseComplete.completed()}">모든 수업의 모의고사와 오답 분석 리포트, 포트폴리오 제출까지 모두 마쳤습니다. 수고하셨습니다!</p>
+        <p class="cc-lead" th:unless="${courseComplete.completed()}">남은 조건을 모두 마치면 이 코스가 완료 처리됩니다.</p>
     </section>
 
     <main class="cc-main">
         <div class="cc-panel">
 
-            <!-- 예외: 조건이 남은 경우의 참고용 모습 (설계서 U-18 예외). ③ 단계에서 실제 조건으로 둘 중 하나만 보여 준다. -->
-            <div class="cc-notice" data-cc-remaining hidden>
+            <!-- 조건이 남은 경우에만 보여준다 (설계서 U-18 예외) -->
+            <div class="cc-notice" th:unless="${courseComplete.completed()}">
                 <strong>코스 완료까지 한 걸음 남았어요.</strong>
                 <p>남은 조건을 모두 마치면 이 코스가 완료 처리됩니다.</p>
-                <a class="cc-link" href="#">포트폴리오로 가기</a>
+                <a class="cc-link" th:href="@{/my/learning}">내 학습에서 남은 조건 보기</a>
             </div>
 
             <section class="cc-section" aria-labelledby="cc-cond-h">
                 <h2 class="cc-h2" id="cc-cond-h">완료 조건</h2>
                 <ul class="cc-conditions">
-                    <li class="cc-condition">
-                        <span class="cc-badge cc-badge-success">완료</span>
-                        <span class="cc-condition-name">모든 공개 수업 모의고사 응시</span>
-                    </li>
-                    <li class="cc-condition">
-                        <span class="cc-badge cc-badge-success">완료</span>
-                        <span class="cc-condition-name">모든 공개 수업 오답 분석 리포트 확인</span>
-                    </li>
-                    <li class="cc-condition">
-                        <span class="cc-badge cc-badge-success">완료</span>
-                        <span class="cc-condition-name">포트폴리오 제출</span>
+                    <li class="cc-condition" th:each="condition : ${courseComplete.conditions()}">
+                        <span class="cc-badge" th:classappend="${condition.met()} ? 'cc-badge-success' : 'cc-badge-locked'"
+                              th:text="${condition.met()} ? '완료' : '남음'">완료</span>
+                        <span class="cc-condition-name" th:text="${condition.name()}">조건 이름</span>
                     </li>
                 </ul>
-                <p class="cc-muted">완료 일시: <strong>2026.10.20 14:32</strong></p>
+                <p class="cc-muted" th:if="${courseComplete.completedAt() != null}"
+                   th:text="'완료 일시: ' + ${#temporals.format(courseComplete.completedAt(), 'yyyy.MM.dd HH:mm')}">완료 일시</p>
             </section>
 
             <section class="cc-section" aria-labelledby="cc-report-h">
                 <h2 class="cc-h2" id="cc-report-h">수업별 리포트</h2>
                 <ul class="cc-report-list">
-                    <li class="cc-report-item">
-                        <span class="cc-report-name">[수업 1] 변수와 자료형</span>
-                        <a class="cc-btn cc-btn-outline cc-btn-s" href="#">리포트 보기</a>
-                    </li>
-                    <li class="cc-report-item">
-                        <span class="cc-report-name">[수업 2] 조건문으로 분기 만들기</span>
-                        <a class="cc-btn cc-btn-outline cc-btn-s" href="#">리포트 보기</a>
-                    </li>
-                    <li class="cc-report-item">
-                        <span class="cc-report-name">[수업 3] 반복문으로 코드 줄이기</span>
-                        <a class="cc-btn cc-btn-outline cc-btn-s" href="#">리포트 보기</a>
+                    <li class="cc-report-item" th:each="report : ${courseComplete.lessonReports()}">
+                        <span class="cc-report-name" th:text="${report.title()}">수업 이름</span>
+                        <a class="cc-btn cc-btn-outline cc-btn-s" th:if="${report.reportUrl() != null}"
+                           th:href="${report.reportUrl()}">리포트 보기</a>
+                        <span class="cc-muted" th:if="${report.reportUrl() == null}">아직 응시하지 않았습니다</span>
                     </li>
                 </ul>
             </section>
@@ -77,5 +69,8 @@
         </div>
     </main>
 </div>
+
+<div th:replace="~{common/layout :: footer}"></div>
+
 </body>
 </html>
