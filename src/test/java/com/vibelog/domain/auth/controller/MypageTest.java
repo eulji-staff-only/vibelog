@@ -80,6 +80,54 @@ class MypageTest {
     }
 
     @Test
+    void 닉네임을_바꾸면_토스트와_함께_내_정보로_돌아온다() throws Exception {
+        mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "새닉네임1"))
+                .andExpect(redirectedUrl("/mypage?tab=info"))
+                .andExpect(flash().attribute("toast", "닉네임을 저장했습니다"));
+
+        assertThat(nicknameOf(EMAIL)).isEqualTo("새닉네임1");
+    }
+
+    @Test
+    void 닉네임이_규칙에_맞지_않거나_다른_회원이_쓰고_있으면_같은_화면에_메시지를_보여준다() throws Exception {
+        mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "탈퇴한 사용자"))
+                .andExpect(view().name("auth/mypage"))
+                .andExpect(model().attributeHasFieldErrors("nicknameChangeRequest", "nickname"));
+        mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "소셜회원"))
+                .andExpect(model().attributeHasFieldErrorCode("nicknameChangeRequest", "nickname", "DUPLICATE_NICKNAME"))
+                .andExpect(content().string(allOf(containsString("이미 사용 중인 닉네임입니다."), containsString("action=\"/mypage/password\""))));
+
+        assertThat(nicknameOf(EMAIL)).isEqualTo("마이페이지");
+    }
+
+    @Test
+    void 금칙어가_든_닉네임은_같은_화면에_메시지를_보여준다() throws Exception {
+        jdbcTemplate.update("INSERT INTO banned_word (word) VALUES (?)", "닉금칙");
+
+        mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "나는닉금칙"))
+                .andExpect(view().name("auth/mypage"))
+                .andExpect(model().attributeHasFieldErrorCode("nicknameChangeRequest", "nickname", "BANNED_WORD"));
+
+        assertThat(nicknameOf(EMAIL)).isEqualTo("마이페이지");
+    }
+
+    @Test
+    void 내_닉네임의_대소문자만_바꿔도_저장된다() throws Exception {
+        jdbcTemplate.update("UPDATE member SET nickname = 'Alice' WHERE email = ?", EMAIL);
+
+        mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "alice"))
+                .andExpect(redirectedUrl("/mypage?tab=info"));
+
+        assertThat(nicknameOf(EMAIL)).isEqualTo("alice");
+    }
+
+    @Test
+    void 지금_닉네임_그대로_저장해도_된다() throws Exception {
+        mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "마이페이지"))
+                .andExpect(redirectedUrl("/mypage?tab=info"));
+    }
+
+    @Test
     void 비밀번호를_바꾸면_토스트와_함께_내_정보로_돌아온다() throws Exception {
         mockMvc.perform(post("/mypage/password").with(as(EMAIL)).with(csrf())
                         .param("currentPassword", "oldpass1234").param("newPassword", "newpass5678"))
@@ -176,6 +224,11 @@ class MypageTest {
         jdbcTemplate.update("INSERT INTO post (member_id, category, title, body, deleted_at) VALUES (?, 'FREE', ?, '본문', ?)",
                 memberId, title, deleted ? java.time.LocalDateTime.now() : null);
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+    }
+
+    private String nicknameOf(String email) {
+        entityManager.flush();
+        return jdbcTemplate.queryForObject("SELECT nickname FROM member WHERE email = ?", String.class, email);
     }
 
     private void commentOf(long memberId, long postId, String content, boolean deleted) {

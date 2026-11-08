@@ -18,6 +18,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     boolean existsByNicknameAndStatus(String nickname, MemberStatus status);
 
+    boolean existsByNicknameAndStatusAndMemberIdNot(String nickname, MemberStatus status, Long memberId);
+
     /*
      * 운영자 회원 목록 (API-ADM-37). q 가 null 이면 전체, 있으면 닉네임·이메일 일부로 찾는다. 이용 중인 회원만, 최근 가입 순.
      * q 의 % _ ! 는 부르는 쪽이 '!'로 이스케이프해서 넘긴다 (글자 그대로 찾기).

@@ -18,13 +18,15 @@ import lombok.Setter;
 @Setter
 public class SignupRequest {
 
-    private static final String NICKNAME_RULE = "닉네임은 2~12자 한글·영문·숫자로 써 주세요 (공백·특수문자 불가)";
+    /* 닉네임 규칙 (PL-USR-002). 마이페이지 닉네임 저장(API-USR-18)도 같은 규칙을 쓴다. 공백이 없어 "탈퇴한 사용자"도 막힌다 */
+    public static final String NICKNAME_RULE = "닉네임은 2~12자 한글·영문·숫자로 써 주세요 (공백·특수문자 불가)";
+    public static final String NICKNAME_REGEX = "[가-힣A-Za-z0-9]{2,12}";
     /* 비밀번호 규칙 (PL-USR-001). 재설정(#90)·비밀번호 변경(#116)도 같은 규칙을 쓴다 */
     public static final String PASSWORD_RULE = "비밀번호는 8~64자, 영문과 숫자를 모두 넣어 주세요 (한글·공백 제외)";
     public static final String PASSWORD_REGEX = "(?=.*[A-Za-z])(?=.*[0-9])[\\x21-\\x7E]{8,64}";
 
     @NotNull(message = NICKNAME_RULE)
-    @Pattern(regexp = "[가-힣A-Za-z0-9]{2,12}", message = NICKNAME_RULE)
+    @Pattern(regexp = NICKNAME_REGEX, message = NICKNAME_RULE)
     private String nickname;
 
     @NotBlank(message = "이메일을 입력해 주세요")

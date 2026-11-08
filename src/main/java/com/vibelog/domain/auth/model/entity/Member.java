@@ -78,6 +78,11 @@ public class Member extends BaseTimeEntity {
      * 회원 탈퇴 (FR-USR-008, DB 설계서 5-3). 행은 남기고 계정 정보만 비운다.
      * email 이 비므로 같은 이메일로 다시 가입할 수 있고, 남은 글·댓글의 작성자는 "탈퇴한 사용자"로 보인다 (PL-USR-009).
      */
+    /* 마이페이지 닉네임 저장 (FR-USR-007). 규칙·중복·금칙어는 부르는 쪽이 먼저 검사한다 */
+    public void changeNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
     public void withdraw(LocalDateTime now) {
         this.status = MemberStatus.WITHDRAWN;
         this.withdrawnAt = now;
