@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>게시글 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
+    <script th:src="@{/js/community.js}" defer></script>
+</head>
+<body class="cm-page">
+<!-- U-22 게시글 상세. 화면 선행 작업(#50): 글·댓글은 샘플이고, ③ 단계(#92 상세, #93 수정·삭제, #94 댓글·답글)에서 붙인다.
+     수정·삭제 버튼은 내 글·내 댓글일 때만 보여 준다 (③ 단계). -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="cm-band">
+    <h1 class="cm-title">커뮤니티</h1>
+</section>
+
+<main class="cm-main">
+    <div class="cm-panel">
+        <a class="cm-link" href="/community">← 커뮤니티</a>
+
+        <article class="cm-post">
+            <div class="cm-row">
+                <span class="cm-badge is-showcase">작품 공유</span>
+                <div class="cm-comment__actions">
+                    <a class="cm-btn is-outline is-s" href="/community/1/edit">수정</a>
+                    <button class="cm-btn is-outline is-s" type="button" data-open-dialog="delete-post">삭제</button>
+                </div>
+            </div>
+            <h2 class="cm-post__title">[샘플] 나만의 할 일 관리 앱을 만들었어요</h2>
+            <p class="cm-muted">홍길동 · 2026.11.06 14:30</p>
+            <p class="cm-post__body">바이브코딩 기초 코스를 마치고 할 일 관리 앱을 만들어 봤습니다.
+화면을 먼저 설명하고, 기능을 하나씩 요청하니 생각보다 빨리 완성됐어요.</p>
+            <div class="cm-photos">
+                <div class="cm-photo">사진 1</div>
+                <div class="cm-photo">사진 2</div>
+            </div>
+            <!-- 작품 공유 글만 (PL-CMT-008) -->
+            <dl class="cm-work">
+                <dt>작품 링크</dt>
+                <dd><a class="cm-link" href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a></dd>
+                <dt>사용한 도구</dt>
+                <dd>Claude, Cursor</dd>
+            </dl>
+        </article>
+
+        <section class="cm-comments" aria-labelledby="cm-comments-h">
+            <h2 class="cm-h2" id="cm-comments-h">댓글 3</h2>
+
+            <!-- 댓글 입력 (500자, PL-CMT-006). 비회원이 누르면 로그인으로 (③ 단계) -->
+            <form class="cm-form">
+                <textarea class="cm-input cm-textarea is-short" maxlength="500" placeholder="댓글을 남겨 보세요" aria-label="댓글"></textarea>
+                <div class="cm-row">
+                    <p class="cm-hint">500자까지 쓸 수 있습니다</p>
+                    <button class="cm-btn is-navy is-s" type="button">댓글 등록</button>
+                </div>
+            </form>
+
+            <ul class="cm-comment-list">
+                <li class="cm-comment">
+                    <div class="cm-comment__head">
+                        <strong>김바이브</strong><span>2026.11.06 15:02</span>
+                    </div>
+                    <p>화면 구성이 깔끔하네요! 어떤 순서로 요청하셨는지 궁금해요.</p>
+                    <div class="cm-comment__actions">
+                        <button class="cm-btn is-text is-s" type="button">답글</button>
+                    </div>
+                    <!-- 답글은 한 단계까지만 (PL-CMT-006) -->
+                    <ul class="cm-replies">
+                        <li class="cm-comment">
+                            <div class="cm-comment__head">
+                                <strong>홍길동</strong><span>2026.11.06 15:20</span><span>수정됨</span>
+                            </div>
+                            <p>화면 → 저장 → 목록 순서로 요청했어요.</p>
+                            <div class="cm-comment__actions">
+                                <button class="cm-btn is-text is-s" type="button">수정</button>
+                                <button class="cm-btn is-text is-s" type="button">삭제</button>
+                            </div>
+                        </li>
+                    </ul>
+                </li>
+                <li class="cm-comment is-deleted">
+                    <p>삭제된 댓글입니다</p>
+                </li>
+            </ul>
+
+            <!-- 댓글 없음 (③ 단계) -->
+            <p class="cm-muted" hidden>아직 댓글이 없습니다. 첫 댓글을 남겨 보세요.</p>
+        </section>
+    </div>
+</main>
+
+<!-- M-05 게시글 삭제 확인. 삭제하면 목록(U-21)으로 간다. 삭제 요청은 ③ 단계(#93)에서 붙인다 -->
+<dialog class="cm-dialog" id="delete-post" aria-labelledby="delete-post-h">
+    <form method="dialog">
+        <h2 class="cm-h2" id="delete-post-h">게시글을 삭제할까요?</h2>
+        <p>삭제한 글은 되돌릴 수 없습니다.</p>
+        <div class="cm-actions">
+            <button class="cm-btn is-outline" value="cancel">취소</button>
+            <button class="cm-btn is-danger" type="button">삭제</button>
+        </div>
+    </form>
+</dialog>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>
