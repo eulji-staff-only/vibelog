@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  * [Member]
  * 역할 : 회원 테이블(member)과 매핑된다. 학습자·운영자, 이메일 가입·소셜 가입 회원을 모두 담는다.
  * 책임 : 컬럼은 sql/01-schema.sql 의 member 그대로 둔다.
- *        회원 만들기(create)와 상태 바꾸기 메서드는 가입·탈퇴 기능 이슈에서 추가한다.
+ *        이메일 가입은 create 로 만든다. 상태 바꾸기 메서드는 탈퇴 기능 이슈에서 추가한다.
  */
 @Getter
 @Entity
@@ -45,4 +45,15 @@ public class Member extends BaseTimeEntity {
     private LocalDateTime emailVerifiedAt;
 
     private LocalDateTime withdrawnAt;
+
+    /* 이메일 가입 학습자 (FR-USR-001). 이메일 인증 전이다 (PL-USR-003) */
+    public static Member create(String email, String passwordHash, String nickname) {
+        Member member = new Member();
+        member.email = email;
+        member.passwordHash = passwordHash;
+        member.nickname = nickname;
+        member.role = MemberRole.LEARNER;
+        member.status = MemberStatus.ACTIVE;
+        return member;
+    }
 }

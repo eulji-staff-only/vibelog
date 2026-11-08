@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>마이페이지 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+    <script th:src="@{/js/auth.js}" defer></script>
+</head>
+<body class="au-page">
+<!-- U-24 마이페이지 (/mypage?tab=info|posts|comments). 화면 선행 작업(#51): 계정 정보·글·댓글은 샘플이고,
+     비밀번호 변경(API-USR-17)·탈퇴(API-USR-16)와 목록은 ③ 단계 마이페이지 기능(#116)에서 붙인다. 탭은 주소의 tab 으로 바뀐다. -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="au-band">
+    <h1 class="au-title">마이페이지</h1>
+    <p class="au-lead">내 정보와 작성한 글·댓글을 확인하세요.</p>
+</section>
+
+<main class="au-main is-wide" th:with="tab=${param.tab != null ? param.tab[0] : 'info'}">
+    <div class="au-panel">
+        <nav class="au-tabs" aria-label="마이페이지 탭">
+            <a href="/mypage?tab=info" th:attr="aria-current=${tab != 'posts' and tab != 'comments'} ? 'page'">내 정보</a>
+            <a href="/mypage?tab=posts" th:attr="aria-current=${tab == 'posts'} ? 'page'">작성한 글</a>
+            <a href="/mypage?tab=comments" th:attr="aria-current=${tab == 'comments'} ? 'page'">작성한 댓글</a>
+        </nav>
+
+        <!-- 내 정보 -->
+        <th:block th:if="${tab != 'posts' and tab != 'comments'}">
+            <section class="au-section" aria-labelledby="au-account-h">
+                <h2 class="au-h2" id="au-account-h">계정 정보</h2>
+                <dl class="au-info">
+                    <dt>이메일</dt><dd>[샘플] learner@vibelog.test</dd>
+                    <dt>닉네임</dt><dd>[샘플] 바이브학습자</dd>
+                    <dt>가입 방식</dt><dd>이메일</dd>
+                </dl>
+                <a class="au-btn is-outline is-fit" href="/my/portfolios">내 포트폴리오 보기</a>
+            </section>
+
+            <section class="au-section" aria-labelledby="au-password-h">
+                <h2 class="au-h2" id="au-password-h">비밀번호 변경</h2>
+                <!-- 소셜 가입 계정이면 폼 대신 보여 준다 (③ 단계) -->
+                <div class="au-notice" hidden>
+                    <p>구글·깃허브로 가입한 계정입니다. 비밀번호는 가입한 서비스에서 관리합니다.</p>
+                </div>
+                <form class="au-form">
+                    <div class="au-field">
+                        <label class="au-label" for="newPassword">새 비밀번호</label>
+                        <input class="au-input" id="newPassword" type="password" autocomplete="new-password">
+                        <p class="au-hint">8~64자, 영문과 숫자를 모두 넣어 주세요 (한글·공백 제외)</p>
+                    </div>
+                    <!-- ③ 단계에서 type="submit" 으로 바꾼다 -->
+                    <button class="au-btn is-navy is-fit" type="button">비밀번호 변경</button>
+                </form>
+            </section>
+
+            <section class="au-section" aria-labelledby="au-withdraw-h">
+                <h2 class="au-h2" id="au-withdraw-h">회원 탈퇴</h2>
+                <p class="au-text">탈퇴하면 계정 정보가 바로 지워지고 되돌릴 수 없습니다.</p>
+                <button class="au-btn is-outline is-fit" type="button" data-open-dialog="withdraw">회원 탈퇴</button>
+            </section>
+        </th:block>
+
+        <!-- 작성한 글 -->
+        <section class="au-section" th:if="${tab == 'posts'}" aria-label="작성한 글">
+            <ul class="au-list">
+                <li><a href="/community/1"><strong>[샘플] 나만의 할 일 관리 앱을 만들었어요</strong><span>작품 공유 · 2026.11.06 · 댓글 3</span></a></li>
+                <li><a href="/community/3"><strong>[샘플] 첫 코스를 끝냈습니다</strong><span>자유게시판 · 2026.11.04 · 댓글 0</span></a></li>
+            </ul>
+            <!-- 글이 없으면 (③ 단계) -->
+            <div class="au-empty" hidden>
+                <p class="au-text">작성한 글이 없습니다</p>
+                <a class="au-btn is-outline is-fit" href="/community">커뮤니티 둘러보기</a>
+            </div>
+        </section>
+
+        <!-- 작성한 댓글 -->
+        <section class="au-section" th:if="${tab == 'comments'}" aria-label="작성한 댓글">
+            <ul class="au-list">
+                <li><a href="/community/2"><strong>[샘플] 저도 나눠서 주는 편이 결과가 더 좋았어요.</strong><span>프롬프트를 나눠서 주는 게 더 좋을까요? · 2026.11.05</span></a></li>
+            </ul>
+            <!-- 댓글이 없으면 (③ 단계) -->
+            <div class="au-empty" hidden>
+                <p class="au-text">작성한 댓글이 없습니다</p>
+                <a class="au-btn is-outline is-fit" href="/community">커뮤니티 둘러보기</a>
+            </div>
+        </section>
+    </div>
+</main>
+
+<!-- M-06 회원 탈퇴 확인. 탈퇴하면 로그아웃되고 메인(U-01)으로 간다. 탈퇴 요청은 ③ 단계(#116)에서 붙인다 -->
+<dialog class="au-dialog" id="withdraw" aria-labelledby="withdraw-h">
+    <form method="dialog">
+        <h2 class="au-h2" id="withdraw-h">정말 탈퇴할까요?</h2>
+        <!-- PL-USR-009·010 -->
+        <ul>
+            <li>계정 정보는 바로 지워지고 되돌릴 수 없습니다.</li>
+            <li>포트폴리오는 삭제됩니다.</li>
+            <li>작성한 게시글·댓글·리뷰는 남고, 작성자는 "탈퇴한 사용자"로 보입니다.</li>
+            <li>같은 이메일로 다시 가입할 수 있습니다.</li>
+        </ul>
+        <div class="au-dialog__actions">
+            <button class="au-btn is-outline" value="cancel">취소</button>
+            <button class="au-btn is-danger" type="button">탈퇴</button>
+        </div>
+    </form>
+</dialog>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>
