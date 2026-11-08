@@ -56,4 +56,15 @@ public class Member extends BaseTimeEntity {
         member.status = MemberStatus.ACTIVE;
         return member;
     }
+
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
+    }
+
+    /* 인증 링크를 열면 (API-USR-09). 이미 인증했으면 처음 시각을 그대로 둔다 */
+    public void verifyEmail(LocalDateTime now) {
+        if (emailVerifiedAt == null) {
+            this.emailVerifiedAt = now;
+        }
+    }
 }
