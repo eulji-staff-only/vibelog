@@ -12,7 +12,7 @@
 | API-MSG-01 | 쪽지함 | GET | `/messages` | 회원 | query `box`(received, sent. 없으면 received), `messageId`(선택: 오른쪽에 열 쪽지), `page` | U-27 + 탭별 쪽지 목록(상대 닉네임, 내용 앞부분, 보낸 시각, 받은 쪽지는 읽음 여부) 최신순 20개씩, 페이지 정보 / `messageId`가 있으면 그 쪽지 내용과 (받은 쪽지면) 답장 폼. **받은 쪽지를 열면 `read_at`을 기록한다** | `MESSAGE_NOT_FOUND`(없음), `NOT_OWNER`(주고받은 두 사람이 아님, PL-MSG-001) | FR-MSG-002, PL-MSG-001 |
 | API-MSG-02 | 받는 사람 찾기 | GET | `/api/users` | 회원 | query `nickname` | JSON `[{"memberId", "nickname"}]` — 닉네임이 `nickname`으로 시작하는 회원 최대 10명. 나와 탈퇴 회원은 뺀다. `nickname`이 비면 빈 목록 | - | FR-MSG-001 (U-27 새 쪽지) |
 | API-MSG-03 | 쪽지 보내기 (쪽지함) | POST | `/messages` | 인증 | form `receiverMemberId`, `content` | 저장 → 받는 사람에게 MESSAGE 알림 → `/messages?box=sent&messageId={새 messageId}` + toast "쪽지를 보냈습니다" | `INVALID_INPUT`(내용 1~1,000자, PL-MSG-003), `BANNED_WORD`(NFR-SEC-009), `EMAIL_NOT_VERIFIED`, `MESSAGE_SELF`, `MESSAGE_RECEIVER_NOT_FOUND`(없음·탈퇴), `MESSAGE_DAILY_LIMIT`, `MESSAGE_UNANSWERED_LIMIT` → U-27 새 쪽지 폼 다시 | FR-MSG-001, PL-MSG-003 |
-| API-MSG-04 | 쪽지 보내기 (공개 프로필) | POST | `/users/{memberId}/messages` | 인증 | path `memberId`(받는 사람), form `content` (M-13) | API-MSG-03과 같게 저장·알림 → `/users/{memberId}` + toast "쪽지를 보냈습니다" | API-MSG-03과 같음 → `/users/{memberId}` + toast(에러 메시지) (③, 모달 폼이라 다시 그리지 않음) | FR-MSG-001 |
+| API-MSG-04 | 쪽지 보내기 (공개 프로필) | POST | `/users/{memberId}/messages` | 인증 | path `memberId`(받는 사람), form `content` (M-13) | API-MSG-03과 같게 저장·알림 → `/users/{memberId}` + toast "쪽지를 보냈습니다" | API-MSG-03과 같은 검사. 실패하면 → `/users/{memberId}` + flash `messageContent`(작성한 내용)·`messageError`(에러 메시지). U-29는 이 값이 있으면 M-13을 연 채로 내용과 메시지를 보여준다 (#181) | FR-MSG-001 |
 | API-MSG-05 | 답장 | POST | `/messages/{messageId}/reply` | 인증 | path `messageId`(내가 받은 쪽지), form `content` | 새 쪽지(`parent_message_id` = `messageId`, 받는 사람 = 원래 보낸 사람) 저장 → MESSAGE 알림 → `/messages?box=received&messageId={messageId}` + toast "답장을 보냈습니다" | API-MSG-03과 같은 검사. 입력 오류면 U-27에 원래 쪽지(`messageId`)와 답장 폼을 다시 보여주고 입력값 유지. `MESSAGE_NOT_FOUND`, `NOT_OWNER`(내가 받은 쪽지가 아님) | FR-MSG-002 |
 
 - **보내기 검사 순서:** 입력 → 금칙어 → 이메일 인증 → 나에게 보냄 → 받는 사람 → 하루 20통 → 연속 3통. 세 POST가 같은 Service 메서드를 쓴다.
@@ -26,7 +26,7 @@
 
 | ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| API-NTF-01 | 알림 목록 | GET | `/api/notifications` | 회원 | - | JSON `{"unreadCount", "items": [{"notificationId", "notificationType", "content", "read", "createdAt"}]}` — 내 알림 최신순 20개 (헤더 드롭다운을 열 때 부름) | - | FR-NTF-001 |
+| API-NTF-01 | 알림 목록 | GET | `/api/notifications` | 회원 | query `page`(1부터) | JSON `{"unreadCount", "hasNext", "items": [{"notificationId", "notificationType", "content", "read", "createdAt"}]}` — 내 알림 최신순 20개씩. 드롭다운을 열 때 1쪽, "더 보기"로 다음 쪽 (보관 90일 안의 알림은 모두 열 수 있다) | - | FR-NTF-001 |
 | API-NTF-02 | 알림 열기 | GET | `/notifications/{notificationId}` | 회원(본인) | path `notificationId` | `read_at` 기록 → 아래 "알림 도착지" 주소로 redirect | `NOTIFICATION_NOT_FOUND`, `NOT_OWNER` | FR-NTF-001 |
 | API-NTF-03 | 모두 읽음 | POST | `/api/notifications/read-all` | 회원 | - | 내 안 읽은 알림 전부 `read_at` 기록 → 204 | - | PL-NTF-002 |
 
@@ -42,6 +42,7 @@
 | NOTICE | NOTICE | `/notices/{noticeId}` | - |
 | HIDDEN (P3) | (신고 대상) | P3에서 정한다 | - |
 
+- 댓글·리뷰는 삭제해도 행이 남으므로(삭제 표시) `CommunityReader`는 삭제된 행에서도 상위 ID(`postId`·`portfolioId`)를 돌려준다. 행이 아예 없으면 E-01(`NOT_FOUND`)로 보낸다.
 - 대상이 지워졌으면 redirect한 화면이 자기 "없음" 처리를 한다 (예: `POST_NOT_FOUND` → E-01). 알림 쪽에서 미리 확인하지 않는다.
 - **알림 문구** (`content`, 255자): 아래 "영역 간 계약"의 메서드가 만든다. 부르는 쪽은 문구를 만들지 않는다.
 - **90일 지난 알림 삭제 (PL-NTF-002):** 하루 한 번 배치로 지운다 (`idx_notification_created_at`).
@@ -104,7 +105,7 @@
 | 3 | 받는 사람 찾기 | 닉네임 앞부분 일치, 최대 10명 | U-27 "닉네임으로 찾아 골라" |
 | 4 | 하루 20통 기준 | 오늘 0시부터 | PL-MSG-003 "하루" |
 | 5 | 연속 3통 기준 | 상대의 마지막 쪽지 이후 내가 보낸 수 | PL-MSG-003 "답장이 없는 상대에게 연속 3통" |
-| 6 | 알림 목록 개수 | 최신 20개 (드롭다운) | 90일 보관이라 전체는 많다 |
+| 6 | 알림 목록 개수 | 20개씩, "더 보기"로 다음 쪽 | 90일 보관이라 한 번에 다 보내지 않는다 |
 | 7 | 알림 열기 | GET redirect에서 읽음 기록 (GET 예외) | 드롭다운 항목이 링크 하나로 끝난다 |
 | 8 | 알림 문구 | 위 ⑬ 표 | 부르는 쪽마다 문구가 달라지지 않게 한 곳에서 만든다 |
 | 9 | 공지 알림 | 작성할 때 탈퇴하지 않은 회원 전체에 1건씩 (수정 때는 안 보냄) | FR-NTF-001 "공지"를 알림, 1-5 "공지 → U-26" |
