@@ -13,7 +13,8 @@ import java.util.List;
  */
 public record AdminMemberDetail(Long memberId, String nickname, String email, String roleLabel, boolean withdrawn,
                                 boolean emailVerified, LocalDateTime joinedAt, List<Enrollment> enrollments,
-                                List<QuizResult> quizResults, List<ExamResult> examResults, long portfolioCount) {
+                                List<QuizResult> quizResults, List<ExamResult> examResults, long portfolioCount,
+                                AdminSanction sanction) {
 
     /* 수강 코스 하나. status 는 "수강 중"·"완료"·"포기" */
     public record Enrollment(String courseTitle, LocalDateTime startedAt, int progressPercent, String status) {
@@ -32,9 +33,9 @@ public record AdminMemberDetail(Long memberId, String nickname, String email, St
     }
 
     public static AdminMemberDetail of(Member member, List<Enrollment> enrollments, List<QuizResult> quizResults,
-                                       List<ExamResult> examResults, long portfolioCount) {
+                                       List<ExamResult> examResults, long portfolioCount, AdminSanction sanction) {
         return new AdminMemberDetail(member.getMemberId(), member.getNickname(), member.getEmail(), roleLabel(member),
                 member.getStatus() == MemberStatus.WITHDRAWN, member.getEmailVerifiedAt() != null, member.getCreatedAt(),
-                enrollments, quizResults, examResults, portfolioCount);
+                enrollments, quizResults, examResults, portfolioCount, sanction);
     }
 }
