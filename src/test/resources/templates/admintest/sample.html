@@ -1,0 +1,22 @@
+<!--
+  테스트 전용 템플릿. 실제 A-01~A-08 화면(다른 이슈 #100·#120 등 범위)이 아니라,
+  common/admin-layout.html 의 sidebar fragment 가 README 예시대로 잘 붙는지만 확인하는 빈 화면이다 (#81).
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar(${active})}"></div>
+    <main class="vl-admin__content">
+        <p>테스트용 빈 화면입니다.</p>
+    </main>
+</div>
+
+</body>
+</html>

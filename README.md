@@ -425,6 +425,25 @@ public class Quiz extends BaseTimeEntity { ... }
 - 화면 안쪽 너비를 본문 최대 폭(1200px)으로 맞추려면 `vl-content` 클래스를 씁니다.
 - 로그인 상태별 메뉴(회원·운영자 헤더)는 #12 머지 후 Controller에서 로그인 회원을 꺼내 추가합니다.
 
+**백오피스 화면 레이아웃 쓰는 법** (#81)
+
+운영자 화면(A-01~A-08)의 왼쪽 메뉴는 `templates/common/admin-layout.html`에 fragment로 있습니다. 학습자 레이아웃과 달리 헤더·푸터가 아니라 왼쪽 메뉴 하나이므로, 화면이 직접 `vl-admin` 틀로 감싸서 씁니다.
+
+```html
+<link rel="stylesheet" th:href="@{/css/common.css}">
+<link rel="stylesheet" th:href="@{/css/admin.css}">
+...
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('dashboard')}"></div>
+    <main class="vl-admin__content">
+        <!-- 이 화면의 내용 -->
+    </main>
+</div>
+```
+
+- `sidebar(active)`의 `active`에 지금 보고 있는 메뉴를 넣으면 그 메뉴가 강조됩니다: `dashboard` · `tracks` · `categories` · `courses` · `members`.
+- 메뉴·URL은 화면 흐름 설계서 "백오피스 왼쪽 메뉴" 그대로입니다 (설정(P2) 메뉴는 넣지 않습니다). `/admin/**`은 이미 `SecurityConfig`가 운영자만 들어오게 막으므로 화면에서 권한을 따로 검사하지 않습니다.
+
 **공통 UI 조각 쓰는 법** (#46)
 
 버튼·배지·안내 상자·진행 막대·탭 버튼·확인 모달은 `templates/common/ui.html`에 fragment로 있고, 모달·토스트를 여닫는 동작은 `static/js/ui.js`가 합니다. 새 화면에서는 CSS(`common.css`)만 링크하면 바로 가져다 씁니다.
