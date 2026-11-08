@@ -186,6 +186,27 @@ Gradle은 설치하지 않아도 됩니다. 저장소에 들어 있는 `gradlew`
 
 또는 IntelliJ에서 `VibelogApplication`의 `main`을 실행합니다. `http://localhost:8080` 에 접속해 **404 에러 화면**이 나오면 정상입니다. (아직 화면이 하나도 없어서예요)
 
+> 💡 **메일 (선택, #89)** — 가입 인증·비밀번호 재설정 메일은 메일 서버 환경 변수가 있을 때만 실제로 보냅니다.
+> 로컬에서 메일 서버 없이 링크를 확인하려면 환경 변수 `MAIL_LOG_BODY=true`를 넣습니다. 그러면 **앱 로그에 메일 내용과 링크**가 찍히니 복사해 열면 됩니다 (배포 서버에는 넣지 않습니다).
+> 실제로 보내려면 실행 설정의 Environment variables 에 아래를 넣습니다 (Gmail 은 앱 비밀번호 사용).
+>
+> | 환경 변수 | 예 |
+> | --- | --- |
+> | `SPRING_MAIL_HOST` | `smtp.gmail.com` |
+> | `SPRING_MAIL_USERNAME` | 보내는 계정 |
+> | `SPRING_MAIL_PASSWORD` | 앱 비밀번호 |
+> | `MAIL_FROM` | 보내는 사람 주소 (기본 `no-reply@vibelog.example`) |
+> | `APP_BASE_URL` | 메일 링크의 사이트 주소 (기본 `http://localhost:8080`, 배포 서버는 실제 주소) |
+
+> 💡 **구글·깃허브 로그인 (선택, #91)** — 키가 없으면 소셜 로그인은 꺼지고 로그인 화면에 버튼도 보이지 않습니다.
+> 켜려면 [구글 클라우드 콘솔](https://console.cloud.google.com/apis/credentials)·[깃허브 OAuth 앱](https://github.com/settings/developers)에 앱을 등록하고,
+> 돌아올 주소(Redirect URI)를 `http://localhost:8080/login/oauth2/code/google`(깃허브는 `.../github`)로 넣은 뒤 환경 변수를 넣습니다.
+>
+> | 환경 변수 | 설명 |
+> | --- | --- |
+> | `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` | 구글 OAuth 클라이언트 |
+> | `GITHUB_CLIENT_ID` · `GITHUB_CLIENT_SECRET` | 깃허브 OAuth 앱 |
+
 여기까지 됐다면 준비 끝입니다. 🎉 이제 [01. 작업 흐름](docs/collaboration/01-workflow.md)을 따라 첫 작업을 시작하세요.
 
 ---
@@ -214,8 +235,11 @@ src/main/java/com/vibelog/
 └── global/
     ├── config/                       ← 공통 설정
     ├── controller/MainController     ← 메인 화면 `/` (어느 영역에도 속하지 않는 화면)
-    ├── entity/                       ← BaseTimeEntity (created_at · updated_at)
-    └── exception/                    ← BusinessException · ErrorCode · GlobalExceptionHandler
+    ├── dao/                          ← 공통 Repository (BannedWordRepository)
+    ├── entity/                       ← BaseTimeEntity (created_at · updated_at), BannedWord
+    ├── exception/                    ← BusinessException · ErrorCode · CommonErrorCode(공통 에러) · GlobalExceptionHandler
+    ├── file/FileStorage              ← 업로드 파일 검사·저장 (모든 영역 공통)
+    └── policy/BannedWordPolicy       ← 금칙어 검사 (모든 영역 공통)
 
 src/main/resources/
 ├── application.yaml
@@ -245,6 +269,97 @@ public enum QuizErrorCode implements ErrorCode {
     private final String message;
 }
 ```
+
+- 여러 영역이 같이 쓰는 공통 에러(API 명세 `_template.md` 7-2, 예: `BANNED_WORD`)는 `global/exception/CommonErrorCode`에 있습니다.
+
+**금칙어 검사** (#80)
+
+- 닉네임·게시글·댓글·포트폴리오처럼 사용자가 쓴 글은 저장하기 전에 `BannedWordPolicy`로 검사합니다 (PL-SEC-003). 금칙어가 들어 있으면 `BusinessException(BANNED_WORD)`이 납니다.
+- 검사할 칸을 한 번에 넘깁니다. 비어 있는(`null`) 칸은 건너뛰고, 대소문자는 구분하지 않습니다.
+
+```java
+@Transactional
+public Long write(Long memberId, PostWriteRequest request) {
+    bannedWordPolicy.check(request.title(), request.body());   // 걸리면 여기서 멈춘다
+    ...
+}
+```
+
+- 금칙어 목록은 `banned_word` 테이블입니다. 로컬에서 확인할 때는 `INSERT INTO banned_word (word) VALUES ('테스트금칙어');`로 넣어 봅니다.
+
+**JSON API 약속** (D-08, #152)
+
+- 화면이 바뀌지 않는 동작만 JSON으로 답하고, 주소는 `/api/`로 시작합니다 (운영자는 `/api/admin/`). Controller는 `@RestController`로 만들고 **명세에 적힌 값을 담은 DTO를 그대로** 돌려줍니다. 감싸는 틀(`{data: …}`)을 만들지 않습니다. 돌려줄 값이 없으면 `@ResponseStatus(HttpStatus.NO_CONTENT)`로 204(본문 없음)를 보냅니다. 받는 쪽은 204일 때만 `response.json()`을 건너뛰고, 실패 응답은 항상 JSON(`{code, message}`)이라 읽어서 `message`를 보여 줍니다.
+- 실패는 화면과 똑같이 `BusinessException`을 던지기만 합니다. `/api/**` 요청이면 `GlobalExceptionHandler`가 에러 코드의 상태 코드와 아래 JSON으로 바꿔 보냅니다.
+
+```json
+{ "code": "NOT_OWNER", "message": "본인만 할 수 있습니다." }
+```
+
+| 상황 | 상태 · code |
+| --- | --- |
+| `BusinessException` | 에러 코드의 상태 · 에러 코드 이름 |
+| `@Valid` 검증 실패 | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
+| 읽을 수 없는 JSON, 필수 값 없음, 타입 불일치 | 400 · `INVALID_INPUT` ("요청 값을 확인해주세요.") |
+| 지원하지 않는 메서드 / Content-Type / Accept | 405 · `METHOD_NOT_ALLOWED` (`Allow` 헤더) / 415 · `UNSUPPORTED_MEDIA_TYPE` / 406 · `NOT_ACCEPTABLE` |
+| 정책으로 걸러지지 않은 DB 제약 위반 (UNIQUE 등) | 409 · `CONFLICT` |
+| 없는 주소 | 404 · `NOT_FOUND` |
+| 비로그인 | 401 · `LOGIN_REQUIRED` |
+| 학습자가 `/api/admin/**` | 403 · `ADMIN_ONLY` |
+| CSRF 토큰 없음·만료 | 403 · `FORBIDDEN` |
+| 그 밖의 오류 | 500 · `SERVER_ERROR` (내부 정보는 보내지 않음) |
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class PortfolioGuideApiController {
+
+    private final GuideStepService guideStepService;
+
+    @PostMapping("/api/guide-steps/{guideStepId}/check")
+    public GuideStepCheckResponse check(@PathVariable Long guideStepId, @Valid @RequestBody GuideStepCheckRequest request,
+                                        @AuthenticationPrincipal LoginMember loginMember) {
+        return guideStepService.check(loginMember.getMemberId(), guideStepId, request.checked());   // → {"checkedCount": 2, "totalCount": 5}
+    }
+}
+```
+
+- JSON으로 POST 하려면 **CSRF 토큰을 헤더로** 보내야 합니다 (안 보내면 403 `FORBIDDEN`). 그 화면의 `<head>`에 토큰을 두고 `fetch`에서 꺼내 씁니다.
+
+```html
+<meta name="_csrf" th:content="${_csrf.token}">
+<meta name="_csrf_header" th:content="${_csrf.headerName}">
+```
+
+```js
+const token = document.querySelector('meta[name="_csrf"]').content;
+const header = document.querySelector('meta[name="_csrf_header"]').content;
+const response = await fetch('/api/guide-steps/3/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', [header]: token },
+    body: JSON.stringify({ checked: true }),
+});
+const body = await response.json();
+if (!response.ok) { alert(body.message); }   // 실패: {code, message}
+```
+
+**업로드 파일 저장** (#79)
+
+- 사진·스크린샷·개념 이미지는 `FileStorage.saveImage`, 평가 에이전트 설정 파일은 `saveDocument`로 저장합니다. 돌려받은 주소(`/uploads/{UUID}.png`)를 `*_url` 컬럼에 저장하고, 화면에서는 `<img th:src="${post.imageUrl}">`처럼 그대로 씁니다.
+- 이미지는 JPG·PNG·WebP, 설정 파일은 UTF-8 글자로 된 md·json·yaml·txt만 받고, 둘 다 장당 5MB까지입니다 (PL-DAT-004, PL-PRT-010). 규칙에 맞지 않거나 확장자만 바꾼 파일이면 `BusinessException(INVALID_FILE)`이 납니다.
+- **개수 제한(게시글 3장 등)은 쓰는 쪽에서 검사합니다.** 파일 칸을 비워 둔 채 보내도 빈 파일이 하나 들어오므로 `isEmpty()`인 것은 빼고 넘깁니다.
+
+```java
+@Transactional
+public Long write(Long memberId, PostWriteRequest request, List<MultipartFile> images) {
+    List<MultipartFile> chosen = images.stream().filter(file -> !file.isEmpty()).toList();
+    // 개수 검사는 여기서 (PL-CMT-009)
+    List<String> imageUrls = chosen.stream().map(fileStorage::saveImage).toList();   // 규칙에 안 맞으면 여기서 멈춘다
+    ...
+}
+```
+
+- 파일은 프로젝트 폴더의 `uploads/`에 저장됩니다 (커밋되지 않음). 배포 서버에서는 환경 변수 `UPLOAD_DIR`로 폴더를 정합니다.
 
 **로그인 약속** (#12)
 
@@ -308,8 +423,50 @@ public class Quiz extends BaseTimeEntity { ... }
 
 - 디자인 토큰(색상·글꼴·간격)은 `common.css`의 CSS 변수(`--navy-900`, `--space-5` 등)를 그대로 씁니다.
 - 화면 안쪽 너비를 본문 최대 폭(1200px)으로 맞추려면 `vl-content` 클래스를 씁니다.
-- 버튼·배지·안내 상자 같은 공통 UI 조각은 #46에서 추가됩니다.
 - 로그인 상태별 메뉴(회원·운영자 헤더)는 #12 머지 후 Controller에서 로그인 회원을 꺼내 추가합니다.
+
+**공통 UI 조각 쓰는 법** (#46)
+
+버튼·배지·안내 상자·진행 막대·탭 버튼·확인 모달은 `templates/common/ui.html`에 fragment로 있고, 모달·토스트를 여닫는 동작은 `static/js/ui.js`가 합니다. 새 화면에서는 CSS(`common.css`)만 링크하면 바로 가져다 씁니다.
+
+```html
+<!-- 버튼 (variant: navy · glow · outline · text, size: 빈 문자열(기본) · s · xl) -->
+<a th:replace="~{common/ui :: btnLink('/courses', '코스 보기', 'navy', '')}"></a>
+<button th:replace="~{common/ui :: btnButton('다시 풀기', 'outline', 's')}"></button>
+
+<!-- 배지 (variant: strong · neutral · success · danger · locked) -->
+<span th:replace="~{common/ui :: badge('locked', '잠김')}"></span>
+
+<!-- 안내 상자 (variant: info · empty · success, title은 없으면 null) -->
+<div th:replace="~{common/ui :: notice('info', null, '진단 중 나가면 응답이 저장되지 않습니다.')}"></div>
+
+<!-- 진행 막대 -->
+<div th:replace="~{common/ui :: progress('문항', 3, 10)}"></div>
+
+<!-- 패널(흰 박스)은 fragment 가 아니라 클래스로 직접 쓴다 (내용이 화면마다 다르기 때문) -->
+<section class="vl-ui-panel"> ... </section>
+
+<!-- 탭: data-ui-tabs 로 버튼들을 묶어야 ui.js 가 찾는다. 선택 안 된 패널은 hidden 으로 시작한다 -->
+<div class="vl-ui-tabs" role="tablist" data-ui-tabs>
+    <button th:replace="~{common/ui :: tabButton('panel-a', '수강 중', true)}"></button>
+    <button th:replace="~{common/ui :: tabButton('panel-b', '완료', false)}"></button>
+</div>
+<div id="panel-a" class="vl-ui-tabpanel" role="tabpanel" aria-labelledby="panel-a-tab"> ... </div>
+<div id="panel-b" class="vl-ui-tabpanel" role="tabpanel" aria-labelledby="panel-b-tab" hidden> ... </div>
+
+<!-- 확인 모달: 여는 버튼 + 모달 fragment. id 를 맞춘다 -->
+<button type="button" class="vl-ui-btn is-outline" data-ui-modal-open="delete-confirm">삭제</button>
+<div th:replace="~{common/ui :: confirmModal('delete-confirm', '포트폴리오를 삭제할까요?', '코스 완료 조건이 다시 미충족됩니다.', '삭제', '취소')}"></div>
+
+<!-- 토스트: 화면에 한 번만 넣고, JS에서 VLToast.show(...) 로 띄운다 -->
+<div th:replace="~{common/ui :: toastContainer}"></div>
+<script th:src="@{/js/ui.js}"></script>
+<script>VLToast.show('저장되었습니다');</script>
+```
+
+- 비활성 버튼 + 이유 문구(설계서 5-2)는 버튼에 `aria-disabled="true"`를 얹고 바로 아래 `common/ui :: btnReason(text)`를 붙입니다.
+- 탭 버튼은 `common/ui :: tabButton(targetId, label, active)`을 `th:each`로 반복해서 만들되, 반드시 `data-ui-tabs`를 가진 묶음 요소 안에 넣습니다. `static/js/ui.js`가 그 안의 `role="tab"`·`aria-controls`를 보고 전환을 처리하므로, 묶음 요소가 없으면 눌러도 아무 일도 안 일어납니다. 선택 안 된 패널은 `hidden`으로 시작합니다.
+- 오류 화면(404·403·500)은 `templates/error/error.html`의 `errorBody(status, message)` fragment를 그대로 쓰므로 새로 만들 필요가 없습니다.
 
 **리뷰어 지정 약속**
 
