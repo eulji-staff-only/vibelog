@@ -8,9 +8,11 @@ import com.vibelog.domain.message.model.entity.Notification;
 import com.vibelog.domain.message.model.entity.NotificationTargetType;
 import com.vibelog.domain.message.model.entity.NotificationType;
 import com.vibelog.domain.message.model.policy.NotificationSender;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -20,25 +22,37 @@ import static org.assertj.core.api.Assertions.tuple;
 
 /*
  * message 계약 ⑬(알림 보내기)과 MessageReader 를 실제 DB(01·02 실행된 로컬 MySQL)로 확인한다.
- * 회원은 02-seed 테스트 계정(1 학습자, 2 운영자)을 쓴다. 끝나면 모두 롤백된다.
+ * 회원은 테스트마다 새로 넣어 기존 개발 데이터(알림)와 섞이지 않게 한다. 끝나면 모두 롤백된다.
  */
 @SpringBootTest
 @Transactional
 class NotificationContractServiceTest {
 
-    static final long LEARNER = 1L;
-    static final long OTHER = 2L;
-
     @Autowired NotificationSender notificationSender;
     @Autowired NotificationRepository notificationRepository;
     @Autowired MessageReader messageReader;
     @Autowired NoticeRepository noticeRepository;
+    @Autowired JdbcTemplate jdbcTemplate;
+
+    long learner;
+    long other;
+
+    @BeforeEach
+    void 회원_둘을_넣는다() {
+        learner = member("notify-learner@vibelog.test");
+        other = member("notify-other@vibelog.test");
+    }
+
+    private long member(String email) {
+        jdbcTemplate.update("INSERT INTO member (email, password_hash, nickname) VALUES (?, 'x', '알림회원')", email);
+        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+    }
 
     @Test
     void 계약13_추천하면_글_작성자에게_추천_알림이_남는다() {
-        notificationSender.recommended(OTHER, LEARNER, 10L, "내 첫 작품");
+        notificationSender.recommended(other, learner, 10L, "내 첫 작품");
 
-        Notification n = onlyNotificationOf(LEARNER);
+        Notification n = onlyNotificationOf(learner);
         assertThat(n.getNotificationType()).isEqualTo(NotificationType.RECOMMEND);
         assertThat(n.getTargetType()).isEqualTo(NotificationTargetType.POST);
         assertThat(n.getTargetId()).isEqualTo(10L);
@@ -48,12 +62,12 @@ class NotificationContractServiceTest {
 
     @Test
     void 계약13_종류마다_대상이_정해진다() {
-        notificationSender.commented(OTHER, LEARNER, 21L, "글");
-        notificationSender.replied(OTHER, LEARNER, 22L, "글");
-        notificationSender.reviewed(OTHER, LEARNER, 23L, "작품");
-        notificationSender.badgeAwarded(LEARNER, 24L, "2026년 11월 1등");
+        notificationSender.commented(other, learner, 21L, "글");
+        notificationSender.replied(other, learner, 22L, "글");
+        notificationSender.reviewed(other, learner, 23L, "작품");
+        notificationSender.badgeAwarded(learner, 24L, "2026년 11월 1등");
 
-        assertThat(notificationRepository.findAll()).filteredOn(n -> n.getMemberId() == LEARNER)
+        assertThat(notificationRepository.findAll()).filteredOn(n -> n.getMemberId() == learner)
                 .extracting(Notification::getNotificationType, Notification::getTargetType, Notification::getTargetId)
                 .containsExactlyInAnyOrder(
                         tuple(NotificationType.COMMENT, NotificationTargetType.COMMENT, 21L),
@@ -64,9 +78,9 @@ class NotificationContractServiceTest {
 
     @Test
     void 계약13_내가_한_일은_나에게_알리지_않는다() {
-        notificationSender.commented(LEARNER, LEARNER, 30L, "내 글");
+        notificationSender.commented(learner, learner, 30L, "내 글");
 
-        assertThat(notificationRepository.findAll()).noneMatch(n -> n.getMemberId() == LEARNER);
+        assertThat(notificationRepository.findAll()).noneMatch(n -> n.getMemberId() == learner);
     }
 
     @Test
@@ -79,8 +93,8 @@ class NotificationContractServiceTest {
 
     @Test
     void 최근_공지는_최신순으로_limit_개() {
-        Notice first = noticeRepository.save(Notice.create(OTHER, "첫 공지", "본문", false, null, null));
-        Notice second = noticeRepository.save(Notice.create(OTHER, "둘째 공지", "본문", false, null, null));
+        Notice first = noticeRepository.save(Notice.create(other, "첫 공지", "본문", false, null, null));
+        Notice second = noticeRepository.save(Notice.create(other, "둘째 공지", "본문", false, null, null));
 
         List<NoticeSummary> recent = messageReader.findRecentNotices(1);
 
