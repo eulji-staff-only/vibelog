@@ -14,6 +14,10 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     Optional<Member> findByEmailAndStatus(String email, MemberStatus status);
 
+    boolean existsByEmail(String email);
+
+    boolean existsByNicknameAndStatus(String nickname, MemberStatus status);
+
     /* 운영자 회원 목록 (API-ADM-37). q 가 null 이면 전체, 있으면 닉네임·이메일 일부로 찾는다. 이용 중인 회원만, 최근 가입 순 */
     @Query("select m from Member m where m.status = com.vibelog.domain.auth.model.entity.MemberStatus.ACTIVE"
             + " and (:q is null or m.nickname like concat('%', :q, '%') or m.email like concat('%', :q, '%'))"
