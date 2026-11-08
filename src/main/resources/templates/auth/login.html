@@ -18,6 +18,8 @@
 
 <main class="au-main">
     <div class="au-panel">
+        <!-- 비밀번호 재설정 뒤 (API-USR-14) -->
+        <div class="au-notice is-success" role="status" th:if="${toast}"><strong th:text="${toast}">알림</strong></div>
         <div class="au-notice" th:if="${param.redirect}">
             <p>로그인 시간이 지나 로그아웃되었습니다. 다시 로그인하면 보던 화면으로 돌아갑니다</p>
         </div>

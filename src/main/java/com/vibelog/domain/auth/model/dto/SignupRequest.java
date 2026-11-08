@@ -19,7 +19,9 @@ import lombok.Setter;
 public class SignupRequest {
 
     private static final String NICKNAME_RULE = "닉네임은 2~12자 한글·영문·숫자로 써 주세요 (공백·특수문자 불가)";
-    private static final String PASSWORD_RULE = "비밀번호는 8~64자, 영문과 숫자를 모두 넣어 주세요 (한글·공백 제외)";
+    /* 비밀번호 규칙 (PL-USR-001). 재설정(#90)·비밀번호 변경(#116)도 같은 규칙을 쓴다 */
+    public static final String PASSWORD_RULE = "비밀번호는 8~64자, 영문과 숫자를 모두 넣어 주세요 (한글·공백 제외)";
+    public static final String PASSWORD_REGEX = "(?=.*[A-Za-z])(?=.*[0-9])[\\x21-\\x7E]{8,64}";
 
     @NotNull(message = NICKNAME_RULE)
     @Pattern(regexp = "[가-힣A-Za-z0-9]{2,12}", message = NICKNAME_RULE)
@@ -31,6 +33,6 @@ public class SignupRequest {
     private String email;
 
     @NotNull(message = PASSWORD_RULE)
-    @Pattern(regexp = "(?=.*[A-Za-z])(?=.*[0-9])[\\x21-\\x7E]{8,64}", message = PASSWORD_RULE)
+    @Pattern(regexp = PASSWORD_REGEX, message = PASSWORD_RULE)
     private String password;
 }
