@@ -73,10 +73,11 @@ flowchart LR
 | ⑩ | auth | 탈퇴 회원의 포트폴리오 삭제 | portfolio | 기록 | FR-USR-008 |
 | ⑪ | course | 코스의 수강 상태(NONE·ENROLLED·COMPLETED), 공개 수업 목록·수 | lesson | 조회 | API-CRS-01~03 |
 | ⑫ | auth | 로그인 도착지: 진단 기록이 있나, 진행 중인 수강이 있나 | course, lesson | 조회 | API-USR-05·07, FR-USR-004 |
+| ⑬ | community, contest | 알림 남기기 (추천·댓글·답글·리뷰·배지) — P2 | message | 기록 | message 명세 `NotificationSender`, FR-NTF-001 |
 
 > 열림·완료 시각은 lesson 영역 테이블(`lesson_progress`, `activity_progress`, `enrollment`)에 **저장**합니다 (DB 설계서 7장). 저장하지 않고 계산하는 것은 진행률과 모의고사 열림뿐입니다 (FR-ENR-002, FR-EXM-001). 그래서 quiz·exam·portfolio가 lesson에 **기록**을 요청하는 계약(①③⑦)이 있습니다.
 
-**계약은 위 표의 ①~⑫뿐입니다.** 표에 없는 다른 영역 값(작성자 닉네임, 코스명, 수업 제목, 개념 이름, 내가 쓴 글 목록 등 읽기만 하는 값)은 계약을 만들지 않고 받는 쪽의 `<영역>Reader`로 가져옵니다 ([규칙 1](#1-다른-영역은-계약이나-reader로만-부른다)).
+**계약은 위 표의 ①~⑬뿐입니다** (P2 계약은 각 영역 P2 명세에서 이 표에 더합니다). 표에 없는 다른 영역 값(작성자 닉네임, 코스명, 수업 제목, 개념 이름, 내가 쓴 글 목록 등 읽기만 하는 값)은 계약을 만들지 않고 받는 쪽의 `<영역>Reader`로 가져옵니다 ([규칙 1](#1-다른-영역은-계약이나-reader로만-부른다)).
 
 ---
 
