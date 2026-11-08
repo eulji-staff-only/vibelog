@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${editing} ? '글 수정 | 바이브로그' : '글쓰기 | 바이브로그'">글쓰기 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
+    <script th:src="@{/js/community.js}" defer></script>
+</head>
+<body class="cm-page">
+<!-- U-23 글쓰기·수정 (/community/write, /community/{postId}/edit). 화면 선행 작업(#50): 저장과 수정 화면의 기존 값 채우기는
+     ③ 단계 게시글 작성 기능(#93)에서 붙인다. 글자 수 표시만 화면 안에서 돈다 (community.js). -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="cm-band">
+    <h1 class="cm-title" th:text="${editing} ? '글 수정' : '글쓰기'">글쓰기</h1>
+    <p class="cm-lead">자유롭게 이야기하고, 만든 작품을 공유해 보세요.</p>
+</section>
+
+<main class="cm-main">
+    <div class="cm-panel">
+        <!-- 이메일 인증 전 회원 (PL-USR-003, ③ 단계) -->
+        <div class="cm-notice" hidden>
+            <p>이메일 인증 후 작성할 수 있습니다</p>
+            <a class="cm-link" href="/auth/verify">인증 메일 받기</a>
+        </div>
+
+        <form class="cm-form">
+            <fieldset class="cm-field">
+                <legend class="cm-label">카테고리</legend>
+                <div class="cm-radios">
+                    <label><input type="radio" name="category-sample" value="FREE" checked><span class="cm-chip">자유게시판</span></label>
+                    <label><input type="radio" name="category-sample" value="QNA"><span class="cm-chip">질문·답변</span></label>
+                    <label><input type="radio" name="category-sample" value="SHOWCASE"><span class="cm-chip">작품 공유</span></label>
+                </div>
+            </fieldset>
+
+            <div class="cm-field">
+                <label class="cm-label" for="title">제목</label>
+                <input class="cm-input" id="title" type="text" maxlength="100" data-count>
+                <p class="cm-hint is-count"><span data-count-for="title">0</span> / 100</p>
+            </div>
+
+            <div class="cm-field">
+                <label class="cm-label" for="body">본문</label>
+                <textarea class="cm-input cm-textarea" id="body" maxlength="5000" data-count></textarea>
+                <p class="cm-hint is-count"><span data-count-for="body">0</span> / 5,000</p>
+            </div>
+
+            <div class="cm-field">
+                <label class="cm-label" for="images">사진</label>
+                <input id="images" type="file" accept=".jpg,.jpeg,.png,.webp" multiple>
+                <p class="cm-hint">최대 3장, 장당 5MB까지 올릴 수 있습니다 (JPG·PNG·WebP)</p>
+            </div>
+
+            <!-- 작품 공유를 고르면 나온다 (PL-CMT-008) -->
+            <div class="cm-showcase">
+                <div class="cm-field">
+                    <label class="cm-label" for="workUrl">작품 링크</label>
+                    <input class="cm-input" id="workUrl" type="url" maxlength="500" placeholder="https://">
+                    <!-- 비어 있으면 ③ 단계에서 보여 준다 -->
+                    <p class="cm-hint is-error" hidden>작품 공유 글은 작품 링크가 필요합니다</p>
+                </div>
+                <div class="cm-field">
+                    <label class="cm-label" for="tools">사용한 도구</label>
+                    <input class="cm-input" id="tools" type="text" maxlength="200" placeholder="예: Claude, Cursor">
+                </div>
+            </div>
+
+            <div class="cm-actions">
+                <a class="cm-btn is-outline" href="/community">취소</a>
+                <!-- ③ 단계에서 type="submit" 으로 바꾼다 -->
+                <button class="cm-btn is-navy" type="button" th:text="${editing} ? '저장' : '등록'">등록</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>
