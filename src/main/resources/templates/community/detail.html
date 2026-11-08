@@ -9,7 +9,7 @@
     <script th:src="@{/js/community.js}" defer></script>
 </head>
 <body class="cm-page">
-<!-- U-22 게시글 상세 (API-CMT-02, #92). 삭제(M-05)·수정은 #93, 댓글 등록·답글·수정·삭제는 #94 에서 붙인다. -->
+<!-- U-22 게시글 상세 (API-CMT-02, #92). 수정(U-23)·삭제(M-05)는 #93. 댓글 등록·답글·수정·삭제는 #94 에서 붙인다. -->
 <div th:replace="~{common/layout :: header}"></div>
 
 <section class="cm-band">
@@ -97,16 +97,18 @@
     </div>
 </main>
 
-<!-- M-05 게시글 삭제 확인. 삭제 요청은 #93 에서 붙인다 -->
+<!-- M-05 게시글 삭제 확인 (API-CMT-07). 삭제하면 목록(U-21)으로 간다 -->
 <dialog class="cm-dialog" id="delete-post" aria-labelledby="delete-post-h" th:if="${post.mine()}">
-    <form method="dialog">
+    <div class="cm-form">
         <h2 class="cm-h2" id="delete-post-h">게시글을 삭제할까요?</h2>
         <p>삭제한 글은 되돌릴 수 없습니다.</p>
         <div class="cm-actions">
-            <button class="cm-btn is-outline" value="cancel">취소</button>
-            <button class="cm-btn is-danger" type="button">삭제</button>
+            <form method="dialog"><button class="cm-btn is-outline" value="cancel">취소</button></form>
+            <form th:action="@{/community/{id}/delete(id=${post.postId()})}" method="post">
+                <button class="cm-btn is-danger" type="submit">삭제</button>
+            </form>
         </div>
-    </form>
+    </div>
 </dialog>
 
 <div th:replace="~{common/layout :: footer}"></div>
