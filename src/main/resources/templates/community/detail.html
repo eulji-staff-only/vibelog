@@ -6,6 +6,9 @@
     <title th:text="${post.title()} + ' | 바이브로그'">게시글 | 바이브로그</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/community.css}">
+    <!-- 즐겨찾기(API-CMT-13)는 JSON POST 라 CSRF 토큰을 헤더로 보낸다 (README "JSON API 약속") -->
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <script th:src="@{/js/community.js}" defer></script>
 </head>
 <body class="cm-page">
@@ -32,6 +35,10 @@
             </div>
             <h2 class="cm-post__title" th:text="${post.title()}">제목</h2>
             <p class="cm-muted" th:text="|${post.nickname()} · ${#temporals.format(post.createdAt(), 'yyyy.MM.dd HH:mm')}|">작성자 · 작성일</p>
+            <!-- 즐겨찾기 (회원만, API-CMT-13). 페이지 이동 없이 글자만 바꾼다 -->
+            <button class="cm-btn is-outline is-s" type="button" th:if="${loggedIn}" data-favorite
+                    th:attr="data-url=@{/api/posts/{id}/favorite(id=${post.postId()})},aria-pressed=${post.favorited()}"
+                    th:text="${post.favorited()} ? '즐겨찾기 취소' : '즐겨찾기'">즐겨찾기</button>
             <p class="cm-post__body" th:text="${post.body()}">본문</p>
             <div class="cm-photos" th:unless="${post.imageUrls().empty}">
                 <img th:each="url, stat : ${post.imageUrls()}" th:src="${url}" th:alt="|게시글 사진 ${stat.count}|" class="cm-photo" loading="lazy">
