@@ -101,6 +101,17 @@ class MypageTest {
     }
 
     @Test
+    void 금칙어가_든_닉네임은_같은_화면에_메시지를_보여준다() throws Exception {
+        jdbcTemplate.update("INSERT INTO banned_word (word) VALUES (?)", "닉금칙");
+
+        mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "나는닉금칙"))
+                .andExpect(view().name("auth/mypage"))
+                .andExpect(model().attributeHasFieldErrorCode("nicknameChangeRequest", "nickname", "BANNED_WORD"));
+
+        assertThat(nicknameOf(EMAIL)).isEqualTo("마이페이지");
+    }
+
+    @Test
     void 지금_닉네임_그대로_저장해도_된다() throws Exception {
         mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "마이페이지"))
                 .andExpect(redirectedUrl("/mypage?tab=info"));
