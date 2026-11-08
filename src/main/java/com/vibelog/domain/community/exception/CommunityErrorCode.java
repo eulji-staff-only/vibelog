@@ -17,7 +17,9 @@ public enum CommunityErrorCode implements ErrorCode {
     SHOWCASE_LINK_REQUIRED(HttpStatus.BAD_REQUEST, "작품 공유 글은 작품 링크가 필요합니다."),
     REPLY_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST, "답글에는 답글을 달 수 없습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다."),
-    SELF_FOLLOW(HttpStatus.BAD_REQUEST, "나는 팔로우할 수 없습니다.");
+    SELF_FOLLOW(HttpStatus.BAD_REQUEST, "나는 팔로우할 수 없습니다."),
+    NOT_SHOWCASE(HttpStatus.BAD_REQUEST, "작품 공유 글만 추천할 수 있습니다."),
+    SELF_RECOMMEND(HttpStatus.BAD_REQUEST, "내 글은 추천할 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

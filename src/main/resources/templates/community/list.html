@@ -31,7 +31,10 @@
                 <a class="cm-chip" th:each="c : ${categories}" th:href="@{/community(category=${c.name()}, q=${q})}"
                    th:attr="aria-current=${category == c} ? 'page'" th:text="${c.label}">카테고리</a>
             </nav>
-            <a class="cm-btn is-navy" href="/community/write">글쓰기</a>
+            <div class="cm-toolbar__actions">
+                <a class="cm-btn is-outline" href="/community/ranking">추천 랭킹</a>
+                <a class="cm-btn is-navy" href="/community/write">글쓰기</a>
+            </div>
         </div>
 
         <form class="cm-search" role="search" action="/community" method="get">

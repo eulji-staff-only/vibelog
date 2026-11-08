@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>추천 랭킹 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
+</head>
+<body class="cm-page">
+<!-- U-30 추천 랭킹 (API-CMT-12, #179). 이번 주(월요일 0시부터) 받은 추천 수 상위 10개 작품 공유 글. 동점이면 이번 주 첫 추천이 빠른 글 (PL-CMT-003·004) -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="cm-band">
+    <h1 class="cm-title">추천 랭킹</h1>
+    <p class="cm-lead">이번 주(월요일부터) 추천을 많이 받은 작품 공유 글입니다.</p>
+</section>
+
+<main class="cm-main">
+    <div class="cm-panel">
+        <div class="cm-toolbar">
+            <a class="cm-link" href="/community">← 커뮤니티</a>
+        </div>
+
+        <ol class="cm-list" th:unless="${ranking.empty}">
+            <li th:each="item : ${ranking}">
+                <a class="cm-item" th:href="@{/community/{id}(id=${item.postId()})}">
+                    <span class="cm-badge is-showcase" th:text="|${item.rank()}위|">1위</span>
+                    <span class="cm-item__title" th:text="${item.title()}">제목</span>
+                    <span class="cm-item__count" th:text="|추천 ${item.recommendCount()}|">추천 0</span>
+                    <p class="cm-item__meta" th:text="${item.nickname()}">작성자</p>
+                </a>
+            </li>
+        </ol>
+
+        <div class="cm-empty" th:if="${ranking.empty}">
+            <p class="cm-muted">이번 주에 추천받은 작품이 아직 없습니다</p>
+            <a class="cm-btn is-outline" href="/community?category=SHOWCASE">작품 공유 글 보기</a>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

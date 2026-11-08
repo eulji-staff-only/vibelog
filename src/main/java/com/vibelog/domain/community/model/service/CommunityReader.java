@@ -9,6 +9,7 @@ import com.vibelog.domain.community.model.dao.PostRepository;
 import com.vibelog.domain.community.model.dto.MemberCommentItem;
 import com.vibelog.domain.community.model.dto.MemberPostItem;
 import com.vibelog.domain.community.model.dto.MemberSummary;
+import com.vibelog.domain.community.model.dto.RankingItem;
 import com.vibelog.domain.community.model.entity.Comment;
 import com.vibelog.domain.community.model.entity.Follow;
 import com.vibelog.domain.community.model.entity.Post;
@@ -41,6 +42,7 @@ public class CommunityReader {
     private final FavoriteRepository favoriteRepository;
     private final FollowRepository followRepository;
     private final MemberReader memberReader;
+    private final RecommendService recommendService;
 
     public Page<MemberPostItem> getPostsOf(Long memberId, int page) {
         return toItems(postRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
@@ -80,5 +82,10 @@ public class CommunityReader {
                 .collect(Collectors.toMap(Post::getPostId, Post::getTitle, (a, b) -> a));
         return comments.map(comment -> new MemberCommentItem(comment.getPostId(), comment.getCommentId(),
                 comment.getContent(), titles.get(comment.getPostId()), comment.getCreatedAt()));
+    }
+
+    /* 메인 화면 이번 주 추천 작품 (API-USR-01, #203). 랭킹(U-30)과 같은 순서 */
+    public List<RankingItem> findWeeklyTop(int limit) {
+        return recommendService.getWeeklyTop(limit);
     }
 }
