@@ -6,6 +6,7 @@ import com.vibelog.domain.message.model.dao.NotificationRepository;
 import com.vibelog.domain.message.model.dto.NotificationItem;
 import com.vibelog.domain.message.model.dto.NotificationPage;
 import com.vibelog.domain.message.model.entity.Notification;
+import com.vibelog.domain.message.model.entity.NotificationType;
 import com.vibelog.global.exception.BusinessException;
 import com.vibelog.global.exception.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /*
  * [NotificationService]
@@ -40,6 +42,12 @@ public class NotificationService {
                 memberId, PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
         return new NotificationPage(countUnread(memberId), slice.hasNext(),
                 slice.map(NotificationItem::from).getContent());
+    }
+
+    /* M-10 배지 획득 축하 (contest 명세): 안 읽은 BADGE 알림이 있으면 가장 최근 것. "확인"은 그 알림 열기(/notifications/{id}) */
+    public Optional<NotificationItem> findUnreadBadge(Long memberId) {
+        return notificationRepository.findFirstByMemberIdAndNotificationTypeAndReadAtIsNullOrderByNotificationIdDesc(memberId, NotificationType.BADGE)
+                .map(NotificationItem::from);
     }
 
     public long countUnread(Long memberId) {

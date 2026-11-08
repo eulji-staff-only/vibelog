@@ -3,6 +3,7 @@
  * 화면 안에서만 돈다. 데스크톱에서는 버튼이 숨겨져 있어 아무 일도 하지 않는다.
  * 아래 두 번째 묶음은 알림 드롭다운 (1-5, #185): 열 때 API-NTF-01 1쪽, "더 보기"로 다음 쪽, "모두 읽음"은 API-NTF-03.
  * 항목은 /notifications/{id} 링크 하나다 (서버가 읽음을 남기고 도착지로 보낸다).
+ * 마지막 묶음은 배지 획득 축하 모달(M-10, #202)의 포커스.
  */
 (() => {
     const header = document.querySelector('[data-header]');
@@ -134,4 +135,10 @@
             toggle.focus();
         }
     });
+})();
+
+/* 배지 획득 축하 모달(M-10)이 떠 있으면 제목으로 포커스를 옮긴다 (5-2 키보드 포커스). 닫기는 "확인"(알림 열기)뿐이다 */
+(() => {
+    const title = document.querySelector('[data-badge-modal] [tabindex="-1"]');
+    if (title) title.focus();
 })();
