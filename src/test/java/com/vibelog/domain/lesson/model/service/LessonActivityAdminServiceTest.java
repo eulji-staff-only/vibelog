@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.SqlMergeMode;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -50,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "INSERT INTO activity_progress (activity_progress_id, enrollment_id, activity_id, unlocked_at, completed_at) VALUES "
                 + "(9501, 9501, 9502, NOW(), NOW())"
 })
+@SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
 class LessonActivityAdminServiceTest {
 
     static final long LESSON = 9501L;
@@ -110,6 +112,17 @@ class LessonActivityAdminServiceTest {
         Activity activity = activityRepository.findById(CONCEPT_1).orElseThrow();
         assertThat(activity.getTitle()).isEqualTo("바뀐 제목");
         assertThat(activity.getBody()).isEqualTo("바뀐 본문");
+        assertThat(activityTagRepository.findByActivityId(CONCEPT_1)).hasSize(1);
+    }
+
+    @Test
+    @Sql(statements = "INSERT INTO activity_tag (activity_tag_id, activity_id, concept_tag_id) VALUES (9501, 9501, 9501)")
+    void 기존_태그와_같은_태그로_수정해도_유니크_제약에_걸리지_않는다() {
+        ActivityFormRequest form = formOf(ActivityType.CONCEPT, "바뀐 제목", "본문");
+        form.setTagNames(List.of("변수"));
+
+        lessonActivityAdminService.editActivity(CONCEPT_1, form);
+
         assertThat(activityTagRepository.findByActivityId(CONCEPT_1)).hasSize(1);
     }
 

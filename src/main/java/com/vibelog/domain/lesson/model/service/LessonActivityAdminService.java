@@ -134,6 +134,7 @@ public class LessonActivityAdminService {
 
     private void applyTags(Long activityId, List<String> tagNames) {
         activityTagRepository.deleteByActivityId(activityId);
+        activityTagRepository.flush(); // 삭제를 먼저 반영해야 같은 태그를 다시 넣어도 유니크 제약에 안 걸린다
         if (tagNames == null) {
             return;
         }
