@@ -20,6 +20,10 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
     Optional<Activity> findFirstByLessonIdAndIsActiveTrueAndSortOrderGreaterThanOrderBySortOrderAsc(
             Long lessonId, int sortOrder);
 
+    /* 잠긴 활동 선택 시 "앞 활동 바로가기"(FR-LSN-009)에 쓴다 */
+    Optional<Activity> findFirstByLessonIdAndIsActiveTrueAndSortOrderLessThanOrderBySortOrderDesc(
+            Long lessonId, int sortOrder);
+
     Optional<Activity> findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(
             Long lessonId, ActivityType activityType);
 }

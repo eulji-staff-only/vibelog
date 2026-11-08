@@ -1,6 +1,6 @@
 /*
  * 수업 화면(U-13) 안에서만 도는 동작: 활동 목록 선택 → 오른쪽 내용 전환, activity 쿼리 갱신.
- * 서버를 부르지 않는다. 잠김 판단·활동 목록·개념 본문은 ③ 단계에서 API 명세대로 붙인다.
+ * 서버는 모든 활동 패널(잠김·완료·진행 중)을 한 번에 내려주고(API-LSN-01, #107), 여기서는 보이기/숨기기만 한다.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const nav = document.querySelector('[data-activity-nav]');

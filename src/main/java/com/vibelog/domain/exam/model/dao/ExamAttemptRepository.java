@@ -23,4 +23,7 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> 
             """)
     List<Object[]> findLatestSubmittedAttemptNos(@Param("memberId") Long memberId,
                                                  @Param("lessonIds") Collection<Long> lessonIds);
+
+    /* 회원이 제출한 응시, 최근 제출 순 (ExamReader.getSubmittedResultsOf) */
+    List<ExamAttempt> findByMemberIdAndSubmittedAtIsNotNullOrderBySubmittedAtDesc(Long memberId);
 }

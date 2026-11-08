@@ -20,7 +20,13 @@ public enum LessonErrorCode implements ErrorCode {
     ACTIVITY_NOT_FOUND(HttpStatus.NOT_FOUND, "활동을 찾을 수 없습니다."),
     ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 중인 코스를 찾을 수 없습니다."),
     LESSON_PROGRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "수업 진도를 찾을 수 없습니다."),
-    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다.");
+    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다."),
+    /*
+     * 명세(_template.md 7장)상 방식이 "③ 다른 화면으로 이동 + 토스트"라서 GlobalExceptionHandler(① 에러 화면)로
+     * 던지지 않는다. 메시지만 이 enum 에서 가져오고, 실제 판단·리다이렉트는 LessonPageService·LessonActivityService가 한다.
+     */
+    LESSON_LOCKED(HttpStatus.FORBIDDEN, "이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다."),
+    ACTIVITY_LOCKED(HttpStatus.FORBIDDEN, "앞 퀴즈를 정답률 50% 이상으로 통과하면 열립니다.");
 
     private final HttpStatus status;
     private final String message;

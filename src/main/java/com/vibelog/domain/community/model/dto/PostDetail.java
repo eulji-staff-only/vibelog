@@ -12,13 +12,13 @@ import java.util.List;
  */
 public record PostDetail(Long postId, PostCategory category, String title, String nickname, LocalDateTime createdAt,
                          String body, List<String> imageUrls, String workUrl, boolean workUrlLinkable, String tools,
-                         long commentCount, List<CommentView> comments, boolean mine) {
+                         long commentCount, List<CommentView> comments, boolean mine, boolean favorited) {
 
     public static PostDetail of(Post post, String nickname, List<String> imageUrls, long commentCount,
-                                List<CommentView> comments, boolean mine) {
+                                List<CommentView> comments, boolean mine, boolean favorited) {
         String workUrl = post.getWorkUrl();
         boolean linkable = workUrl != null && (workUrl.startsWith("https://") || workUrl.startsWith("http://"));
         return new PostDetail(post.getPostId(), post.getCategory(), post.getTitle(), nickname, post.getCreatedAt(),
-                post.getBody(), imageUrls, workUrl, linkable, post.getTools(), commentCount, comments, mine);
+                post.getBody(), imageUrls, workUrl, linkable, post.getTools(), commentCount, comments, mine, favorited);
     }
 }

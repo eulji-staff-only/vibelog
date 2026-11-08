@@ -26,6 +26,7 @@
             <a href="/mypage?tab=info" th:attr="aria-current=${tab == 'info'} ? 'page'">내 정보</a>
             <a href="/mypage?tab=posts" th:attr="aria-current=${tab == 'posts'} ? 'page'">작성한 글</a>
             <a href="/mypage?tab=comments" th:attr="aria-current=${tab == 'comments'} ? 'page'">작성한 댓글</a>
+            <a href="/mypage?tab=favorites" th:attr="aria-current=${tab == 'favorites'} ? 'page'">즐겨찾기</a>
         </nav>
 
         <!-- 내 정보 -->
@@ -103,6 +104,27 @@
                 <a th:if="${posts.hasPrevious()}" th:href="@{/mypage(tab='posts', page=${posts.number})}">← 이전</a>
                 <span th:text="|${posts.number + 1} / ${posts.totalPages}|">1 / 2</span>
                 <a th:if="${posts.hasNext()}" th:href="@{/mypage(tab='posts', page=${posts.number + 2})}">다음 →</a>
+            </nav>
+        </section>
+
+        <!-- 즐겨찾기한 글 (P2, FR-CMT-007). 삭제 표시된 글은 Reader 가 뺀다 -->
+        <section class="au-section" th:if="${tab == 'favorites'}" aria-label="즐겨찾기">
+            <ul class="au-list" th:unless="${favorites.empty}">
+                <li th:each="post : ${favorites}">
+                    <a th:href="@{/community/{id}(id=${post.postId()})}">
+                        <strong th:text="${post.title()}">제목</strong>
+                        <span th:text="|${post.categoryLabel()} · ${#temporals.format(post.createdAt(), 'yyyy.MM.dd')} · 댓글 ${post.commentCount()}|">자유게시판 · 2026.11.04 · 댓글 0</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="au-empty" th:if="${favorites.empty}">
+                <p class="au-text">즐겨찾기한 글이 없습니다</p>
+                <a class="au-btn is-outline is-fit" href="/community">커뮤니티 둘러보기</a>
+            </div>
+            <nav class="au-pager" aria-label="페이지" th:if="${favorites.totalPages > 1}">
+                <a th:if="${favorites.hasPrevious()}" th:href="@{/mypage(tab='favorites', page=${favorites.number})}">← 이전</a>
+                <span th:text="|${favorites.number + 1} / ${favorites.totalPages}|">1 / 2</span>
+                <a th:if="${favorites.hasNext()}" th:href="@{/mypage(tab='favorites', page=${favorites.number + 2})}">다음 →</a>
             </nav>
         </section>
 
