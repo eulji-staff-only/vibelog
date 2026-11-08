@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 /*
- * 커뮤니티 화면(U-21~U-23)이 설계서 URL 로 열리는지 확인한다. 목록·상세는 비회원도, 글쓰기·수정은 회원만. (#50)
+ * 커뮤니티 화면(U-21~U-23)이 설계서 URL 로 열리는지 확인한다. 목록은 비회원도 (상세는 CommunityPostReadTest), 글쓰기·수정은 회원만. (#50)
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -29,10 +29,9 @@ class CommunityPageControllerTest {
     @ParameterizedTest
     @CsvSource({
             "/community, community/list",
-            "/community?category=SHOWCASE&page=2, community/list",
-            "/community/1, community/detail"
+            "/community?category=SHOWCASE&page=2, community/list"
     })
-    void 비회원도_목록과_상세를_연다(String url, String viewName) throws Exception {
+    void 비회원도_목록을_연다(String url, String viewName) throws Exception {
         mockMvc.perform(get(url)).andExpect(status().isOk()).andExpect(view().name(viewName));
     }
 

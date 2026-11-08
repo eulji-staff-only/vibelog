@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>게시글 | 바이브로그</title>
+    <title th:text="${post.title()} + ' | 바이브로그'">게시글 | 바이브로그</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/community.css}">
     <script th:src="@{/js/community.js}" defer></script>
 </head>
 <body class="cm-page">
-<!-- U-22 게시글 상세. 화면 선행 작업(#50): 글·댓글은 샘플이고, ③ 단계(#92 상세, #93 수정·삭제, #94 댓글·답글)에서 붙인다.
-     수정·삭제 버튼은 내 글·내 댓글일 때만 보여 준다 (③ 단계). -->
+<!-- U-22 게시글 상세 (API-CMT-02, #92). 삭제(M-05)·수정은 #93, 댓글 등록·답글·수정·삭제는 #94 에서 붙인다. -->
 <div th:replace="~{common/layout :: header}"></div>
 
 <section class="cm-band">
@@ -23,33 +22,39 @@
 
         <article class="cm-post">
             <div class="cm-row">
-                <span class="cm-badge is-showcase">작품 공유</span>
-                <div class="cm-comment__actions">
-                    <a class="cm-btn is-outline is-s" href="/community/1/edit">수정</a>
+                <span class="cm-badge" th:classappend="${post.category().name() == 'SHOWCASE'} ? 'is-showcase'"
+                      th:text="${post.category().label}">카테고리</span>
+                <!-- 내 글일 때만 -->
+                <div class="cm-comment__actions" th:if="${post.mine()}">
+                    <a class="cm-btn is-outline is-s" th:href="@{/community/{id}/edit(id=${post.postId()})}">수정</a>
                     <button class="cm-btn is-outline is-s" type="button" data-open-dialog="delete-post">삭제</button>
                 </div>
             </div>
-            <h2 class="cm-post__title">[샘플] 나만의 할 일 관리 앱을 만들었어요</h2>
-            <p class="cm-muted">홍길동 · 2026.11.06 14:30</p>
-            <p class="cm-post__body">바이브코딩 기초 코스를 마치고 할 일 관리 앱을 만들어 봤습니다.
-화면을 먼저 설명하고, 기능을 하나씩 요청하니 생각보다 빨리 완성됐어요.</p>
-            <div class="cm-photos">
-                <div class="cm-photo">사진 1</div>
-                <div class="cm-photo">사진 2</div>
+            <h2 class="cm-post__title" th:text="${post.title()}">제목</h2>
+            <p class="cm-muted" th:text="|${post.nickname()} · ${#temporals.format(post.createdAt(), 'yyyy.MM.dd HH:mm')}|">작성자 · 작성일</p>
+            <p class="cm-post__body" th:text="${post.body()}">본문</p>
+            <div class="cm-photos" th:unless="${post.imageUrls().empty}">
+                <img th:each="url, stat : ${post.imageUrls()}" th:src="${url}" th:alt="|게시글 사진 ${stat.count}|" class="cm-photo" loading="lazy">
             </div>
             <!-- 작품 공유 글만 (PL-CMT-008) -->
-            <dl class="cm-work">
+            <dl class="cm-work" th:if="${post.workUrl() != null}">
                 <dt>작품 링크</dt>
-                <dd><a class="cm-link" href="https://example.com" target="_blank" rel="noopener noreferrer">https://example.com</a></dd>
-                <dt>사용한 도구</dt>
-                <dd>Claude, Cursor</dd>
+                <dd>
+                    <a class="cm-link" th:if="${post.workUrlLinkable()}" th:href="${post.workUrl()}" th:text="${post.workUrl()}"
+                       target="_blank" rel="noopener noreferrer">작품 링크</a>
+                    <span th:unless="${post.workUrlLinkable()}" th:text="${post.workUrl()}">작품 링크</span>
+                </dd>
+                <th:block th:if="${post.tools() != null and !post.tools().isBlank()}">
+                    <dt>사용한 도구</dt>
+                    <dd th:text="${post.tools()}">도구</dd>
+                </th:block>
             </dl>
         </article>
 
         <section class="cm-comments" aria-labelledby="cm-comments-h">
-            <h2 class="cm-h2" id="cm-comments-h">댓글 3</h2>
+            <h2 class="cm-h2" id="cm-comments-h" th:text="|댓글 ${post.commentCount()}|">댓글 0</h2>
 
-            <!-- 댓글 입력 (500자, PL-CMT-006). 비회원이 누르면 로그인으로 (③ 단계) -->
+            <!-- 댓글 입력 (500자, PL-CMT-006). 등록은 #94 에서 붙인다 -->
             <form class="cm-form">
                 <textarea class="cm-input cm-textarea is-short" maxlength="500" placeholder="댓글을 남겨 보세요" aria-label="댓글"></textarea>
                 <div class="cm-row">
@@ -58,42 +63,42 @@
                 </div>
             </form>
 
-            <ul class="cm-comment-list">
-                <li class="cm-comment">
-                    <div class="cm-comment__head">
-                        <strong>김바이브</strong><span>2026.11.06 15:02</span>
-                    </div>
-                    <p>화면 구성이 깔끔하네요! 어떤 순서로 요청하셨는지 궁금해요.</p>
-                    <div class="cm-comment__actions">
-                        <button class="cm-btn is-text is-s" type="button">답글</button>
-                    </div>
+            <ul class="cm-comment-list" th:unless="${post.comments().empty}">
+                <!-- 삭제된 댓글은 작성자·내용을 보여 주지 않는다 -->
+                <li class="cm-comment" th:each="comment : ${post.comments()}" th:classappend="${comment.deleted()} ? 'is-deleted'">
+                    <p th:if="${comment.deleted()}">삭제된 댓글입니다</p>
+                    <th:block th:unless="${comment.deleted()}">
+                        <div class="cm-comment__head">
+                            <strong th:text="${comment.nickname()}">작성자</strong>
+                            <span th:text="${#temporals.format(comment.createdAt(), 'yyyy.MM.dd HH:mm')}">작성일</span>
+                            <span th:if="${comment.edited()}">수정됨</span>
+                        </div>
+                        <p th:text="${comment.content()}">댓글 내용</p>
+                    </th:block>
                     <!-- 답글은 한 단계까지만 (PL-CMT-006) -->
-                    <ul class="cm-replies">
-                        <li class="cm-comment">
-                            <div class="cm-comment__head">
-                                <strong>홍길동</strong><span>2026.11.06 15:20</span><span>수정됨</span>
-                            </div>
-                            <p>화면 → 저장 → 목록 순서로 요청했어요.</p>
-                            <div class="cm-comment__actions">
-                                <button class="cm-btn is-text is-s" type="button">수정</button>
-                                <button class="cm-btn is-text is-s" type="button">삭제</button>
-                            </div>
+                    <ul class="cm-replies" th:unless="${comment.replies().empty}">
+                        <li class="cm-comment" th:each="reply : ${comment.replies()}" th:classappend="${reply.deleted()} ? 'is-deleted'">
+                            <p th:if="${reply.deleted()}">삭제된 댓글입니다</p>
+                            <th:block th:unless="${reply.deleted()}">
+                                <div class="cm-comment__head">
+                                    <strong th:text="${reply.nickname()}">작성자</strong>
+                                    <span th:text="${#temporals.format(reply.createdAt(), 'yyyy.MM.dd HH:mm')}">작성일</span>
+                                    <span th:if="${reply.edited()}">수정됨</span>
+                                </div>
+                                <p th:text="${reply.content()}">답글 내용</p>
+                            </th:block>
                         </li>
                     </ul>
                 </li>
-                <li class="cm-comment is-deleted">
-                    <p>삭제된 댓글입니다</p>
-                </li>
             </ul>
 
-            <!-- 댓글 없음 (③ 단계) -->
-            <p class="cm-muted" hidden>아직 댓글이 없습니다. 첫 댓글을 남겨 보세요.</p>
+            <p class="cm-muted" th:if="${post.comments().empty}">아직 댓글이 없습니다. 첫 댓글을 남겨 보세요.</p>
         </section>
     </div>
 </main>
 
-<!-- M-05 게시글 삭제 확인. 삭제하면 목록(U-21)으로 간다. 삭제 요청은 ③ 단계(#93)에서 붙인다 -->
-<dialog class="cm-dialog" id="delete-post" aria-labelledby="delete-post-h">
+<!-- M-05 게시글 삭제 확인. 삭제 요청은 #93 에서 붙인다 -->
+<dialog class="cm-dialog" id="delete-post" aria-labelledby="delete-post-h" th:if="${post.mine()}">
     <form method="dialog">
         <h2 class="cm-h2" id="delete-post-h">게시글을 삭제할까요?</h2>
         <p>삭제한 글은 되돌릴 수 없습니다.</p>
