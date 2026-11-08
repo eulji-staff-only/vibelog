@@ -46,7 +46,7 @@ public class AdminMemberService {
 
     /* page 는 화면 그대로 1부터 센다 */
     public Page<AdminMemberItem> search(String q, int page) {
-        String keyword = q == null || q.isBlank() ? null : q.strip();
+        String keyword = q == null || q.isBlank() ? null : escapeLike(q.strip());
         return memberRepository.searchActive(keyword, PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE))
                 .map(AdminMemberItem::from);
     }
@@ -73,5 +73,10 @@ public class AdminMemberService {
                         r.attemptNo(), r.score(), r.submittedAt()))
                 .toList();
         return AdminMemberDetail.of(member, enrollments, quizResults, examResults, portfolioReader.countOf(memberId));
+    }
+
+    /* LIKE 검색어의 ! % _ 를 글자 그대로 찾도록 이스케이프한다 (MemberRepository.searchActive 의 escape '!') */
+    private static String escapeLike(String keyword) {
+        return keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 }

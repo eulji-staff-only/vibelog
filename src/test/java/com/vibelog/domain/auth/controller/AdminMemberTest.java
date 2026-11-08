@@ -55,6 +55,18 @@ class AdminMemberTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void 검색어의_밑줄과_퍼센트는_글자_그대로_찾는다() throws Exception {
+        memberOf("밑줄회원", "under_score@vibelog.test", "ACTIVE");
+        memberOf("다른글자회원", "underxscore@vibelog.test", "ACTIVE");
+
+        mockMvc.perform(get("/admin/members").param("q", "under_score"))
+                .andExpect(content().string(allOf(containsString("밑줄회원"), not(containsString("다른글자회원")))));
+        mockMvc.perform(get("/admin/members").param("q", "100%"))
+                .andExpect(content().string(containsString("조건에 맞는 회원이 없습니다")));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void 상세에_수강_코스와_진행률_제출한_퀴즈와_모의고사_결과가_보인다() throws Exception {
         long memberId = memberOf("상세회원", "detail@vibelog.test", "ACTIVE");
         jdbcTemplate.update("INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9301, '트랙', '대상', '설명', 9301)");
