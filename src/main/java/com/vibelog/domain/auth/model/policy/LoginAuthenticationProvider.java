@@ -1,8 +1,11 @@
 package com.vibelog.domain.auth.model.policy;
 
 import com.vibelog.domain.auth.model.dao.MemberRepository;
+import com.vibelog.domain.auth.model.dto.LoginMember;
+import com.vibelog.domain.auth.model.dto.SuspensionNotice;
 import com.vibelog.domain.auth.model.entity.Member;
 import com.vibelog.domain.auth.model.entity.MemberStatus;
+import lombok.Getter;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -26,13 +29,16 @@ public class LoginAuthenticationProvider extends DaoAuthenticationProvider {
 
     private final MemberRepository memberRepository;
     private final LoginLockPolicy loginLockPolicy;
+    private final SuspensionPolicy suspensionPolicy;
 
     public LoginAuthenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder,
-                                       MemberRepository memberRepository, LoginLockPolicy loginLockPolicy) {
+                                       MemberRepository memberRepository, LoginLockPolicy loginLockPolicy,
+                                       SuspensionPolicy suspensionPolicy) {
         super(userDetailsService);
         setPasswordEncoder(passwordEncoder);
         this.memberRepository = memberRepository;
         this.loginLockPolicy = loginLockPolicy;
+        this.suspensionPolicy = suspensionPolicy;
     }
 
     @Override
@@ -43,6 +49,9 @@ public class LoginAuthenticationProvider extends DaoAuthenticationProvider {
         }
         try {
             return super.authenticate(authentication);
+        } catch (SuspendedLoginException e) {
+            loginLockPolicy.reset(key);     // 비밀번호는 맞았으므로 실패로 세지 않는다
+            throw e;
         } catch (AuthenticationException e) {
             if (loginLockPolicy.isLocked(key)) {
                 throw new LockedException("로그인 잠김", e);
@@ -58,6 +67,21 @@ public class LoginAuthenticationProvider extends DaoAuthenticationProvider {
             throw new SocialAccountLoginException();
         }
         super.additionalAuthenticationChecks(userDetails, authentication);
+        // 정지 여부는 비밀번호가 맞은 뒤에 본다. 먼저 보면 비밀번호 없이 계정이 있는지·정지됐는지 알 수 있다 (명세 auth.md P2)
+        suspensionPolicy.findActive(((LoginMember) userDetails).getMemberId()).ifPresent(suspension -> {
+            throw new SuspendedLoginException(SuspensionNotice.from(suspension));
+        });
+    }
+
+    /* 이용 정지 중 (FR-USR-010). LoginFailureHandler 가 M-07 로 보낸다 */
+    @Getter
+    public static class SuspendedLoginException extends AuthenticationException {
+        private final transient SuspensionNotice notice;
+
+        public SuspendedLoginException(SuspensionNotice notice) {
+            super("이용 정지");
+            this.notice = notice;
+        }
     }
 
     public static class SocialAccountLoginException extends AuthenticationException {
