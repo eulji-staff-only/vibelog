@@ -5,6 +5,7 @@ import com.vibelog.domain.community.exception.CommunityErrorCode;
 import com.vibelog.domain.community.model.dao.CommentRepository;
 import com.vibelog.domain.community.model.dao.PostCommentCount;
 import com.vibelog.domain.community.model.dao.PostImageRepository;
+import com.vibelog.domain.community.model.dao.FavoriteRepository;
 import com.vibelog.domain.community.model.dao.PostRepository;
 import com.vibelog.domain.community.model.dto.CommentView;
 import com.vibelog.domain.community.model.dto.PostDetail;
@@ -42,6 +43,7 @@ public class PostService {
     public static final int PAGE_SIZE = 20;
 
     private final PostRepository postRepository;
+    private final FavoriteRepository favoriteRepository;
     private final PostImageRepository postImageRepository;
     private final CommentRepository commentRepository;
     private final MemberReader memberReader;
@@ -61,7 +63,7 @@ public class PostService {
                 commentCounts.getOrDefault(post.getPostId(), 0L)));
     }
 
-    /* loginMemberId 는 비회원이면 null. 내 글이면 수정·삭제 버튼을 보여 준다 */
+    /* loginMemberId 는 비회원이면 null. 내 글이면 수정·삭제 버튼을, 회원이면 즐겨찾기 상태(API-CMT-02 P2)를 보여 준다 */
     public PostDetail getPost(Long postId, Long loginMemberId) {
         Post post = postRepository.findByPostIdAndDeletedAtIsNull(postId)
                 .orElseThrow(() -> new BusinessException(CommunityErrorCode.POST_NOT_FOUND));
@@ -77,6 +79,7 @@ public class PostService {
 
         long commentCount = comments.stream().filter(comment -> !comment.isDeleted()).count();
         return PostDetail.of(post, nicknames.get(post.getMemberId()), imageUrls, commentCount,
-                CommentView.tree(comments, nicknames, loginMemberId), Objects.equals(post.getMemberId(), loginMemberId));
+                CommentView.tree(comments, nicknames, loginMemberId), Objects.equals(post.getMemberId(), loginMemberId),
+                loginMemberId != null && favoriteRepository.existsByMemberIdAndPostId(loginMemberId, postId));
     }
 }
