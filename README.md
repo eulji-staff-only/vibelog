@@ -60,16 +60,18 @@
 
 | 영역 (라벨) | 패키지 · 커밋 영역 | 묶음 | API 명세 이슈 | 이 영역 전체 |
 |---|---|---|---|---|
-| 회원 | `auth` | A | #22 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%ED%9A%8C%EC%9B%90%22+sort%3Acreated-asc) |
-| 진단·트랙·코스 | `course` | B | #23 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%A7%84%EB%8B%A8%C2%B7%ED%8A%B8%EB%9E%99%C2%B7%EC%BD%94%EC%8A%A4%22+sort%3Acreated-asc) |
-| 수강·수업·퀴즈 | `lesson` · `quiz` | C (lesson) · B (quiz) | #24 · #25 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%88%98%EA%B0%95%C2%B7%EC%88%98%EC%97%85%C2%B7%ED%80%B4%EC%A6%88%22+sort%3Acreated-asc) |
-| 모의고사·리포트 | `exam` | D | #26 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EB%AA%A8%EC%9D%98%EA%B3%A0%EC%82%AC%C2%B7%EB%A6%AC%ED%8F%AC%ED%8A%B8%22+sort%3Acreated-asc) |
-| 포트폴리오 | `portfolio` | D | #27 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4%22+sort%3Acreated-asc) |
-| 커뮤니티·리뷰 | `community` | A | #28 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0%C2%B7%EB%A6%AC%EB%B7%B0%22+sort%3Acreated-asc) |
-| 백오피스 | `admin` | C | #29 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EB%B0%B1%EC%98%A4%ED%94%BC%EC%8A%A4%22+sort%3Acreated-asc) |
+| 회원 | `auth` | A | #22 · P2 #170 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%ED%9A%8C%EC%9B%90%22+sort%3Acreated-asc) |
+| 진단·트랙·코스 | `course` | B | #23 · P2 #171 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%A7%84%EB%8B%A8%C2%B7%ED%8A%B8%EB%9E%99%C2%B7%EC%BD%94%EC%8A%A4%22+sort%3Acreated-asc) |
+| 수강·수업·퀴즈 | `lesson` · `quiz` | C (lesson) · B (quiz) | #24 · #25 · P2 #172 · #171 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%88%98%EA%B0%95%C2%B7%EC%88%98%EC%97%85%C2%B7%ED%80%B4%EC%A6%88%22+sort%3Acreated-asc) |
+| 모의고사·리포트 | `exam` | D | #26 · P2 #173 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EB%AA%A8%EC%9D%98%EA%B3%A0%EC%82%AC%C2%B7%EB%A6%AC%ED%8F%AC%ED%8A%B8%22+sort%3Acreated-asc) |
+| 포트폴리오 | `portfolio` | D | #27 · P2 #173 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4%22+sort%3Acreated-asc) |
+| 커뮤니티·리뷰 | `community` | A | #28 · P2 #170 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0%C2%B7%EB%A6%AC%EB%B7%B0%22+sort%3Acreated-asc) |
+| 백오피스 | `admin` | C | #29 · P2 #172 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EB%B0%B1%EC%98%A4%ED%94%BC%EC%8A%A4%22+sort%3Acreated-asc) |
+| 쪽지·신고·알림 (P2) | `message` | A | P2 #169 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%AA%BD%EC%A7%80%C2%B7%EC%8B%A0%EA%B3%A0%C2%B7%EC%95%8C%EB%A6%BC%22+sort%3Acreated-asc) |
+| 콘테스트·배지 (P2) | `contest` | 가장 먼저 P1을 끝내는 묶음 | P2 #174 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%BD%98%ED%85%8C%EC%8A%A4%ED%8A%B8%C2%B7%EB%B0%B0%EC%A7%80%22+sort%3Acreated-asc) |
 | 공통·설정 | `common` · `config` · `sql/` | 공통 (#12는 A, #13은 C) | #10 · #12 · #13 · #21 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EA%B3%B5%ED%86%B5%C2%B7%EC%84%A4%EC%A0%95%22+sort%3Acreated-asc) |
 
-> 💡 단계 순서는 [08. 작업 순서 (P1)](docs/collaboration/08-task-flow.md)를 보세요. 이슈를 새로 만들 때 **영역 라벨**과 **마일스톤**을 꼭 붙여야 위 링크에 나타납니다.
+> 💡 단계 순서는 [08. 작업 순서 (P1 · P2)](docs/collaboration/08-task-flow.md)를 보세요. **P2(마일스톤 4)는 묶음별로** 시작합니다: 내 묶음 P1 기능과 내 영역 P2 명세가 모두 머지되면 P2 구현을 시작합니다 (P2 명세는 P1 중에도 써도 됩니다). 이슈를 새로 만들 때 **영역 라벨**과 **마일스톤**을 꼭 붙여야 위 링크에 나타납니다.
 
 ---
 
@@ -104,7 +106,7 @@ flowchart LR
 | 5 | [05. PR · 코드 리뷰 규칙](docs/collaboration/05-pull-request.md) | PR을 올리거나 리뷰할 때, 머지할 때 |
 | 6 | [06. 문제 해결 (실수 복구)](docs/collaboration/06-troubleshooting.md) | 충돌이 났을 때, 실수했을 때, 에러가 날 때 |
 | 7 | [07. 저장소 설정 (관리자용)](docs/collaboration/07-repo-setup.md) | 저장소를 처음 세팅할 때 |
-| 8 | [08. 작업 순서 (P1)](docs/collaboration/08-task-flow.md) | DB 설계 → API 명세 → 구현 중 지금 무엇을 할지, 다른 팀원 작업을 기다리지 않는 방법이 궁금할 때 |
+| 8 | [08. 작업 순서 (P1 · P2)](docs/collaboration/08-task-flow.md) | DB 설계 → API 명세 → P1 구현 → P2 구현 중 지금 무엇을 할지, 다른 팀원 작업을 기다리지 않는 방법이 궁금할 때 |
 
 ---
 
