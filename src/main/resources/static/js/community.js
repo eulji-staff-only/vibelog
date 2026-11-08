@@ -22,12 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
             button.disabled = true;
             try {
                 const response = await fetch(button.dataset.url, { method: 'POST', headers: { [header]: token } });
-                if (response.ok) {
-                    const { following, followerCount } = await response.json();
-                    button.setAttribute('aria-pressed', String(following));
-                    button.textContent = following ? '팔로우 취소' : '팔로우';
-                    document.querySelector('[data-follower-count]').textContent = followerCount;
+                const body = await response.json().catch(() => null);
+                if (response.ok && body) {
+                    button.setAttribute('aria-pressed', String(body.following));
+                    button.textContent = body.following ? '팔로우 취소' : '팔로우';
+                    document.querySelector('[data-follower-count]').textContent = body.followerCount;
+                } else {
+                    alert(body?.message ?? '팔로우를 처리하지 못했습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.');
                 }
+            } catch (e) {
+                alert('요청을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.');
             } finally {
                 button.disabled = false;
             }
