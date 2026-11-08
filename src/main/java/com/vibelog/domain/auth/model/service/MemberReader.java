@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -50,5 +51,10 @@ public class MemberReader {
         return memberRepository.findById(memberId)
                 .map(Member::getNickname)
                 .orElse("");
+    }
+
+    /* 기간 내 가입자 수 (member.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (운영자 대시보드 API-ADM-01, FR-ADM-002) */
+    public long countJoinedBetween(LocalDateTime from, LocalDateTime to) {
+        return memberRepository.countByCreatedAtBetween(from, to);
     }
 }
