@@ -13,7 +13,7 @@
 | API-MSG-02 | 받는 사람 찾기 | GET | `/api/users` | 회원 | query `nickname` | JSON `[{"memberId", "nickname"}]` — 닉네임이 `nickname`으로 시작하는 회원 최대 10명. 나와 탈퇴 회원은 뺀다. `nickname`이 비면 빈 목록 | - | FR-MSG-001 (U-27 새 쪽지) |
 | API-MSG-03 | 쪽지 보내기 (쪽지함) | POST | `/messages` | 인증 | form `receiverMemberId`, `content` | 저장 → 받는 사람에게 MESSAGE 알림 → `/messages?box=sent&messageId={새 messageId}` + toast "쪽지를 보냈습니다" | `INVALID_INPUT`(내용 1~1,000자, PL-MSG-003), `BANNED_WORD`(NFR-SEC-009), `EMAIL_NOT_VERIFIED`, `MESSAGE_SELF`, `MESSAGE_RECEIVER_NOT_FOUND`(없음·탈퇴), `MESSAGE_DAILY_LIMIT`, `MESSAGE_UNANSWERED_LIMIT` → U-27 새 쪽지 폼 다시 | FR-MSG-001, PL-MSG-003 |
 | API-MSG-04 | 쪽지 보내기 (공개 프로필) | POST | `/users/{memberId}/messages` | 인증 | path `memberId`(받는 사람), form `content` (M-13) | API-MSG-03과 같게 저장·알림 → `/users/{memberId}` + toast "쪽지를 보냈습니다" | API-MSG-03과 같음 → `/users/{memberId}` + toast(에러 메시지) (③, 모달 폼이라 다시 그리지 않음) | FR-MSG-001 |
-| API-MSG-05 | 답장 | POST | `/messages/{messageId}/reply` | 인증 | path `messageId`(내가 받은 쪽지), form `content` | 새 쪽지(`parent_message_id` = `messageId`, 받는 사람 = 원래 보낸 사람) 저장 → MESSAGE 알림 → `/messages?box=received&messageId={messageId}` + toast "답장을 보냈습니다" | API-MSG-03과 같음, `MESSAGE_NOT_FOUND`, `NOT_OWNER`(내가 받은 쪽지가 아님) | FR-MSG-002 |
+| API-MSG-05 | 답장 | POST | `/messages/{messageId}/reply` | 인증 | path `messageId`(내가 받은 쪽지), form `content` | 새 쪽지(`parent_message_id` = `messageId`, 받는 사람 = 원래 보낸 사람) 저장 → MESSAGE 알림 → `/messages?box=received&messageId={messageId}` + toast "답장을 보냈습니다" | API-MSG-03과 같은 검사. 입력 오류면 U-27에 원래 쪽지(`messageId`)와 답장 폼을 다시 보여주고 입력값 유지. `MESSAGE_NOT_FOUND`, `NOT_OWNER`(내가 받은 쪽지가 아님) | FR-MSG-002 |
 
 - **보내기 검사 순서:** 입력 → 금칙어 → 이메일 인증 → 나에게 보냄 → 받는 사람 → 하루 20통 → 연속 3통. 세 POST가 같은 Service 메서드를 쓴다.
 - **하루 20통:** 오늘 0시부터 내가 보낸 쪽지가 20통이면 막는다 (`idx_message_sender_member_id_created_at`).
@@ -57,7 +57,7 @@
 | API-NTF-07 | 공지 작성 | POST | `/admin/notices` | 운영자 | form `title`, `body`, `isBannerShown`, `bannerStartsAt`, `bannerEndsAt` | 저장(`admin_member_id` = 로그인 운영자) → 탈퇴하지 않은 회원 전체에 NOTICE 알림 → `/admin/notices` + toast "공지를 등록했습니다" | `INVALID_INPUT`(제목 1~100자, 본문 필수, 배너면 시작·끝 필수이고 끝이 시작보다 뒤 — `ck_notice_banner`), `BANNER_PERIOD_OVERLAP` → A-10 폼 다시 | FR-NTF-005, PL-NTF-003 |
 | API-NTF-08 | 공지 수정 | POST | `/admin/notices/{noticeId}/edit` | 운영자 | path `noticeId`, form API-NTF-07과 같음 | 저장 → `/admin/notices` + toast "공지를 수정했습니다" (알림은 다시 보내지 않음) | API-NTF-07과 같음, `NOTICE_NOT_FOUND` | FR-NTF-005, NFR-SCL-001 |
 
-- **배너는 동시에 1개 (PL-NTF-003):** 배너 기간이 다른 배너 공지와 겹치면 저장을 막는다 (`BANNER_PERIOD_OVERLAP`). 수정할 때는 자기 자신을 빼고 본다.
+- **배너는 동시에 1개 (PL-NTF-003):** 배너 기간이 다른 배너 공지(`is_banner_shown` = true)와 겹치면 저장을 막는다 (`BANNER_PERIOD_OVERLAP`). 수정할 때는 자기 자신을 빼고 본다.
 - 공지 삭제는 요구사항·화면에 없어 만들지 않는다 (`notice`에 `deleted_at`도 없다).
 - 공지 관리는 운영자 화면이지만 message 영역이 구현하므로 이 파일에 둔다 (ID는 업무 코드 NTF, D-04).
 
@@ -68,7 +68,7 @@
 | 모델 이름 | 누구에게 | 값 | 화면 |
 | --- | --- | --- | --- |
 | `unreadNotificationCount` | 회원 | 안 읽은 알림 수 (`idx_notification_member_id_read_at`) | 알림 아이콘 표시. 아이콘을 누르면 API-NTF-01 |
-| `noticeBanner` | 전체 | 지금 배너 기간인 공지 1개 `{noticeId, title}`, 없으면 `null` | 상단 바 위 배너, 누르면 U-26 (비회원은 로그인으로, 0-2) |
+| `noticeBanner` | 전체 | `is_banner_shown`이 true이고 지금이 배너 기간 안인 공지 1개 `{noticeId, title}`, 없으면 `null` | 상단 바 위 배너, 누르면 U-26 (비회원은 로그인으로, 0-2) |
 
 ## 영역 간 계약 (message 영역이 받는 것)
 
