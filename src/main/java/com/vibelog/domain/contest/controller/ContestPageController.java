@@ -1,6 +1,7 @@
 package com.vibelog.domain.contest.controller;
 
 import com.vibelog.domain.auth.model.dto.LoginMember;
+import com.vibelog.domain.contest.model.service.ContestResultService;
 import com.vibelog.domain.contest.model.service.ContestService;
 import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /*
  * [ContestPageController]
- * 역할 : U-32 이달의 콘테스트 (API-CTS-01)와 출품 (API-CTS-02, M-09 확인 뒤). #201
+ * 역할 : U-32 이달의 콘테스트 (API-CTS-01)와 출품 (API-CTS-02, M-09 확인 뒤, #201), U-33 지난 콘테스트 (API-CTS-04·05, #202).
  * 책임 : 회원만 (SecurityConfig). 출품은 성공·실패 모두 /contests/current 로 돌아가 토스트로 알린다 (방식 ③).
  *        투표는 페이지 이동 없이 JSON 으로 한다 (ContestVoteApiController).
  */
@@ -24,11 +25,25 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class ContestPageController {
 
     private final ContestService contestService;
+    private final ContestResultService contestResultService;
 
     @GetMapping("/contests/current")
     public String current(@AuthenticationPrincipal LoginMember loginMember, Model model) {
         model.addAttribute("contest", contestService.getCurrent(loginMember.getMemberId()).orElse(null));
+        model.addAttribute("lastResult", contestResultService.findLastMonthResult().orElse(null));
         return "contest/current";
+    }
+
+    @GetMapping("/contests")
+    public String past(@RequestParam(defaultValue = "1") int page, Model model) {
+        model.addAttribute("contests", contestResultService.getPast(page));
+        return "contest/past";
+    }
+
+    @GetMapping("/contests/{contestId}")
+    public String result(@PathVariable Long contestId, Model model) {
+        model.addAttribute("result", contestResultService.getResult(contestId));
+        return "contest/result";
     }
 
     @PostMapping("/contests/{contestId}/entries")

@@ -9,7 +9,7 @@
     <script th:src="@{/js/auth.js}" defer></script>
 </head>
 <body class="au-page">
-<!-- U-24 마이페이지 (/mypage?tab=info|posts|comments, API-USR-15~17, #116). Controller 가 tab 에 맞는 값만 담는다.
+<!-- U-24 마이페이지 (/mypage?tab=info|posts|comments|favorites|badges, API-USR-15~17, #116). Controller 가 tab 에 맞는 값만 담는다.
      작성한 글·댓글은 20개씩 page 로 넘긴다. 비밀번호 변경은 이메일 가입 회원만, 탈퇴는 M-06 에서 확인한 뒤 보낸다. -->
 <div th:replace="~{common/layout :: header}"></div>
 
@@ -27,6 +27,7 @@
             <a href="/mypage?tab=posts" th:attr="aria-current=${tab == 'posts'} ? 'page'">작성한 글</a>
             <a href="/mypage?tab=comments" th:attr="aria-current=${tab == 'comments'} ? 'page'">작성한 댓글</a>
             <a href="/mypage?tab=favorites" th:attr="aria-current=${tab == 'favorites'} ? 'page'">즐겨찾기</a>
+            <a href="/mypage?tab=badges" th:attr="aria-current=${tab == 'badges'} ? 'page'">배지</a>
         </nav>
 
         <!-- 내 정보 -->
@@ -126,6 +127,17 @@
                 <span th:text="|${favorites.number + 1} / ${favorites.totalPages}|">1 / 2</span>
                 <a th:if="${favorites.hasNext()}" th:href="@{/mypage(tab='favorites', page=${favorites.number + 2})}">다음 →</a>
             </nav>
+        </section>
+
+        <!-- 배지 (P2, FR-RWD-002). 월간 콘테스트 1·2·3등 수상 기록, 최근 것부터 (ContestReader) -->
+        <section class="au-section" th:if="${tab == 'badges'}" aria-label="배지">
+            <ul class="au-list" th:unless="${badges.empty}">
+                <li th:each="badge : ${badges}"><strong th:text="${badge.name()}">2026년 11월 1등</strong></li>
+            </ul>
+            <div class="au-empty" th:if="${badges.empty}">
+                <p class="au-text">받은 배지가 없습니다</p>
+                <a class="au-btn is-outline is-fit" href="/contests/current">이달의 콘테스트 보기</a>
+            </div>
         </section>
 
         <!-- 작성한 댓글. 누르면 그 글의 댓글 위치로 간다 -->

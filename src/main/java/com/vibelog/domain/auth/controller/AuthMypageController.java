@@ -7,6 +7,7 @@ import com.vibelog.domain.auth.model.dto.NicknameChangeRequest;
 import com.vibelog.domain.auth.model.dto.PasswordChangeRequest;
 import com.vibelog.domain.auth.model.service.MypageService;
 import com.vibelog.domain.community.model.service.CommunityReader;
+import com.vibelog.domain.contest.model.service.ContestReader;
 import com.vibelog.global.exception.BusinessException;
 import com.vibelog.global.exception.CommonErrorCode;
 import jakarta.servlet.ServletException;
@@ -27,6 +28,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * [AuthMypageController]
  * 역할 : 마이페이지(U-24) 요청을 받는다 (API-USR-15~18, #116·#177). 회원만 연다 (SecurityConfig).
  * 책임 : - tab(info·posts·comments)마다 필요한 값만 읽는다. 작성한 글·댓글은 community 의 CommunityReader 로 받는다.
+ *          배지(P2, FR-RWD-002)는 contest 의 ContestReader 로 받는다.
  *        - 닉네임 저장·비밀번호 변경 입력 오류는 같은 화면 info 탭에 칸별 메시지로 다시 보여 준다 (방식 ④).
  *        - 탈퇴하면 로그아웃(로그인 유지 쿠키도 지움)하고 메인으로 간다.
  */
@@ -38,6 +40,7 @@ public class AuthMypageController {
 
     private final MypageService mypageService;
     private final CommunityReader communityReader;
+    private final ContestReader contestReader;
 
     /* API-USR-15 */
     @GetMapping("/mypage")
@@ -48,6 +51,7 @@ public class AuthMypageController {
             case "favorites" -> model.addAttribute("favorites", communityReader.getFavoritePostsOf(memberId, page));
             case "posts" -> model.addAttribute("posts", communityReader.getPostsOf(memberId, page));
             case "comments" -> model.addAttribute("comments", communityReader.getCommentsOf(memberId, page));
+            case "badges" -> model.addAttribute("badges", contestReader.findBadgesOf(memberId));
             default -> tab = "info";
         }
         return view(tab, memberId, model);

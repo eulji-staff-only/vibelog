@@ -28,4 +28,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             + " and (:q is null or m.nickname like concat('%', :q, '%') escape '!' or m.email like concat('%', :q, '%') escape '!')"
             + " order by m.createdAt desc, m.memberId desc")
     Page<Member> searchActive(@Param("q") String q, Pageable pageable);
+
+    boolean existsByMemberIdAndStatus(Long memberId, MemberStatus status);
 }
