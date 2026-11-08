@@ -29,4 +29,9 @@ public class CourseReader {
         return courseRepository.findAllById(courseIds).stream()
                 .collect(Collectors.toMap(Course::getCourseId, Course::getTitle));
     }
+
+    /* 코스 존재 여부(공개 여부는 보지 않음). 운영자 수업 만들기(API-ADM-17, #100)가 COURSE_NOT_FOUND 판단에 쓴다 */
+    public boolean existsById(Long courseId) {
+        return courseRepository.existsById(courseId);
+    }
 }

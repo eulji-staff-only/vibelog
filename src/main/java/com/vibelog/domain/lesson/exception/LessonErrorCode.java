@@ -20,7 +20,9 @@ public enum LessonErrorCode implements ErrorCode {
     ACTIVITY_NOT_FOUND(HttpStatus.NOT_FOUND, "활동을 찾을 수 없습니다."),
     ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 중인 코스를 찾을 수 없습니다."),
     LESSON_PROGRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "수업 진도를 찾을 수 없습니다."),
-    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다.");
+    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다."),
+    /* 운영자 수업 순서(API-ADM-18, #100): 폼 칸 검증이 아니라 보낸 수업 순서 목록 자체가 그 코스의 수업과 안 맞을 때 */
+    INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력 값을 확인해주세요.");
 
     private final HttpStatus status;
     private final String message;
