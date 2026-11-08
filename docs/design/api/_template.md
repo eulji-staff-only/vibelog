@@ -89,6 +89,10 @@
 | `SOCIAL_ACCOUNT` | 409 | 구글·깃허브로 가입한 계정은 비밀번호가 없습니다. | ④ | U-24 |
 | `PASSWORD_MISMATCH` | 400 | 현재 비밀번호가 맞지 않습니다. | ④ | API-USR-17 (#116 리뷰) |
 | `SUSPENDED_CANNOT_WITHDRAW` | 409 | 이용 정지 중에는 탈퇴할 수 없습니다. (P2) | ③ | PL-USR-010 |
+| `ACCOUNT_SUSPENDED` | 403 | 이용이 정지된 계정입니다. (M-07에 단계·사유·기간) | → `/login` + M-07 | PL-RPT-005 (P2) |
+| `ALREADY_SUSPENDED` | 409 | 이미 이용 정지 중인 회원입니다. | ③ | API-USR-19 (P2) |
+| `NOT_SUSPENDED` | 409 | 정지 중인 회원이 아닙니다. | ③ | API-USR-20 (P2) |
+| `CANNOT_SUSPEND_ADMIN` | 409 | 운영자 계정은 정지할 수 없습니다. | ③ | API-USR-19 (P2) |
 | `CONTEST_ENTERED` | 409 | 콘테스트에 출품한 작품은 수정할 수 없습니다. (P2) | ④ | PL-PRT-007 |
 | `TOKEN_EXPIRED` / `TOKEN_USED` | 400 | 링크가 만료되었습니다. | 화면 안 상태 | PL-USR-004 |
 | `RESEND_TOO_SOON` | 429 | 1분 뒤에 다시 받을 수 있습니다. | ⑤ | PL-CST-002 |
@@ -107,6 +111,15 @@
 | `PRIVATE_PORTFOLIO` | 403 | 비공개된 작품입니다. | ① E-02 | PL-ERR-006 |
 | `SHOWCASE_LINK_REQUIRED` | 400 | 작품 공유 글은 작품 링크가 필요합니다. | ④ | PL-CMT-008 |
 | `REPLY_DEPTH_EXCEEDED` | 400 | 답글에는 답글을 달 수 없습니다. | ③ → 게시글 | PL-CMT-006 |
+| `NOT_SHOWCASE` | 400 | 작품 공유 글만 추천할 수 있습니다. | ⑤ | PL-CMT-001 (P2) |
+| `SELF_RECOMMEND` | 400 | 내 글은 추천할 수 없습니다. | ⑤ | PL-CMT-002 (P2) |
+| `SELF_FOLLOW` | 400 | 나는 팔로우할 수 없습니다. | ⑤ | API-CMT-15 (P2) |
+| `REVIEW_REQUEST_OPEN` | 409 | 이 작품은 이미 리뷰를 요청했습니다. | ③ | API-REV-01 (P2) |
+| `REVIEW_REQUEST_LIMIT` | 409 | 리뷰 요청은 동시에 3개까지 할 수 있습니다. 지난 요청을 마감한 뒤 다시 요청해 주세요. | ③ | PL-REV-002 (P2) |
+| `REVIEW_REQUEST_NOT_FOUND` | 404 | 리뷰 요청을 찾을 수 없습니다. | ③ → `/reviews` | API-REV-02 (P2) |
+| `REVIEW_REQUEST_CLOSED` | 409 | 마감된 리뷰 요청입니다. | ③ | PL-REV-002 (P2) |
+| `SELF_REVIEW` | 400 | 내 작품에는 리뷰를 쓸 수 없습니다. | ③ | API-REV-03 (P2) |
+| `ALREADY_REVIEWED` | 409 | 이미 리뷰를 남겼습니다. 내 리뷰를 수정해 주세요. | ③ | PL-REV-003 (P2) |
 | `DUPLICATE_NAME` | 409 | 같은 이름이 이미 있습니다. | ④ | DB `track`·`course_category` UNIQUE |
 | `TRACK_HAS_COURSES` / `CATEGORY_HAS_COURSES` | 409 | 코스가 있어 삭제할 수 없습니다. 코스를 먼저 옮겨 주세요. | ③ | 화면 흐름 4장 |
 | `COURSE_NOT_PUBLISHABLE` | 409 | 공개된 수업과 포트폴리오 과제가 있어야 공개할 수 있습니다. | ③ | FR-CRS-006 |
