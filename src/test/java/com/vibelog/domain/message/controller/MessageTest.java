@@ -1,6 +1,7 @@
 package com.vibelog.domain.message.controller;
 
 import com.vibelog.domain.auth.model.service.MemberLoginService;
+import com.vibelog.domain.message.model.dto.MessageItem;
 import com.vibelog.domain.message.model.service.MessageService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +76,12 @@ class MessageTest {
                 + "AND target_id = ?", String.class, receiverId, messageId)).containsExactly(prefix + "보냄님이 쪽지를 보냈습니다");
         mockMvc.perform(get("/messages").param("box", "received").with(as(receiver)))
                 .andExpect(content().string(allOf(containsString(prefix + "보냄"), containsString("안녕하세요"), containsString("is-unread"))));
+    }
+
+    @Test
+    void 목록_미리보기는_줄바꿈과_탭을_한_칸으로_줄이고_40자에서_자른다() {
+        assertThat(MessageItem.preview("첫 줄\n\n둘째\t줄  ")).isEqualTo("첫 줄 둘째 줄");
+        assertThat(MessageItem.preview("가".repeat(41))).isEqualTo("가".repeat(40) + "…");
     }
 
     @Test

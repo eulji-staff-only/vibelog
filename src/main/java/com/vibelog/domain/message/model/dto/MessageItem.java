@@ -9,7 +9,7 @@ public record MessageItem(Long messageId, Long otherMemberId, String otherNickna
     static final int PREVIEW_LENGTH = 40;
 
     public static String preview(String content) {
-        String oneLine = content.replaceAll("\s+", " ").strip();
+        String oneLine = content.replaceAll("\\s+", " ").strip();
         return oneLine.length() <= PREVIEW_LENGTH ? oneLine : oneLine.substring(0, PREVIEW_LENGTH) + "…";
     }
 }
