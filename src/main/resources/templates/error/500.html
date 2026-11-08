@@ -1,0 +1,24 @@
+<!--
+  error/500.html (E-03)
+  역할: Controller 를 거치지 않고 생긴 500(컨테이너·필터 레벨 오류)을 Spring Boot 가 "/error" 로 보낼 때
+        상태 코드로 찾는 템플릿(DefaultErrorViewResolver). Controller·Service 에서 던진 예외는
+        GlobalExceptionHandler 의 handleException 이 이미 error/error 로 바로 그린다 (message 는 안내문 고정,
+        PL-ERR-001). 내용은 error/error.html 의 errorBody(status, message) fragment 를 그대로 가져다 쓴다.
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>오류가 발생했습니다 — 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+
+<div th:replace="~{common/layout :: header}"></div>
+<main th:replace="~{error/error :: errorBody(500, null)}"></main>
+<div th:replace="~{common/layout :: footer}"></div>
+
+<script th:src="@{/js/ui.js}"></script>
+</body>
+</html>
