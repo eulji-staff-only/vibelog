@@ -16,7 +16,7 @@
 | 4 | 커밋 메시지는 `타입(영역): 한 일` | `feat(quiz): 정답률 계산 함수 추가` |
 | 5 | PR은 **`develop`** 으로 보낸다 | base: `develop` ← compare: `feat/12-quiz-grading` |
 | 6 | **PR 제목도 커밋 규칙과 똑같이** 쓴다 | `feat(quiz): 퀴즈 통과 판정 기능 추가` |
-| 7 | **PM·형상관리 중 1명 승인**을 받아야 머지한다. 다른 영역 파일을 바꿨으면 **그 영역 담당 승인**도 | 리뷰어는 자동 지정 ([리뷰어 지정 약속](#-코드-구조-규칙)), 리뷰 요청을 받으면 24시간 안에 첫 응답 |
+| 7 | **PM·형상관리 중 1명 승인**을 받아야 머지한다. 승인 담당이 있는 다른 영역의 파일을 바꿨으면 **그 영역 담당 승인**도 (`course`·`quiz` 제외) | 리뷰어는 자동 지정 ([리뷰어 지정 약속](#-코드-구조-규칙)), 리뷰 요청을 받으면 24시간 안에 첫 응답 |
 | 8 | 머지는 승인 후 **PR 작성자가 직접** `Squash and merge` | 머지 후 브랜치 삭제 |
 | 9 | 작업 시작 전엔 **항상 최신 `develop`을 받는다** | `git pull origin develop` |
 | 10 | **비밀 정보는 절대 커밋하지 않는다** | `.env`, API 키, 비밀번호 ❌ / `.env.example` ⭕ |
@@ -38,7 +38,7 @@
 
 | 역할 | 담당 | 맡는 일 | 리뷰 (자동 지정) |
 |---|---|---|---|
-| **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | DB 팀이 아닌 사람이 `sql/`을 바꾼 PR → 둘 중 1명 승인 필요 |
+| **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | `Choyeonik`이 아닌 사람이 `sql/`을 바꾼 PR → `Choyeonik` 승인 필요 |
 | **형상관리** | `SeungBinYang` | 저장소·브랜치·빌드 검사, 공통 설정, 협업 규칙·Claude 규칙 | **모든 PR** 기본 리뷰어 (PM과 둘 중 1명 승인) |
 | **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | **모든 PR** 기본 리뷰어 (형상관리와 둘 중 1명 승인) |
 
@@ -60,16 +60,18 @@
 
 | 영역 (라벨) | 패키지 · 커밋 영역 | 묶음 | API 명세 이슈 | 이 영역 전체 |
 |---|---|---|---|---|
-| 회원 | `auth` | A | #22 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%ED%9A%8C%EC%9B%90%22+sort%3Acreated-asc) |
-| 진단·트랙·코스 | `course` | B | #23 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%A7%84%EB%8B%A8%C2%B7%ED%8A%B8%EB%9E%99%C2%B7%EC%BD%94%EC%8A%A4%22+sort%3Acreated-asc) |
-| 수강·수업·퀴즈 | `lesson` · `quiz` | C (lesson) · B (quiz) | #24 · #25 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%88%98%EA%B0%95%C2%B7%EC%88%98%EC%97%85%C2%B7%ED%80%B4%EC%A6%88%22+sort%3Acreated-asc) |
-| 모의고사·리포트 | `exam` | D | #26 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EB%AA%A8%EC%9D%98%EA%B3%A0%EC%82%AC%C2%B7%EB%A6%AC%ED%8F%AC%ED%8A%B8%22+sort%3Acreated-asc) |
-| 포트폴리오 | `portfolio` | D | #27 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4%22+sort%3Acreated-asc) |
-| 커뮤니티·리뷰 | `community` | A | #28 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0%C2%B7%EB%A6%AC%EB%B7%B0%22+sort%3Acreated-asc) |
-| 백오피스 | `admin` | C | #29 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EB%B0%B1%EC%98%A4%ED%94%BC%EC%8A%A4%22+sort%3Acreated-asc) |
+| 회원 | `auth` | A | #22 · P2 #170 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%ED%9A%8C%EC%9B%90%22+sort%3Acreated-asc) |
+| 진단·트랙·코스 | `course` | B | #23 · P2 #171 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%A7%84%EB%8B%A8%C2%B7%ED%8A%B8%EB%9E%99%C2%B7%EC%BD%94%EC%8A%A4%22+sort%3Acreated-asc) |
+| 수강·수업·퀴즈 | `lesson` · `quiz` | C (lesson) · B (quiz) | #24 · #25 · P2 #172 · #171 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%88%98%EA%B0%95%C2%B7%EC%88%98%EC%97%85%C2%B7%ED%80%B4%EC%A6%88%22+sort%3Acreated-asc) |
+| 모의고사·리포트 | `exam` | D | #26 · P2 #173 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EB%AA%A8%EC%9D%98%EA%B3%A0%EC%82%AC%C2%B7%EB%A6%AC%ED%8F%AC%ED%8A%B8%22+sort%3Acreated-asc) |
+| 포트폴리오 | `portfolio` | D | #27 · P2 #173 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%ED%8F%AC%ED%8A%B8%ED%8F%B4%EB%A6%AC%EC%98%A4%22+sort%3Acreated-asc) |
+| 커뮤니티·리뷰 | `community` | A | #28 · P2 #170 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0%C2%B7%EB%A6%AC%EB%B7%B0%22+sort%3Acreated-asc) |
+| 백오피스 | `admin` | C | #29 · P2 #172 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EB%B0%B1%EC%98%A4%ED%94%BC%EC%8A%A4%22+sort%3Acreated-asc) |
+| 쪽지·신고·알림 (P2) | `message` | A | P2 #169 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%AA%BD%EC%A7%80%C2%B7%EC%8B%A0%EA%B3%A0%C2%B7%EC%95%8C%EB%A6%BC%22+sort%3Acreated-asc) |
+| 콘테스트·배지 (P2) | `contest` | 가장 먼저 P1을 끝내는 묶음 | P2 #174 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%BD%98%ED%85%8C%EC%8A%A4%ED%8A%B8%C2%B7%EB%B0%B0%EC%A7%80%22+sort%3Acreated-asc) |
 | 공통·설정 | `common` · `config` · `sql/` | 공통 (#12는 A, #13은 C) | #10 · #12 · #13 · #21 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EA%B3%B5%ED%86%B5%C2%B7%EC%84%A4%EC%A0%95%22+sort%3Acreated-asc) |
 
-> 💡 단계 순서는 [08. 작업 순서 (P1)](docs/collaboration/08-task-flow.md)를 보세요. 이슈를 새로 만들 때 **영역 라벨**과 **마일스톤**을 꼭 붙여야 위 링크에 나타납니다.
+> 💡 단계 순서는 [08. 작업 순서 (P1 · P2)](docs/collaboration/08-task-flow.md)를 보세요. **P2(마일스톤 4)는 묶음별로** 시작합니다: 내 묶음 P1 기능과 내 영역 P2 명세가 모두 머지되면 P2 구현을 시작합니다 (P2 명세는 P1 중에도 써도 됩니다). 이슈를 새로 만들 때 **영역 라벨**과 **마일스톤**을 꼭 붙여야 위 링크에 나타납니다.
 
 ---
 
@@ -104,7 +106,7 @@ flowchart LR
 | 5 | [05. PR · 코드 리뷰 규칙](docs/collaboration/05-pull-request.md) | PR을 올리거나 리뷰할 때, 머지할 때 |
 | 6 | [06. 문제 해결 (실수 복구)](docs/collaboration/06-troubleshooting.md) | 충돌이 났을 때, 실수했을 때, 에러가 날 때 |
 | 7 | [07. 저장소 설정 (관리자용)](docs/collaboration/07-repo-setup.md) | 저장소를 처음 세팅할 때 |
-| 8 | [08. 작업 순서 (P1)](docs/collaboration/08-task-flow.md) | DB 설계 → API 명세 → 구현 중 지금 무엇을 할지, 다른 팀원 작업을 기다리지 않는 방법이 궁금할 때 |
+| 8 | [08. 작업 순서 (P1 · P2)](docs/collaboration/08-task-flow.md) | DB 설계 → API 명세 → P1 구현 → P2 구현 중 지금 무엇을 할지, 다른 팀원 작업을 기다리지 않는 방법이 궁금할 때 |
 
 ---
 
@@ -186,6 +188,27 @@ Gradle은 설치하지 않아도 됩니다. 저장소에 들어 있는 `gradlew`
 
 또는 IntelliJ에서 `VibelogApplication`의 `main`을 실행합니다. `http://localhost:8080` 에 접속해 **404 에러 화면**이 나오면 정상입니다. (아직 화면이 하나도 없어서예요)
 
+> 💡 **메일 (선택, #89)** — 가입 인증·비밀번호 재설정 메일은 메일 서버 환경 변수가 있을 때만 실제로 보냅니다.
+> 로컬에서 메일 서버 없이 링크를 확인하려면 환경 변수 `MAIL_LOG_BODY=true`를 넣습니다. 그러면 **앱 로그에 메일 내용과 링크**가 찍히니 복사해 열면 됩니다 (배포 서버에는 넣지 않습니다).
+> 실제로 보내려면 실행 설정의 Environment variables 에 아래를 넣습니다 (Gmail 은 앱 비밀번호 사용).
+>
+> | 환경 변수 | 예 |
+> | --- | --- |
+> | `SPRING_MAIL_HOST` | `smtp.gmail.com` |
+> | `SPRING_MAIL_USERNAME` | 보내는 계정 |
+> | `SPRING_MAIL_PASSWORD` | 앱 비밀번호 |
+> | `MAIL_FROM` | 보내는 사람 주소 (기본 `no-reply@vibelog.example`) |
+> | `APP_BASE_URL` | 메일 링크의 사이트 주소 (기본 `http://localhost:8080`, 배포 서버는 실제 주소) |
+
+> 💡 **구글·깃허브 로그인 (선택, #91)** — 키가 없으면 소셜 로그인은 꺼지고 로그인 화면에 버튼도 보이지 않습니다.
+> 켜려면 [구글 클라우드 콘솔](https://console.cloud.google.com/apis/credentials)·[깃허브 OAuth 앱](https://github.com/settings/developers)에 앱을 등록하고,
+> 돌아올 주소(Redirect URI)를 `http://localhost:8080/login/oauth2/code/google`(깃허브는 `.../github`)로 넣은 뒤 환경 변수를 넣습니다.
+>
+> | 환경 변수 | 설명 |
+> | --- | --- |
+> | `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` | 구글 OAuth 클라이언트 |
+> | `GITHUB_CLIENT_ID` · `GITHUB_CLIENT_SECRET` | 깃허브 OAuth 앱 |
+
 여기까지 됐다면 준비 끝입니다. 🎉 이제 [01. 작업 흐름](docs/collaboration/01-workflow.md)을 따라 첫 작업을 시작하세요.
 
 ---
@@ -214,8 +237,11 @@ src/main/java/com/vibelog/
 └── global/
     ├── config/                       ← 공통 설정
     ├── controller/MainController     ← 메인 화면 `/` (어느 영역에도 속하지 않는 화면)
-    ├── entity/                       ← BaseTimeEntity (created_at · updated_at)
-    └── exception/                    ← BusinessException · ErrorCode · GlobalExceptionHandler
+    ├── dao/                          ← 공통 Repository (BannedWordRepository)
+    ├── entity/                       ← BaseTimeEntity (created_at · updated_at), BannedWord
+    ├── exception/                    ← BusinessException · ErrorCode · CommonErrorCode(공통 에러) · GlobalExceptionHandler
+    ├── file/FileStorage              ← 업로드 파일 검사·저장 (모든 영역 공통)
+    └── policy/BannedWordPolicy       ← 금칙어 검사 (모든 영역 공통)
 
 src/main/resources/
 ├── application.yaml
@@ -245,6 +271,97 @@ public enum QuizErrorCode implements ErrorCode {
     private final String message;
 }
 ```
+
+- 여러 영역이 같이 쓰는 공통 에러(API 명세 `_template.md` 7-2, 예: `BANNED_WORD`)는 `global/exception/CommonErrorCode`에 있습니다.
+
+**금칙어 검사** (#80)
+
+- 닉네임·게시글·댓글·포트폴리오처럼 사용자가 쓴 글은 저장하기 전에 `BannedWordPolicy`로 검사합니다 (PL-SEC-003). 금칙어가 들어 있으면 `BusinessException(BANNED_WORD)`이 납니다.
+- 검사할 칸을 한 번에 넘깁니다. 비어 있는(`null`) 칸은 건너뛰고, 대소문자는 구분하지 않습니다.
+
+```java
+@Transactional
+public Long write(Long memberId, PostWriteRequest request) {
+    bannedWordPolicy.check(request.title(), request.body());   // 걸리면 여기서 멈춘다
+    ...
+}
+```
+
+- 금칙어 목록은 `banned_word` 테이블입니다. 로컬에서 확인할 때는 `INSERT INTO banned_word (word) VALUES ('테스트금칙어');`로 넣어 봅니다.
+
+**JSON API 약속** (D-08, #152)
+
+- 화면이 바뀌지 않는 동작만 JSON으로 답하고, 주소는 `/api/`로 시작합니다 (운영자는 `/api/admin/`). Controller는 `@RestController`로 만들고 **명세에 적힌 값을 담은 DTO를 그대로** 돌려줍니다. 감싸는 틀(`{data: …}`)을 만들지 않습니다. 돌려줄 값이 없으면 `@ResponseStatus(HttpStatus.NO_CONTENT)`로 204(본문 없음)를 보냅니다. 받는 쪽은 204일 때만 `response.json()`을 건너뛰고, 실패 응답은 항상 JSON(`{code, message}`)이라 읽어서 `message`를 보여 줍니다.
+- 실패는 화면과 똑같이 `BusinessException`을 던지기만 합니다. `/api/**` 요청이면 `GlobalExceptionHandler`가 에러 코드의 상태 코드와 아래 JSON으로 바꿔 보냅니다.
+
+```json
+{ "code": "NOT_OWNER", "message": "본인만 할 수 있습니다." }
+```
+
+| 상황 | 상태 · code |
+| --- | --- |
+| `BusinessException` | 에러 코드의 상태 · 에러 코드 이름 |
+| `@Valid` 검증 실패 | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
+| 읽을 수 없는 JSON, 필수 값 없음, 타입 불일치 | 400 · `INVALID_INPUT` ("요청 값을 확인해주세요.") |
+| 지원하지 않는 메서드 / Content-Type / Accept | 405 · `METHOD_NOT_ALLOWED` (`Allow` 헤더) / 415 · `UNSUPPORTED_MEDIA_TYPE` / 406 · `NOT_ACCEPTABLE` |
+| 정책으로 걸러지지 않은 DB 제약 위반 (UNIQUE 등) | 409 · `CONFLICT` |
+| 없는 주소 | 404 · `NOT_FOUND` |
+| 비로그인 | 401 · `LOGIN_REQUIRED` |
+| 학습자가 `/api/admin/**` | 403 · `ADMIN_ONLY` |
+| CSRF 토큰 없음·만료 | 403 · `FORBIDDEN` |
+| 그 밖의 오류 | 500 · `SERVER_ERROR` (내부 정보는 보내지 않음) |
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class PortfolioGuideApiController {
+
+    private final GuideStepService guideStepService;
+
+    @PostMapping("/api/guide-steps/{guideStepId}/check")
+    public GuideStepCheckResponse check(@PathVariable Long guideStepId, @Valid @RequestBody GuideStepCheckRequest request,
+                                        @AuthenticationPrincipal LoginMember loginMember) {
+        return guideStepService.check(loginMember.getMemberId(), guideStepId, request.checked());   // → {"checkedCount": 2, "totalCount": 5}
+    }
+}
+```
+
+- JSON으로 POST 하려면 **CSRF 토큰을 헤더로** 보내야 합니다 (안 보내면 403 `FORBIDDEN`). 그 화면의 `<head>`에 토큰을 두고 `fetch`에서 꺼내 씁니다.
+
+```html
+<meta name="_csrf" th:content="${_csrf.token}">
+<meta name="_csrf_header" th:content="${_csrf.headerName}">
+```
+
+```js
+const token = document.querySelector('meta[name="_csrf"]').content;
+const header = document.querySelector('meta[name="_csrf_header"]').content;
+const response = await fetch('/api/guide-steps/3/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', [header]: token },
+    body: JSON.stringify({ checked: true }),
+});
+const body = await response.json();
+if (!response.ok) { alert(body.message); }   // 실패: {code, message}
+```
+
+**업로드 파일 저장** (#79)
+
+- 사진·스크린샷·개념 이미지는 `FileStorage.saveImage`, 평가 에이전트 설정 파일은 `saveDocument`로 저장합니다. 돌려받은 주소(`/uploads/{UUID}.png`)를 `*_url` 컬럼에 저장하고, 화면에서는 `<img th:src="${post.imageUrl}">`처럼 그대로 씁니다.
+- 이미지는 JPG·PNG·WebP, 설정 파일은 UTF-8 글자로 된 md·json·yaml·txt만 받고, 둘 다 장당 5MB까지입니다 (PL-DAT-004, PL-PRT-010). 규칙에 맞지 않거나 확장자만 바꾼 파일이면 `BusinessException(INVALID_FILE)`이 납니다.
+- **개수 제한(게시글 3장 등)은 쓰는 쪽에서 검사합니다.** 파일 칸을 비워 둔 채 보내도 빈 파일이 하나 들어오므로 `isEmpty()`인 것은 빼고 넘깁니다.
+
+```java
+@Transactional
+public Long write(Long memberId, PostWriteRequest request, List<MultipartFile> images) {
+    List<MultipartFile> chosen = images.stream().filter(file -> !file.isEmpty()).toList();
+    // 개수 검사는 여기서 (PL-CMT-009)
+    List<String> imageUrls = chosen.stream().map(fileStorage::saveImage).toList();   // 규칙에 안 맞으면 여기서 멈춘다
+    ...
+}
+```
+
+- 파일은 프로젝트 폴더의 `uploads/`에 저장됩니다 (커밋되지 않음). 배포 서버에서는 환경 변수 `UPLOAD_DIR`로 폴더를 정합니다.
 
 **로그인 약속** (#12)
 
@@ -308,8 +425,69 @@ public class Quiz extends BaseTimeEntity { ... }
 
 - 디자인 토큰(색상·글꼴·간격)은 `common.css`의 CSS 변수(`--navy-900`, `--space-5` 등)를 그대로 씁니다.
 - 화면 안쪽 너비를 본문 최대 폭(1200px)으로 맞추려면 `vl-content` 클래스를 씁니다.
-- 버튼·배지·안내 상자 같은 공통 UI 조각은 #46에서 추가됩니다.
 - 로그인 상태별 메뉴(회원·운영자 헤더)는 #12 머지 후 Controller에서 로그인 회원을 꺼내 추가합니다.
+
+**백오피스 화면 레이아웃 쓰는 법** (#81)
+
+운영자 화면(A-01~A-08)의 왼쪽 메뉴는 `templates/common/admin-layout.html`에 fragment로 있습니다. 학습자 레이아웃과 달리 헤더·푸터가 아니라 왼쪽 메뉴 하나이므로, 화면이 직접 `vl-admin` 틀로 감싸서 씁니다.
+
+```html
+<link rel="stylesheet" th:href="@{/css/common.css}">
+<link rel="stylesheet" th:href="@{/css/admin.css}">
+...
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('dashboard')}"></div>
+    <main class="vl-admin__content">
+        <!-- 이 화면의 내용 -->
+    </main>
+</div>
+```
+
+- `sidebar(active)`의 `active`에 지금 보고 있는 메뉴를 넣으면 그 메뉴가 강조됩니다: `dashboard` · `tracks` · `categories` · `courses` · `members`.
+- 메뉴·URL은 화면 흐름 설계서 "백오피스 왼쪽 메뉴" 그대로입니다 (설정(P2) 메뉴는 넣지 않습니다). `/admin/**`은 이미 `SecurityConfig`가 운영자만 들어오게 막으므로 화면에서 권한을 따로 검사하지 않습니다.
+
+**공통 UI 조각 쓰는 법** (#46)
+
+버튼·배지·안내 상자·진행 막대·탭 버튼·확인 모달은 `templates/common/ui.html`에 fragment로 있고, 모달·토스트를 여닫는 동작은 `static/js/ui.js`가 합니다. 새 화면에서는 CSS(`common.css`)만 링크하면 바로 가져다 씁니다.
+
+```html
+<!-- 버튼 (variant: navy · glow · outline · text, size: 빈 문자열(기본) · s · xl) -->
+<a th:replace="~{common/ui :: btnLink('/courses', '코스 보기', 'navy', '')}"></a>
+<button th:replace="~{common/ui :: btnButton('다시 풀기', 'outline', 's')}"></button>
+
+<!-- 배지 (variant: strong · neutral · success · danger · locked) -->
+<span th:replace="~{common/ui :: badge('locked', '잠김')}"></span>
+
+<!-- 안내 상자 (variant: info · empty · success, title은 없으면 null) -->
+<div th:replace="~{common/ui :: notice('info', null, '진단 중 나가면 응답이 저장되지 않습니다.')}"></div>
+
+<!-- 진행 막대 -->
+<div th:replace="~{common/ui :: progress('문항', 3, 10)}"></div>
+
+<!-- 패널(흰 박스)은 fragment 가 아니라 클래스로 직접 쓴다 (내용이 화면마다 다르기 때문) -->
+<section class="vl-ui-panel"> ... </section>
+
+<!-- 탭: data-ui-tabs 로 버튼들을 묶어야 ui.js 가 찾는다. 선택 안 된 패널은 hidden 으로 시작한다 -->
+<div class="vl-ui-tabs" role="tablist" data-ui-tabs>
+    <button th:replace="~{common/ui :: tabButton('panel-a', '수강 중', true)}"></button>
+    <button th:replace="~{common/ui :: tabButton('panel-b', '완료', false)}"></button>
+</div>
+<div id="panel-a" class="vl-ui-tabpanel" role="tabpanel" aria-labelledby="panel-a-tab"> ... </div>
+<div id="panel-b" class="vl-ui-tabpanel" role="tabpanel" aria-labelledby="panel-b-tab" hidden> ... </div>
+
+<!-- 확인 모달: 여는 버튼 + 모달 fragment. id 를 맞춘다 -->
+<button type="button" class="vl-ui-btn is-outline" data-ui-modal-open="delete-confirm">삭제</button>
+<div th:replace="~{common/ui :: confirmModal('delete-confirm', '포트폴리오를 삭제할까요?', '코스 완료 조건이 다시 미충족됩니다.', '삭제', '취소')}"></div>
+
+<!-- 토스트: 화면에 한 번만 넣고, JS에서 VLToast.show(...) 로 띄운다 -->
+<div th:replace="~{common/ui :: toastContainer}"></div>
+<script th:src="@{/js/ui.js}"></script>
+<script>VLToast.show('저장되었습니다');</script>
+```
+
+- 비활성 버튼 + 이유 문구(설계서 5-2)는 버튼에 `aria-disabled="true"`를 얹고 바로 아래 `common/ui :: btnReason(text)`를 붙입니다.
+- 탭 버튼은 `common/ui :: tabButton(targetId, label, active)`을 `th:each`로 반복해서 만들되, 반드시 `data-ui-tabs`를 가진 묶음 요소 안에 넣습니다. `static/js/ui.js`가 그 안의 `role="tab"`·`aria-controls`를 보고 전환을 처리하므로, 묶음 요소가 없으면 눌러도 아무 일도 안 일어납니다. 선택 안 된 패널은 `hidden`으로 시작합니다.
+- 오류 화면(404·403·500)은 `templates/error/error.html`의 `errorBody(status, message)` fragment를 그대로 쓰므로 새로 만들 필요가 없습니다.
 
 **리뷰어 지정 약속**
 
@@ -319,10 +497,11 @@ public class Quiz extends BaseTimeEntity { ... }
 |---|---|---|
 | 모든 PR | PM `dyryoo316` + 형상관리 `SeungBinYang` ([`CODEOWNERS`](.github/CODEOWNERS)) | 둘 중 1명 승인. 작성자 본인은 빠지므로 PM의 PR은 형상관리가, 형상관리의 PR은 PM이 승인 |
 | **영역 간 연동** — 다른 묶음 담당 영역의 파일(`domain/<영역>/`, `templates/<영역>/`, `static/*/<영역>.*`)을 바꾼 PR (예: 상대 영역에 `Fake` 추가) | 위 + **그 영역 담당** ([영역 담당](#영역-담당) 표) | 위 + 그 영역 담당 승인 (`area-review` 검사) |
-| `sql/`을 바꾼 PR (DB 팀이 아닌 사람이) | 위 + DB 팀 `Choyeonik`, `skinopero` | 위 + DB 팀 1명 승인 (`area-review` 검사) |
+| `sql/`을 바꾼 PR (`Choyeonik`이 아닌 사람이) | 위 + DB 팀 `Choyeonik` | 위 + `Choyeonik` 승인 (`area-review` 검사) |
 
 - `area-review` 검사는 승인이 들어오면 다시 돌아서 ✅로 바뀝니다. 내 영역만 바꾼 PR은 바로 ✅입니다.
 - 공통 파일(`global/`, `templates/common/`, `static/css/common.css` 등)과 `contest`·`message`처럼 담당이 없는 영역은 기본 리뷰어만 봅니다.
+- 묶음 B(`course`·`quiz`)는 영역 담당 승인을 요구하지 않습니다 (#204). 기본 리뷰어만 봅니다.
 - 묶음 담당이 바뀌면 [영역 담당](#영역-담당) 표와 [`.github/scripts/area-review.sh`](.github/scripts/area-review.sh)의 담당 표를 같이 고칩니다.
 - 승인 조건은 **이 표가 전부**입니다. `CLAUDE.md`·`.claude/`·협업 문서 같은 팀 규칙 변경도 같은 조건으로 머지하고, 머지 후 팀 채팅에 공지합니다.
 
@@ -356,8 +535,9 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 3. **PR 올리기 전에 `git diff`로 변경 내용을 꼭 확인하세요.** AI가 부탁하지 않은 파일을 바꾸거나 지우는 일이 자주 있습니다. 이슈와 상관없는 변경은 되돌립니다.
 4. **비밀 정보를 AI에게 붙여넣지 마세요.** API 키, 비밀번호, 실제 사용자 개인정보는 프롬프트에 넣지 않습니다.
 5. **프로젝트 전체를 한 번에 포맷하거나 갈아엎지 마세요.** 수백 개 파일이 바뀌면 리뷰도, 충돌 해결도 불가능해집니다.
-6. **팀 공용 AI 설정 파일**(`CLAUDE.md`, `AGENTS.md`, `.cursorrules` 등)을 추가·수정할 때는 별도 이슈와 PR로 팀 합의를 거칩니다. 나만 쓰는 개인 설정은 커밋하지 않습니다.
+6. **팀 공용 AI 설정 파일**(`CLAUDE.md`, `.coderabbit.yaml`, `AGENTS.md`, `.cursorrules` 등)을 추가·수정할 때는 별도 이슈와 PR로 팀 합의를 거칩니다. 나만 쓰는 개인 설정은 커밋하지 않습니다.
 7. PR 템플릿의 **"🤖 AI 활용"** 칸에 어떤 도구로 어느 부분을 만들었는지 적어 주면 리뷰어가 더 꼼꼼히 볼 수 있습니다. (선택)
+8. PR에는 **AI 리뷰어 CodeRabbit**이 1차 리뷰를 남깁니다. AI 코멘트에도 **반영 · 반영 안 함(이유) · 질문** 중 하나로 꼭 답합니다. 사용법: [05. PR 규칙 Part 3](docs/collaboration/05-pull-request.md#part-3-ai-리뷰-coderabbit)
 
 ### Claude Code 팀 공용 설정
 
@@ -384,6 +564,7 @@ AI(Claude, Cursor, Copilot 등)로 코드를 만드는 것은 자유입니다. �
 ├── .gitmessage.txt                   ← 커밋 메시지 템플릿
 ├── CLAUDE.md                         ← Claude Code 팀 공용 규칙
 ├── .claude/settings.json             ← Claude Code 팀 공용 권한 (위험한 push 차단)
+├── .coderabbit.yaml                  ← AI 코드 리뷰(CodeRabbit) 설정 — 한국어·학습용 리뷰 기준
 ├── .github/
 │   ├── workflows/build.yml           ← PR마다 자동 빌드·테스트 (GitHub Actions)
 │   ├── workflows/area-review.yml     ← 다른 영역 파일을 바꾼 PR은 그 영역 담당 승인 필요

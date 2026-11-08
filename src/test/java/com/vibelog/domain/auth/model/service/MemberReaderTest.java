@@ -29,4 +29,10 @@ class MemberReaderTest {
     void 빈_묶음이면_빈_결과() {
         assertThat(memberReader.getNicknames(List.of())).isEmpty();
     }
+
+    @Test
+    void 단건_조회로_닉네임을_읽고_없는_ID는_빈_문자열() {
+        assertThat(memberReader.getNickname(1L)).isEqualTo("테스트학습자");
+        assertThat(memberReader.getNickname(999_999L)).isEmpty();
+    }
 }

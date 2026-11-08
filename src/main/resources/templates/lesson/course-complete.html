@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>코스 완료 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/course-complete.css}" href="/css/course-complete.css">
+</head>
+<body>
+
+<div th:replace="~{common/layout :: header}"></div>
+
+<!-- U-18 코스 완료 (API-ENR-03, #115). CourseCompletePageController 가 담아 주는 courseComplete 로 그린다.
+     완료 여부·완료 일시는 계약 ⑦이 이미 기록한 enrollment.completed_at 을 그대로 보여준다 (PL-ENR-003).
+     배지·안내 상자 모양은 공통 조각(#46)이 머지되면 그것으로 바꾼다. -->
+<div class="cc-page">
+
+    <section class="cc-band">
+        <span class="cc-eyebrow" th:text="'[' + ${courseComplete.trackName()} + '] · [코스] ' + ${courseComplete.courseName()}">[트랙] · [코스] 코스 이름</span>
+        <h1 class="cc-title" th:text="${courseComplete.completed()} ? '코스를 완료했습니다' : '코스 완료까지 한 걸음 남았어요'">코스를 완료했습니다</h1>
+        <p class="cc-lead" th:if="${courseComplete.completed()}">모든 수업의 모의고사와 오답 분석 리포트, 포트폴리오 제출까지 모두 마쳤습니다. 수고하셨습니다!</p>
+        <p class="cc-lead" th:unless="${courseComplete.completed()}">남은 조건을 모두 마치면 이 코스가 완료 처리됩니다.</p>
+    </section>
+
+    <main class="cc-main">
+        <div class="cc-panel">
+
+            <!-- 조건이 남은 경우에만 보여준다 (설계서 U-18 예외) -->
+            <div class="cc-notice" th:unless="${courseComplete.completed()}">
+                <strong>코스 완료까지 한 걸음 남았어요.</strong>
+                <p>남은 조건을 모두 마치면 이 코스가 완료 처리됩니다.</p>
+                <a class="cc-link" th:href="@{/my/learning}">내 학습에서 남은 조건 보기</a>
+            </div>
+
+            <section class="cc-section" aria-labelledby="cc-cond-h">
+                <h2 class="cc-h2" id="cc-cond-h">완료 조건</h2>
+                <ul class="cc-conditions">
+                    <li class="cc-condition" th:each="condition : ${courseComplete.conditions()}">
+                        <span class="cc-badge" th:classappend="${condition.met()} ? 'cc-badge-success' : 'cc-badge-locked'"
+                              th:text="${condition.met()} ? '완료' : '남음'">완료</span>
+                        <span class="cc-condition-name" th:text="${condition.name()}">조건 이름</span>
+                    </li>
+                </ul>
+                <p class="cc-muted" th:if="${courseComplete.completedAt() != null}"
+                   th:text="'완료 일시: ' + ${#temporals.format(courseComplete.completedAt(), 'yyyy.MM.dd HH:mm')}">완료 일시</p>
+            </section>
+
+            <section class="cc-section" aria-labelledby="cc-report-h">
+                <h2 class="cc-h2" id="cc-report-h">수업별 리포트</h2>
+                <ul class="cc-report-list">
+                    <li class="cc-report-item" th:each="report : ${courseComplete.lessonReports()}">
+                        <span class="cc-report-name" th:text="${report.title()}">수업 이름</span>
+                        <a class="cc-btn cc-btn-outline cc-btn-s" th:if="${report.reportUrl() != null}"
+                           th:href="${report.reportUrl()}">리포트 보기</a>
+                        <span class="cc-muted" th:if="${report.reportUrl() == null}">아직 응시하지 않았습니다</span>
+                    </li>
+                </ul>
+            </section>
+
+            <div class="cc-actions">
+                <a class="cc-btn cc-btn-navy" href="/my/portfolios">내 포트폴리오 보기</a>
+                <div class="cc-actions-sub">
+                    <a class="cc-btn cc-btn-outline" href="/courses">다음 코스 찾기</a>
+                    <a class="cc-btn cc-btn-outline" href="/my/learning">내 학습으로</a>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<div th:replace="~{common/layout :: footer}"></div>
+
+</body>
+</html>

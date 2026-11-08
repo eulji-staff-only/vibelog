@@ -2,17 +2,25 @@
   common/layout.html
   모든 화면이 함께 쓰는 헤더 · 푸터 fragment.
   사용법: th:replace="~{common/layout :: header}" / "~{common/layout :: footer}"
-  주의: 지금은 비회원 메뉴만 둔다. 로그인 상태별 메뉴(1-5 회원·운영자 메뉴)는
-        로그인·권한 이슈(#12)가 머지된 뒤 Controller에서 로그인 회원을 꺼내 추가한다.
+  로그인 상태별 메뉴(1-5 회원·운영자 메뉴)는 sec:authorize 로 나눈다 (#132, README "로그인 약속").
+  767px 이하에서는 메뉴를 접고 햄버거 버튼으로 펼친다 (설계서 7장, #153). 펼치기는 static/js/header.js 가 한다.
+  닉네임은 이 fragment 를 쓰는 화면의 Controller가 모델에 담은 "loginNickname" 을 쓰고,
+  없으면(아직 연결 안 한 화면) 기본 문구로 보여준다.
 -->
 <!doctype html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head><meta charset="UTF-8"></head>
 <body>
 
-<header th:fragment="header" class="vl-header">
+<header th:fragment="header" class="vl-header" data-header>
     <div class="vl-content vl-header__inner">
         <a class="vl-header__logo" href="/">바이브로그</a>
+        <!-- 모바일에서만 보인다 -->
+        <button type="button" class="vl-header__toggle" aria-expanded="false" aria-controls="vl-header-menu" aria-label="메뉴 열기" data-header-toggle>
+            <span class="vl-header__toggle-bar" aria-hidden="true"></span>
+        </button>
+        <!-- 데스크톱에서는 감싸지 않은 것처럼 보이고(display: contents), 모바일에서는 버튼으로 펼친다 -->
+        <div class="vl-header__menu" id="vl-header-menu">
         <nav class="vl-header__nav">
             <a href="/courses">코스</a>
             <a href="/community">커뮤니티</a>
@@ -22,11 +30,25 @@
         <form class="vl-header__search" action="/courses" method="get">
             <input type="search" name="q" placeholder="코스 검색" aria-label="코스 검색">
         </form>
-        <div class="vl-header__auth">
+
+        <div class="vl-header__auth" sec:authorize="isAnonymous()">
             <a class="is-text" href="/login">로그인</a>
             <a class="is-primary" href="/signup">회원가입</a>
         </div>
+
+        <div class="vl-header__member" sec:authorize="isAuthenticated()">
+            <span class="vl-header__nickname" th:text="${loginNickname} ?: '회원'">닉네임</span>
+            <a class="is-text" href="/my/learning">내 학습</a>
+            <a class="is-text" href="/messages">쪽지</a>
+            <a class="is-text" href="/mypage">마이페이지</a>
+            <a class="is-text" href="/admin" sec:authorize="hasRole('ADMIN')">백오피스</a>
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="is-text vl-header__logout-btn">로그아웃</button>
+            </form>
+        </div>
+        </div>
     </div>
+    <script th:src="@{/js/header.js}" defer></script>
 </header>
 
 <footer th:fragment="footer" class="vl-footer">

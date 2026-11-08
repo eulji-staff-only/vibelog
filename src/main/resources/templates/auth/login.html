@@ -3,23 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>로그인</title>
+    <title>로그인 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
 </head>
-<body>
-<!-- U-03 로그인. #12 에서는 동작하는 최소 폼만 둔다. 디자인은 #49, 로그인 유지·소셜 로그인은 #12 다음 작업에서 붙인다 -->
-<main>
-    <h1>로그인</h1>
+<body class="au-page">
+<!-- U-03 로그인. 폼은 #12 에서 Spring Security 에 연결했다. 구글·깃허브 로그인 동작은 소셜 로그인 이슈(#91)에서 붙인다. -->
+<div th:replace="~{common/layout :: header}"></div>
 
-    <p th:if="${param.redirect}">로그인 시간이 지나 로그아웃되었습니다. 다시 로그인하면 보던 화면으로 돌아갑니다</p>
+<section class="au-band">
+    <h1 class="au-title">로그인</h1>
+    <p class="au-lead">이어서 학습하려면 로그인하세요.</p>
+</section>
 
-    <!-- th:action 으로 만들어야 CSRF 토큰이 자동으로 들어간다 -->
-    <form th:action="@{/login}" method="post">
-        <input type="hidden" name="redirect" th:if="${param.redirect}" th:value="${param.redirect[0]}">
-        <label>이메일 <input type="email" name="email" autocomplete="username" required></label>
-        <label>비밀번호 <input type="password" name="password" autocomplete="current-password" required></label>
-        <p th:if="${param.error}">이메일 또는 비밀번호가 맞지 않습니다</p>
-        <button type="submit">로그인</button>
-    </form>
+<main class="au-main">
+    <div class="au-panel">
+        <!-- 비밀번호 재설정 뒤 (API-USR-14) -->
+        <div class="au-notice is-success" role="status" th:if="${toast}"><strong th:text="${toast}">알림</strong></div>
+        <div class="au-notice" th:if="${param.redirect}">
+            <p>로그인 시간이 지나 로그아웃되었습니다. 다시 로그인하면 보던 화면으로 돌아갑니다</p>
+        </div>
+        <!-- 같은 이메일이 다른 방식으로 가입됨 (SOCIAL_EMAIL_CONFLICT·SOCIAL_ACCOUNT_EMAIL, PL-USR-005) -->
+        <div class="au-notice is-danger" th:if="${param.socialConflict} or ${param.social}">
+            <strong>이미 다른 방식으로 가입한 이메일입니다</strong>
+            <p>처음 가입한 방식(이메일·GitHub·구글)으로 로그인해 주세요.</p>
+        </div>
+        <div class="au-notice is-danger" th:if="${param.socialError}">
+            <strong>소셜 로그인을 마치지 못했습니다</strong>
+            <p>이메일을 받을 수 없었거나 로그인을 취소했습니다. 다시 시도해 주세요.</p>
+        </div>
+        <!-- 정지 안내를 닫았거나 새로고침해 flash 가 없을 때 -->
+        <div class="au-notice is-danger" th:if="${param.suspended} and ${suspension == null}">
+            <strong>이용이 정지된 계정입니다</strong>
+        </div>
+        <div class="au-notice is-danger" th:if="${param.locked}">
+            <strong>잠시 로그인할 수 없습니다</strong>
+            <p>로그인에 5번 실패해 5분 동안 로그인할 수 없습니다. 5분 뒤에 다시 시도해 주세요.</p>
+        </div>
+
+        <!-- th:action 으로 만들어야 CSRF 토큰이 자동으로 들어간다 -->
+        <form class="au-form" th:action="@{/login}" method="post">
+            <input type="hidden" name="redirect" th:if="${param.redirect}" th:value="${param.redirect[0]}">
+            <div class="au-field">
+                <label class="au-label" for="email">이메일</label>
+                <input class="au-input" id="email" type="email" name="email" autocomplete="username" required>
+            </div>
+            <div class="au-field">
+                <label class="au-label" for="password">비밀번호</label>
+                <input class="au-input" id="password" type="password" name="password" autocomplete="current-password" required>
+            </div>
+            <div class="au-row">
+                <label class="au-check"><input type="checkbox" name="rememberMe"> 로그인 유지(14일)</label>
+                <a class="au-link" href="/password/find">비밀번호 찾기</a>
+            </div>
+            <p class="au-hint is-error" role="alert" th:if="${param.error}">이메일 또는 비밀번호가 맞지 않습니다</p>
+            <button class="au-btn is-navy" type="submit">로그인</button>
+        </form>
+
+        <!-- 구글·깃허브 로그인 (API-USR-06, #91). 키가 설정된 것만 보인다 -->
+        <th:block th:unless="${socialProviders.empty}">
+            <p class="au-divider">또는</p>
+            <div class="au-social">
+                <a class="au-btn is-outline" th:if="${socialProviders.contains('google')}" href="/oauth2/authorization/google">구글로 계속하기</a>
+                <a class="au-btn is-outline" th:if="${socialProviders.contains('github')}" href="/oauth2/authorization/github">깃허브로 계속하기</a>
+            </div>
+        </th:block>
+
+        <p class="au-links">아직 회원이 아닌가요? <a class="au-link" href="/signup">회원가입</a></p>
+    </div>
 </main>
+
+<!-- M-07 이용 정지 안내 (FR-USR-010, PL-RPT-005). 비밀번호가 맞은 뒤에만 뜬다 -->
+<dialog class="au-dialog" id="suspended" aria-labelledby="suspended-h" th:if="${suspension}" open>
+    <div class="au-dialog__body">
+        <h2 class="au-h2" id="suspended-h">이용이 정지된 계정입니다</h2>
+        <dl class="au-info">
+            <dt>정지 단계</dt><dd th:text="${suspension.levelLabel()}">7일 정지</dd>
+            <dt>사유</dt><dd th:text="${suspension.reason()}">사유</dd>
+            <dt>기간</dt>
+            <dd th:text="${suspension.endsAt() == null} ? '영구 정지' : |${#temporals.format(suspension.endsAt(), 'yyyy.MM.dd HH:mm')}까지|">2026.11.15까지</dd>
+        </dl>
+    </div>
+    <div class="au-dialog__actions">
+        <form method="dialog"><button class="au-btn is-outline" value="close">닫기</button></form>
+    </div>
+</dialog>
+
+<div th:replace="~{common/layout :: footer}"></div>
 </body>
 </html>

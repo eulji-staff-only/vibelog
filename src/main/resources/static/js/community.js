@@ -1,0 +1,40 @@
+/*
+ * 커뮤니티 화면(U-22·U-23) 동작: 삭제 확인 모달(M-05) 열기, 제목·본문 글자 수 표시 (PL-CMT-010),
+ * 즐겨찾기 켜고 끄기 (API-CMT-13, JSON POST + CSRF 헤더). 모달 닫기는 dialog 안 form method="dialog" 버튼이 한다.
+ * 공통 UI 조각(#46)의 모달이 머지되면 그것으로 바꾼다.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-open-dialog]').forEach((button) => {
+        button.addEventListener('click', () => document.getElementById(button.dataset.openDialog).showModal());
+    });
+
+    document.querySelectorAll('[data-count]').forEach((input) => {
+        const count = document.querySelector(`[data-count-for="${input.id}"]`);
+        const render = () => { count.textContent = input.value.length.toLocaleString(); };
+        input.addEventListener('input', render);
+        render();
+    });
+
+    document.querySelectorAll('[data-favorite]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const token = document.querySelector('meta[name="_csrf"]').content;
+            const header = document.querySelector('meta[name="_csrf_header"]').content;
+            button.disabled = true;
+            try {
+                const response = await fetch(button.dataset.url, { method: 'POST', headers: { [header]: token } });
+                // 실패는 {code, message} JSON. 세션이 끝나 로그인 화면(HTML)이 오면 읽지 못해 null
+                const body = await response.json().catch(() => null);
+                if (response.ok && body) {
+                    button.setAttribute('aria-pressed', String(body.favorited));
+                    button.textContent = body.favorited ? '즐겨찾기 취소' : '즐겨찾기';
+                } else {
+                    alert(body?.message ?? '즐겨찾기를 처리하지 못했습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.');
+                }
+            } catch (e) {
+                alert('요청을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.');
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+});

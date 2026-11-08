@@ -9,6 +9,11 @@ on:
 permissions:
   actions: write
 
+# 리뷰가 몰려 오면(AI 리뷰·답글 여러 개) 동시에 돌다가 "이미 실행 중"으로 실패한다 (#134).
+# 같은 PR·커밋은 하나씩 차례로 돌린다. 기다리는 실행은 마지막 하나만 남아도 결과는 같다.
+concurrency:
+  group: area-review-rerun-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+
 jobs:
   rerun:
     runs-on: ubuntu-latest
