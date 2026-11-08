@@ -266,6 +266,62 @@ public Long write(Long memberId, PostWriteRequest request) {
 
 - 금칙어 목록은 `banned_word` 테이블입니다. 로컬에서 확인할 때는 `INSERT INTO banned_word (word) VALUES ('테스트금칙어');`로 넣어 봅니다.
 
+**JSON API 약속** (D-08, #152)
+
+- 화면이 바뀌지 않는 동작만 JSON으로 답하고, 주소는 `/api/`로 시작합니다 (운영자는 `/api/admin/`). Controller는 `@RestController`로 만들고 **명세에 적힌 값을 담은 DTO를 그대로** 돌려줍니다. 감싸는 틀(`{data: …}`)을 만들지 않습니다. 돌려줄 값이 없으면 `@ResponseStatus(HttpStatus.NO_CONTENT)`로 204(본문 없음)를 보냅니다. 받는 쪽은 204일 때만 `response.json()`을 건너뛰고, 실패 응답은 항상 JSON(`{code, message}`)이라 읽어서 `message`를 보여 줍니다.
+- 실패는 화면과 똑같이 `BusinessException`을 던지기만 합니다. `/api/**` 요청이면 `GlobalExceptionHandler`가 에러 코드의 상태 코드와 아래 JSON으로 바꿔 보냅니다.
+
+```json
+{ "code": "NOT_OWNER", "message": "본인만 할 수 있습니다." }
+```
+
+| 상황 | 상태 · code |
+| --- | --- |
+| `BusinessException` | 에러 코드의 상태 · 에러 코드 이름 |
+| `@Valid` 검증 실패 | 400 · `INVALID_INPUT` (message 는 첫 번째 칸의 메시지) |
+| 읽을 수 없는 JSON, 필수 값 없음, 타입 불일치 | 400 · `INVALID_INPUT` ("요청 값을 확인해주세요.") |
+| 지원하지 않는 메서드 / Content-Type / Accept | 405 · `METHOD_NOT_ALLOWED` (`Allow` 헤더) / 415 · `UNSUPPORTED_MEDIA_TYPE` / 406 · `NOT_ACCEPTABLE` |
+| 정책으로 걸러지지 않은 DB 제약 위반 (UNIQUE 등) | 409 · `CONFLICT` |
+| 없는 주소 | 404 · `NOT_FOUND` |
+| 비로그인 | 401 · `LOGIN_REQUIRED` |
+| 학습자가 `/api/admin/**` | 403 · `ADMIN_ONLY` |
+| CSRF 토큰 없음·만료 | 403 · `FORBIDDEN` |
+| 그 밖의 오류 | 500 · `SERVER_ERROR` (내부 정보는 보내지 않음) |
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class PortfolioGuideApiController {
+
+    private final GuideStepService guideStepService;
+
+    @PostMapping("/api/guide-steps/{guideStepId}/check")
+    public GuideStepCheckResponse check(@PathVariable Long guideStepId, @Valid @RequestBody GuideStepCheckRequest request,
+                                        @AuthenticationPrincipal LoginMember loginMember) {
+        return guideStepService.check(loginMember.getMemberId(), guideStepId, request.checked());   // → {"checkedCount": 2, "totalCount": 5}
+    }
+}
+```
+
+- JSON으로 POST 하려면 **CSRF 토큰을 헤더로** 보내야 합니다 (안 보내면 403 `FORBIDDEN`). 그 화면의 `<head>`에 토큰을 두고 `fetch`에서 꺼내 씁니다.
+
+```html
+<meta name="_csrf" th:content="${_csrf.token}">
+<meta name="_csrf_header" th:content="${_csrf.headerName}">
+```
+
+```js
+const token = document.querySelector('meta[name="_csrf"]').content;
+const header = document.querySelector('meta[name="_csrf_header"]').content;
+const response = await fetch('/api/guide-steps/3/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', [header]: token },
+    body: JSON.stringify({ checked: true }),
+});
+const body = await response.json();
+if (!response.ok) { alert(body.message); }   // 실패: {code, message}
+```
+
 **업로드 파일 저장** (#79)
 
 - 사진·스크린샷·개념 이미지는 `FileStorage.saveImage`, 평가 에이전트 설정 파일은 `saveDocument`로 저장합니다. 돌려받은 주소(`/uploads/{UUID}.png`)를 `*_url` 컬럼에 저장하고, 화면에서는 `<img th:src="${post.imageUrl}">`처럼 그대로 씁니다.
