@@ -26,6 +26,8 @@
 
 .al-panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
 
+.al-hint { margin: 0 0 var(--space-3); font-size: 13px; color: var(--ink-muted); }
+
 .al-empty { color: var(--ink-muted); font-size: 14px; }
 
 .al-activity-list, .al-exam-list { list-style: none; margin: var(--space-3) 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
@@ -33,10 +35,13 @@
   display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4);
   border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface);
 }
+.al-activity-row[draggable="true"] { cursor: grab; }
+.al-activity-row.is-dragging { opacity: 0.5; }
 .al-activity-no { flex: 0 0 24px; height: 24px; border-radius: 50%; background: var(--tint); font-size: 12px; font-weight: 700;
     display: flex; align-items: center; justify-content: center; }
 .al-activity-kind { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
 .al-activity-title, .al-exam-content { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.al-activity-actions { flex: 0 0 auto; display: flex; gap: var(--space-2); }
 
 .al-tag-list { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
 .al-tag { padding: 4px 12px; border-radius: var(--radius-pill); background: var(--tint); font-size: 13px; font-weight: 700; color: var(--ink); }

@@ -4,12 +4,15 @@ import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.exam.model.service.ExamReader;
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
+import com.vibelog.domain.lesson.model.dao.ActivityTagRepository;
 import com.vibelog.domain.lesson.model.dao.ConceptTagRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
 import com.vibelog.domain.lesson.model.dto.AdminActivityItem;
 import com.vibelog.domain.lesson.model.dto.ConceptTagOption;
 import com.vibelog.domain.lesson.model.dto.LessonEditView;
 import com.vibelog.domain.lesson.model.dto.LessonFormRequest;
+import com.vibelog.domain.lesson.model.entity.Activity;
+import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Lesson;
 import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,7 @@ public class LessonAdminService {
 
     private final LessonRepository lessonRepository;
     private final ActivityRepository activityRepository;
+    private final ActivityTagRepository activityTagRepository;
     private final ConceptTagRepository conceptTagRepository;
     private final CourseReader courseReader;
     private final ExamReader examReader;
@@ -81,11 +85,13 @@ public class LessonAdminService {
         Lesson lesson = getLesson(lessonId);
         String courseTitle = courseReader.getCourseTitles(List.of(lesson.getCourseId()))
                 .getOrDefault(lesson.getCourseId(), "코스 " + lesson.getCourseId());
+        List<ConceptTag> conceptTagEntities = conceptTagRepository.findAllByOrderByNameAsc();
+        Map<Long, String> conceptTagNamesById = conceptTagEntities.stream()
+                .collect(Collectors.toMap(ConceptTag::getConceptTagId, ConceptTag::getName));
         List<AdminActivityItem> activities = activityRepository.findByLessonIdOrderBySortOrderAsc(lessonId).stream()
-                .map(activity -> new AdminActivityItem(activity.getActivityId(), activity.getActivityType(),
-                        activity.getTitle(), activity.getSortOrder(), activity.isActive()))
+                .map(activity -> toAdminActivityItem(activity, conceptTagNamesById))
                 .toList();
-        List<ConceptTagOption> conceptTags = conceptTagRepository.findAllByOrderByNameAsc().stream()
+        List<ConceptTagOption> conceptTags = conceptTagEntities.stream()
                 .map(tag -> new ConceptTagOption(tag.getConceptTagId(), tag.getName()))
                 .toList();
         String activeTab = "exam".equals(tab) ? "exam" : "activities";
@@ -104,6 +110,16 @@ public class LessonAdminService {
         Lesson lesson = getLesson(lessonId);
         lesson.edit(request.getTitle(), request.getIntro(), request.getGoal(), request.getContents(),
                 request.getEstimatedMinutes());
+    }
+
+    private AdminActivityItem toAdminActivityItem(Activity activity, Map<Long, String> conceptTagNamesById) {
+        List<String> tagNames = activityTagRepository.findByActivityId(activity.getActivityId()).stream()
+                .map(tag -> conceptTagNamesById.get(tag.getConceptTagId()))
+                .filter(name -> name != null)
+                .toList();
+        return new AdminActivityItem(activity.getActivityId(), activity.getActivityType(), activity.getTitle(),
+                activity.getBody(), activity.getToolNoteUrl(), activity.getEstimatedMinutes(), tagNames,
+                activity.getSortOrder(), activity.isActive());
     }
 
     private Lesson getLesson(Long lessonId) {
