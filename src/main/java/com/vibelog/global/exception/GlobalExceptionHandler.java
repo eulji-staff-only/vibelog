@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
@@ -89,6 +90,12 @@ public class GlobalExceptionHandler {
     public ModelAndView handleDataIntegrity(DataIntegrityViolationException e, HttpServletRequest request) {
         log.warn("DB 제약조건 위반", e);
         return error(request, HttpStatus.CONFLICT, "CONFLICT", "요청을 처리할 수 없습니다. 입력 값을 확인해주세요.");
+    }
+
+    /* application.yaml 의 업로드 크기 제한 초과 -> 파일 규칙 안내 (#79) */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ModelAndView handleMaxUploadSize(MaxUploadSizeExceededException e, HttpServletRequest request) {
+        return error(request, HttpStatus.BAD_REQUEST, CommonErrorCode.INVALID_FILE.name(), CommonErrorCode.INVALID_FILE.getMessage());
     }
 
     /* 존재하지 않는 URL */
