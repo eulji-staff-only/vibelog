@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>이달의 콘테스트 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/contest.css}">
+    <!-- 투표(API-CTS-03)는 JSON POST 라 CSRF 토큰을 헤더로 보낸다 (README "JSON API 약속") -->
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <script th:src="@{/js/ui.js}" defer></script>
+    <script th:src="@{/js/contest.js}" defer></script>
+</head>
+<body class="ct-page">
+<!--
+  U-32 이달의 콘테스트 (API-CTS-01~03, #201). 단계에 따라 출품 보드(내 공개 포트폴리오 → M-09 확인 → 출품) 또는
+  투표 보드(출품작 카드, 표 수는 보이지 않음)를 보여 준다. 결과(1·2·3등)와 지난 콘테스트(U-33)는 #202.
+-->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="ct-band">
+    <h1 class="ct-title">이달의 콘테스트</h1>
+    <p class="ct-lead" th:if="${contest}" th:text="${contest.contestMonth()}">2026-11</p>
+</section>
+
+<main class="ct-main">
+    <div class="vl-ui-panel ct-panel">
+        <p class="ct-toast" role="status" th:if="${toast}" th:text="${toast}">출품했습니다</p>
+        <div class="ct-notice" role="alert" th:if="${toastError}"><p th:text="${toastError}">지금은 출품 기간이 아닙니다.</p></div>
+
+        <div class="vl-ui-notice is-empty" th:unless="${contest}">
+            <p>이번 달 콘테스트를 준비하고 있습니다</p>
+        </div>
+
+        <th:block th:if="${contest}">
+            <section class="ct-section">
+                <h2 class="ct-h2" th:text="${contest.topic()}">나만의 첫 서비스</h2>
+                <p class="ct-description" th:text="${contest.description()}">주제 설명</p>
+                <dl class="ct-schedule">
+                    <div><dt>출품</dt><dd th:text="${#temporals.format(contest.entryStartsAt(), 'M월 d일 HH:mm')} + ' ~ ' + ${#temporals.format(contest.entryEndsAt(), 'M월 d일 HH:mm')}">11월 1일 00:00 ~ 11월 21일 00:00</dd></div>
+                    <div><dt>투표</dt><dd th:text="${#temporals.format(contest.voteStartsAt(), 'M월 d일 HH:mm')} + ' ~ ' + ${#temporals.format(contest.voteEndsAt(), 'M월 d일 HH:mm')}">11월 21일 00:00 ~ 12월 1일 00:00</dd></div>
+                    <div><dt>발표</dt><dd>투표가 끝난 뒤</dd></div>
+                </dl>
+            </section>
+
+            <!-- 출품 보드 (API-CTS-02, PL-CTS-002 공개 포트폴리오만·1인 1작품) -->
+            <section class="ct-section" th:if="${contest.entryOpen()}" aria-labelledby="entry-h">
+                <h2 class="ct-h2" id="entry-h">출품하기</h2>
+                <th:block th:if="${contest.myEntry()}">
+                    <p>출품한 작품: <a class="ct-link" th:href="@{/portfolios/{id}(id=${contest.myEntry().portfolioId()})}"
+                                   th:text="${contest.myEntry().title()}">작품 제목</a></p>
+                    <p class="ct-muted" th:if="${contest.myEntry().canceled()}">작품을 비공개·삭제해 출품이 취소되었습니다.</p>
+                    <p class="ct-muted" th:unless="${contest.myEntry().canceled()}">출품한 작품은 투표가 끝날 때까지 수정할 수 없습니다.</p>
+                </th:block>
+                <th:block th:unless="${contest.myEntry()}">
+                    <div class="vl-ui-notice is-empty" th:if="${contest.myPortfolios().empty}">
+                        <p>출품할 공개 포트폴리오가 없습니다.</p>
+                        <a class="ct-link" th:href="@{/my/portfolios}">내 포트폴리오 보기</a>
+                    </div>
+                    <ul class="ct-cards" th:unless="${contest.myPortfolios().empty}">
+                        <li class="ct-card" th:each="p : ${contest.myPortfolios()}">
+                            <h3 class="ct-card__title" th:text="${p.title()}">작품 제목</h3>
+                            <p class="ct-muted" th:text="${p.summary()}">한 줄 요약</p>
+                            <div class="ct-actions">
+                                <a class="vl-ui-btn is-outline is-s" th:href="@{/portfolios/{id}(id=${p.portfolioId()})}">작품 보기</a>
+                                <button class="vl-ui-btn is-navy is-s" type="button" th:attr="data-ui-modal-open=${'enter-' + p.portfolioId()}">출품하기</button>
+                            </div>
+                        </li>
+                    </ul>
+                </th:block>
+            </section>
+
+            <!-- 투표 보드 (API-CTS-03, PL-CTS-003 하루 1표·자기 작품 불가, PL-CTS-004 이메일 인증) -->
+            <section class="ct-section" th:if="${contest.voteOpen()}" aria-labelledby="vote-h">
+                <h2 class="ct-h2" id="vote-h">투표하기</h2>
+                <div class="vl-ui-notice" th:unless="${contest.emailVerified()}">
+                    <p>이메일 인증을 마친 회원만 투표할 수 있습니다.</p>
+                    <a class="ct-link" th:href="@{/auth/verify}">인증 메일 받기</a>
+                </div>
+                <p class="ct-muted" data-voted-today th:hidden="${!contest.votedToday()}">오늘 투표를 마쳤습니다. 내일 다시 투표할 수 있습니다.</p>
+                <div class="vl-ui-notice is-empty" th:if="${contest.entries().empty}"><p>아직 출품작이 없습니다.</p></div>
+                <ul class="ct-cards" th:unless="${contest.entries().empty}">
+                    <li class="ct-card" th:each="e : ${contest.entries()}">
+                        <h3 class="ct-card__title" th:text="${e.title()}">작품 제목</h3>
+                        <p class="ct-muted" th:text="${e.summary()}">한 줄 요약</p>
+                        <p class="ct-muted" th:text="${e.nickname()}">작성자</p>
+                        <div class="ct-actions">
+                            <a class="vl-ui-btn is-outline is-s" th:href="@{/portfolios/{id}(id=${e.portfolioId()})}">작품 보기</a>
+                            <span class="vl-ui-badge is-neutral" th:if="${e.mine()}">내 작품</span>
+                            <span class="vl-ui-badge is-success" th:if="${!e.mine() and e.voted()}">투표함</span>
+                            <button class="vl-ui-btn is-navy is-s" type="button" data-vote th:if="${!e.mine() and !e.voted()}"
+                                    th:disabled="${contest.votedToday() or !contest.emailVerified()}"
+                                    th:attr="data-url=@{/api/contests/{id}/votes(id=${contest.contestId()})},data-entry-id=${e.contestEntryId()}">투표</button>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <div class="vl-ui-notice" th:if="${!contest.entryOpen() and !contest.voteOpen() and !contest.voteEnded()}">
+                <p>지금은 출품·투표 기간이 아닙니다. 위 일정을 확인해 주세요.</p>
+            </div>
+            <div class="vl-ui-notice" th:if="${contest.voteEnded()}">
+                <p>투표가 끝났습니다. 결과는 곧 발표합니다.</p>
+            </div>
+        </th:block>
+    </div>
+</main>
+
+<!-- M-09 콘테스트 출품 확인 (공통 확인 모달 꼴, 확인 버튼을 출품 폼으로 바꿈). 작품마다 하나 -->
+<th:block th:if="${contest != null and contest.entryOpen() and contest.myEntry() == null}">
+    <div class="vl-ui-modal" hidden role="dialog" aria-modal="true" th:each="p : ${contest.myPortfolios()}"
+         th:id="${'enter-' + p.portfolioId()}"
+         th:attr="data-ui-modal=${'enter-' + p.portfolioId()},aria-labelledby=${'enter-' + p.portfolioId() + '-title'}">
+        <div class="vl-ui-modal__box">
+            <h2 class="vl-ui-modal__title" tabindex="-1" th:id="${'enter-' + p.portfolioId() + '-title'}"
+                th:text="${'「' + p.title() + '」 작품을 출품할까요?'}">작품을 출품할까요?</h2>
+            <p class="vl-ui-modal__body">출품은 한 작품만 할 수 있고, 출품한 작품은 투표가 끝날 때까지 수정할 수 없습니다.
+                작품을 비공개·삭제하면 출품이 취소됩니다.</p>
+            <form class="vl-ui-modal__actions" method="post" th:action="@{/contests/{id}/entries(id=${contest.contestId()})}">
+                <input type="hidden" name="portfolioId" th:value="${p.portfolioId()}">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">출품하기</button>
+            </form>
+        </div>
+    </div>
+</th:block>
+
+<div th:replace="~{common/ui :: toastContainer}"></div>
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>
