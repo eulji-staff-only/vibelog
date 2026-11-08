@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
@@ -28,4 +29,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             + " and (:q is null or m.nickname like concat('%', :q, '%') escape '!' or m.email like concat('%', :q, '%') escape '!')"
             + " order by m.createdAt desc, m.memberId desc")
     Page<Member> searchActive(@Param("q") String q, Pageable pageable);
+
+    /* 공지 알림을 받을 탈퇴하지 않은 회원 (message API-NTF-07) */
+    @Query("select m.memberId from Member m where m.status = com.vibelog.domain.auth.model.entity.MemberStatus.ACTIVE")
+    List<Long> findActiveMemberIds();
 }

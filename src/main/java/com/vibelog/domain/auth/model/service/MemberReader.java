@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,5 +51,10 @@ public class MemberReader {
         return memberRepository.findById(memberId)
                 .map(Member::getNickname)
                 .orElse("");
+    }
+
+    /* 탈퇴하지 않은 회원 전체 ID. 공지 등록 때 모든 회원에게 알림을 남긴다 (message API-NTF-07, #186) */
+    public List<Long> findActiveMemberIds() {
+        return memberRepository.findActiveMemberIds();
     }
 }
