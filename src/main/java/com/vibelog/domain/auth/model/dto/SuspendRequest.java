@@ -1,6 +1,7 @@
 package com.vibelog.domain.auth.model.dto;
 
 import com.vibelog.domain.auth.model.entity.SuspensionLevel;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -23,4 +24,10 @@ public class SuspendRequest {
 
     @NotBlank(message = REQUIRED)
     private String reason;
+
+    /* @NotBlank 는 trim() 기준이라 전각 공백(U+2003) 같은 것만 넣으면 통과한다. 저장할 때 strip() 하므로 같은 기준으로 본다 */
+    @AssertTrue(message = REQUIRED)
+    public boolean isReasonPresent() {
+        return reason == null || !reason.isBlank();
+    }
 }
