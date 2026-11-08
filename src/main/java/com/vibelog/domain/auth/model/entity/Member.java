@@ -74,6 +74,18 @@ public class Member extends BaseTimeEntity {
         this.passwordHash = passwordHash;
     }
 
+    /*
+     * 회원 탈퇴 (FR-USR-008, DB 설계서 5-3). 행은 남기고 계정 정보만 비운다.
+     * email 이 비므로 같은 이메일로 다시 가입할 수 있고, 남은 글·댓글의 작성자는 "탈퇴한 사용자"로 보인다 (PL-USR-009).
+     */
+    public void withdraw(LocalDateTime now) {
+        this.status = MemberStatus.WITHDRAWN;
+        this.withdrawnAt = now;
+        this.email = null;
+        this.passwordHash = null;
+        this.nickname = "탈퇴한 사용자";
+    }
+
     public boolean isEmailVerified() {
         return emailVerifiedAt != null;
     }

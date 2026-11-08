@@ -20,4 +20,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             + " and (:keyword is null or p.title like concat('%', :keyword, '%'))"
             + " order by p.createdAt desc, p.postId desc")
     Page<Post> search(@Param("category") PostCategory category, @Param("keyword") String keyword, Pageable pageable);
+
+    /* 마이페이지 "작성한 글" (API-USR-15). 최신순 */
+    Page<Post> findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(Long memberId, Pageable pageable);
 }

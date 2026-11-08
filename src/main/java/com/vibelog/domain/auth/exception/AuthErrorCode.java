@@ -21,7 +21,9 @@ public enum AuthErrorCode implements ErrorCode {
     TOKEN_EXPIRED(HttpStatus.BAD_REQUEST, "링크가 만료되었습니다."),
     TOKEN_USED(HttpStatus.BAD_REQUEST, "링크가 만료되었습니다."),
     RESEND_TOO_SOON(HttpStatus.TOO_MANY_REQUESTS, "1분 뒤에 다시 받을 수 있습니다."),
-    ALREADY_VERIFIED(HttpStatus.CONFLICT, "이미 인증된 이메일입니다.");
+    ALREADY_VERIFIED(HttpStatus.CONFLICT, "이미 인증된 이메일입니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다."),
+    PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "현재 비밀번호가 맞지 않습니다.");
 
     private final HttpStatus status;
     private final String message;
