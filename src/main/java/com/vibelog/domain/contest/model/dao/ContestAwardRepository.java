@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface ContestAwardRepository extends JpaRepository<ContestAward, Long> {
@@ -14,4 +15,8 @@ public interface ContestAwardRepository extends JpaRepository<ContestAward, Long
             + " join ContestEntry e on e.contestEntryId = a.contestEntryId join Contest c on c.contestId = a.contestId"
             + " where e.memberId = :memberId order by c.contestMonth desc, a.awardRank asc")
     List<Object[]> findBadgeRowsOf(@Param("memberId") Long memberId);
+
+    /* 발표가 끝난 콘테스트 (A-11 발표 여부) */
+    @Query("select distinct a.contestId from ContestAward a where a.contestId in :contestIds")
+    List<Long> findAnnouncedIn(@Param("contestIds") Collection<Long> contestIds);
 }

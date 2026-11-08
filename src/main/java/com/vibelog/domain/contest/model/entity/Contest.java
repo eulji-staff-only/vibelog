@@ -55,6 +55,26 @@ public class Contest extends BaseTimeEntity {
         return new Contest(contestMonth, topic, description, entryStartsAt, entryEndsAt, voteStartsAt, voteEndsAt);
     }
 
+    /* API-CTS-08: 주제·설명은 언제든 바꾼다 */
+    public void changeInfo(String topic, String description) {
+        this.topic = topic;
+        this.description = description;
+    }
+
+    /* API-CTS-08: 월·기간은 출품이 시작되기 전에만 바꾼다 (Service 가 CONTEST_STARTED 로 막는다) */
+    public void reschedule(String contestMonth, LocalDateTime entryStartsAt, LocalDateTime entryEndsAt,
+                           LocalDateTime voteStartsAt, LocalDateTime voteEndsAt) {
+        this.contestMonth = contestMonth;
+        this.entryStartsAt = entryStartsAt;
+        this.entryEndsAt = entryEndsAt;
+        this.voteStartsAt = voteStartsAt;
+        this.voteEndsAt = voteEndsAt;
+    }
+
+    public boolean isStarted(LocalDateTime now) {
+        return !now.isBefore(entryStartsAt);
+    }
+
     public boolean isEntryOpen(LocalDateTime now) {
         return !now.isBefore(entryStartsAt) && now.isBefore(entryEndsAt);
     }

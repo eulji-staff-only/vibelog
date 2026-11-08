@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>콘테스트 관리 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/contest.css}">
+</head>
+<body>
+<!--
+  A-11 콘테스트 관리 (API-CTS-06~08, #200). 위는 등록·수정 폼(새 폼은 다음 달 PL-CTS-001 기본 기간), 아래는 콘테스트 목록.
+  목록의 "수정"을 누르면 ?contestId= 로 폼이 채워진다. 출품이 시작된 콘테스트는 월·기간을 바꿀 수 없다 (CONTEST_STARTED).
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('contests')}"></div>
+    <main class="vl-admin__content">
+        <h1 class="ct-admin-title">콘테스트 관리</h1>
+        <p class="ct-toast" role="status" th:if="${toast}" th:text="${toast}">콘테스트를 등록했습니다</p>
+
+        <form class="ct-form" method="post" th:object="${contestForm}" novalidate
+              th:action="${editingId == null} ? @{/admin/contests} : @{/admin/contests/{id}/edit(id=${editingId})}">
+            <h2 th:text="${editingId == null} ? '콘테스트 등록' : '콘테스트 수정'">콘테스트 등록</h2>
+            <div class="ct-notice" role="alert" th:if="${#fields.hasGlobalErrors()}">
+                <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">저장하지 못했습니다</p>
+            </div>
+            <div class="ct-field">
+                <label for="contestMonth">월</label>
+                <input class="ct-input" id="contestMonth" type="month" th:field="*{contestMonth}" aria-describedby="month-error">
+                <p class="ct-error" id="month-error" th:if="${#fields.hasErrors('contestMonth')}" th:errors="*{contestMonth}">월 오류</p>
+            </div>
+            <div class="ct-field">
+                <label for="topic">주제</label>
+                <input class="ct-input" id="topic" type="text" maxlength="200" th:field="*{topic}" aria-describedby="topic-error">
+                <p class="ct-error" id="topic-error" th:if="${#fields.hasErrors('topic')}" th:errors="*{topic}">주제 오류</p>
+            </div>
+            <div class="ct-field">
+                <label for="description">설명</label>
+                <textarea class="ct-input" id="description" th:field="*{description}" aria-describedby="description-error"></textarea>
+                <p class="ct-error" id="description-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">설명 오류</p>
+            </div>
+            <div class="ct-period">
+                <div class="ct-field">
+                    <label for="entryStartsAt">출품 시작</label>
+                    <input class="ct-input" id="entryStartsAt" type="datetime-local" th:field="*{entryStartsAt}" aria-describedby="period-error">
+                </div>
+                <div class="ct-field">
+                    <label for="entryEndsAt">출품 끝</label>
+                    <input class="ct-input" id="entryEndsAt" type="datetime-local" th:field="*{entryEndsAt}" aria-describedby="period-error">
+                </div>
+                <div class="ct-field">
+                    <label for="voteStartsAt">투표 시작</label>
+                    <input class="ct-input" id="voteStartsAt" type="datetime-local" th:field="*{voteStartsAt}" aria-describedby="period-error">
+                </div>
+                <div class="ct-field">
+                    <label for="voteEndsAt">투표 끝</label>
+                    <input class="ct-input" id="voteEndsAt" type="datetime-local" th:field="*{voteEndsAt}" aria-describedby="period-error">
+                </div>
+            </div>
+            <div id="period-error">
+                <p class="ct-error" th:each="name : ${ {'entryStartsAt', 'entryEndsAt', 'voteStartsAt', 'voteEndsAt', 'periodValid'} }"
+                   th:if="${#fields.hasErrors(name)}" th:errors="*{__${name}__}">기간 오류</p>
+            </div>
+            <p class="ct-muted">기본 일정: 매달 1~20일 출품, 21일~말일 투표, 다음 달 1일 발표 (PL-CTS-001)</p>
+            <div class="ct-actions">
+                <button class="ct-btn" type="submit" th:text="${editingId == null} ? '등록' : '저장'">등록</button>
+                <a class="ct-btn is-outline" href="/admin/contests" th:if="${editingId != null}">새 콘테스트 등록</a>
+            </div>
+        </form>
+
+        <p class="ct-muted" th:if="${contests.empty}">등록된 콘테스트가 없습니다</p>
+        <div class="ct-scroll" th:unless="${contests.empty}">
+            <table class="ct-table">
+                <thead>
+                <tr><th>월</th><th>주제</th><th>출품</th><th>투표</th><th>출품 수</th><th>발표</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${contests.content}">
+                    <td th:text="${c.contestMonth()}">2026-12</td>
+                    <td th:text="${c.topic()}">주제</td>
+                    <td th:text="|${#temporals.format(c.entryStartsAt(), 'MM.dd HH:mm')} ~ ${#temporals.format(c.entryEndsAt(), 'MM.dd HH:mm')}|">12.01 ~ 12.21</td>
+                    <td th:text="|${#temporals.format(c.voteStartsAt(), 'MM.dd HH:mm')} ~ ${#temporals.format(c.voteEndsAt(), 'MM.dd HH:mm')}|">12.21 ~ 01.01</td>
+                    <td th:text="${c.entryCount()}">0</td>
+                    <td th:text="${c.announced()} ? '발표함' : '-'">-</td>
+                    <td><a class="ct-link" th:href="@{/admin/contests(contestId=${c.contestId()}, page=${contests.number + 1})}">수정</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="ct-pages" aria-label="페이지" th:if="${contests.totalPages > 1}"
+             th:with="current=${contests.number + 1},
+                      start=${T(java.lang.Math).max(1, current - 4)},
+                      end=${T(java.lang.Math).min(contests.totalPages, start + 9)}">
+            <a th:each="p : ${#numbers.sequence(start, end)}" th:href="@{/admin/contests(page=${p})}"
+               th:attr="aria-current=${p == current} ? 'page'" th:text="${p}">1</a>
+        </nav>
+    </main>
+</div>
+</body>
+</html>
