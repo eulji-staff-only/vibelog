@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 기본 대시보드 (A-01, API-ADM-01, FR-ADM-001, FR-ADM-002, #120). 넣은 데이터는 테스트가 끝나면 되돌린다 (@Transactional).
  *
  * 데이터(기간 2026-01-01~2026-01-31 기준):
- *   트랙A(9401) - 코스A1(9401): 1/3·1/15 시작·완료 2건(완료), 1/25 시작 1건(미완료) = 3건 중 2건 완료(67%)
+ *   트랙A(9401) - 코스A1(9401): 1/3·1/15 시작·완료 2건(완료), 1/31 23시 시작 1건(미완료, 종료일 늦은 시각까지 포함되는지 확인용) = 3건 중 2건 완료(67%)
  *                              + 2/10 시작 1건(기간 밖, 미완료) → 기간 전체로 보면 4건 중 2건 완료(50%)
  *                - 코스A2(9402): 1/12 시작 1건(미완료) = 1건 중 0건 완료(0%)
  *                => 기간 필터: 수강 4건·완료율 50% / 기간 전체: 수강 5건·완료율 40%
@@ -107,7 +107,7 @@ class AdminDashboardControllerTest {
         jdbcTemplate.update("INSERT INTO enrollment (member_id, course_id, started_at, completed_at) VALUES "
                 + "(9401, 9401, '2026-01-03 10:00:00', '2026-01-10 10:00:00'), "
                 + "(9402, 9401, '2026-01-15 10:00:00', '2026-01-20 10:00:00'), "
-                + "(9405, 9401, '2026-01-25 10:00:00', NULL), "
+                + "(9405, 9401, '2026-01-31 23:00:00', NULL), "
                 + "(9409, 9401, '2026-02-10 10:00:00', NULL)");
         // 코스A2: 기간 안 1건 미완료
         jdbcTemplate.update("INSERT INTO enrollment (member_id, course_id, started_at, completed_at) VALUES "
