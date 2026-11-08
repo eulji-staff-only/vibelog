@@ -11,5 +11,5 @@ import java.util.List;
  */
 public record LessonEditView(Long lessonId, Long courseId, String courseTitle, String title, boolean publicLesson,
                               String tab, List<AdminActivityItem> activities, List<ConceptTagOption> conceptTags,
-                              List<AdminExamQuestionItem> examQuestions) {
+                              List<AdminExamQuestionItem> examQuestions, LessonPublishStatus publishStatus) {
 }

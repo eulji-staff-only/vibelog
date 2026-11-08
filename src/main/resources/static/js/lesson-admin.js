@@ -7,6 +7,8 @@
  *   만들어 함께 제출한다 (서버가 PL-LSN-001을 검사해 INVALID_ORDER면 오류 화면으로 보낸다).
  * - 개념 이미지 올리기: 숨긴 file input을 열어 고른 파일을 /api/admin/uploads/images 로 올리고,
  *   받은 url을 마크다운 이미지 문법으로 본문 textarea 끝에 넣는다 (편집기가 textarea뿐이라 미리보기는 없다).
+ * - 수업 비공개(API-ADM-33, FR-LSN-014, #118): 비공개 버튼을 누르면 확인 모달이 열리면서(ui.js) 동시에
+ *   영향 학습자 수(API-ADM-32)를 불러와 모달 본문 문구를 바꾼다. 실제 비공개 처리는 모달 안 폼이 한다.
  */
 (function () {
     'use strict';
@@ -94,9 +96,29 @@
         });
     }
 
+    function initLessonUnpublishImpact() {
+        const trigger = document.getElementById('lesson-unpublish-trigger');
+        const body = document.getElementById('lesson-unpublish-modal-body');
+        if (!trigger || !body) return;
+
+        trigger.addEventListener('click', async () => {
+            body.textContent = '불러오는 중입니다...';
+            try {
+                const response = await fetch('/api/admin/lessons/' + trigger.dataset.lessonId + '/impact');
+                const result = await response.json();
+                body.textContent = result.activeLearnerCount > 0
+                    ? '현재 ' + result.activeLearnerCount + '명이 이 코스를 수강 중입니다. 비공개해도 될까요?'
+                    : '이 수업을 비공개할까요?';
+            } catch (e) {
+                body.textContent = '이 수업을 비공개할까요?';
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         initActivityReorder();
         initActivityOrderSave();
         initConceptImageUpload();
+        initLessonUnpublishImpact();
     });
 })();
