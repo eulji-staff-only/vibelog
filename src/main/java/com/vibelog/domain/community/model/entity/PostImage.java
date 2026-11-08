@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 /*
  * [PostImage]
  * 역할 : 게시글 사진 테이블(post_image)과 매핑된다. 글 하나에 최대 3장 (PL-CMT-009).
- * 책임 : 컬럼은 sql/01-schema.sql 의 post_image 그대로 둔다. 만들기(create)는 글쓰기 이슈(#93)에서 추가한다.
+ * 책임 : 컬럼은 sql/01-schema.sql 의 post_image 그대로 둔다. sort_order 순서대로 보여 준다.
  */
 @Getter
 @Entity
@@ -28,4 +28,14 @@ public class PostImage extends BaseTimeEntity {
     private String imageUrl;            // FileStorage 가 돌려준 /uploads/... 주소
 
     private int sortOrder;
+
+    private PostImage(Long postId, String imageUrl, int sortOrder) {
+        this.postId = postId;
+        this.imageUrl = imageUrl;
+        this.sortOrder = sortOrder;
+    }
+
+    public static PostImage create(Long postId, String imageUrl, int sortOrder) {
+        return new PostImage(postId, imageUrl, sortOrder);
+    }
 }

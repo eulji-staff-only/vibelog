@@ -18,6 +18,8 @@
 
 <main class="cm-main" th:with="cat=${category != null ? category.name() : ''}">
     <div class="cm-panel">
+        <!-- 글을 지우고 돌아왔을 때 (API-CMT-07). ponytail: 공통 토스트(#46)가 머지되면 그것으로 바꾼다 -->
+        <div class="cm-notice is-toast" role="status" th:if="${toast}"><p th:text="${toast}">알림</p></div>
         <div class="cm-notice" sec:authorize="isAnonymous()">
             <p>게시글은 누구나 볼 수 있습니다. 글 작성·댓글·추천은 로그인 후 할 수 있습니다</p>
             <a class="cm-link" href="/login?redirect=/community">로그인</a>
