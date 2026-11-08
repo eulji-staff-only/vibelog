@@ -262,6 +262,16 @@ img {
   color: var(--on-navy);
 }
 
+/* 화면 위 한 줄 알림 (메인의 탈퇴 완료 등). 공통 토스트(#139)가 머지되면 그것으로 바꾼다 */
+.vl-flash {
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  background: var(--success-soft);
+  color: var(--success);
+  font-weight: 700;
+  text-align: center;
+}
+
 /* ============================================================
  * 공통 UI 조각 (#46) — templates/common/ui.html 의 fragment 가 쓰는 클래스.
  * 쓰는 법은 README "공통 UI 조각 쓰는 법" 참고.

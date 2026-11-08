@@ -3,6 +3,7 @@ package com.vibelog.domain.auth.controller;
 import com.vibelog.domain.auth.exception.AuthErrorCode;
 import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.auth.model.dto.SignupRequest;
+import com.vibelog.domain.auth.model.policy.SocialLoginRegistrations;
 import com.vibelog.domain.auth.model.service.EmailVerifyService;
 import com.vibelog.domain.auth.model.service.MemberSignupService;
 import com.vibelog.global.exception.BusinessException;
@@ -39,6 +40,7 @@ public class AuthController {
 
     private final MemberSignupService memberSignupService;
     private final EmailVerifyService emailVerifyService;
+    private final SocialLoginRegistrations socialLoginRegistrations;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     /* API-USR-02. 로그인한 회원이 가입 완료(done) 없이 오면 메인으로 */
@@ -75,8 +77,10 @@ public class AuthController {
         return "redirect:/signup?done=true";
     }
 
+    /* API-USR-04. 구글·깃허브 버튼은 키가 있는 것만 보여 준다 (#91) */
     @GetMapping("/login")
-    public String loginPage() {
+    public String loginPage(Model model) {
+        model.addAttribute("socialProviders", socialLoginRegistrations.enabledIds());
         return "auth/login";
     }
 

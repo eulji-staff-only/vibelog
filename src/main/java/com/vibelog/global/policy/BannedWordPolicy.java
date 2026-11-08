@@ -27,18 +27,22 @@ public class BannedWordPolicy {
     private final BannedWordRepository bannedWordRepository;
 
     public void check(String... texts) {
+        if (contains(texts)) {
+            throw new BusinessException(CommonErrorCode.BANNED_WORD);
+        }
+    }
+
+    /* 던지지 않고 들어 있는지만 본다. 소셜 가입 닉네임처럼 걸리면 다른 값으로 바꿔 쓸 때 (#91) */
+    public boolean contains(String... texts) {
         // ponytail: 검사할 때마다 금칙어 전체를 읽는다. 목록이 수천 개로 커지면 캐시로 바꾼다
         List<String> words = bannedWordRepository.findAll().stream()
                 .map(BannedWord::getWord)
                 .filter(word -> !word.isBlank())   // 빈 금칙어는 모든 글에 들어 있다고 판단되므로 뺀다
                 .map(word -> word.toLowerCase(Locale.ROOT))
                 .toList();
-        boolean found = Arrays.stream(texts)
+        return Arrays.stream(texts)
                 .filter(Objects::nonNull)
                 .map(text -> text.toLowerCase(Locale.ROOT))
                 .anyMatch(text -> words.stream().anyMatch(text::contains));
-        if (found) {
-            throw new BusinessException(CommonErrorCode.BANNED_WORD);
-        }
     }
 }

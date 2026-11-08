@@ -78,12 +78,16 @@
 .au-list a { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-5) var(--space-2); }
 .au-list a:hover strong { color: var(--link); }
 .au-list span { font-size: 13px; color: var(--ink-muted); }
+.au-pager { display: flex; justify-content: center; align-items: center; gap: var(--space-5); padding-top: var(--space-5); font-size: 14px; }
+.au-pager a { color: var(--link); font-weight: 700; }
 .au-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-10) 0; text-align: center; }
 
 /* 회원 탈퇴 확인 모달 (M-06). 브라우저 기본 dialog */
 .au-dialog { width: min(440px, calc(100% - 32px)); box-sizing: border-box; padding: var(--space-8); border: 0; border-radius: var(--radius-panel); }
 .au-dialog::backdrop { background: rgba(15, 27, 61, 0.5); }
-.au-dialog form { display: flex; flex-direction: column; gap: var(--space-5); margin: 0; }
+.au-dialog[open] { display: flex; flex-direction: column; gap: var(--space-5); }
+.au-dialog__body { display: flex; flex-direction: column; gap: var(--space-5); }
+.au-dialog form { margin: 0; }
 .au-dialog ul { margin: 0; padding-left: var(--space-6); color: var(--ink-muted); }
 .au-dialog__actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
 .au-dialog__actions .au-btn { width: auto; }
