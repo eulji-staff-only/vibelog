@@ -1,0 +1,25 @@
+<!--
+  error/403.html (E-02)
+  역할: SecurityConfig 의 denyAccess (response.sendError(403)) 처럼 Controller 를 거치지 않고 생기는
+        403을 Spring Boot 가 "/error" 로 보낼 때 상태 코드로 찾는 템플릿(DefaultErrorViewResolver).
+        이 경로에는 왜 막혔는지 메시지가 없어 일반 안내 문구를 쓴다. "비공개된 작품입니다" 처럼 구체적인
+        사유가 있는 403(FR-PRT-005 등)은 BusinessException 으로 던져 GlobalExceptionHandler → error/error 가
+        그 메시지를 그대로 보여준다 (PL-ERR-006).
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>접근할 수 없습니다 — 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+
+<div th:replace="~{common/layout :: header}"></div>
+<main th:replace="~{error/error :: errorBody(403, '이 페이지를 볼 수 있는 권한이 없습니다.')}"></main>
+<div th:replace="~{common/layout :: footer}"></div>
+
+<script th:src="@{/js/ui.js}"></script>
+</body>
+</html>
