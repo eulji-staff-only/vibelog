@@ -1,0 +1,25 @@
+<!--
+  error/404.html (E-01)
+  역할: Spring Boot 가 Controller 를 거치지 않은 404(예: 정적 자원 밖 경로의 컨테이너 레벨 오류)를
+        "/error" 로 보낼 때 상태 코드로 찾는 템플릿 이름 규칙(DefaultErrorViewResolver)에 맞춘 얇은 래퍼.
+        실제 내용은 error/error.html 의 errorBody(status, message) fragment 를 그대로 가져다 쓴다.
+        Controller·Service 예외(BusinessException 의 NOT_FOUND 등)로 생긴 404는 GlobalExceptionHandler 가
+        error/error 로 바로 그리므로 이 파일을 거치지 않는다.
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>페이지를 찾을 수 없습니다 — 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+
+<div th:replace="~{common/layout :: header}"></div>
+<main th:replace="~{error/error :: errorBody(404, '페이지를 찾을 수 없습니다.')}"></main>
+<div th:replace="~{common/layout :: footer}"></div>
+
+<script th:src="@{/js/ui.js}"></script>
+</body>
+</html>

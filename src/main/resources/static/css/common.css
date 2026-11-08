@@ -1,9 +1,12 @@
 /*
  * common.css
- * 모든 화면이 같이 쓰는 디자인 토큰(색상·글꼴·간격)과 공통 레이아웃(헤더·푸터·페이지 틀) 스타일.
- * 값 출처: docs/design/01-screen-flow.md 6장 디자인 시스템
- * 참고: 버튼·배지·안내 상자 같은 공통 UI 조각(VL-Button, VL-Badge ...)은 #46에서 추가한다.
- *       여기서는 헤더·푸터에 바로 필요한 최소 스타일만 둔다.
+ * 모든 화면이 같이 쓰는 디자인 토큰(색상·글꼴·간격)과 공통 레이아웃(헤더·푸터·페이지 틀) 스타일,
+ * 공통 UI 조각(버튼·배지·안내 상자·패널·탭·진행 막대·모달·토스트, #46) 스타일.
+ * 값 출처: docs/design/01-screen-flow.md 6장 디자인 시스템, 5-2 상태 표현
+ * 참고: exam.css · portfolio.css · exam-report.css(#46 이전에 먼저 구현)가 이미 --font-sans·--band-tail·
+ *       --hero-overlap·--shadow-panel·--focus-ring·--radius-md/lg/xl·--hero-text-max·--space-1.5 를
+ *       공통 토큰으로 기대하고 써 왔다. 문서 6-3 값(카드 16 · 패널 18 · 큰 면 24 · 띠 겹침 88px · 히어로 글 880px)과
+ *       5-2(`--focus-ring`)에 맞춰 여기서 정의한다. --radius-md/lg/xl 은 각각 카드·패널·큰 면 반지름의 별칭이다.
  */
 
 :root {
@@ -45,12 +48,25 @@
   --radius-panel: 18px;
   --radius-large: 24px;
   --radius-pill: 999px;
+  /* 별칭: exam · portfolio · exam-report 화면이 이미 쓰는 이름(작은 요소 / 중간 상자 / 큰 겹침 패널) */
+  --radius-md: var(--radius-card);
+  --radius-lg: var(--radius-panel);
+  --radius-xl: var(--radius-large);
 
   --content-max: 1200px;
   --hero-max: 880px;
+  --hero-text-max: 880px; /* 6-3 "히어로 글 880px" */
 
   --control-h: 44px;
   --tab-h: 46px;
+
+  --font-sans: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  --focus-ring: var(--link); /* 5-2 "키보드 포커스: 2px --focus-ring 외곽선" */
+  --shadow-panel: 0 24px 48px -24px rgba(15, 27, 61, 0.28);
+  /* 6-3 "상단 네이비 띠 → 흰 패널이 띠에 88px 겹쳐 올라옴" */
+  --hero-overlap: 88px;
+  --band-tail: 88px;
+  --space-1\.5: 5px;
 }
 
 * {
@@ -64,7 +80,7 @@ body {
 }
 
 body {
-  font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.65;
   color: var(--ink);
@@ -76,11 +92,20 @@ a {
   text-decoration: none;
 }
 
+/* 5-2. 키보드 포커스: 모든 버튼·링크·입력란에 2px --focus-ring 외곽선 */
 a:focus-visible,
 button:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--link);
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* 5-2. 마우스 오버: 링크 --link → --link-hover */
+a[href]:not([class]):hover {
+  color: var(--link-hover);
 }
 
 img {
@@ -237,11 +262,420 @@ img {
   color: var(--on-navy);
 }
 
-/* 오류 화면(error/error.html) — 자세한 레이아웃(E-01~E-03)은 #46에서 채운다 */
-.vl-error {
-  padding-top: var(--space-10);
-  padding-bottom: var(--space-10);
+/* ============================================================
+ * 공통 UI 조각 (#46) — templates/common/ui.html 의 fragment 가 쓰는 클래스.
+ * 쓰는 법은 README "공통 UI 조각 쓰는 법" 참고.
+ * ============================================================ */
+
+/* ---- 버튼 (Button: navy · glow · outline · text, s · m · xl) ---- */
+.vl-ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  box-sizing: border-box;
+  min-height: var(--control-h);
+  padding: 11px var(--space-7);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--surface-raised);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vl-ui-btn.is-navy {
+  background: var(--navy-900);
+  color: var(--on-navy);
+  border-color: var(--navy-900);
+}
+.vl-ui-btn.is-navy:hover {
+  background: var(--navy-800);
+}
+
+.vl-ui-btn.is-glow {
+  background: var(--glow);
+  color: var(--navy-900);
+  border-color: var(--glow);
+}
+.vl-ui-btn.is-glow:hover {
+  filter: brightness(0.96);
+}
+
+.vl-ui-btn.is-outline {
+  background: var(--surface-raised);
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+.vl-ui-btn.is-outline:hover {
+  background: var(--surface);
+  border-color: var(--ink-muted);
+}
+
+.vl-ui-btn.is-text {
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+  color: var(--link);
+  border-color: transparent;
+  border-radius: 0;
+}
+.vl-ui-btn.is-text:hover {
+  color: var(--link-hover);
+}
+
+.vl-ui-btn.is-s {
+  min-height: 40px;
+  padding: 9px var(--space-5);
+  font-size: 14px;
+}
+.vl-ui-btn.is-xl {
+  min-height: 52px;
+  padding: 14px var(--space-8);
+  font-size: 17px;
+}
+
+/* 비활성 버튼 + 이유 문구 (5-2) — disabled 는 button[type], aria-disabled 는 a·button 공용 */
+.vl-ui-btn:disabled,
+.vl-ui-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.vl-ui-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.vl-ui-btn-reason {
+  margin: var(--space-1) 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+/* ---- 배지 (Badge: strong · neutral · success · danger · locked) ---- */
+.vl-ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px var(--space-4);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.vl-ui-badge.is-strong {
+  background: var(--navy-900);
+  color: var(--on-navy);
+}
+.vl-ui-badge.is-neutral {
+  background: var(--tint);
+  color: var(--navy-900);
+}
+.vl-ui-badge.is-success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.vl-ui-badge.is-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.vl-ui-badge.is-locked {
+  background: var(--line-soft);
+  color: var(--ink-muted);
+}
+.vl-ui-badge.is-locked::before {
+  content: "🔒";
+  font-size: 11px;
+}
+
+/* ---- 안내 상자 (Notice: info · empty · success) ---- */
+.vl-ui-notice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) 20px;
+  border-radius: var(--radius-md);
+  background: var(--tint);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.vl-ui-notice p {
+  margin: 0;
+}
+.vl-ui-notice__title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.vl-ui-notice.is-empty {
+  align-items: center;
   text-align: center;
+  background: var(--surface);
+  border: 1px dashed var(--line-strong);
+  padding: var(--space-8) var(--space-6);
+}
+.vl-ui-notice.is-success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+/* ---- 패널 (Panel) — 흰 바탕의 떠 있는 카드 영역. 화면 내용은 각 화면이 채운다 ---- */
+.vl-ui-panel {
+  background: var(--surface-raised);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+  padding: var(--space-9);
+}
+.vl-ui-panel.is-tight {
+  padding: var(--space-6);
+}
+
+/* ---- 탭 (Tabs) ---- */
+.vl-ui-tabs {
+  display: flex;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+
+.vl-ui-tab {
+  height: var(--tab-h);
+  padding: 0 var(--space-2);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.vl-ui-tab:hover {
+  color: var(--ink);
+}
+.vl-ui-tab[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--navy-900);
+}
+
+.vl-ui-tabpanel[hidden] {
+  display: none;
+}
+
+/* ---- 진행 막대 (ProgressBar) ---- */
+.vl-ui-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.vl-ui-progress__top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: 14px;
+}
+.vl-ui-progress__label {
+  font-weight: 700;
+}
+.vl-ui-progress__value {
+  color: var(--ink-muted);
+}
+.vl-ui-progress__track {
+  height: 8px;
+  background: var(--tint);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.vl-ui-progress__fill {
+  height: 100%;
+  background: var(--link);
+  border-radius: var(--radius-pill);
+}
+
+/* ---- 확인 모달 (Modal) — 데스크톱은 가운데, 모바일은 아래 시트(7장) ---- */
+.vl-ui-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  box-sizing: border-box;
+  background: rgba(15, 27, 61, 0.55);
+}
+.vl-ui-modal[hidden] {
+  display: none;
+}
+.vl-ui-modal__box {
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100vh - var(--space-10));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-9);
+  box-sizing: border-box;
+  background: var(--surface-raised);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+}
+.vl-ui-modal__title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.4;
+  font-weight: 900;
+}
+.vl-ui-modal__body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-muted);
+}
+.vl-ui-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+/* ---- 토스트 (Toast) — 화면 아래 가운데, 3초 뒤 사라짐(5-3) ---- */
+.vl-ui-toasts {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-8);
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  width: calc(100% - var(--space-10));
+  max-width: 420px;
+  pointer-events: none;
+}
+.vl-ui-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-pill);
+  background: var(--navy-900);
+  color: var(--on-navy);
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: var(--shadow-panel);
+  pointer-events: auto;
+}
+.vl-ui-toast.is-danger {
+  background: var(--danger);
+}
+.vl-ui-toast__message {
+  flex: 1;
+}
+.vl-ui-toast__action {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--on-navy);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.vl-ui-toast__close {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  padding: var(--space-1);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--on-navy-muted);
+  cursor: pointer;
+}
+
+/* ---- 오류 화면 (E-01~E-03) ---- */
+.vl-error {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-5) 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  text-align: center;
+}
+.vl-error__code {
+  margin: 0;
+  font-size: 44px;
+  line-height: 1;
+  font-weight: 900;
+  color: var(--ink-muted);
+}
+.vl-error__title {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.4;
+  font-weight: 900;
+}
+.vl-error__desc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-muted);
+}
+.vl-error__ref {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 767px) {
+  .vl-ui-panel {
+    padding: var(--space-6) 20px;
+  }
+  .vl-ui-btn-group .vl-ui-btn {
+    width: 100%;
+  }
+  /* 모달 → 아래 시트(bottom sheet, 7장) */
+  .vl-ui-modal {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .vl-ui-modal__box {
+    max-width: none;
+    width: 100%;
+    max-height: 85vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  .vl-ui-modal__actions .vl-ui-btn {
+    width: 100%;
+  }
+  .vl-ui-toasts {
+    bottom: var(--space-5);
+    width: calc(100% - var(--space-5) * 2);
+  }
 }
 
 /* 모바일 (설계서 7장): 로고와 햄버거 버튼만 한 줄에 두고, 버튼을 누르면 메뉴·검색·로그인 영역을 아래로 펼친다 (#153) */
