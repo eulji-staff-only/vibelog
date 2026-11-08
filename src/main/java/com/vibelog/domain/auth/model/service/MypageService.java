@@ -56,7 +56,8 @@ public class MypageService {
         if (nickname.equals(member.getNickname())) {
             return;
         }
-        if (memberRepository.existsByNicknameAndStatus(nickname, MemberStatus.ACTIVE)) {
+        // 나는 빼고 본다. DB 비교는 대소문자를 가리지 않아 "Alice" → "alice" 가 나와 겹친다고 나온다
+        if (memberRepository.existsByNicknameAndStatusAndMemberIdNot(nickname, MemberStatus.ACTIVE, memberId)) {
             throw new BusinessException(AuthErrorCode.DUPLICATE_NICKNAME);
         }
         bannedWordPolicy.check(nickname);

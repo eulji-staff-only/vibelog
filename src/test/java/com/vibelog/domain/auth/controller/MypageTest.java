@@ -112,6 +112,16 @@ class MypageTest {
     }
 
     @Test
+    void 내_닉네임의_대소문자만_바꿔도_저장된다() throws Exception {
+        jdbcTemplate.update("UPDATE member SET nickname = 'Alice' WHERE email = ?", EMAIL);
+
+        mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "alice"))
+                .andExpect(redirectedUrl("/mypage?tab=info"));
+
+        assertThat(nicknameOf(EMAIL)).isEqualTo("alice");
+    }
+
+    @Test
     void 지금_닉네임_그대로_저장해도_된다() throws Exception {
         mockMvc.perform(post("/mypage/profile").with(as(EMAIL)).with(csrf()).param("nickname", "마이페이지"))
                 .andExpect(redirectedUrl("/mypage?tab=info"));
