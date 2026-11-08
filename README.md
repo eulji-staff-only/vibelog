@@ -217,6 +217,7 @@ src/main/java/com/vibelog/
     ├── dao/                          ← 공통 Repository (BannedWordRepository)
     ├── entity/                       ← BaseTimeEntity (created_at · updated_at), BannedWord
     ├── exception/                    ← BusinessException · ErrorCode · CommonErrorCode(공통 에러) · GlobalExceptionHandler
+    ├── file/FileStorage              ← 업로드 파일 검사·저장 (모든 영역 공통)
     └── policy/BannedWordPolicy       ← 금칙어 검사 (모든 영역 공통)
 
 src/main/resources/
@@ -320,6 +321,24 @@ const response = await fetch('/api/guide-steps/3/check', {
 const body = await response.json();
 if (!response.ok) { alert(body.message); }   // 실패: {code, message}
 ```
+
+**업로드 파일 저장** (#79)
+
+- 사진·스크린샷·개념 이미지는 `FileStorage.saveImage`, 평가 에이전트 설정 파일은 `saveDocument`로 저장합니다. 돌려받은 주소(`/uploads/{UUID}.png`)를 `*_url` 컬럼에 저장하고, 화면에서는 `<img th:src="${post.imageUrl}">`처럼 그대로 씁니다.
+- 이미지는 JPG·PNG·WebP, 설정 파일은 UTF-8 글자로 된 md·json·yaml·txt만 받고, 둘 다 장당 5MB까지입니다 (PL-DAT-004, PL-PRT-010). 규칙에 맞지 않거나 확장자만 바꾼 파일이면 `BusinessException(INVALID_FILE)`이 납니다.
+- **개수 제한(게시글 3장 등)은 쓰는 쪽에서 검사합니다.** 파일 칸을 비워 둔 채 보내도 빈 파일이 하나 들어오므로 `isEmpty()`인 것은 빼고 넘깁니다.
+
+```java
+@Transactional
+public Long write(Long memberId, PostWriteRequest request, List<MultipartFile> images) {
+    List<MultipartFile> chosen = images.stream().filter(file -> !file.isEmpty()).toList();
+    // 개수 검사는 여기서 (PL-CMT-009)
+    List<String> imageUrls = chosen.stream().map(fileStorage::saveImage).toList();   // 규칙에 안 맞으면 여기서 멈춘다
+    ...
+}
+```
+
+- 파일은 프로젝트 폴더의 `uploads/`에 저장됩니다 (커밋되지 않음). 배포 서버에서는 환경 변수 `UPLOAD_DIR`로 폴더를 정합니다.
 
 **로그인 약속** (#12)
 
