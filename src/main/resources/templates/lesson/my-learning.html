@@ -1,0 +1,159 @@
+<!--
+  lesson/my-learning.html (U-12 내 학습, API-ENR-02, #106)
+  역할: 수강 중 · 완료 탭의 코스 카드, 수업별 상태(잠김·진행 중·완료), 모의고사 상태(잠김·열림·응시함·리포트 확인),
+        포트폴리오 상태, 진행률(PL-ENR-006), 다음에 할 일 · 남은 완료 조건을 MyLearningPageController 가 담아 주는
+        activeCourses · completedCourses 로 그린다. 탭 전환은 서버를 부르지 않는 자바스크립트로만 한다(my-learning.js).
+  참고: 수업(U-13)·모의고사(U-15)·리포트(U-16) 화면 자체는 #107 이 만든다. 여기서는 상태값만 정확하면 된다.
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>내 학습 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/my-learning.css}">
+    <script th:src="@{/js/my-learning.js}" defer></script>
+</head>
+<body>
+
+<div th:replace="~{common/layout :: header}"></div>
+
+<div class="ml-page">
+
+    <section class="ml-band">
+        <span class="ml-eyebrow">내 학습</span>
+        <h1 class="ml-title">내 학습</h1>
+        <p class="ml-lead">수강 중인 코스의 진행 상황을 확인하고 이어서 학습하세요.</p>
+    </section>
+
+    <main class="ml-main">
+        <div class="ml-panel">
+
+            <!-- 탭 (수강 중 / 완료). URL 의 tab 쿼리를 읽어 처음 보여줄 탭을 고른다 -->
+            <div class="ml-tabs" role="tablist" aria-label="내 학습 탭" data-tab-nav>
+                <button type="button" class="ml-tab" role="tab" aria-selected="false" data-tab-btn data-tab="active">수강 중</button>
+                <button type="button" class="ml-tab" role="tab" aria-selected="false" data-tab-btn data-tab="completed">완료</button>
+            </div>
+
+            <!-- 수강 중 탭 -->
+            <section class="ml-tabpanel" role="tabpanel" aria-label="수강 중" data-tab-panel="active" hidden>
+                <ul class="ml-course-list" th:if="${not #lists.isEmpty(activeCourses)}">
+                    <li th:each="course : ${activeCourses}">
+                        <article class="ml-course">
+                            <header class="ml-course-head">
+                                <div class="ml-course-info">
+                                    <span class="ml-course-track" th:text="'[' + ${course.trackName()} + ']'">[트랙]</span>
+                                    <h2 class="ml-course-name" th:text="${course.courseName()}">코스 이름</h2>
+                                </div>
+                                <a class="ml-btn ml-btn-navy" th:href="@{/courses/{courseId}(courseId=${course.courseId()})}">학습하기</a>
+                            </header>
+
+                            <div class="ml-progress">
+                                <div class="ml-progress-top">
+                                    <span class="ml-progress-label">진행률</span>
+                                    <span class="ml-progress-value" th:text="${course.progressPercent()} + '%'">0%</span>
+                                </div>
+                                <div class="ml-bar" role="img" th:attr="aria-label='진행률 ' + ${course.progressPercent()} + '%'">
+                                    <div class="ml-bar-fill" th:style="'width: ' + ${course.progressPercent()} + '%'"></div>
+                                </div>
+                                <p class="ml-progress-next">다음에 할 일: <strong th:text="${course.nextStepText()}">다음 할 일</strong></p>
+                            </div>
+
+                            <details class="ml-accordion" open>
+                                <summary class="ml-accordion-summary">수업 목록
+                                    <span class="ml-course-count" th:text="${#lists.size(course.lessons())} + '개 수업'">0개 수업</span>
+                                </summary>
+
+                                <ul class="ml-lesson-list">
+                                    <li class="ml-lesson" th:each="lesson : ${course.lessons()}"
+                                        th:classappend="${lesson.status().isLocked()} ? 'is-locked'">
+                                        <div class="ml-lesson-info">
+                                            <span class="ml-lesson-no" th:if="${!lesson.status().isLocked()}" th:text="${lesson.order()}">1</span>
+                                            <span class="ml-lesson-no" th:if="${lesson.status().isLocked()}" aria-hidden="true">🔒</span>
+                                            <span class="ml-lesson-name" th:text="${lesson.title()}">수업 이름</span>
+                                        </div>
+                                        <div class="ml-lesson-status">
+                                            <span class="ml-badge" th:classappend="${lesson.status().badgeClass()}"
+                                                  th:text="${lesson.status().label()}">상태</span>
+                                            <span class="ml-badge" th:if="${!lesson.status().isLocked()}"
+                                                  th:classappend="${lesson.examStatus().badgeClass()}"
+                                                  th:text="'모의고사 ' + ${lesson.examStatus().label()}">모의고사 상태</span>
+                                        </div>
+                                        <a class="ml-link" th:unless="${lesson.status().isLocked()}"
+                                           th:href="@{/courses/{courseId}/lessons/{lessonId}(courseId=${course.courseId()},lessonId=${lesson.lessonId()})}">
+                                            바로 가기
+                                        </a>
+                                    </li>
+                                </ul>
+
+                                <div class="ml-portfolio-row">
+                                    <span class="ml-portfolio-label">포트폴리오</span>
+                                    <span class="ml-badge" th:classappend="${course.portfolioStatus().badgeClass()}"
+                                          th:text="${course.portfolioStatus().label()}">잠김</span>
+                                    <a class="ml-link" th:if="${course.portfolioStatus().name() != 'LOCKED'}"
+                                       th:href="@{/courses/{courseId}/portfolio(courseId=${course.courseId()})}">포트폴리오 보기</a>
+                                </div>
+
+                                <div class="ml-remaining" th:if="${not #lists.isEmpty(course.remainingConditions())}">
+                                    <strong class="ml-remaining-title">남은 완료 조건</strong>
+                                    <ul class="ml-remaining-list">
+                                        <li th:each="condition : ${course.remainingConditions()}" th:text="${condition}">조건</li>
+                                    </ul>
+                                </div>
+                            </details>
+                        </article>
+                    </li>
+                </ul>
+
+                <div class="ml-empty" th:if="${#lists.isEmpty(activeCourses)}">
+                    <div class="ml-notice ml-notice-empty">
+                        <strong>아직 수강 중인 코스가 없습니다.</strong>
+                        <p>트랙을 고르고 코스를 시작하면 여기에서 진행 상황을 볼 수 있습니다.</p>
+                        <a class="ml-btn ml-btn-outline" href="/courses">코스 찾아보기</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 완료 탭 -->
+            <section class="ml-tabpanel" role="tabpanel" aria-label="완료" data-tab-panel="completed" hidden>
+                <ul class="ml-course-list" th:if="${not #lists.isEmpty(completedCourses)}">
+                    <li th:each="course : ${completedCourses}">
+                        <article class="ml-course">
+                            <header class="ml-course-head">
+                                <div class="ml-course-info">
+                                    <span class="ml-course-track" th:text="'[' + ${course.trackName()} + ']'">[트랙]</span>
+                                    <h2 class="ml-course-name" th:text="${course.courseName()}">코스 이름</h2>
+                                    <span class="ml-badge ml-badge-success">완료</span>
+                                </div>
+                            </header>
+                            <p class="ml-muted" th:if="${course.completedAt() != null}"
+                               th:text="'완료일 ' + ${#temporals.format(course.completedAt(), 'yyyy.MM.dd')}">완료일</p>
+                            <div class="ml-course-actions">
+                                <a class="ml-btn ml-btn-outline" th:href="@{/courses/{courseId}/complete(courseId=${course.courseId()})}">결과 보기</a>
+                                <a class="ml-btn ml-btn-outline" href="/my/portfolios">내 포트폴리오 보기</a>
+                            </div>
+                        </article>
+                    </li>
+                </ul>
+
+                <div class="ml-empty" th:if="${#lists.isEmpty(completedCourses)}">
+                    <div class="ml-notice ml-notice-empty">
+                        <strong>아직 완료한 코스가 없습니다.</strong>
+                        <p>수강 중인 코스를 끝까지 마치면 여기에서 볼 수 있습니다.</p>
+                    </div>
+                </div>
+
+                <div class="ml-tabpanel-footer">
+                    <a class="ml-link" href="/courses">다른 코스 찾기</a>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<div th:replace="~{common/layout :: footer}"></div>
+
+</body>
+</html>
