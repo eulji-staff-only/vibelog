@@ -74,6 +74,9 @@ flowchart LR
 | ⑪ | course | 코스의 수강 상태(NONE·ENROLLED·COMPLETED), 공개 수업 목록·수 | lesson | 조회 | API-CRS-01~03 |
 | ⑫ | auth | 로그인 도착지: 진단 기록이 있나, 진행 중인 수강이 있나 | course, lesson | 조회 | API-USR-05·07, FR-USR-004 |
 | ⑬ | community, contest | 알림 남기기 (추천·댓글·답글·리뷰·배지) — P2 | message | 기록 | message 명세 `NotificationSender`, FR-NTF-001 |
+| ⑭ | portfolio | 작품을 비공개·삭제하면 열린 리뷰 요청 닫기 — P2 | community | 기록 | community 명세 `ReviewRequestCloser`, FR-REV-005 |
+| ⑮ | portfolio | 이 포트폴리오가 콘테스트에 출품 중인가 (수정 막기) — P2 | contest | 조회 | contest 명세 `ContestEntryChecker`, PL-PRT-007 |
+| ⑯ | portfolio | 작품을 비공개·삭제하면 출품 취소 — P2 | contest | 기록 | contest 명세 `ContestEntryCanceler`, PL-CTS-006 |
 
 > 열림·완료 시각은 lesson 영역 테이블(`lesson_progress`, `activity_progress`, `enrollment`)에 **저장**합니다 (DB 설계서 7장). 저장하지 않고 계산하는 것은 진행률과 모의고사 열림뿐입니다 (FR-ENR-002, FR-EXM-001). 그래서 quiz·exam·portfolio가 lesson에 **기록**을 요청하는 계약(①③⑦)이 있습니다.
 

@@ -1,6 +1,6 @@
 # API 명세 공통 규칙 (양식)
 
-> 영역별 명세는 이 폴더의 `auth.md`, `course.md`, `lesson.md`, `quiz.md`, `exam.md`, `portfolio.md`, `community.md`, `admin.md`, P2 `message.md`입니다.
+> 영역별 명세는 이 폴더의 `auth.md`, `course.md`, `lesson.md`, `quiz.md`, `exam.md`, `portfolio.md`, `community.md`, `admin.md`, P2 `message.md`·`contest.md`입니다.
 > 이 파일은 모든 영역이 같이 쓰는 규칙(0장), 에러 코드(7장), P2·P3 목록(8장), 확정 근거(9·10장)를 담습니다.
 > 장 번호는 원본 `API 설계(2026-11-05)`의 번호를 그대로 둡니다 (영역별 표가 "7장", "10장"으로 가리키기 때문입니다).
 
@@ -134,6 +134,16 @@
 | `NOTIFICATION_NOT_FOUND` | 404 | 알림을 찾을 수 없습니다. | ① E-01 | API-NTF-02 (P2) |
 | `NOTICE_NOT_FOUND` | 404 | 공지사항을 찾을 수 없습니다. | ① E-01 | API-NTF-05 (P2) |
 | `BANNER_PERIOD_OVERLAP` | 409 | 같은 기간에 띄우는 배너 공지가 이미 있습니다. 배너 기간을 바꿔 주세요. | ④ | PL-NTF-003 (P2) |
+| `CONTEST_NOT_FOUND` | 404 | 콘테스트를 찾을 수 없습니다. | ① E-01 | API-CTS-02·05 (P2) |
+| `CONTEST_MONTH_EXISTS` | 409 | 그 달의 콘테스트가 이미 있습니다. | ④ | API-CTS-07 (P2) |
+| `CONTEST_STARTED` | 409 | 출품이 시작된 콘테스트는 월과 기간을 바꿀 수 없습니다. | ④ | API-CTS-08 (P2) |
+| `ENTRY_CLOSED` | 409 | 지금은 출품 기간이 아닙니다. | ③ | PL-CTS-001 (P2) |
+| `ALREADY_ENTERED` | 409 | 이번 달 콘테스트에는 이미 출품했습니다. | ③ | PL-CTS-002 (P2) |
+| `VOTE_CLOSED` | 409 | 지금은 투표 기간이 아닙니다. | ⑤ | PL-CTS-001 (P2) |
+| `ENTRY_NOT_FOUND` | 404 | 출품작을 찾을 수 없습니다. | ⑤ | API-CTS-03 (P2) |
+| `SELF_VOTE` | 400 | 내 작품에는 투표할 수 없습니다. | ⑤ | PL-CTS-003 (P2) |
+| `DAILY_VOTE_LIMIT` | 429 | 투표는 하루 1번 할 수 있습니다. 내일 다시 투표해 주세요. | ⑤ | PL-CTS-003 (P2) |
+| `ALREADY_VOTED` | 409 | 이미 투표한 작품입니다. | ⑤ | PL-CTS-003 (P2) |
 
 ## 8. P2 · P3 (목록만)
 
@@ -153,7 +163,7 @@ P1 구현 뒤 같은 규칙으로 표를 채운다. 테이블은 이미 있다(D
 | P2 | 개인 작품 추가 | `/my/portfolios/new?template=` | POST `/my/portfolios` |
 | P2 | 프로필 수정·닉네임 저장 | `/mypage?tab=info` | POST `/mypage/profile` |
 | P2 | 추천·랭킹·즐겨찾기·팔로우·공개 프로필 | `/community/ranking`, `/users/{memberId}` (회원) | POST `/api/posts/{postId}/recommend`, `/api/posts/{postId}/favorite`, `/api/users/{memberId}/follow` |
-| P2 | 콘테스트 | `/contests/current`, `/contests/{contestId}` (회원) | POST `/contests/{contestId}/entries`, `/api/contests/{contestId}/votes`. 미인증 "인증 메일 받기" → `/auth/verify` (API-USR-09, token 없음) |
+| P2 | 콘테스트 (운영자 A-11 포함) | `/contests/current`, `/contests`, `/contests/{contestId}`, `/admin/contests` | → [contest.md](contest.md) API-CTS-01~08 |
 | P2 | 동료 리뷰 | `/reviews` | POST `/portfolios/{portfolioId}/review-requests`, `/review-requests/{reviewRequestId}/reviews`, `/api/reviews/{peerReviewId}/helpful` |
 | P2 | 쪽지 | `/messages?box=` | → [message.md](message.md) API-MSG-01~05 |
 | P2 | 알림 | 상단 드롭다운 | → [message.md](message.md) API-NTF-01~03 |
