@@ -142,6 +142,15 @@ img {
   white-space: nowrap;
 }
 
+/* 데스크톱: 메뉴 묶음이 없는 것처럼 안쪽 요소가 헤더 줄에 그대로 놓인다. 햄버거 버튼은 숨긴다 */
+.vl-header__menu {
+  display: contents;
+}
+
+.vl-header__toggle {
+  display: none;
+}
+
 .vl-header__nav {
   display: flex;
   gap: var(--space-6);
@@ -679,24 +688,128 @@ img {
   }
 }
 
-/* 모바일: 상단 메뉴는 햄버거로 바뀌어야 하지만(7장), 메뉴 축소는 별도 이슈에서 다룬다.
-   여기서는 좁은 화면에서 줄바꿈되지 않게 최소한의 반응형만 둔다. */
+/* 모바일 (설계서 7장): 로고와 햄버거 버튼만 한 줄에 두고, 버튼을 누르면 메뉴·검색·로그인 영역을 아래로 펼친다 (#153) */
 @media (max-width: 767px) {
   .vl-header__inner {
     flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0;
     height: auto;
-    padding: var(--space-4) var(--space-5);
+    min-height: 56px;
+    padding: var(--space-2) var(--space-5);
+  }
+
+  .vl-header__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--control-h);
+    height: var(--control-h);
+    margin-right: calc(var(--space-3) * -1);
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: none;
+    cursor: pointer;
+  }
+
+  .vl-header__toggle:hover {
+    background: var(--navy-800);
+  }
+
+  /* 줄 세 개(☰). 펼치면 X 로 바뀐다 */
+  .vl-header__toggle-bar,
+  .vl-header__toggle-bar::before,
+  .vl-header__toggle-bar::after {
+    display: block;
+    width: 20px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--on-navy);
+    transition: transform 0.15s;
+  }
+
+  .vl-header__toggle-bar {
+    position: relative;
+  }
+
+  .vl-header__toggle-bar::before,
+  .vl-header__toggle-bar::after {
+    content: "";
+    position: absolute;
+    left: 0;
+  }
+
+  .vl-header__toggle-bar::before {
+    top: -6px;
+  }
+
+  .vl-header__toggle-bar::after {
+    top: 6px;
+  }
+
+  .vl-header.is-open .vl-header__toggle-bar {
+    background: transparent;
+  }
+
+  .vl-header.is-open .vl-header__toggle-bar::before {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .vl-header.is-open .vl-header__toggle-bar::after {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  .vl-header__menu {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    gap: var(--space-5);
+    padding: var(--space-3) 0 var(--space-6);
+    border-top: 1px solid var(--navy-700);
+  }
+
+  .vl-header.is-open .vl-header__menu {
+    display: flex;
   }
 
   .vl-header__nav {
-    order: 3;
-    width: 100%;
-    gap: var(--space-5);
-    overflow-x: auto;
+    flex-direction: column;
+    gap: 0;
   }
 
-  .vl-header__search {
-    display: none;
+  .vl-header__nav a {
+    display: flex;
+    align-items: center;
+    min-height: var(--control-h);
+  }
+
+  .vl-header__search input[type="search"] {
+    flex: 1;
+    min-width: 0;
+    height: var(--control-h);
+  }
+
+  .vl-header__auth a {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .vl-header__member {
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+  }
+
+  .vl-header__member a,
+  .vl-header__member .vl-header__logout-btn {
+    min-height: var(--control-h);
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .vl-header__nickname {
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .vl-content {
