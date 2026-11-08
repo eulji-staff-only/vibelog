@@ -26,9 +26,10 @@ public class ContestForm {
 
     public static final String DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm";
     static final int VOTE_START_DAY = 21;
+    static final String MONTH_REGEX = "\\d{4}-(0[1-9]|1[0-2])";
 
     @NotBlank(message = "월을 골라 주세요")
-    @Pattern(regexp = "\\d{4}-(0[1-9]|1[0-2])", message = "월은 2026-12 처럼 입력해 주세요")
+    @Pattern(regexp = MONTH_REGEX, message = "월은 2026-12 처럼 입력해 주세요")
     private String contestMonth;
 
     @NotBlank(message = "주제를 입력해 주세요")
@@ -60,6 +61,16 @@ public class ContestForm {
             return true; // 빈 칸은 @NotNull 이 알린다
         }
         return entryStartsAt.isBefore(entryEndsAt) && !voteStartsAt.isBefore(entryEndsAt) && voteStartsAt.isBefore(voteEndsAt);
+    }
+
+    /* 이달의 콘테스트는 contest_month 로 찾으므로 모든 기간이 그 달 1일 0시 ~ 다음 달 1일 0시 안이어야 한다 (contest 명세 결정 15) */
+    @AssertTrue(message = "모든 기간은 그 달 1일 0시부터 다음 달 1일 0시 안이어야 합니다")
+    public boolean isWithinMonth() {
+        if (contestMonth == null || !contestMonth.matches(MONTH_REGEX) || entryStartsAt == null || voteEndsAt == null) {
+            return true; // 빈 칸·형식은 다른 검사가 알린다
+        }
+        YearMonth month = YearMonth.parse(contestMonth);
+        return !entryStartsAt.isBefore(month.atDay(1).atStartOfDay()) && !voteEndsAt.isAfter(month.plusMonths(1).atDay(1).atStartOfDay());
     }
 
     /* 새 폼: 그 달과 PL-CTS-001 기본 기간 */

@@ -59,7 +59,7 @@
                 </div>
             </div>
             <div id="period-error">
-                <p class="ct-error" th:each="name : ${ {'entryStartsAt', 'entryEndsAt', 'voteStartsAt', 'voteEndsAt', 'periodValid'} }"
+                <p class="ct-error" th:each="name : ${ {'entryStartsAt', 'entryEndsAt', 'voteStartsAt', 'voteEndsAt', 'periodValid', 'withinMonth'} }"
                    th:if="${#fields.hasErrors(name)}" th:errors="*{__${name}__}">기간 오류</p>
             </div>
             <p class="ct-muted">기본 일정: 매달 1~20일 출품, 21일~말일 투표, 다음 달 1일 발표 (PL-CTS-001)</p>

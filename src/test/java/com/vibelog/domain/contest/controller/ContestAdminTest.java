@@ -83,20 +83,30 @@ class ContestAdminTest {
                         .param("voteStartsAt", "2092-02-21T00:00").param("voteEndsAt", "2092-03-01T00:00"))
                 .andExpect(view().name("contest/admin-contests"))
                 .andExpect(model().attributeHasFieldErrors("contestForm", "topic", "periodValid"));
+        mockMvc.perform(post("/admin/contests").with(as(admin)).with(csrf()).param("contestMonth", "2092-02").param("topic", "다른 달 기간")
+                        .param("description", "설명")
+                        .param("entryStartsAt", "2092-03-01T00:00").param("entryEndsAt", "2092-03-21T00:00")
+                        .param("voteStartsAt", "2092-03-21T00:00").param("voteEndsAt", "2092-04-01T00:00"))
+                .andExpect(model().attributeHasFieldErrors("contestForm", "withinMonth"))
+                .andExpect(content().string(containsString("모든 기간은 그 달 1일 0시부터 다음 달 1일 0시 안이어야 합니다")));
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM contest WHERE contest_month = '2092-02'", Long.class)).isZero();
     }
 
     @Test
     void 출품이_시작되면_월과_기간은_못_바꾸고_주제는_바꾼다() throws Exception {
-        LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0); // 폼은 분 단위라 저장값도 분 단위로 맞춘다
-        long started = contest("2092-03", now.minusDays(1), now.plusDays(10), now.plusDays(10), now.plusDays(20));
+        // 이미 시작된(지난) 달. 기간은 그 달 안이어야 한다 (결정 15)
+        YearMonth past = YearMonth.of(2001, 1);
+        LocalDateTime start = past.atDay(1).atStartOfDay();
+        LocalDateTime voteStart = past.atDay(21).atStartOfDay();
+        LocalDateTime end = past.plusMonths(1).atDay(1).atStartOfDay();
+        long started = contest("2001-01", start, voteStart, voteStart, end);
+        LocalDateTime now = LocalDateTime.now();
         long notYet = contest("2092-04", now.plusDays(30), now.plusDays(40), now.plusDays(40), now.plusDays(50));
 
-        mockMvc.perform(form(post("/admin/contests/{id}/edit", started), "2092-03", "바뀐 주제",
-                        now.minusDays(1), now.plusDays(11), now.plusDays(11), now.plusDays(20)))
+        mockMvc.perform(form(post("/admin/contests/{id}/edit", started), "2001-01", "바뀐 주제",
+                        start, voteStart.minusDays(1), voteStart, end))
                 .andExpect(content().string(containsString("출품이 시작된 콘테스트는 월과 기간을 바꿀 수 없습니다.")));
-        mockMvc.perform(form(post("/admin/contests/{id}/edit", started), "2092-03", "주제만 바꿈",
-                        now.minusDays(1), now.plusDays(10), now.plusDays(10), now.plusDays(20)))
+        mockMvc.perform(form(post("/admin/contests/{id}/edit", started), "2001-01", "주제만 바꿈", start, voteStart, voteStart, end))
                 .andExpect(flash().attribute("toast", "콘테스트를 수정했습니다"));
         save(post("/admin/contests/{id}/edit", notYet), "2092-05", "달을 옮김", YearMonth.of(2092, 5))
                 .andExpect(flash().attribute("toast", "콘테스트를 수정했습니다"));
