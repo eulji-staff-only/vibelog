@@ -56,6 +56,9 @@ public class CommunityPageController {
     public String detailPage(@PathVariable Long postId, @AuthenticationPrincipal LoginMember loginMember, Model model) {
         Long loginMemberId = loginMember == null ? null : loginMember.getMemberId();
         model.addAttribute("post", postService.getPost(postId, loginMemberId));
+        // 댓글 입력: 비회원은 로그인 안내, 미인증 회원은 인증 안내 (U-22 예외, PL-USR-003)
+        model.addAttribute("loggedIn", loginMemberId != null);
+        model.addAttribute("canComment", loginMemberId != null && postWriteService.canWrite(loginMemberId));
         return "community/detail";
     }
 
