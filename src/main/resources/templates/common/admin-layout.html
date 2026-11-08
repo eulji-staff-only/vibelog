@@ -17,19 +17,24 @@
 
     <nav class="vl-admin__nav">
         <a class="vl-admin__link" href="/admin"
-           th:classappend="${active == 'dashboard'} ? 'is-active' : ''">대시보드</a>
+           th:classappend="${active == 'dashboard'} ? 'is-active' : ''"
+           th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">대시보드</a>
 
         <p class="vl-admin__group">콘텐츠</p>
         <a class="vl-admin__link" href="/admin/tracks"
-           th:classappend="${active == 'tracks'} ? 'is-active' : ''">트랙</a>
+           th:classappend="${active == 'tracks'} ? 'is-active' : ''"
+           th:attr="aria-current=${active == 'tracks'} ? 'page' : null">트랙</a>
         <a class="vl-admin__link" href="/admin/categories"
-           th:classappend="${active == 'categories'} ? 'is-active' : ''">카테고리</a>
+           th:classappend="${active == 'categories'} ? 'is-active' : ''"
+           th:attr="aria-current=${active == 'categories'} ? 'page' : null">카테고리</a>
         <a class="vl-admin__link" href="/admin/courses"
-           th:classappend="${active == 'courses'} ? 'is-active' : ''">코스</a>
+           th:classappend="${active == 'courses'} ? 'is-active' : ''"
+           th:attr="aria-current=${active == 'courses'} ? 'page' : null">코스</a>
 
         <p class="vl-admin__group">회원</p>
         <a class="vl-admin__link" href="/admin/members"
-           th:classappend="${active == 'members'} ? 'is-active' : ''">회원 목록</a>
+           th:classappend="${active == 'members'} ? 'is-active' : ''"
+           th:attr="aria-current=${active == 'members'} ? 'page' : null">회원 목록</a>
     </nav>
 
     <a class="vl-admin__exit" href="/">← 학습자 화면으로</a>
