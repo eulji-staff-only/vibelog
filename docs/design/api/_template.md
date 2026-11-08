@@ -1,6 +1,6 @@
 # API 명세 공통 규칙 (양식)
 
-> 영역별 명세는 이 폴더의 `auth.md`, `course.md`, `lesson.md`, `quiz.md`, `exam.md`, `portfolio.md`, `community.md`, `admin.md`입니다.
+> 영역별 명세는 이 폴더의 `auth.md`, `course.md`, `lesson.md`, `quiz.md`, `exam.md`, `portfolio.md`, `community.md`, `admin.md`, P2 `message.md`입니다.
 > 이 파일은 모든 영역이 같이 쓰는 규칙(0장), 에러 코드(7장), P2·P3 목록(8장), 확정 근거(9·10장)를 담습니다.
 > 장 번호는 원본 `API 설계(2026-11-05)`의 번호를 그대로 둡니다 (영역별 표가 "7장", "10장"으로 가리키기 때문입니다).
 
@@ -24,7 +24,7 @@
 | 응답 방식 | 서버가 화면(Thymeleaf)을 만들어 보낸다. 화면 URL이 곧 그 화면의 GET API다. 화면이 바뀌지 않는 동작만 JSON으로 보낸다 | D-01 |
 | Method | GET·POST만 쓴다. 수정은 `POST .../edit`, 삭제는 `POST .../delete`, 상태 변경은 `POST .../{동작}` | D-02 |
 | JSON 주소 | `/api/`로 시작한다. 운영자 JSON은 `/api/admin/` | D-03 |
-| 저장 후 응답 | 화면 폼으로 보낸 POST(저장·수정·삭제)가 성공하면 **redirect**한다(PRG). 새로고침해도 같은 요청이 다시 가지 않는다. 입력 오류면 redirect하지 않고 같은 폼을 다시 보여준다(입력값 유지 + 칸별 메시지). `/api/**`는 DB에 써도 JSON으로 답한다. 예외: 오답 분석 리포트 GET은 연 일시를 기록한다(API-EXM-05) | 참고 프로젝트 |
+| 저장 후 응답 | 화면 폼으로 보낸 POST(저장·수정·삭제)가 성공하면 **redirect**한다(PRG). 새로고침해도 같은 요청이 다시 가지 않는다. 입력 오류면 redirect하지 않고 같은 폼을 다시 보여준다(입력값 유지 + 칸별 메시지). `/api/**`는 DB에 써도 JSON으로 답한다. 예외: 오답 분석 리포트 GET은 연 일시를 기록한다(API-EXM-05). 받은 쪽지 열기(API-MSG-01)·알림 열기(API-NTF-02) GET은 읽은 시각을 기록한다 (P2) | 참고 프로젝트 |
 | 토스트 | redirect할 때 보여줄 문구는 flash 값 `toast`로 넘긴다 (예: "다음 개념이 열렸습니다") | 화면 흐름 5-1 |
 | 로그인 | Spring Security. 폼 로그인 `POST /login`, 소셜 로그인 `/oauth2/authorization/{provider}`, 로그아웃 `POST /logout`. 모든 POST 폼에 CSRF 토큰 | D-07 |
 | 페이지 | `page`는 1부터. 게시판 20개, 공지 10개씩 서버가 정한다 | D-06 |
@@ -113,6 +113,14 @@
 | `LESSON_NOT_PUBLISHABLE` | 409 | 빠진 항목: (목록) | ③ | FR-LSN-014 |
 | `INVALID_ORDER` | 400 | 개념 뒤에는 퀴즈가 하나씩 와야 합니다. | ③ | PL-LSN-001 |
 | `CONCEPT_REQUIRED` | 400 | 연관 개념을 골라야 저장할 수 있습니다. | ④ | FR-EXM-007 |
+| `MESSAGE_NOT_FOUND` | 404 | 쪽지를 찾을 수 없습니다. | ① E-01 | API-MSG-01 (P2) |
+| `MESSAGE_SELF` | 400 | 나에게는 쪽지를 보낼 수 없습니다. | ④ | API-MSG-03 (P2) |
+| `MESSAGE_RECEIVER_NOT_FOUND` | 404 | 받는 사람을 찾을 수 없습니다. 닉네임을 다시 확인해 주세요. | ④ | API-MSG-03 (P2) |
+| `MESSAGE_DAILY_LIMIT` | 429 | 쪽지는 하루 20통까지 보낼 수 있습니다. 내일 다시 보내 주세요. | ④ | PL-MSG-003 (P2) |
+| `MESSAGE_UNANSWERED_LIMIT` | 429 | 답장이 없는 상대에게는 연속 3통까지 보낼 수 있습니다. 답장을 기다려 주세요. | ④ | PL-MSG-003 (P2) |
+| `NOTIFICATION_NOT_FOUND` | 404 | 알림을 찾을 수 없습니다. | ① E-01 | API-NTF-02 (P2) |
+| `NOTICE_NOT_FOUND` | 404 | 공지사항을 찾을 수 없습니다. | ① E-01 | API-NTF-05 (P2) |
+| `BANNER_PERIOD_OVERLAP` | 409 | 같은 기간에 띄우는 배너 공지가 이미 있습니다. 배너 기간을 바꿔 주세요. | ④ | PL-NTF-003 (P2) |
 
 ## 8. P2 · P3 (목록만)
 
@@ -134,9 +142,9 @@ P1 구현 뒤 같은 규칙으로 표를 채운다. 테이블은 이미 있다(D
 | P2 | 추천·랭킹·즐겨찾기·팔로우·공개 프로필 | `/community/ranking`, `/users/{memberId}` (회원) | POST `/api/posts/{postId}/recommend`, `/api/posts/{postId}/favorite`, `/api/users/{memberId}/follow` |
 | P2 | 콘테스트 | `/contests/current`, `/contests/{contestId}` (회원) | POST `/contests/{contestId}/entries`, `/api/contests/{contestId}/votes`. 미인증 "인증 메일 받기" → `/auth/verify` (API-USR-09, token 없음) |
 | P2 | 동료 리뷰 | `/reviews` | POST `/portfolios/{portfolioId}/review-requests`, `/review-requests/{reviewRequestId}/reviews`, `/api/reviews/{peerReviewId}/helpful` |
-| P2 | 쪽지 | `/messages?box=` | POST `/messages`(쪽지함 새 쪽지), `/users/{memberId}/messages`(공개 프로필 M-13), `/messages/{messageId}/reply`, GET `/api/users?nickname=`(받는 사람 검색) |
-| P2 | 알림 | 상단 드롭다운 | GET `/api/notifications`, POST `/api/notifications/read-all` |
-| P2 | 공지 | `/notices`, `/notices/{noticeId}` (회원) | GET만 (운영자 A-10 별도) |
+| P2 | 쪽지 | `/messages?box=` | → [message.md](message.md) API-MSG-01~05 |
+| P2 | 알림 | 상단 드롭다운 | → [message.md](message.md) API-NTF-01~03 |
+| P2 | 공지 (운영자 A-10 포함) | `/notices`, `/notices/{noticeId}`, `/admin/notices` | → [message.md](message.md) API-NTF-04~08 |
 | P2 | 운영자: 이용 정지, 진단 설정, 공지·콘테스트 관리, 확장 대시보드 | A-08~A-11 | `/admin/**` 같은 규칙 |
 | P3 | 신고·신고 처리, 템플릿 관리 | M-11, A-12, A-13 | POST `/api/reports`, `/admin/reports/{reportId}/hide`·`/dismiss` |
 
