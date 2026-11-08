@@ -1,11 +1,9 @@
 package com.vibelog.domain.lesson.model.service;
 
-import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
 import com.vibelog.domain.lesson.model.dto.LessonPublishStatus;
 import com.vibelog.domain.lesson.model.entity.LessonProgress;
-import com.vibelog.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,7 +14,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /*
  * 운영자 수업 공개·비공개(API-ADM-32·33, FR-LSN-014, PL-LSN-003, PL-ENR-005, #118)를
@@ -99,11 +96,8 @@ class LessonVisibilityServiceTest {
     }
 
     @Test
-    void 필수_항목이_빠진_수업을_공개하려_하면_LESSON_NOT_PUBLISHABLE이고_비공개로_남는다() {
-        assertThatThrownBy(() -> lessonAdminService.changeVisibility(LESSON_TOO_FEW_QUESTIONS, true))
-                .isInstanceOf(BusinessException.class)
-                .extracting(e -> ((BusinessException) e).getErrorCode())
-                .isEqualTo(LessonErrorCode.LESSON_NOT_PUBLISHABLE);
+    void 필수_항목이_빠진_수업을_공개하려_하면_빈_결과이고_비공개로_남는다() {
+        assertThat(lessonAdminService.changeVisibility(LESSON_TOO_FEW_QUESTIONS, true)).isEmpty();
         assertThat(lessonRepository.findById(LESSON_TOO_FEW_QUESTIONS).orElseThrow().isPublic()).isFalse();
     }
 

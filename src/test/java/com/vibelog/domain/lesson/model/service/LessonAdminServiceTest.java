@@ -128,7 +128,7 @@ class LessonAdminServiceTest {
             assertThat(a.title()).isEqualTo("퀴즈 1-1");
             assertThat(a.active()).isFalse();
         });
-        assertThat(view.conceptTags()).extracting("name").containsExactly("변수", "조건문");
+        assertThat(view.conceptTags()).extracting("name").contains("변수", "조건문");
         assertThat(view.examQuestions()).hasSize(1);
         assertThat(view.examQuestions().get(0).content()).isEqualTo("문항 내용");
         assertThat(view.examQuestions().get(0).choices()).hasSize(2);

@@ -3,7 +3,6 @@ package com.vibelog.domain.lesson.controller;
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dto.LessonFormRequest;
 import com.vibelog.domain.lesson.model.service.LessonAdminService;
-import com.vibelog.global.exception.BusinessException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Optional;
 
 /*
  * [LessonAdminController]
@@ -74,16 +74,12 @@ public class LessonAdminController {
     @PostMapping("/admin/lessons/{lessonId}/visibility")
     public String visibility(@PathVariable Long lessonId, @RequestParam boolean isPublic,
                               RedirectAttributes redirectAttributes) {
-        try {
-            Long courseId = lessonAdminService.changeVisibility(lessonId, isPublic);
-            redirectAttributes.addFlashAttribute("toast", isPublic ? "수업을 공개했습니다" : "수업을 비공개했습니다");
-            return "redirect:/admin/courses/" + courseId;
-        } catch (BusinessException e) {
-            if (e.getErrorCode() == LessonErrorCode.LESSON_NOT_FOUND) {
-                throw e;
-            }
-            redirectAttributes.addFlashAttribute("toast", e.getMessage());
+        Optional<Long> courseId = lessonAdminService.changeVisibility(lessonId, isPublic);
+        if (courseId.isEmpty()) {
+            redirectAttributes.addFlashAttribute("toast", LessonErrorCode.LESSON_NOT_PUBLISHABLE.getMessage());
             return "redirect:/admin/lessons/" + lessonId;
         }
+        redirectAttributes.addFlashAttribute("toast", isPublic ? "수업을 공개했습니다" : "수업을 비공개했습니다");
+        return "redirect:/admin/courses/" + courseId.get();
     }
 }

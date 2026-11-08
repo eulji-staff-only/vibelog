@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -138,13 +139,13 @@ public class LessonAdminService {
      * 돌려주는 코스 id는 Controller가 성공 시 이동할 코스 상세(A-05) 주소에 쓴다.
      */
     @Transactional
-    public Long changeVisibility(Long lessonId, boolean isPublic) {
+    public Optional<Long> changeVisibility(Long lessonId, boolean isPublic) {
         Lesson lesson = getLesson(lessonId);
         if (isPublic) {
             if (!lesson.isPublic()) {
                 LessonPublishStatus status = checkPublishStatus(lessonId);
                 if (!status.publishable()) {
-                    throw new BusinessException(LessonErrorCode.LESSON_NOT_PUBLISHABLE);
+                    return Optional.empty();
                 }
                 lesson.publish();
                 addProgressForExistingEnrollments(lesson);
@@ -152,7 +153,7 @@ public class LessonAdminService {
         } else {
             lesson.unpublish();
         }
-        return lesson.getCourseId();
+        return Optional.of(lesson.getCourseId());
     }
 
     /*
