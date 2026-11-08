@@ -1,6 +1,7 @@
 package com.vibelog.domain.community.model.service;
 
 import com.vibelog.domain.community.model.dao.CommentRepository;
+import com.vibelog.domain.community.model.dao.FavoriteRepository;
 import com.vibelog.domain.community.model.dao.PostCommentCount;
 import com.vibelog.domain.community.model.dao.PostRepository;
 import com.vibelog.domain.community.model.dto.MemberCommentItem;
@@ -31,10 +32,20 @@ public class CommunityReader {
 
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
+    private final FavoriteRepository favoriteRepository;
 
     public Page<MemberPostItem> getPostsOf(Long memberId, int page) {
-        Page<Post> posts = postRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
-                memberId, PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE));
+        return toItems(postRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
+                memberId, PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE)));
+    }
+
+    /* 마이페이지 즐겨찾기 탭 (API-USR-15 P2, FR-CMT-007). 지운 글은 빼고 즐겨찾기한 순서 최신순 */
+    public Page<MemberPostItem> getFavoritePostsOf(Long memberId, int page) {
+        return toItems(favoriteRepository.findLivePostsFavoritedBy(
+                memberId, PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE)));
+    }
+
+    private Page<MemberPostItem> toItems(Page<Post> posts) {
         List<Long> postIds = posts.map(Post::getPostId).toList();
         Map<Long, Long> commentCounts = postIds.isEmpty() ? Map.of() : commentRepository.countByPostIds(postIds).stream()
                 .collect(Collectors.toMap(PostCommentCount::postId, PostCommentCount::count));
