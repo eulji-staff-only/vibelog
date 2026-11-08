@@ -19,6 +19,9 @@
 
 <div th:replace="~{common/layout :: header}"></div>
 
+<!-- 다른 화면에서 끝난 일을 알린다 (예: 회원 탈퇴 완료, API-USR-16). 공통 토스트(#139)가 머지되면 그것으로 바꾼다 -->
+<p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
+
 <main>
     <section class="vl-hero">
         <div class="vl-content vl-hero__inner">

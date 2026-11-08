@@ -60,6 +60,8 @@
 
 `/api/**` 요청은 어떤 실패든 ⑤로 보낸다. 아래 "방식"은 화면 요청일 때다.
 
+⑤ JSON 응답 모양 (D-08, #152): 성공은 명세에 적힌 값을 그대로 담은 JSON(감싸지 않음)이고, 돌려줄 값이 없으면 204(본문 없음)다. 실패는 에러 코드의 HTTP 상태 + `{"code": "에러 코드", "message": "보여 줄 문구"}`. 아래 표에 이름이 없는 실패는 `NOT_FOUND`(404, 없는 주소), `FORBIDDEN`(403, CSRF 토큰 없음·만료), `CONFLICT`(409, 정책으로 걸러지지 않은 DB 제약 위반), `METHOD_NOT_ALLOWED`(405)·`UNSUPPORTED_MEDIA_TYPE`(415)·`NOT_ACCEPTABLE`(406, 지원하지 않는 메서드·Content-Type·Accept), `SERVER_ERROR`(500)로 보낸다. 자세한 표는 README "JSON API 약속".
+
 ### 7-2. 공통
 
 | 코드 | 상태 | 메시지 | 방식 |
@@ -85,6 +87,7 @@
 | `LOGIN_LOCKED` | 429 | 로그인에 5번 실패해 5분 동안 로그인할 수 없습니다. | ④ | PL-USR-007 |
 | `SOCIAL_ACCOUNT_EMAIL` / `SOCIAL_EMAIL_CONFLICT` | 409 | 처음 가입한 방식(이메일·GitHub·구글)으로 로그인해 주세요. | ④ / → `/login` | PL-USR-005 |
 | `SOCIAL_ACCOUNT` | 409 | 구글·깃허브로 가입한 계정은 비밀번호가 없습니다. | ④ | U-24 |
+| `PASSWORD_MISMATCH` | 400 | 현재 비밀번호가 맞지 않습니다. | ④ | API-USR-17 (#116 리뷰) |
 | `SUSPENDED_CANNOT_WITHDRAW` | 409 | 이용 정지 중에는 탈퇴할 수 없습니다. (P2) | ③ | PL-USR-010 |
 | `CONTEST_ENTERED` | 409 | 콘테스트에 출품한 작품은 수정할 수 없습니다. (P2) | ④ | PL-PRT-007 |
 | `TOKEN_EXPIRED` / `TOKEN_USED` | 400 | 링크가 만료되었습니다. | 화면 안 상태 | PL-USR-004 |
