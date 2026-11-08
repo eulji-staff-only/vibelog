@@ -71,7 +71,7 @@
 | 콘테스트·배지 (P2) | `contest` | 가장 먼저 P1을 끝내는 묶음 | P2 #174 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EC%BD%98%ED%85%8C%EC%8A%A4%ED%8A%B8%C2%B7%EB%B0%B0%EC%A7%80%22+sort%3Acreated-asc) |
 | 공통·설정 | `common` · `config` · `sql/` | 공통 (#12는 A, #13은 C) | #10 · #12 · #13 · #21 | [열린 이슈 보기](https://github.com/eulji-staff-only/vibelog/issues?q=is%3Aissue+is%3Aopen+label%3A%22area%3A+%EA%B3%B5%ED%86%B5%C2%B7%EC%84%A4%EC%A0%95%22+sort%3Acreated-asc) |
 
-> 💡 단계 순서는 [08. 작업 순서 (P1 · P2)](docs/collaboration/08-task-flow.md)를 보세요. **P2(마일스톤 4)는 묶음별로** 시작합니다: 내 묶음 P1 기능이 다 머지되면 내 영역 P2 구현을 시작합니다 (P2 명세는 그 전에 써도 됩니다). 이슈를 새로 만들 때 **영역 라벨**과 **마일스톤**을 꼭 붙여야 위 링크에 나타납니다.
+> 💡 단계 순서는 [08. 작업 순서 (P1 · P2)](docs/collaboration/08-task-flow.md)를 보세요. **P2(마일스톤 4)는 묶음별로** 시작합니다: 내 묶음 P1 기능과 내 영역 P2 명세가 모두 머지되면 P2 구현을 시작합니다 (P2 명세는 P1 중에도 써도 됩니다). 이슈를 새로 만들 때 **영역 라벨**과 **마일스톤**을 꼭 붙여야 위 링크에 나타납니다.
 
 ---
 
