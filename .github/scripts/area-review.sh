@@ -11,11 +11,10 @@ set -euo pipefail
 owner_of() {
   case "$1" in
     auth|community) echo "SeungBinYang" ;;   # 묶음 A
-    course|quiz)    echo "skinopero" ;;      # 묶음 B
     lesson|admin)   echo "dyryoo316" ;;      # 묶음 C
     exam|portfolio) echo "Choyeonik" ;;      # 묶음 D
-    sql)            echo "Choyeonik skinopero" ;;  # DB 팀 (둘 중 1명)
-    *)              echo "" ;;               # common, error, contest, message 등 담당 없는 곳
+    sql)            echo "Choyeonik" ;;      # DB 팀
+    *)              echo "" ;;               # course·quiz(묶음 B, #204), common, error, contest, message 등 승인 담당 없는 곳
   esac
 }
 
