@@ -60,10 +60,44 @@
 .au-notice.is-danger { background: var(--danger-soft); }
 .au-notice.is-danger strong { color: var(--danger); }
 
-/* 모바일 (설계서 7장: 좌우 여백 16px, 페이지 제목 26px) */
+/* 마이페이지 (U-24, #51) */
+.au-main.is-wide { max-width: 880px; }
+.au-tabs { display: flex; gap: var(--space-1); border-bottom: 1px solid var(--line); }
+.au-tabs a { display: inline-flex; align-items: center; min-height: var(--tab-h); padding: 0 var(--space-5); margin-bottom: -1px;
+    border-bottom: 3px solid transparent; font-weight: 700; color: var(--ink-muted); white-space: nowrap; }
+.au-tabs a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--navy-900); }
+.au-section { display: flex; flex-direction: column; gap: var(--space-4); }
+.au-section + .au-section { padding-top: var(--space-7); border-top: 1px solid var(--line-soft); }
+.au-info { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: var(--space-3) var(--space-7); font-size: 15px; }
+.au-info dt { font-weight: 700; color: var(--ink-muted); }
+.au-info dd { margin: 0; overflow-wrap: anywhere; }
+.au-btn.is-fit { width: auto; align-self: flex-start; }
+.au-btn.is-danger { background: var(--danger); color: var(--on-navy); }
+.au-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.au-list li { border-bottom: 1px solid var(--line-soft); }
+.au-list a { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-5) var(--space-2); }
+.au-list a:hover strong { color: var(--link); }
+.au-list span { font-size: 13px; color: var(--ink-muted); }
+.au-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-10) 0; text-align: center; }
+
+/* 회원 탈퇴 확인 모달 (M-06). 브라우저 기본 dialog */
+.au-dialog { width: min(440px, calc(100% - 32px)); box-sizing: border-box; padding: var(--space-8); border: 0; border-radius: var(--radius-panel); }
+.au-dialog::backdrop { background: rgba(15, 27, 61, 0.5); }
+.au-dialog form { display: flex; flex-direction: column; gap: var(--space-5); margin: 0; }
+.au-dialog ul { margin: 0; padding-left: var(--space-6); color: var(--ink-muted); }
+.au-dialog__actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
+.au-dialog__actions .au-btn { width: auto; }
+
+/* 모바일 (설계서 7장: 좌우 여백 16px, 페이지 제목 26px, 버튼 폭 100%, 모달은 아래에서 올라오는 시트) */
 @media (max-width: 767px) {
     .au-band { padding-left: var(--space-5); padding-right: var(--space-5); }
     .au-title { font-size: 26px; }
     .au-main { padding-left: var(--space-5); padding-right: var(--space-5); }
     .au-panel { padding: var(--space-7) var(--space-6); }
+    .au-info { grid-template-columns: 1fr; gap: var(--space-1); }
+    .au-info dd + dt { margin-top: var(--space-3); }
+    .au-btn.is-fit { width: 100%; }
+    .au-dialog { width: 100%; max-width: none; margin: auto 0 0; border-radius: var(--radius-panel) var(--radius-panel) 0 0; }
+    .au-dialog__actions { flex-direction: column-reverse; }
+    .au-dialog__actions .au-btn { width: 100%; }
 }
