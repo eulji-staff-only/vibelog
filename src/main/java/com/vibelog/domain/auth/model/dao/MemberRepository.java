@@ -8,7 +8,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
@@ -29,5 +32,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             + " order by m.createdAt desc, m.memberId desc")
     Page<Member> searchActive(@Param("q") String q, Pageable pageable);
 
-    boolean existsByMemberIdAndStatus(Long memberId, MemberStatus status);
+    /* 그 시각까지 탈퇴한 회원 (콘테스트 집계, contest 명세 결정 8) */
+    @Query("select m.memberId from Member m where m.memberId in :memberIds and m.withdrawnAt <= :at")
+    Set<Long> findWithdrawnIn(@Param("memberIds") Collection<Long> memberIds, @Param("at") LocalDateTime at);
 }

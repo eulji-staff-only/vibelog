@@ -3,7 +3,6 @@ package com.vibelog.domain.auth.model.service;
 import com.vibelog.domain.auth.model.dao.MemberRepository;
 import com.vibelog.domain.auth.model.dao.MemberSuspensionRepository;
 import com.vibelog.domain.auth.model.entity.Member;
-import com.vibelog.domain.auth.model.entity.MemberStatus;
 import com.vibelog.domain.auth.model.entity.MemberSuspension;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -55,20 +54,19 @@ public class MemberReader {
                 .orElse("");
     }
 
-    /* 지금 이용 정지 중인 회원 ID (SuspensionPolicy 와 같은 판단). 콘테스트 집계에서 정지 회원 출품을 뺀다 (PL-CTS-006, contest 명세) */
-    public Set<Long> findSuspendedMemberIds(Collection<Long> memberIds) {
+    /* 그 시각에 이용 정지 중이던 회원 ID (해제·끝난 제재도 그 시각 기준으로 본다). 콘테스트 집계는 투표가 끝난 시각으로 본다 (PL-CTS-006, contest 명세 결정 8) */
+    public Set<Long> findSuspendedMemberIds(Collection<Long> memberIds, LocalDateTime at) {
         if (memberIds.isEmpty()) {
             return Set.of();
         }
-        LocalDateTime now = LocalDateTime.now();
-        return memberSuspensionRepository.findByMemberIdInAndReleasedAtIsNull(memberIds).stream()
-                .filter(suspension -> suspension.isActiveAt(now))
+        return memberSuspensionRepository.findByMemberIdIn(memberIds).stream()
+                .filter(suspension -> suspension.wasActiveAt(at))
                 .map(MemberSuspension::getMemberId)
                 .collect(Collectors.toSet());
     }
 
-    /* 탈퇴하지 않은 회원인가 (쪽지 받는 사람 검사, MESSAGE_RECEIVER_NOT_FOUND). 없는 ID 면 false */
-    public boolean isActive(Long memberId) {
-        return memberRepository.existsByMemberIdAndStatus(memberId, MemberStatus.ACTIVE);
+    /* 그 시각까지 탈퇴한 회원 ID (contest 명세 결정 8) */
+    public Set<Long> findWithdrawnMemberIds(Collection<Long> memberIds, LocalDateTime at) {
+        return memberIds.isEmpty() ? Set.of() : memberRepository.findWithdrawnIn(memberIds, at);
     }
 }

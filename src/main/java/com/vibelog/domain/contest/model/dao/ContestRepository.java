@@ -21,10 +21,9 @@ public interface ContestRepository extends JpaRepository<Contest, Long> {
     /* A-11 목록, 최근 월부터 */
     Page<Contest> findPageByOrderByContestMonthDesc(Pageable pageable);
 
-    /* 발표할 콘테스트: 투표가 끝난 지 하루가 안 됐고 수상 기록이 없음 (contest 명세 "결과 발표") */
-    @Query("select c from Contest c where c.voteEndsAt <= :now and c.voteEndsAt > :since"
-            + " and not exists (select a from ContestAward a where a.contestId = c.contestId)")
-    List<Contest> findToAnnounce(@Param("now") LocalDateTime now, @Param("since") LocalDateTime since);
+    /* 발표할 콘테스트: 투표가 끝났고 수상 기록이 없음 (contest 명세 "결과 발표", 결정 7) */
+    @Query("select c from Contest c where c.voteEndsAt <= :now and not exists (select a from ContestAward a where a.contestId = c.contestId)")
+    List<Contest> findToAnnounce(@Param("now") LocalDateTime now);
 
     /* U-33 지난 콘테스트: 투표가 끝난 것, 최근 월부터 */
     Page<Contest> findByVoteEndsAtLessThanEqualOrderByContestMonthDesc(LocalDateTime now, Pageable pageable);

@@ -61,16 +61,24 @@ class ContestAwardTest {
         long second = member();
         long suspended = member();
         long canceledOwner = member();
+        long lateSuspended = member();
+        long withdrawn = member();
         long firstEntry = entry(contestId, first, portfolio(first, "1등 작품", true), null);
         long secondEntry = entry(contestId, second, portfolio(second, "2등 작품", true), null);
         long suspendedEntry = entry(contestId, suspended, portfolio(suspended, "정지 회원 작품", true), null);
         long canceledEntry = entry(contestId, canceledOwner, portfolio(canceledOwner, "취소된 작품", true), now.minusDays(2));
+        long lateEntry = entry(contestId, lateSuspended, portfolio(lateSuspended, "투표 끝난 뒤 정지된 회원 작품", true), null);
+        long withdrawnEntry = entry(contestId, withdrawn, portfolio(withdrawn, "탈퇴 회원 작품", true), null);
         votes(contestId, firstEntry, 3);
         votes(contestId, secondEntry, 2);
         votes(contestId, suspendedEntry, 9);
         votes(contestId, canceledEntry, 9);
-        jdbcTemplate.update("INSERT INTO member_suspension (member_id, admin_member_id, level, reason, starts_at) VALUES (?, ?, 'PERMANENT', '사유', ?)",
-                suspended, first, now.minusDays(1));
+        votes(contestId, lateEntry, 1);
+        votes(contestId, withdrawnEntry, 9);
+        // 정지·탈퇴는 투표가 끝난 시각(1시간 전)으로 본다: 그 전 정지·탈퇴는 빠지고, 그 뒤 정지는 그대로 받는다 (결정 8)
+        suspend(suspended, first, now.minusDays(1));
+        suspend(lateSuspended, first, now.minusMinutes(30));
+        jdbcTemplate.update("UPDATE member SET status = 'WITHDRAWN', withdrawn_at = ? WHERE member_id = ?", now.minusHours(2), withdrawn);
 
         contestAwardService.announce();
         contestAwardService.announce(); // 이미 수상 기록이 있으면 다시 집계하지 않는다
@@ -78,7 +86,7 @@ class ContestAwardTest {
 
         assertThat(jdbcTemplate.queryForList("SELECT contest_entry_id, award_rank FROM contest_award WHERE contest_id = ? ORDER BY award_rank",
                 contestId)).extracting(row -> List.of(((Number) row.get("contest_entry_id")).longValue(), ((Number) row.get("award_rank")).intValue()))
-                .containsExactly(List.of(firstEntry, 1), List.of(secondEntry, 2));
+                .containsExactly(List.of(firstEntry, 1), List.of(secondEntry, 2), List.of(lateEntry, 3));
         assertThat(jdbcTemplate.queryForObject("SELECT content FROM notification WHERE member_id = ? AND notification_type = 'BADGE'",
                 String.class, first)).isEqualTo("배지를 받았습니다: 2094년 1월 1등");
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notification WHERE member_id = ? AND notification_type = 'BADGE'",
@@ -90,7 +98,7 @@ class ContestAwardTest {
     }
 
     @Test
-    void 투표가_끝난_지_하루가_넘었거나_아직_투표_중이면_집계하지_않는다() {
+    void 투표가_끝난_지_오래돼도_수상_기록이_없으면_집계하고_투표_중이면_하지_않는다() {
         long old = contest("2094-02", now.minusDays(2));
         long voting = contestVoting("2094-03");
         long a = member();
@@ -100,7 +108,8 @@ class ContestAwardTest {
         contestAwardService.announce();
         entityManager.flush();
 
-        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM contest_award WHERE contest_id IN (?, ?)", Long.class, old, voting)).isZero();
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM contest_award WHERE contest_id = ?", Long.class, old)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM contest_award WHERE contest_id = ?", Long.class, voting)).isZero();
     }
 
     @Test
@@ -177,6 +186,11 @@ class ContestAwardTest {
             jdbcTemplate.update("INSERT INTO contest_vote (contest_id, contest_entry_id, voter_member_id, vote_date) VALUES (?, ?, ?, ?)",
                     contestId, entryId, member(), LocalDate.now().minusDays(1));
         }
+    }
+
+    private void suspend(long memberId, long adminId, LocalDateTime startsAt) {
+        jdbcTemplate.update("INSERT INTO member_suspension (member_id, admin_member_id, level, reason, starts_at) VALUES (?, ?, 'PERMANENT', '사유', ?)",
+                memberId, adminId, startsAt);
     }
 
     private void award(long contestId, long entryId, int rank) {

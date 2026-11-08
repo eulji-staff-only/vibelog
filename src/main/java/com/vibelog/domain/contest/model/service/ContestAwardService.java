@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +26,9 @@ import java.util.stream.Collectors;
 /*
  * [ContestAwardService]
  * 역할 : 콘테스트 결과 발표와 배지 지급 (FR-CTS-004, FR-RWD-001, PL-CTS-005·006, #202).
- * 책임 : - 10분마다 투표가 끝난 지 하루가 안 됐고 수상 기록이 없는 콘테스트를 집계한다 (contest 명세 결정 7).
- *          투표가 끝나면 표·출품 취소를 더 받지 않으므로 언제 돌아도 결과가 같다 (결정 13).
- *        - 대상: 출품 취소되지 않았고, 지금 정지 중이거나 탈퇴하지 않은 회원의 출품작 중 1표 이상 받은 것 (결정 6·8).
+ * 책임 : - 10분마다 투표가 끝났고 수상 기록이 없는 콘테스트를 집계한다 (contest 명세 결정 7). 배치가 밀려도 다음에 집계한다.
+ *          투표가 끝나면 표·출품 취소를 더 받지 않고 회원 상태도 투표가 끝난 시각으로 보므로 언제 돌아도 결과가 같다 (결정 13).
+ *        - 대상: 출품 취소되지 않았고, 투표가 끝난 시각에 정지 중이 아니었고 탈퇴하지 않은 회원의 출품작 중 1표 이상 받은 것 (결정 6·8).
  *        - 순위: 표 수 많은 순, 같은 표 수는 같은 순위(1·1·2), 순위마다 먼저 출품한 2명까지, 3등까지 (결정 5).
  *        - 수상 1건 = contest_award 1행 = 배지. 수상자에게 BADGE 알림 (계약 ⑬).
  */
@@ -48,21 +49,22 @@ public class ContestAwardService {
     @Scheduled(cron = "0 */10 * * * *")
     @Transactional
     public void announce() {
-        LocalDateTime now = LocalDateTime.now();
-        contestRepository.findToAnnounce(now, now.minusDays(1)).forEach(this::award);
+        contestRepository.findToAnnounce(LocalDateTime.now()).forEach(this::award);
     }
 
     private void award(Contest contest) {
         Long contestId = contest.getContestId();
         Map<Long, Long> votes = contestVoteRepository.countByEntry(contestId).stream()
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
-        // 출품순. 표를 받은 것만 보면 되므로 회원 검사도 그것만 한다
+        // 출품순. 표를 받은 것만 보면 되므로 회원 검사도 그 작성자만 한다
         List<ContestEntry> voted = contestEntryRepository.findByContestIdAndCanceledAtIsNullOrderByContestEntryIdAsc(contestId).stream()
                 .filter(e -> votes.containsKey(e.getContestEntryId()))
                 .toList();
-        Set<Long> suspended = memberReader.findSuspendedMemberIds(voted.stream().map(ContestEntry::getMemberId).toList());
+        List<Long> memberIds = voted.stream().map(ContestEntry::getMemberId).toList();
+        Set<Long> excluded = new HashSet<>(memberReader.findSuspendedMemberIds(memberIds, contest.getVoteEndsAt()));
+        excluded.addAll(memberReader.findWithdrawnMemberIds(memberIds, contest.getVoteEndsAt()));
         Map<Long, Long> memberOfEntry = voted.stream()
-                .filter(e -> !suspended.contains(e.getMemberId()) && memberReader.isActive(e.getMemberId()))
+                .filter(e -> !excluded.contains(e.getMemberId()))
                 .collect(Collectors.toMap(ContestEntry::getContestEntryId, ContestEntry::getMemberId, (a, b) -> a, LinkedHashMap::new));
 
         rank(List.copyOf(memberOfEntry.keySet()), votes).forEach((entryId, rank) -> {
