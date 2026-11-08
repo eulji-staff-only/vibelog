@@ -28,6 +28,15 @@ spring:
       "[mail.smtp.connectiontimeout]": 5000
       "[mail.smtp.timeout]": 5000
       "[mail.smtp.writetimeout]": 5000
+
+  servlet:
+    multipart:
+      # 파일 규칙(장당 5MB)은 FileStorage 가 검사해 INVALID_FILE 로 안내한다 (#79).
+      # 이 값을 넘어도 GlobalExceptionHandler 가 같은 안내를 보내지만, 서버가 나머지를 읽지 않고 연결을 끊는다.
+      # 그래서 흔한 크기의 사진(5~20MB)은 끝까지 읽고 안내하도록 넉넉히 둔다 (게시글 3장 = 15MB).
+      max-file-size: 20MB
+      max-request-size: 30MB
+
 server:
   servlet:
     session:
@@ -41,3 +50,7 @@ vibelog:
     from: ${MAIL_FROM:no-reply@vibelog.example}
     # 메일 서버가 없을 때 메일 내용(링크)을 로그에 남길지. 로컬에서만 MAIL_LOG_BODY=true 로 켠다 (배포 서버는 끈 채로 둔다)
     log-body: ${MAIL_LOG_BODY:false}
+
+  upload:
+    # 업로드 파일 저장 폴더 (#79). 배포 서버에서는 환경 변수 UPLOAD_DIR 로 바꾼다
+    dir: ${UPLOAD_DIR:uploads}
