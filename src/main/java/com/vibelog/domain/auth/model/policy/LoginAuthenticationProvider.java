@@ -4,9 +4,11 @@ import com.vibelog.domain.auth.model.dao.MemberRepository;
 import com.vibelog.domain.auth.model.entity.Member;
 import com.vibelog.domain.auth.model.entity.MemberStatus;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -46,6 +48,21 @@ public class LoginAuthenticationProvider extends DaoAuthenticationProvider {
                 throw new LockedException("로그인 잠김", e);
             }
             throw e;
+        }
+    }
+
+    /* 구글·깃허브로 가입한 이메일(비밀번호 없음)로 폼 로그인하면 "처음 가입한 방식" 안내를 보여 준다 (SOCIAL_ACCOUNT_EMAIL, PL-USR-005, #91) */
+    @Override
+    protected void additionalAuthenticationChecks(UserDetails userDetails, UsernamePasswordAuthenticationToken authentication) {
+        if (userDetails.getPassword().isEmpty()) {
+            throw new SocialAccountLoginException();
+        }
+        super.additionalAuthenticationChecks(userDetails, authentication);
+    }
+
+    public static class SocialAccountLoginException extends AuthenticationException {
+        public SocialAccountLoginException() {
+            super("소셜 가입 계정");
         }
     }
 
