@@ -32,11 +32,11 @@ import java.time.LocalDateTime;
 public class MypageService {
 
     private final MemberRepository memberRepository;
+    private final SuspensionPolicy suspensionPolicy;
     private final SocialAccountRepository socialAccountRepository;
     private final EmailVerificationRepository emailVerificationRepository;
     private final MemberPortfolioCleaner memberPortfolioCleaner;
     private final PasswordEncoder passwordEncoder;
-    private final SuspensionPolicy suspensionPolicy;
 
     public MypageInfo getInfo(Long memberId) {
         Member member = getMember(memberId);
