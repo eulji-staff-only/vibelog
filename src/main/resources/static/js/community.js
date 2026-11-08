@@ -41,11 +41,16 @@ document.addEventListener('DOMContentLoaded', () => {
             button.disabled = true;
             try {
                 const response = await fetch(button.dataset.url, { method: 'POST', headers: { [header]: token } });
-                if (response.ok) {
-                    const { favorited } = await response.json();
-                    button.setAttribute('aria-pressed', String(favorited));
-                    button.textContent = favorited ? '즐겨찾기 취소' : '즐겨찾기';
+                // 실패는 {code, message} JSON. 세션이 끝나 로그인 화면(HTML)이 오면 읽지 못해 null
+                const body = await response.json().catch(() => null);
+                if (response.ok && body) {
+                    button.setAttribute('aria-pressed', String(body.favorited));
+                    button.textContent = body.favorited ? '즐겨찾기 취소' : '즐겨찾기';
+                } else {
+                    alert(body?.message ?? '즐겨찾기를 처리하지 못했습니다. 화면을 새로고침한 뒤 다시 시도해 주세요.');
                 }
+            } catch (e) {
+                alert('요청을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.');
             } finally {
                 button.disabled = false;
             }
