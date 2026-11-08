@@ -1,7 +1,7 @@
 package com.vibelog.global.config;
 
-import com.vibelog.domain.course.model.policy.LoginDiagnosisChecker;
-import com.vibelog.domain.lesson.model.policy.LoginEnrollmentChecker;
+import com.vibelog.domain.course.model.service.CourseContractService;
+import com.vibelog.domain.lesson.model.service.LessonContractService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -22,7 +22,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willReturn;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -33,7 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /*
  * 접근 권한(비회원·학습자·운영자), 로그인 도착지(API-USR-05 ①②④⑤), 로그인 유지(PL-USR-006), 5회 실패 잠금(PL-USR-007)을 확인한다. (#12)
  * 로그인 테스트용 회원은 테스트마다 넣고 끝나면 되돌린다(@Transactional). 비밀번호는 매번 무작위로 만든다.
- * 계약 ⑫(진행 중 수강)는 테스트마다 값을 정하려고 가짜(Mock)로 바꿔 둔다. 기본값은 "수강 중인 코스 없음".
+ * 계약 ⑫(진행 중 수강)·진단 기록은 테스트마다 값을 정하려고 실제 빈을 감싼 Spy 로 그 메서드만 바꾼다. 기본값은 "진단함, 수강 중인 코스 없음".
+ * Mock 으로 빈을 통째로 바꾸면 같은 빈이 구현한 다른 계약(ExamLessonProgress 등)을 주입받는 곳에서 앱이 뜨지 않는다 (#231).
+ * Spy 는 given(...) 이 실제 메서드를 먼저 부르므로 willReturn(...).given(spy) 로 쓴다.
  * 로컬 MySQL 이 켜져 있고 sql/01-schema.sql 로 member 테이블이 만들어져 있어야 통과한다.
  */
 @SpringBootTest
@@ -52,18 +54,18 @@ class SecurityConfigTest {
     @Autowired
     PasswordEncoder passwordEncoder;
 
-    @MockitoBean
-    LoginEnrollmentChecker loginEnrollmentChecker;
+    @MockitoSpyBean
+    LessonContractService lessonContractService;
 
-    @MockitoBean
-    LoginDiagnosisChecker loginDiagnosisChecker;
+    @MockitoSpyBean
+    CourseContractService courseContractService;
 
     private final String password = UUID.randomUUID().toString();
 
     @BeforeEach
     void 진단은_했고_수강_중인_코스가_없는_회원으로_둔다() {
-        given(loginDiagnosisChecker.hasDiagnosisRecord(anyLong())).willReturn(true);
-        given(loginEnrollmentChecker.hasActiveEnrollment(anyLong())).willReturn(false);
+        willReturn(true).given(courseContractService).hasDiagnosisRecord(anyLong());
+        willReturn(false).given(lessonContractService).hasActiveEnrollment(anyLong());
     }
 
     @Test
@@ -110,8 +112,8 @@ class SecurityConfigTest {
     @Test
     void 진단_기록이_없으면_수강_중이어도_진단으로_간다() throws Exception {
         insertMember(EMAIL, "LEARNER");
-        given(loginDiagnosisChecker.hasDiagnosisRecord(anyLong())).willReturn(false);
-        given(loginEnrollmentChecker.hasActiveEnrollment(anyLong())).willReturn(true);
+        willReturn(false).given(courseContractService).hasDiagnosisRecord(anyLong());
+        willReturn(true).given(lessonContractService).hasActiveEnrollment(anyLong());
 
         login(null).andExpect(redirectedUrl("/diagnosis"));
     }
@@ -119,7 +121,7 @@ class SecurityConfigTest {
     @Test
     void 운영자는_진단_기록이_없어도_백오피스로_가고_redirect_가_있으면_그_화면이다() throws Exception {
         insertMember(EMAIL, "ADMIN");
-        given(loginDiagnosisChecker.hasDiagnosisRecord(anyLong())).willReturn(false);
+        willReturn(false).given(courseContractService).hasDiagnosisRecord(anyLong());
 
         login(null).andExpect(redirectedUrl("/admin"));
         login("/community").andExpect(redirectedUrl("/community"));
@@ -128,7 +130,7 @@ class SecurityConfigTest {
     @Test
     void 진행_중인_수강이_있으면_내_학습으로_간다() throws Exception {
         insertMember(EMAIL, "LEARNER");
-        given(loginEnrollmentChecker.hasActiveEnrollment(anyLong())).willReturn(true);
+        willReturn(true).given(lessonContractService).hasActiveEnrollment(anyLong());
 
         login(null).andExpect(redirectedUrl("/my/learning"));
     }
