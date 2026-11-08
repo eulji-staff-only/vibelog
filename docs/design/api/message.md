@@ -9,7 +9,7 @@
 
 | ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| API-MSG-01 | 쪽지함 | GET | `/messages` | 회원 | query `box`(received, sent. 없으면 received), `messageId`(선택: 오른쪽에 열 쪽지), `page` | U-27 + 탭별 쪽지 목록(상대 닉네임, 내용 앞부분, 보낸 시각, 받은 쪽지는 읽음 여부) 최신순 20개씩, 페이지 정보 / `messageId`가 있으면 그 쪽지 내용과 (받은 쪽지면) 답장 폼. **받은 쪽지를 열면 `read_at`을 기록한다** | `MESSAGE_NOT_FOUND`(없음), `NOT_OWNER`(주고받은 두 사람이 아님, PL-MSG-001) | FR-MSG-002, PL-MSG-001 |
+| API-MSG-01 | 쪽지함 | GET | `/messages` | 회원 | query `box`(received, sent. 없으면 received), `messageId`(선택: 오른쪽에 열 쪽지), `page` | U-27 + 탭별 쪽지 목록(상대 닉네임, 내용 앞부분, 보낸 시각, 받은 쪽지는 읽음 여부) 최신순(같은 시각이면 `message_id` 내림차순) 20개씩, 페이지 정보 / `messageId`가 있으면 그 쪽지 내용과 (받은 쪽지면) 답장 폼. **받은 쪽지를 열면 `read_at`을 기록한다** | `MESSAGE_NOT_FOUND`(없음), `NOT_OWNER`(주고받은 두 사람이 아님, PL-MSG-001) | FR-MSG-002, PL-MSG-001 |
 | API-MSG-02 | 받는 사람 찾기 | GET | `/api/users` | 회원 | query `nickname` | JSON `[{"memberId", "nickname"}]` — 닉네임이 `nickname`으로 시작하는 회원 최대 10명. 나와 탈퇴 회원은 뺀다. `nickname`이 비면 빈 목록 | - | FR-MSG-001 (U-27 새 쪽지) |
 | API-MSG-03 | 쪽지 보내기 (쪽지함) | POST | `/messages` | 인증 | form `receiverMemberId`, `content` | 저장 → 받는 사람에게 MESSAGE 알림 → `/messages?box=sent&messageId={새 messageId}` + toast "쪽지를 보냈습니다" | `INVALID_INPUT`(내용 1~1,000자, PL-MSG-003), `BANNED_WORD`(NFR-SEC-009), `EMAIL_NOT_VERIFIED`, `MESSAGE_SELF`, `MESSAGE_RECEIVER_NOT_FOUND`(없음·탈퇴), `MESSAGE_DAILY_LIMIT`, `MESSAGE_UNANSWERED_LIMIT` → U-27 새 쪽지 폼 다시 | FR-MSG-001, PL-MSG-003 |
 | API-MSG-04 | 쪽지 보내기 (공개 프로필) | POST | `/users/{memberId}/messages` | 인증 | path `memberId`(받는 사람), form `content` (M-13) | API-MSG-03과 같게 저장·알림 → `/users/{memberId}` + toast "쪽지를 보냈습니다" | API-MSG-03과 같은 검사. 실패하면 → `/users/{memberId}` + flash `messageContent`(작성한 내용)·`messageError`(에러 메시지). U-29는 이 값이 있으면 M-13을 연 채로 내용과 메시지를 보여준다 (#181) | FR-MSG-001 |
@@ -26,7 +26,7 @@
 
 | ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| API-NTF-01 | 알림 목록 | GET | `/api/notifications` | 회원 | query `page`(1부터) | JSON `{"unreadCount", "hasNext", "items": [{"notificationId", "notificationType", "content", "read", "createdAt"}]}` — 내 알림 최신순 20개씩. 드롭다운을 열 때 1쪽, "더 보기"로 다음 쪽 (보관 90일 안의 알림은 모두 열 수 있다) | - | FR-NTF-001 |
+| API-NTF-01 | 알림 목록 | GET | `/api/notifications` | 회원 | query `page`(1부터) | JSON `{"unreadCount", "hasNext", "items": [{"notificationId", "notificationType", "content", "read", "createdAt"}]}` — 내 알림 최신순(`created_at` 내림차순, 같으면 `notification_id` 내림차순) 20개씩. 드롭다운을 열 때 1쪽, "더 보기"로 다음 쪽 (보관 90일 안의 알림은 모두 열 수 있다) | - | FR-NTF-001 |
 | API-NTF-02 | 알림 열기 | GET | `/notifications/{notificationId}` | 회원(본인) | path `notificationId` | `read_at` 기록 → 아래 "알림 도착지" 주소로 redirect | `NOTIFICATION_NOT_FOUND`, `NOT_OWNER` | FR-NTF-001 |
 | API-NTF-03 | 모두 읽음 | POST | `/api/notifications/read-all` | 회원 | - | 내 안 읽은 알림 전부 `read_at` 기록 → 204 | - | PL-NTF-002 |
 
