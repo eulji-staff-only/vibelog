@@ -23,7 +23,12 @@ public enum AuthErrorCode implements ErrorCode {
     RESEND_TOO_SOON(HttpStatus.TOO_MANY_REQUESTS, "1분 뒤에 다시 받을 수 있습니다."),
     ALREADY_VERIFIED(HttpStatus.CONFLICT, "이미 인증된 이메일입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다."),
-    PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "현재 비밀번호가 맞지 않습니다.");
+    PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "현재 비밀번호가 맞지 않습니다."),
+    ACCOUNT_SUSPENDED(HttpStatus.FORBIDDEN, "이용이 정지된 계정입니다."),
+    ALREADY_SUSPENDED(HttpStatus.CONFLICT, "이미 이용 정지 중인 회원입니다."),
+    NOT_SUSPENDED(HttpStatus.CONFLICT, "정지 중인 회원이 아닙니다."),
+    CANNOT_SUSPEND_ADMIN(HttpStatus.CONFLICT, "운영자 계정은 정지할 수 없습니다."),
+    SUSPENDED_CANNOT_WITHDRAW(HttpStatus.CONFLICT, "이용 정지 중에는 탈퇴할 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;
