@@ -51,8 +51,12 @@ public class PortfolioReader {
                 p.getCourseId() == null ? null : assignmentIds.get(p.getCourseId()), p.isPublic(), p.isDeleted()), (a, b) -> a));
     }
 
-    /* 회원의 삭제 표시 없는 포트폴리오 ID (리뷰 요청 동시 3개 제한, PL-REV-002) */
-    public List<Long> findLivePortfolioIdsOf(Long memberId) {
-        return portfolioRepository.findAllByMemberIdAndDeletedAtIsNull(memberId).stream().map(Portfolio::getPortfolioId).toList();
+    /*
+     * 회원의 삭제 표시 없는 포트폴리오 ID (리뷰 요청 동시 3개 제한, PL-REV-002).
+     * 그 행들에 쓰기 잠금을 걸어, 같은 회원의 동시 리뷰 요청이 차례로 검사되게 한다. 부르는 쪽 트랜잭션이 끝나면 풀린다.
+     */
+    @Transactional
+    public List<Long> lockLivePortfolioIdsOf(Long memberId) {
+        return portfolioRepository.findLiveByMemberIdForUpdate(memberId).stream().map(Portfolio::getPortfolioId).toList();
     }
 }

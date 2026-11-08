@@ -75,6 +75,8 @@ public class PeerReviewService {
     /* API-REV-01 */
     @Transactional
     public void request(Long memberId, Long portfolioId) {
+        // 같은 회원의 요청을 차례로 처리한다 (버튼 두 번·탭 두 개로 열린 요청이 두 개 생기지 않게)
+        List<Long> myPortfolioIds = portfolioReader.lockLivePortfolioIdsOf(memberId);
         PortfolioBrief portfolio = portfolioReader.findBrief(portfolioId).filter(p -> !p.deleted())
                 .orElseThrow(() -> new BusinessException(CommunityErrorCode.PORTFOLIO_NOT_FOUND));
         if (!portfolio.memberId().equals(memberId)) {
@@ -87,7 +89,6 @@ public class PeerReviewService {
                 portfolioId, openSince()).isPresent()) {
             throw new BusinessException(CommunityErrorCode.REVIEW_REQUEST_OPEN);
         }
-        List<Long> myPortfolioIds = portfolioReader.findLivePortfolioIdsOf(memberId);
         if (reviewRequestRepository.countByPortfolioIdInAndClosedAtIsNullAndRequestedAtAfter(myPortfolioIds, openSince())
                 >= MAX_OPEN_REQUESTS) {
             throw new BusinessException(CommunityErrorCode.REVIEW_REQUEST_LIMIT);
