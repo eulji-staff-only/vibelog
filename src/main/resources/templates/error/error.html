@@ -1,29 +1,84 @@
 <!--
   error/error.html
-  역할: GlobalExceptionHandler 가 모든 오류를 보내는 화면 한 장.
-        상태코드(404·403·500 등)로 나눠 그리는 자세한 문구(E-01~E-03)는 #46에서 채운다.
-        여기서는 #13 범위대로 공통 헤더·푸터만 입힌다.
+  역할: GlobalExceptionHandler 가 Controller·Service 예외를 모두 보내는 화면 한 장. status(모델의
+        정수)로 E-01(404)·E-02(403)·E-03(500)과 그 밖의 상태를 나눠 그린다 (#46, PL-ERR-001·006).
+  message 는 호출한 쪽(BusinessException 의 ErrorCode 등)이 준 문구를 그대로 보여준다. 다만 404·403·500은
+  화면 흐름 설계서 1-4 문구를 기본으로 쓰고, message 가 있으면 보조 설명으로 덧붙인다.
+  오류 화면에는 모두 문의 이메일을 보여줘야 하는데(PL-ERR-006), common/layout 의 footer 에 이미 있다.
+  errorBody(status, message) fragment 는 error/404.html · 403.html · 500.html (Spring Boot 가 컨트롤러를
+  거치지 않은 오류를 "/error" 로 보낼 때 찾는 이름, 예: SecurityConfig 의 403) 에서도 그대로 가져다 쓴다.
 -->
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>오류 발생</title>
+    <title>오류 안내 — 바이브로그</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
 </head>
 <body>
 
 <div th:replace="~{common/layout :: header}"></div>
 
-<main class="vl-content vl-error">
-    <h1 th:text="${status}">500</h1>
-    <p th:text="${message}">오류가 발생했습니다.</p>
-    <button type="button" onclick="history.back()">뒤로가기</button>
-    <a href="/">홈으로</a>
+<!--
+  이 화면을 GlobalExceptionHandler 가 "error/error" 로 바로 그릴 때는 th:fragment 매개변수 이름(status,
+  message)이 모델 속성 이름과 같아서 그대로 쓰인다. error/404·403·500.html 은 이 fragment 를
+  th:replace="~{error/error :: errorBody(404, '...')}" 처럼 값을 직접 넣어 가져다 쓴다 (아래 참고).
+-->
+<main th:fragment="errorBody(status, message)" class="vl-error">
+    <!-- E-01 404 -->
+    <th:block th:if="${status == 404}">
+        <p class="vl-error__code">404</p>
+        <h1 class="vl-error__title">페이지를 찾을 수 없습니다</h1>
+        <p class="vl-error__desc">
+            주소가 바뀌었거나, 삭제되거나 비공개로 전환된 페이지일 수 있어요.
+        </p>
+        <p class="vl-error__desc" th:if="${message != null and !#strings.isEmpty(message) and message != '페이지를 찾을 수 없습니다.'}" th:text="${message}"></p>
+    </th:block>
+
+    <!-- E-02 403 -->
+    <th:block th:if="${status == 403}">
+        <p class="vl-error__code">403</p>
+        <h1 class="vl-error__title">접근할 수 없습니다</h1>
+        <p class="vl-error__desc" th:text="${message != null and !#strings.isEmpty(message) ? message : '이 페이지를 볼 수 있는 권한이 없습니다.'}">
+            이 페이지를 볼 수 있는 권한이 없습니다.
+        </p>
+    </th:block>
+
+    <!-- E-03 500 (그 밖에 예상하지 못한 오류 포함) -->
+    <th:block th:if="${status == 500}">
+        <p class="vl-error__code">500</p>
+        <h1 class="vl-error__title">일시적인 오류가 발생했습니다</h1>
+        <p class="vl-error__desc">잠시 후 다시 시도해 주세요.</p>
+        <div class="vl-ui-btn-group">
+            <button type="button" class="vl-ui-btn is-navy" data-ui-reload>다시 시도</button>
+        </div>
+        <!-- PL-ERR-003 문의용 오류 번호. 서버 로그와 연결되는 실제 추적 번호(상관관계 ID)는
+             GlobalExceptionHandler 가 아직 만들지 않아서, 지금은 상태·시각으로 만든 화면용 참고 번호다.
+             실제 로그 추적이 필요해지면 백엔드에서 번호를 만들어 모델로 내려주는 방식으로 바꾼다. -->
+        <p class="vl-error__ref" th:text="${'오류 번호: ERR-' + status + '-' + #dates.format(#dates.createNow(), 'yyyyMMddHHmmss')}">오류 번호</p>
+    </th:block>
+
+    <!-- 그 밖(400·409 등) -->
+    <th:block th:if="${status != 404 and status != 403 and status != 500}">
+        <p class="vl-error__code" th:text="${status}">400</p>
+        <h1 class="vl-error__title">요청을 처리할 수 없습니다</h1>
+        <p class="vl-error__desc" th:text="${message != null and !#strings.isEmpty(message) ? message : '입력하신 내용을 다시 확인해 주세요.'}">
+            입력하신 내용을 다시 확인해 주세요.
+        </p>
+    </th:block>
+
+    <div class="vl-ui-btn-group" th:if="${status != 500}">
+        <a class="vl-ui-btn is-outline" href="#" data-ui-back>이전 페이지로</a>
+        <a class="vl-ui-btn is-navy" href="/">홈으로</a>
+    </div>
+    <div class="vl-ui-btn-group" th:if="${status == 500}">
+        <a class="vl-ui-btn is-outline" href="/">홈으로</a>
+    </div>
 </main>
 
 <div th:replace="~{common/layout :: footer}"></div>
 
+<script th:src="@{/js/ui.js}"></script>
 </body>
 </html>
