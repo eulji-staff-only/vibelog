@@ -3,11 +3,14 @@ package com.vibelog.domain.auth.model.service;
 import com.vibelog.domain.auth.model.dao.MemberRepository;
 import com.vibelog.domain.auth.model.dao.MemberSuspensionRepository;
 import com.vibelog.domain.auth.model.entity.Member;
+import com.vibelog.domain.auth.model.entity.MemberStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,5 +59,17 @@ public class MemberReader {
     /* 탈퇴하지 않은 회원 전체 ID. 공지 등록 때 모든 회원에게 알림을 남긴다 (message API-NTF-07, #186) */
     public List<Long> findActiveMemberIds() {
         return memberRepository.findActiveMemberIds();
+    }
+
+    /* 쪽지 받는 사람 찾기 (message API-MSG-02). 닉네임 앞부분 일치, 이용 중인 회원만, 나는 뺀다. 닉네임 순 limit 명 (ID → 닉네임, 순서 유지) */
+    public Map<Long, String> findActiveNicknamesStartingWith(String prefix, Long excludeMemberId, int limit) {
+        return memberRepository.findActiveByNicknamePrefix(AdminMemberService.escapeLike(prefix), excludeMemberId,
+                        PageRequest.of(0, limit)).stream()
+                .collect(Collectors.toMap(Member::getMemberId, Member::getNickname, (a, b) -> a, LinkedHashMap::new));
+    }
+
+    /* 탈퇴하지 않은 회원인가 (쪽지 받는 사람 검사, MESSAGE_RECEIVER_NOT_FOUND). 없는 ID 면 false */
+    public boolean isActive(Long memberId) {
+        return memberRepository.existsByMemberIdAndStatus(memberId, MemberStatus.ACTIVE);
     }
 }
