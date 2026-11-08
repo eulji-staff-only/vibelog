@@ -40,4 +40,4 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | API-USR-15 | 마이페이지 | GET | `/mypage` | 회원 | query `tab`(info, posts, comments), `page` | U-24 + 닉네임, 이메일, 가입 방식 / 작성한 글 목록 / 작성한 댓글 목록. 회원 탈퇴는 info 탭 안 | - | FR-USR-008 |
 | API-USR-16 | 회원 탈퇴 | POST | `/mypage/withdraw` | 회원 | - (M-06 확인 후) | 닉네임 "탈퇴한 사용자", 계정 정보 파기, 포트폴리오 삭제 표시, 소셜 연결 삭제 → 로그아웃 → `/` + toast | `SUSPENDED_CANNOT_WITHDRAW`(정지 중, PL-USR-010, P2) | FR-USR-008, PL-USR-009·010 |
-| API-USR-17 | 비밀번호 변경 | POST | `/mypage/password` | 회원(이메일 가입) | form `newPassword` | 해시로 저장 → `/mypage?tab=info` + toast "비밀번호를 변경했습니다" | `INVALID_INPUT`(PL-USR-001) → 같은 폼 다시, `SOCIAL_ACCOUNT`(소셜 가입 계정은 비밀번호 없음) | 프로토타입(U-24), PL-USR-001 |
+| API-USR-17 | 비밀번호 변경 | POST | `/mypage/password` | 회원(이메일 가입) | form `currentPassword`, `newPassword` | 해시로 저장 → `/mypage?tab=info` + toast "비밀번호를 변경했습니다" | `INVALID_INPUT`(PL-USR-001)·`PASSWORD_MISMATCH`(현재 비밀번호 틀림) → 같은 폼 다시, `SOCIAL_ACCOUNT`(소셜 가입 계정은 비밀번호 없음) | 프로토타입(U-24), PL-USR-001 |

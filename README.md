@@ -16,7 +16,7 @@
 | 4 | 커밋 메시지는 `타입(영역): 한 일` | `feat(quiz): 정답률 계산 함수 추가` |
 | 5 | PR은 **`develop`** 으로 보낸다 | base: `develop` ← compare: `feat/12-quiz-grading` |
 | 6 | **PR 제목도 커밋 규칙과 똑같이** 쓴다 | `feat(quiz): 퀴즈 통과 판정 기능 추가` |
-| 7 | **PM·형상관리 중 1명 승인**을 받아야 머지한다. 다른 영역 파일을 바꿨으면 **그 영역 담당 승인**도 | 리뷰어는 자동 지정 ([리뷰어 지정 약속](#-코드-구조-규칙)), 리뷰 요청을 받으면 24시간 안에 첫 응답 |
+| 7 | **PM·형상관리 중 1명 승인**을 받아야 머지한다. 승인 담당이 있는 다른 영역의 파일을 바꿨으면 **그 영역 담당 승인**도 (`course`·`quiz` 제외) | 리뷰어는 자동 지정 ([리뷰어 지정 약속](#-코드-구조-규칙)), 리뷰 요청을 받으면 24시간 안에 첫 응답 |
 | 8 | 머지는 승인 후 **PR 작성자가 직접** `Squash and merge` | 머지 후 브랜치 삭제 |
 | 9 | 작업 시작 전엔 **항상 최신 `develop`을 받는다** | `git pull origin develop` |
 | 10 | **비밀 정보는 절대 커밋하지 않는다** | `.env`, API 키, 비밀번호 ❌ / `.env.example` ⭕ |
@@ -38,7 +38,7 @@
 
 | 역할 | 담당 | 맡는 일 | 리뷰 (자동 지정) |
 |---|---|---|---|
-| **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | DB 팀이 아닌 사람이 `sql/`을 바꾼 PR → 둘 중 1명 승인 필요 |
+| **DB 담당** | `Choyeonik`, `skinopero` | DB 설계, `sql/` 스크립트(테이블·샘플 데이터), 테이블 변경 합의 | `Choyeonik`이 아닌 사람이 `sql/`을 바꾼 PR → `Choyeonik` 승인 필요 |
 | **형상관리** | `SeungBinYang` | 저장소·브랜치·빌드 검사, 공통 설정, 협업 규칙·Claude 규칙 | **모든 PR** 기본 리뷰어 (PM과 둘 중 1명 승인) |
 | **PM** | `dyryoo316` | 일정·마일스톤 관리, 회의 진행과 결정 정리, 담당 분배 | **모든 PR** 기본 리뷰어 (형상관리와 둘 중 1명 승인) |
 
@@ -197,6 +197,15 @@ Gradle은 설치하지 않아도 됩니다. 저장소에 들어 있는 `gradlew`
 > | `SPRING_MAIL_PASSWORD` | 앱 비밀번호 |
 > | `MAIL_FROM` | 보내는 사람 주소 (기본 `no-reply@vibelog.example`) |
 > | `APP_BASE_URL` | 메일 링크의 사이트 주소 (기본 `http://localhost:8080`, 배포 서버는 실제 주소) |
+
+> 💡 **구글·깃허브 로그인 (선택, #91)** — 키가 없으면 소셜 로그인은 꺼지고 로그인 화면에 버튼도 보이지 않습니다.
+> 켜려면 [구글 클라우드 콘솔](https://console.cloud.google.com/apis/credentials)·[깃허브 OAuth 앱](https://github.com/settings/developers)에 앱을 등록하고,
+> 돌아올 주소(Redirect URI)를 `http://localhost:8080/login/oauth2/code/google`(깃허브는 `.../github`)로 넣은 뒤 환경 변수를 넣습니다.
+>
+> | 환경 변수 | 설명 |
+> | --- | --- |
+> | `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` | 구글 OAuth 클라이언트 |
+> | `GITHUB_CLIENT_ID` · `GITHUB_CLIENT_SECRET` | 깃허브 OAuth 앱 |
 
 여기까지 됐다면 준비 끝입니다. 🎉 이제 [01. 작업 흐름](docs/collaboration/01-workflow.md)을 따라 첫 작업을 시작하세요.
 
@@ -486,10 +495,11 @@ public class Quiz extends BaseTimeEntity { ... }
 |---|---|---|
 | 모든 PR | PM `dyryoo316` + 형상관리 `SeungBinYang` ([`CODEOWNERS`](.github/CODEOWNERS)) | 둘 중 1명 승인. 작성자 본인은 빠지므로 PM의 PR은 형상관리가, 형상관리의 PR은 PM이 승인 |
 | **영역 간 연동** — 다른 묶음 담당 영역의 파일(`domain/<영역>/`, `templates/<영역>/`, `static/*/<영역>.*`)을 바꾼 PR (예: 상대 영역에 `Fake` 추가) | 위 + **그 영역 담당** ([영역 담당](#영역-담당) 표) | 위 + 그 영역 담당 승인 (`area-review` 검사) |
-| `sql/`을 바꾼 PR (DB 팀이 아닌 사람이) | 위 + DB 팀 `Choyeonik`, `skinopero` | 위 + DB 팀 1명 승인 (`area-review` 검사) |
+| `sql/`을 바꾼 PR (`Choyeonik`이 아닌 사람이) | 위 + DB 팀 `Choyeonik` | 위 + `Choyeonik` 승인 (`area-review` 검사) |
 
 - `area-review` 검사는 승인이 들어오면 다시 돌아서 ✅로 바뀝니다. 내 영역만 바꾼 PR은 바로 ✅입니다.
 - 공통 파일(`global/`, `templates/common/`, `static/css/common.css` 등)과 `contest`·`message`처럼 담당이 없는 영역은 기본 리뷰어만 봅니다.
+- 묶음 B(`course`·`quiz`)는 영역 담당 승인을 요구하지 않습니다 (#204). 기본 리뷰어만 봅니다.
 - 묶음 담당이 바뀌면 [영역 담당](#영역-담당) 표와 [`.github/scripts/area-review.sh`](.github/scripts/area-review.sh)의 담당 표를 같이 고칩니다.
 - 승인 조건은 **이 표가 전부**입니다. `CLAUDE.md`·`.claude/`·협업 문서 같은 팀 규칙 변경도 같은 조건으로 머지하고, 머지 후 팀 채팅에 공지합니다.
 

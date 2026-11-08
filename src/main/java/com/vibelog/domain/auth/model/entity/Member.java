@@ -57,6 +57,13 @@ public class Member extends BaseTimeEntity {
         return member;
     }
 
+    /* 구글·깃허브로 처음 로그인한 학습자 (FR-USR-003). 비밀번호가 없고, 이메일은 인증된 것으로 본다 (PL-USR-003) */
+    public static Member createSocial(String email, String nickname, LocalDateTime now) {
+        Member member = create(email, null, nickname);
+        member.emailVerifiedAt = now;
+        return member;
+    }
+
     /* 소셜 가입 회원은 비밀번호가 없다 (password_hash NULL) */
     public boolean hasPassword() {
         return passwordHash != null;
@@ -65,6 +72,18 @@ public class Member extends BaseTimeEntity {
     /* 비밀번호 재설정(#90)·변경(#116). BCrypt 해시를 받는다 */
     public void changePassword(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    /*
+     * 회원 탈퇴 (FR-USR-008, DB 설계서 5-3). 행은 남기고 계정 정보만 비운다.
+     * email 이 비므로 같은 이메일로 다시 가입할 수 있고, 남은 글·댓글의 작성자는 "탈퇴한 사용자"로 보인다 (PL-USR-009).
+     */
+    public void withdraw(LocalDateTime now) {
+        this.status = MemberStatus.WITHDRAWN;
+        this.withdrawnAt = now;
+        this.email = null;
+        this.passwordHash = null;
+        this.nickname = "탈퇴한 사용자";
     }
 
     public boolean isEmailVerified() {

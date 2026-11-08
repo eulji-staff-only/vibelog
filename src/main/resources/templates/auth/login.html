@@ -23,6 +23,15 @@
         <div class="au-notice" th:if="${param.redirect}">
             <p>로그인 시간이 지나 로그아웃되었습니다. 다시 로그인하면 보던 화면으로 돌아갑니다</p>
         </div>
+        <!-- 같은 이메일이 다른 방식으로 가입됨 (SOCIAL_EMAIL_CONFLICT·SOCIAL_ACCOUNT_EMAIL, PL-USR-005) -->
+        <div class="au-notice is-danger" th:if="${param.socialConflict} or ${param.social}">
+            <strong>이미 다른 방식으로 가입한 이메일입니다</strong>
+            <p>처음 가입한 방식(이메일·GitHub·구글)으로 로그인해 주세요.</p>
+        </div>
+        <div class="au-notice is-danger" th:if="${param.socialError}">
+            <strong>소셜 로그인을 마치지 못했습니다</strong>
+            <p>이메일을 받을 수 없었거나 로그인을 취소했습니다. 다시 시도해 주세요.</p>
+        </div>
         <div class="au-notice is-danger" th:if="${param.locked}">
             <strong>잠시 로그인할 수 없습니다</strong>
             <p>로그인에 5번 실패해 5분 동안 로그인할 수 없습니다. 5분 뒤에 다시 시도해 주세요.</p>
@@ -47,11 +56,14 @@
             <button class="au-btn is-navy" type="submit">로그인</button>
         </form>
 
-        <p class="au-divider">또는</p>
-        <div class="au-social">
-            <button class="au-btn is-outline" type="button">구글로 계속하기</button>
-            <button class="au-btn is-outline" type="button">깃허브로 계속하기</button>
-        </div>
+        <!-- 구글·깃허브 로그인 (API-USR-06, #91). 키가 설정된 것만 보인다 -->
+        <th:block th:unless="${socialProviders.empty}">
+            <p class="au-divider">또는</p>
+            <div class="au-social">
+                <a class="au-btn is-outline" th:if="${socialProviders.contains('google')}" href="/oauth2/authorization/google">구글로 계속하기</a>
+                <a class="au-btn is-outline" th:if="${socialProviders.contains('github')}" href="/oauth2/authorization/github">깃허브로 계속하기</a>
+            </div>
+        </th:block>
 
         <p class="au-links">아직 회원이 아닌가요? <a class="au-link" href="/signup">회원가입</a></p>
     </div>
