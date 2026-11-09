@@ -3,6 +3,11 @@
  * 제출(API-PRT-04)은 #113 에서 붙인다. 여기 확인은 안내용이고, 실제 검증은 서버가 한다 (NFR-SEC-004).
  */
 document.addEventListener('DOMContentLoaded', () => {
+    // 이미 제출한 화면이면 보관해 둔 작성 내용을 지운다 (FR-PRT-010). 저장소를 못 쓰는 브라우저면 넘어간다
+    document.querySelectorAll('[data-draft-clear]').forEach((el) => {
+        try { localStorage.removeItem(el.dataset.draftClear); } catch (e) { /* 저장소 사용 불가 */ }
+    });
+
     const root = document.querySelector('[data-pf]');
     if (!root) return;
 
@@ -61,6 +66,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiKey = /(^|[^A-Za-z0-9])(sk-|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/;
     let ready = false;
 
+    // 작성 중 내용 보존 (FR-PRT-010, PL-ERR-003·004·005): 입력할 때마다와 제출을 누를 때 입력 값을 회원·코스별 키로
+    // 7일 보관하고, 다시 열면 채운다. 그래서 서버 오류·네트워크 끊김·세션 만료(제출 전 포함)로 제출이 안 돼도 내용이 남는다.
+    // 새 제출과 수정(edit=true)은 서버가 다른 키를 준다.
+    // 보관 전에 API 키 형식은 서버와 같은 규칙으로 가린다(PL-PRT-008). 스크린샷 파일은 보관하지 않는다.
+    // 제출 성공이 확인되면(이미 제출함 화면, 수정 후 내 포트폴리오) data-draft-clear 로 지운다.
+    const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;   // PL-ERR-004 7일
+    const draftKey = form.dataset.draftKey;
+    const draftFields = ['resultUrl', 'title', 'summary', 'retrospective', 'aiTools', 'agentResult'];
+    const maskKeys = (value) => value.replace(/(?<![A-Za-z0-9])(sk-|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/g, '$1****');
+    const readDraft = () => {
+        try {
+            const draft = JSON.parse(localStorage.getItem(draftKey));
+            if (draft && Date.now() - draft.savedAt <= DRAFT_MAX_AGE) return draft;
+            localStorage.removeItem(draftKey);   // 없거나 7일이 지났다
+        } catch (e) { /* 저장소 사용 불가 · 깨진 값 */ }
+        return null;
+    };
+    const saveDraft = () => {
+        const draft = { savedAt: Date.now(), isPublic: visInput.value };
+        draftFields.forEach((name) => { draft[name] = maskKeys(form.elements[name].value); });
+        try { localStorage.setItem(draftKey, JSON.stringify(draft)); } catch (e) { /* 저장소 사용 불가 · 가득 참 */ }
+    };
+    const draft = readDraft();
+    if (draft) {
+        draftFields.forEach((name) => { if (typeof draft[name] === 'string') form.elements[name].value = draft[name]; });
+        if (draft.isPublic === 'true' || draft.isPublic === 'false') {
+            visInput.value = draft.isPublic;
+            visButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.visValue === draft.isPublic)));
+        }
+        root.querySelector('[data-draft-notice]').hidden = false;
+    }
+
     const isUrl = (value) => /^https?:\/\/[^\s]+\.[^\s]+$/.test(value.trim());
     const retroOk = () => retro.value.length >= 100 && retro.value.length <= 2000;
 
@@ -97,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     [url, retro, ...required, ...keyFields].forEach((field) => field.addEventListener('input', () => {
         showCount(field);
         render();
+        saveDraft();
     }));
 
     // 공개 여부 (PL-PRT-006): 기본값 없이 하나만 고른다. 고른 값을 숨은 칸 isPublic 에 넣는다
@@ -104,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         visButtons.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
         visInput.value = button.dataset.visValue;
         render();
+        saveDraft();
     }));
 
     // 준비가 안 됐으면 보내지 않고, 보낼 때는 버튼을 잠가 중복 제출을 막는다 (PL-ERR-003)
@@ -114,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             return;
         }
+        saveDraft();
         submit.disabled = true;
     });
 

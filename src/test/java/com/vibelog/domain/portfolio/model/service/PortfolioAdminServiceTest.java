@@ -4,6 +4,9 @@ import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dao.GuideStepRepository;
 import com.vibelog.domain.portfolio.model.dao.PortfolioAssignmentRepository;
 import com.vibelog.domain.portfolio.model.dto.PortfolioAssignmentForm;
+import com.vibelog.domain.portfolio.model.entity.PortfolioFaq;
+import com.vibelog.domain.portfolio.model.dao.PortfolioFaqRepository;
+import com.vibelog.domain.portfolio.model.dto.PortfolioFaqForm;
 import com.vibelog.domain.portfolio.model.entity.GuideStep;
 import com.vibelog.domain.portfolio.model.entity.PortfolioAssignment;
 import com.vibelog.global.exception.BusinessException;
@@ -45,6 +48,7 @@ class PortfolioAdminServiceTest {
     @Autowired PortfolioAdminService portfolioAdminService;
     @Autowired PortfolioAssignmentRepository portfolioAssignmentRepository;
     @Autowired GuideStepRepository guideStepRepository;
+    @Autowired PortfolioFaqRepository portfolioFaqRepository;
     @Autowired JdbcTemplate jdbcTemplate;
     @Autowired EntityManager entityManager;
 
@@ -155,5 +159,56 @@ class PortfolioAdminServiceTest {
 
         assertThatThrownBy(() -> portfolioAdminService.saveAgent(COURSE, "안내", script))
                 .extracting("errorCode").isEqualTo(CommonErrorCode.INVALID_FILE);
+    }
+    private static PortfolioFaqForm faqs(PortfolioFaqForm.Faq... faqs) {
+        return PortfolioFaqForm.of(List.of(faqs));
+    }
+
+    private List<PortfolioFaq> savedFaqs(Long courseId) {
+        entityManager.flush();
+        entityManager.clear();
+        return portfolioFaqRepository.findByPortfolioAssignmentIdOrderBySortOrderAsc(
+                portfolioAssignmentRepository.findByCourseId(courseId).orElseThrow().getPortfolioAssignmentId());
+    }
+
+    @Test
+    void FAQ는_보낸_목록으로_맞춘다_고치고_순서를_바꾸고_새로_넣고_빠진_것은_지운다() {
+        portfolioAdminService.saveAssignment(COURSE, form("주제"));
+        portfolioAdminService.saveFaqs(COURSE, faqs(new PortfolioFaqForm.Faq(null, "A", "a"), new PortfolioFaqForm.Faq(null, "B", "b"),
+                new PortfolioFaqForm.Faq(null, "C", "c")));
+        List<PortfolioFaq> saved = savedFaqs(COURSE);
+
+        portfolioAdminService.saveFaqs(COURSE, faqs(new PortfolioFaqForm.Faq(saved.get(2).getPortfolioFaqId(), "C 고침", "c"),
+                new PortfolioFaqForm.Faq(null, "새 D", "d"), new PortfolioFaqForm.Faq(saved.get(0).getPortfolioFaqId(), "A", "a")));
+
+        assertThat(savedFaqs(COURSE)).extracting(PortfolioFaq::getQuestion, PortfolioFaq::getSortOrder)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("C 고침", 1), org.assertj.core.groups.Tuple.tuple("새 D", 2),
+                        org.assertj.core.groups.Tuple.tuple("A", 3));
+        assertThat(portfolioFaqRepository.findById(saved.get(1).getPortfolioFaqId())).isEmpty();
+    }
+
+    @Test
+    void FAQ는_과제를_먼저_저장해야_하고_다른_과제의_FAQ_ID면_INVALID_INPUT() {
+        assertThatThrownBy(() -> portfolioAdminService.saveFaqs(COURSE, faqs(new PortfolioFaqForm.Faq(null, "Q", "A"))))
+                .extracting("errorCode").isEqualTo(PortfolioErrorCode.INVALID_INPUT);
+
+        portfolioAdminService.saveAssignment(OTHER_COURSE, form("다른 코스"));
+        portfolioAdminService.saveFaqs(OTHER_COURSE, faqs(new PortfolioFaqForm.Faq(null, "남의 질문", "답")));
+        Long otherFaq = savedFaqs(OTHER_COURSE).get(0).getPortfolioFaqId();
+        portfolioAdminService.saveAssignment(COURSE, form("주제"));
+
+        assertThatThrownBy(() -> portfolioAdminService.saveFaqs(COURSE, faqs(new PortfolioFaqForm.Faq(otherFaq, "가로채기", "답"))))
+                .extracting("errorCode").isEqualTo(PortfolioErrorCode.INVALID_INPUT);
+    }
+
+    @Test
+    void 저장된_FAQ로_FAQ_탭_폼을_채우고_과제가_없으면_빈_폼이다() {
+        assertThat(portfolioAdminService.getFaqForm(COURSE).getFaqs()).isEmpty();
+        portfolioAdminService.saveAssignment(COURSE, form("주제"));
+        portfolioAdminService.saveFaqs(COURSE, faqs(new PortfolioFaqForm.Faq(null, "질문", "답")));
+        entityManager.flush();
+
+        assertThat(portfolioAdminService.getFaqForm(COURSE).getFaqs())
+                .extracting(PortfolioFaqForm.Faq::getQuestion).containsExactly("질문");
     }
 }

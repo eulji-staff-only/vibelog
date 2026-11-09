@@ -5,11 +5,14 @@ import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dao.GuideStepCheckRepository;
 import com.vibelog.domain.portfolio.model.dao.GuideStepRepository;
 import com.vibelog.domain.portfolio.model.dao.PortfolioAssignmentRepository;
+import com.vibelog.domain.portfolio.model.dao.PortfolioFaqRepository;
 import com.vibelog.domain.portfolio.model.dto.PortfolioAgentForm;
 import com.vibelog.domain.portfolio.model.dto.PortfolioAssignmentAdminView;
 import com.vibelog.domain.portfolio.model.dto.PortfolioAssignmentForm;
+import com.vibelog.domain.portfolio.model.dto.PortfolioFaqForm;
 import com.vibelog.domain.portfolio.model.entity.GuideStep;
 import com.vibelog.domain.portfolio.model.entity.PortfolioAssignment;
+import com.vibelog.domain.portfolio.model.entity.PortfolioFaq;
 import com.vibelog.global.exception.BusinessException;
 import com.vibelog.global.file.FileStorage;
 import lombok.RequiredArgsConstructor;
@@ -25,10 +28,12 @@ import java.util.stream.Collectors;
 
 /*
  * [PortfolioAdminService]
- * 역할 : 운영자 포트폴리오 과제 편집 (A-07, API-ADM-34~36, FR-PRT-012·013).
+ * 역할 : 운영자 포트폴리오 과제 편집 (A-07, API-ADM-34~36, FR-PRT-012·013), 과제 FAQ (API-PRT-11, FR-PRT-014, P2).
  * 책임 : - 코스는 다른 영역이라 CourseReader 로 이름을 받고, 없으면 COURSE_NOT_FOUND.
  *        - 스텝은 보낸 목록으로 맞춘다. 목록에서 빠진 스텝은 학습자 체크 기록이 있으면 끄고(is_active), 없으면 지운다.
  *        - 설정 파일 검사(md·json·yaml·txt, 5MB, 실행 파일 불가, PL-PRT-010)는 FileStorage 가 한다.
+ *        - FAQ 도 보낸 목록으로 맞춘다. 빠진 FAQ 는 행을 지운다 (운영자 안내 문구라 삭제 표시 없음, portfolio.md P2).
+ *          과제를 저장하기 전이거나 다른 과제의 portfolioFaqId 면 INVALID_INPUT.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,6 +43,7 @@ public class PortfolioAdminService {
     private final PortfolioAssignmentRepository portfolioAssignmentRepository;
     private final GuideStepRepository guideStepRepository;
     private final GuideStepCheckRepository guideStepCheckRepository;
+    private final PortfolioFaqRepository portfolioFaqRepository;
     private final CourseReader courseReader;
     private final FileStorage fileStorage;
 
@@ -67,6 +73,43 @@ public class PortfolioAdminService {
         return new PortfolioAgentForm(portfolioAssignmentRepository.findByCourseId(courseId)
                 .map(PortfolioAssignment::getAgentGuide)
                 .orElse(""));
+    }
+
+    /* A-07 FAQ 탭 폼 값 (API-ADM-34 tab=faq). 과제가 없으면 빈 폼 */
+    @Transactional(readOnly = true)
+    public PortfolioFaqForm getFaqForm(Long courseId) {
+        return PortfolioFaqForm.of(portfolioAssignmentRepository.findByCourseId(courseId)
+                .map(assignment -> portfolioFaqRepository.findByPortfolioAssignmentIdOrderBySortOrderAsc(assignment.getPortfolioAssignmentId())
+                        .stream()
+                        .map(faq -> new PortfolioFaqForm.Faq(faq.getPortfolioFaqId(), faq.getQuestion(), faq.getAnswer()))
+                        .toList())
+                .orElse(List.of()));
+    }
+
+    /* API-PRT-11. 보낸 목록으로 맞춘다: 있는 ID 는 고치고, 새 항목은 추가하고, 목록에 없는 기존 FAQ 는 지운다 */
+    public void saveFaqs(Long courseId, PortfolioFaqForm form) {
+        getCourseTitle(courseId);
+        PortfolioAssignment assignment = portfolioAssignmentRepository.findByCourseId(courseId)
+                .orElseThrow(() -> new BusinessException(PortfolioErrorCode.INVALID_INPUT));
+        Map<Long, PortfolioFaq> current = portfolioFaqRepository
+                .findByPortfolioAssignmentIdOrderBySortOrderAsc(assignment.getPortfolioAssignmentId()).stream()
+                .collect(Collectors.toMap(PortfolioFaq::getPortfolioFaqId, Function.identity()));
+        List<PortfolioFaqForm.Faq> faqs = form.getFaqs();
+        for (int i = 0; i < faqs.size(); i++) {
+            PortfolioFaqForm.Faq faq = faqs.get(i);
+            int sortOrder = i + 1;
+            if (faq.getPortfolioFaqId() == null) {
+                portfolioFaqRepository.save(PortfolioFaq.create(assignment.getPortfolioAssignmentId(), faq.getQuestion(),
+                        faq.getAnswer(), sortOrder));
+                continue;
+            }
+            PortfolioFaq found = current.remove(faq.getPortfolioFaqId());
+            if (found == null) {
+                throw new BusinessException(PortfolioErrorCode.INVALID_INPUT);
+            }
+            found.edit(faq.getQuestion(), faq.getAnswer(), sortOrder);
+        }
+        portfolioFaqRepository.deleteAll(current.values());
     }
 
     /*

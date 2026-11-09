@@ -101,3 +101,8 @@
     .pf-task dd + dt { margin-top: var(--space-2); }
     .pf-submit .pf-btn { width: 100%; }
 }
+
+/* 4번 FAQ (P2 FR-PRT-008, #196) */
+.pf-faqs { margin: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.pf-faq dt { font-weight: 700; }
+.pf-faq dd { margin: var(--space-2) 0 0; color: var(--ink-muted); line-height: 1.7; }

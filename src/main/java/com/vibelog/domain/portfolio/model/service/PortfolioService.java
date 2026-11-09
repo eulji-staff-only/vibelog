@@ -9,6 +9,7 @@ import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dao.GuideStepCheckRepository;
 import com.vibelog.domain.portfolio.model.dao.GuideStepRepository;
 import com.vibelog.domain.portfolio.model.dao.PortfolioAssignmentRepository;
+import com.vibelog.domain.portfolio.model.dao.PortfolioFaqRepository;
 import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
 import com.vibelog.domain.portfolio.model.dto.GuideStepCheckResult;
 import com.vibelog.domain.portfolio.model.dto.PortfolioPageView;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
  *          스텝 체크·내려받기는 PORTFOLIO_LOCKED 로 막는다 (명세 실패 칸).
  *        - 스텝은 사용 중(is_active)인 것만 보여 주고 센다. 꺼진 스텝은 체크할 수 없다.
  *        - 코스 이름·마지막 수업·이메일 인증 여부는 각 영역 Reader 로 읽는다.
+ *        - 과제 FAQ(P2 FR-PRT-008)는 과제가 열렸을 때만 보낸다.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,6 +46,7 @@ public class PortfolioService {
     private final GuideStepRepository guideStepRepository;
     private final GuideStepCheckRepository guideStepCheckRepository;
     private final PortfolioRepository portfolioRepository;
+    private final PortfolioFaqRepository portfolioFaqRepository;
     private final CourseReader courseReader;
     private final LessonReader lessonReader;
     private final MemberReader memberReader;
@@ -72,7 +75,10 @@ public class PortfolioService {
 
         return Optional.of(new PortfolioPageView(courseId, courseTitle, true, null,
                 assignment.getTopic(), assignment.getGoal(), assignment.getAgentGuide(), assignment.getAgentFileUrl() != null,
-                stepViews, checked.size(), submittedPortfolioId, memberReader.isEmailVerified(memberId)));
+                stepViews, checked.size(), submittedPortfolioId, memberReader.isEmailVerified(memberId),
+                portfolioFaqRepository.findByPortfolioAssignmentIdOrderBySortOrderAsc(assignment.getPortfolioAssignmentId()).stream()
+                        .map(faq -> new PortfolioPageView.Faq(faq.getQuestion(), faq.getAnswer()))
+                        .toList()));
     }
 
     /* API-PRT-02 체크 저장·삭제. 같은 값을 두 번(또는 동시에) 보내도 결과가 같다 (행이 두 번 생기지 않음) */
