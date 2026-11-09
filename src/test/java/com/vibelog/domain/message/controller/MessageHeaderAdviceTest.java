@@ -33,6 +33,7 @@ class MessageHeaderAdviceTest {
 
         assertThat(advice.unreadNotificationCount(loginMember, api)).isNull();
         assertThat(advice.noticeBanner(api)).isNull();
+        assertThat(advice.badgeCelebration(loginMember, api)).isNull();
         verifyNoInteractions(notificationService, noticeService);
     }
 }
