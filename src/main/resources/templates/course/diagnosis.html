@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>진단 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/diagnosis.css}" href="/css/diagnosis.css">
+    <script th:src="@{/js/ui.js}" src="/js/ui.js" defer></script>
+    <script th:src="@{/js/diagnosis.js}" src="/js/diagnosis.js" defer></script>
+</head>
+<body>
+<!-- U-07 진단 설문 (FR-DGN-001, 003, API-DGN-01~03, #99). DiagnosisPageController 가 담아 주는 survey(DiagnosisSurveyView)로 그린다.
+     문항 전환은 화면 안 JS(diagnosis.js)가 하고, "진단 완료"에서 고른 보기 ID 목록을 한 번에 POST /diagnosis 로 보낸다.
+     응답은 저장하지 않고 진단 결과만 저장한다 (PL-DGN-001). -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="dg-band">
+    <span class="dg-eyebrow">첫 진단</span>
+    <h1 class="dg-title">나에게 맞는 코스 찾기</h1>
+    <p class="dg-lead">몇 가지 질문에 답하면 추천 트랙과 추천 이유를 진단 결과 화면에서 보여 드립니다.</p>
+</section>
+
+<main class="dg-main">
+    <div class="vl-ui-panel dg-panel" data-diagnosis>
+
+        <!-- 사용 중인 문항이 없을 때 (운영자가 문항을 준비하기 전). 건너뛰기만 할 수 있다 -->
+        <th:block th:if="${survey.total() == 0}">
+            <div th:replace="~{common/ui :: notice('empty', '', '아직 준비된 진단 문항이 없습니다. 진단을 건너뛰고 코스를 둘러보세요.')}"></div>
+        </th:block>
+
+        <form class="dg-form" th:unless="${survey.total() == 0}" th:action="@{/diagnosis}" method="post" data-dg-form>
+            <div class="vl-ui-progress" role="progressbar" aria-label="진행 상태" aria-valuemin="1"
+                 th:attr="aria-valuemax=${survey.total()}" aria-valuenow="1" data-dg-progress>
+                <div class="vl-ui-progress__top">
+                    <span class="vl-ui-progress__label">진행 상태</span>
+                    <span class="vl-ui-progress__value" data-dg-progress-text th:text="'문항 1 / ' + ${survey.total()}">문항 1 / 5</span>
+                </div>
+                <div class="vl-ui-progress__track"><div class="vl-ui-progress__fill" data-dg-progress-fill></div></div>
+            </div>
+
+            <!-- 문항: 한 번에 하나만 보여 준다 (전환). 첫 문항 말고는 숨겨 둔다 -->
+            <section class="dg-question" data-dg-question th:each="question, stat : ${survey.questions()}"
+                     th:attr="aria-labelledby='dg-q' + ${stat.count}" th:hidden="${!stat.first}">
+                <span class="dg-question__no" th:text="'문항 ' + ${stat.count}">문항 1</span>
+                <h2 class="dg-q" th:id="'dg-q' + ${stat.count}" tabindex="-1" th:text="${question.content()}">문항</h2>
+                <div class="dg-choices" role="group" th:attr="aria-labelledby='dg-q' + ${stat.count}">
+                    <button type="button" class="dg-choice" aria-pressed="false" data-dg-choice
+                            th:each="option, optionStat : ${question.options()}"
+                            th:attr="data-option-id=${option.diagnosisOptionId()}">
+                        <span class="dg-choice__no" th:text="${optionStat.count}">1</span><span th:text="${option.content()}">보기</span>
+                    </button>
+                </div>
+                <!-- 이 문항의 답 (보기를 고르면 diagnosis.js 가 채우고 켠다) -->
+                <input type="hidden" name="diagnosisOptionIds" value="" disabled data-dg-answer>
+            </section>
+
+            <div class="dg-nav">
+                <button type="button" class="vl-ui-btn is-outline" aria-disabled="true" data-dg-prev>이전</button>
+                <div class="dg-nav__next">
+                    <p class="vl-ui-btn-reason" data-dg-reason>보기를 고르면 다음으로 갈 수 있습니다</p>
+                    <button type="button" class="vl-ui-btn is-navy" aria-disabled="true" data-dg-next>다음</button>
+                    <button type="submit" class="vl-ui-btn is-navy" aria-disabled="true" data-dg-done hidden>진단 완료</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="dg-skip">
+            <span class="dg-muted">건너뛰면 전체 코스 목록으로 이동합니다.</span>
+            <button type="button" class="vl-ui-btn is-text is-s" data-ui-modal-open="dg-skip-modal">진단 건너뛰기 →</button>
+        </div>
+
+        <div th:replace="~{common/ui :: notice('info', '진단 중 나가면 응답이 저장되지 않습니다.', '진단은 다시 처음부터 진행할 수 있어요.')}"></div>
+
+    </div>
+</main>
+
+<!-- M-01 진단 건너뛰기 확인 (FR-DGN-003). "건너뛰기"를 누르면 아래 폼으로 건너뜀을 저장하고 코스 목록으로 간다 (API-DGN-03) -->
+<div th:replace="~{common/ui :: confirmModal('dg-skip-modal', '진단을 건너뛸까요?', '건너뛰면 추천 트랙 없이 트랙·코스 목록으로 이동합니다.', '건너뛰기', '계속 진단하기')}"></div>
+<form th:action="@{/diagnosis/skip}" method="post" hidden data-dg-skip-form></form>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

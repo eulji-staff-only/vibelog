@@ -14,10 +14,12 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ExamErrorCode implements ErrorCode {
 
+    INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력 값을 확인해주세요."),
     EXAM_LOCKED(HttpStatus.FORBIDDEN, "이 수업의 마지막 퀴즈를 통과하면 열립니다."),
     REPORT_NOT_VIEWED(HttpStatus.CONFLICT, "지난 응시의 리포트를 먼저 확인해 주세요."),
     ATTEMPT_SUBMITTED(HttpStatus.CONFLICT, "이미 제출했습니다."),
-    EXAM_NOT_SUBMITTED(HttpStatus.CONFLICT, "제출한 뒤에 리포트를 볼 수 있습니다.");
+    EXAM_NOT_SUBMITTED(HttpStatus.CONFLICT, "제출한 뒤에 리포트를 볼 수 있습니다."),
+    CONCEPT_REQUIRED(HttpStatus.BAD_REQUEST, "연관 개념을 골라야 저장할 수 있습니다.");
 
     private final HttpStatus status;
     private final String message;

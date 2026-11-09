@@ -46,6 +46,7 @@ public class AuthMypageController {
         Long memberId = loginMember.getMemberId();
         switch (tab) {
             case "favorites" -> model.addAttribute("favorites", communityReader.getFavoritePostsOf(memberId, page));
+            case "following" -> model.addAttribute("following", communityReader.getFollowingOf(memberId, page));
             case "posts" -> model.addAttribute("posts", communityReader.getPostsOf(memberId, page));
             case "comments" -> model.addAttribute("comments", communityReader.getCommentsOf(memberId, page));
             default -> tab = "info";

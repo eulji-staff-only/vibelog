@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
@@ -28,4 +30,20 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             + " and (:q is null or m.nickname like concat('%', :q, '%') escape '!' or m.email like concat('%', :q, '%') escape '!')"
             + " order by m.createdAt desc, m.memberId desc")
     Page<Member> searchActive(@Param("q") String q, Pageable pageable);
+
+    /* 공지 알림을 받을 탈퇴하지 않은 회원 (message API-NTF-07) */
+    @Query("select m.memberId from Member m where m.status = com.vibelog.domain.auth.model.entity.MemberStatus.ACTIVE")
+    List<Long> findActiveMemberIds();
+
+    /* 쪽지 받는 사람 찾기 (message API-MSG-02). prefix 의 ! % _ 는 부르는 쪽이 '!'로 이스케이프해서 넘긴다 */
+    @Query("select m from Member m where m.status = com.vibelog.domain.auth.model.entity.MemberStatus.ACTIVE"
+            + " and m.memberId <> :excludeId and m.nickname like concat(:prefix, '%') escape '!'"
+            + " order by m.nickname asc, m.memberId asc")
+    List<Member> findActiveByNicknamePrefix(@Param("prefix") String prefix, @Param("excludeId") Long excludeId, Pageable pageable);
+
+    boolean existsByMemberIdAndStatus(Long memberId, MemberStatus status);
+
+    /* 기간 내 가입자 수 (member.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (운영자 대시보드 API-ADM-01, FR-ADM-002) */
+    @Query("select count(m) from Member m where (:from is null or m.createdAt >= :from) and (:to is null or m.createdAt <= :to)")
+    long countByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

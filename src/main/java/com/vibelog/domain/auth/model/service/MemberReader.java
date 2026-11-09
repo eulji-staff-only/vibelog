@@ -3,11 +3,16 @@ package com.vibelog.domain.auth.model.service;
 import com.vibelog.domain.auth.model.dao.MemberRepository;
 import com.vibelog.domain.auth.model.dao.MemberSuspensionRepository;
 import com.vibelog.domain.auth.model.entity.Member;
+import com.vibelog.domain.auth.model.entity.MemberStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,6 +43,11 @@ public class MemberReader {
         return memberIds.isEmpty() ? Set.of() : memberSuspensionRepository.findPermanentlySuspendedIn(memberIds);
     }
 
+    /* 영구 정지 중인 회원 전체 (PL-RPT-006). 게시판 목록처럼 페이지를 나누는 조회에서 미리 빼려고 쓴다 (#215) */
+    public Set<Long> findAllHiddenMemberIds() {
+        return memberSuspensionRepository.findAllPermanentlySuspended();
+    }
+
     /* 이메일 인증을 마쳤는지 (PL-USR-003). 글·댓글 등 작성 기능이 쓴다. 없는 ID면 false */
     public boolean isEmailVerified(Long memberId) {
         return memberRepository.findById(memberId)
@@ -45,10 +55,47 @@ public class MemberReader {
                 .orElse(false);
     }
 
+    /*
+     * 공개 프로필을 볼 수 있는 회원 ID만 골라 준다 (API-CMT-14, 작성자 링크). 지금은 탈퇴하지 않은 회원.
+     * 영구 정지 회원(PL-RPT-006)은 이용 정지(#178)에서 더한다.
+     */
+    public Set<Long> findVisibleIds(Collection<Long> memberIds) {
+        return memberRepository.findAllById(memberIds).stream()
+                .filter(member -> member.getStatus() == MemberStatus.ACTIVE)
+                .map(Member::getMemberId)
+                .collect(Collectors.toSet());
+    }
+
+    public boolean isVisible(Long memberId) {
+        return memberId != null && findVisibleIds(List.of(memberId)).contains(memberId);
+    }
+
     /* 회원 ID 1건 → 닉네임. 공통 헤더(#132)처럼 로그인 회원 1명의 닉네임만 필요할 때 쓴다. 없는 ID면 빈 문자열 */
     public String getNickname(Long memberId) {
         return memberRepository.findById(memberId)
                 .map(Member::getNickname)
                 .orElse("");
+    }
+
+    /* 탈퇴하지 않은 회원 전체 ID. 공지 등록 때 모든 회원에게 알림을 남긴다 (message API-NTF-07, #186) */
+    public List<Long> findActiveMemberIds() {
+        return memberRepository.findActiveMemberIds();
+    }
+
+    /* 쪽지 받는 사람 찾기 (message API-MSG-02). 닉네임 앞부분 일치, 이용 중인 회원만, 나는 뺀다. 닉네임 순 limit 명 (ID → 닉네임, 순서 유지) */
+    public Map<Long, String> findActiveNicknamesStartingWith(String prefix, Long excludeMemberId, int limit) {
+        return memberRepository.findActiveByNicknamePrefix(AdminMemberService.escapeLike(prefix), excludeMemberId,
+                        PageRequest.of(0, limit)).stream()
+                .collect(Collectors.toMap(Member::getMemberId, Member::getNickname, (a, b) -> a, LinkedHashMap::new));
+    }
+
+    /* 탈퇴하지 않은 회원인가 (쪽지 받는 사람 검사, MESSAGE_RECEIVER_NOT_FOUND). 없는 ID 면 false */
+    public boolean isActive(Long memberId) {
+        return memberRepository.existsByMemberIdAndStatus(memberId, MemberStatus.ACTIVE);
+    }
+
+    /* 기간 내 가입자 수 (member.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (운영자 대시보드 API-ADM-01, FR-ADM-002) */
+    public long countJoinedBetween(LocalDateTime from, LocalDateTime to) {
+        return memberRepository.countByCreatedAtBetween(from, to);
     }
 }

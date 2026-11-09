@@ -3,6 +3,7 @@ package com.vibelog.domain.portfolio.model.service;
 import com.vibelog.domain.portfolio.model.dao.PortfolioAssignmentRepository;
 import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
 import com.vibelog.domain.portfolio.model.dto.PortfolioBrief;
+import com.vibelog.domain.portfolio.model.dto.PublicPortfolioCard;
 import com.vibelog.domain.portfolio.model.entity.Portfolio;
 import com.vibelog.domain.portfolio.model.entity.PortfolioAssignment;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,14 @@ public class PortfolioReader {
         return portfolioRepository.countByMemberIdAndDeletedAtIsNull(memberId);
     }
 
+    /* 회원의 공개 포트폴리오 (삭제 표시 제외) 최신순. 공개 프로필 (API-CMT-14, FR-CMT-009) */
+    public List<PublicPortfolioCard> findPublicOf(Long memberId) {
+        return portfolioRepository.findAllByMemberIdAndIsPublicTrueAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(memberId)
+                .stream()
+                .map(PublicPortfolioCard::from)
+                .toList();
+    }
+
     /* 포트폴리오 요약 1건 (community 동료 리뷰, #182). 삭제 표시된 것도 돌려주고 deleted 로 알린다. 없으면 빈 값 */
     public Optional<PortfolioBrief> findBrief(Long portfolioId) {
         return Optional.ofNullable(findBriefs(List.of(portfolioId)).get(portfolioId));
@@ -57,5 +66,14 @@ public class PortfolioReader {
         List<Long> ids = portfolioRepository.findAllByMemberIdAndDeletedAtIsNull(memberId).stream()
                 .filter(Portfolio::isPublic).map(Portfolio::getPortfolioId).toList();
         return findBriefs(ids).values().stream().sorted(Comparator.comparing(PortfolioBrief::portfolioId).reversed()).toList();
+    }
+
+    /*
+     * 회원의 삭제 표시 없는 포트폴리오 ID (리뷰 요청 동시 3개 제한, PL-REV-002).
+     * 그 행들에 쓰기 잠금을 걸어, 같은 회원의 동시 리뷰 요청이 차례로 검사되게 한다. 부르는 쪽 트랜잭션이 끝나면 풀린다.
+     */
+    @Transactional
+    public List<Long> lockLivePortfolioIdsOf(Long memberId) {
+        return portfolioRepository.findLiveByMemberIdForUpdate(memberId).stream().map(Portfolio::getPortfolioId).toList();
     }
 }
