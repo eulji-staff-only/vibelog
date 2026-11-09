@@ -81,9 +81,11 @@
                 <p class="mp-text" th:if="${#lists.isEmpty(reviews)}">아직 받은 리뷰가 없습니다.</p>
                 <ul class="mp-reviews" th:unless="${#lists.isEmpty(reviews)}">
                     <li class="mp-review" th:each="review : ${reviews}">
-                        <!-- 영구 정지 회원의 리뷰는 닉네임·코멘트 없이 안내만 (PL-ERR-006, #215) -->
+                        <!-- 영구 정지 회원·신고로 숨긴 남의 리뷰는 닉네임·코멘트 없이 안내만 (PL-ERR-006, #215·#256) -->
                         <p class="mp-text" th:if="${review.hidden()}">운영 정책에 따라 숨겨진 콘텐츠입니다</p>
                         <th:block th:unless="${review.hidden()}">
+                        <!-- 신고로 숨긴 내 리뷰: 나에게만 보인다 (FR-RPT-003, #256) -->
+                        <p class="mp-text" role="status" th:if="${review.hiddenNotice()}">운영 정책에 따라 숨겨졌습니다. 다른 사람에게는 보이지 않습니다</p>
                         <div class="mp-review-meta">
                             <strong th:text="${review.reviewerNickname()}">[리뷰어]</strong>
                             <span class="mp-caption" th:text="${#temporals.format(review.createdAt(), 'yyyy.MM.dd')}">[작성일]</span>

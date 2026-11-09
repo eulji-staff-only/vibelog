@@ -12,6 +12,7 @@ import com.vibelog.domain.contest.model.dto.PastContestItem;
 import com.vibelog.domain.contest.model.entity.Contest;
 import com.vibelog.domain.contest.model.entity.ContestAward;
 import com.vibelog.domain.contest.model.entity.ContestEntry;
+import com.vibelog.domain.message.model.service.MessageReader;
 import com.vibelog.domain.portfolio.model.dto.PortfolioBrief;
 import com.vibelog.domain.portfolio.model.service.PortfolioReader;
 import com.vibelog.global.exception.BusinessException;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -51,6 +53,7 @@ public class ContestResultService {
     private final ContestAwardRepository contestAwardRepository;
     private final PortfolioReader portfolioReader;
     private final MemberReader memberReader;
+    private final MessageReader messageReader;
 
     /* U-32 결과 보드: 지난 달 콘테스트 (이번 달 결과는 다음 달 1일에 나온다, 결정 12). 없거나 투표 중이면 빈 값 */
     public Optional<ContestResultView> findLastMonthResult() {
@@ -76,25 +79,33 @@ public class ContestResultService {
                 : contestAwardRepository.findByContestIdInAndAwardRankOrderByContestEntryIdAsc(
                         contests.stream().map(Contest::getContestId).toList(), 1);
         Map<Long, ContestEntry> entries = entriesOf(firsts);
-        Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(entries.values().stream().map(ContestEntry::getPortfolioId).toList());
+        List<Long> portfolioIds = entries.values().stream().map(ContestEntry::getPortfolioId).toList();
+        Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(portfolioIds);
+        Set<Long> hidden = messageReader.findHiddenTargetIds("PORTFOLIO", portfolioIds);
         Map<Long, String> firstPlace = firsts.stream().collect(Collectors.groupingBy(ContestAward::getContestId,
-                Collectors.mapping(a -> titleOrHidden(portfolios.get(entries.get(a.getContestEntryId()).getPortfolioId())),
-                        Collectors.joining(", "))));
+                Collectors.mapping(a -> {
+                    Long portfolioId = entries.get(a.getContestEntryId()).getPortfolioId();
+                    return hidden.contains(portfolioId) ? MessageReader.HIDDEN_TEXT : titleOrHidden(portfolios.get(portfolioId));
+                }, Collectors.joining(", "))));
         return contests.map(c -> new PastContestItem(c.getContestId(), c.getContestMonth(), c.getTopic(), firstPlace.get(c.getContestId())));
     }
 
     private ContestResultView toResult(Contest contest) {
         List<ContestAward> awards = contestAwardRepository.findByContestIdOrderByAwardRankAscContestEntryIdAsc(contest.getContestId());
         Map<Long, ContestEntry> entries = entriesOf(awards);
-        Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(entries.values().stream().map(ContestEntry::getPortfolioId).toList());
+        List<Long> portfolioIds = entries.values().stream().map(ContestEntry::getPortfolioId).toList();
+        Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(portfolioIds);
+        // 신고로 숨긴 수상작은 순위·작성자는 두고 제목 대신 숨김 문구, 링크 없음 (FR-RPT-003, message 명세)
+        Set<Long> hidden = messageReader.findHiddenTargetIds("PORTFOLIO", portfolioIds);
         Map<Long, String> nicknames = memberReader.getNicknames(entries.values().stream().map(ContestEntry::getMemberId).toList());
         Map<Long, Long> votes = awards.isEmpty() ? Map.of() : contestVoteRepository.countByEntry(contest.getContestId()).stream()
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
         List<AwardItem> items = awards.stream().map(a -> {
             ContestEntry entry = entries.get(a.getContestEntryId());
             PortfolioBrief portfolio = portfolios.get(entry.getPortfolioId());
-            return new AwardItem(a.getAwardRank(), entry.getPortfolioId(), visibleTitle(portfolio),
-                    nicknames.getOrDefault(entry.getMemberId(), ""), votes.getOrDefault(a.getContestEntryId(), 0L));
+            boolean reportHidden = hidden.contains(entry.getPortfolioId());
+            return new AwardItem(a.getAwardRank(), entry.getPortfolioId(), reportHidden ? null : visibleTitle(portfolio),
+                    nicknames.getOrDefault(entry.getMemberId(), ""), votes.getOrDefault(a.getContestEntryId(), 0L), reportHidden);
         }).toList();
         return new ContestResultView(contest.getContestId(), contest.getContestMonth(), contest.getTopic(), contest.getDescription(), items);
     }

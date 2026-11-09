@@ -27,6 +27,8 @@
         <a class="cm-link" href="/community">← 커뮤니티</a>
 
         <article class="cm-post">
+            <!-- 신고로 숨긴 내 글: 나에게만 보인다 (FR-RPT-003, #256) -->
+            <div class="cm-notice is-error" role="status" th:if="${post.hiddenNotice()}"><p>운영 정책에 따라 숨겨졌습니다. 다른 사람에게는 보이지 않습니다</p></div>
             <div class="cm-row">
                 <span class="cm-badge" th:classappend="${post.category().name() == 'SHOWCASE'} ? 'is-showcase'"
                       th:text="${post.category().label}">카테고리</span>

@@ -34,6 +34,11 @@ public class MessageReader {
     /* 서로 다른 회원의 처리 대기 신고가 이만큼 쌓이면 자동 숨김 (PL-RPT-002) */
     static final int AUTO_HIDE_COUNT = 3;
 
+    /* 신고로 숨겨진 콘텐츠 자리에 보여 주는 문구 (FR-RPT-003, PL-ERR-006). 각 영역 화면·DTO 가 같이 쓴다 */
+    public static final String HIDDEN_TEXT = "운영 정책에 따라 숨겨진 콘텐츠입니다";
+
+    private static final Predicate<List<Report>> HIDDEN_RULE = reports -> hasHidden(reports) || pendingCount(reports) >= AUTO_HIDE_COUNT;
+
     private final NoticeRepository noticeRepository;
     private final ReportRepository reportRepository;
 
@@ -49,7 +54,14 @@ public class MessageReader {
      * targetType 은 report.target_type 값(POST·PORTFOLIO·COMMENT·REVIEW·MESSAGE). 공개 목록·상세에서 거를 때 쓴다 (#256)
      */
     public Set<Long> findHiddenTargetIds(String targetType, Collection<Long> targetIds) {
-        return targetIdsWhere(targetType, targetIds, reports -> hasHidden(reports) || pendingCount(reports) >= AUTO_HIDE_COUNT);
+        return targetIdsWhere(targetType, targetIds, HIDDEN_RULE);
+    }
+
+    /* 신고로 숨겨진 그 종류의 대상 전체. 게시판 목록처럼 페이지를 나누는 조회에서 미리 빼려고 쓴다 (#256) */
+    // ponytail: 처리 대기·숨김 신고를 모두 읽어 Java 로 센다. 신고가 수만 건 규모가 되면 group by 쿼리로 옮긴다
+    public Set<Long> findAllHiddenTargetIds(String targetType) {
+        return idsWhere(reportRepository.findByTargetTypeAndStatusIn(ReportTargetType.valueOf(targetType),
+                List.of(ReportStatus.PENDING, ReportStatus.HIDDEN)), HIDDEN_RULE);
     }
 
     /* at 까지 운영자가 숨김으로 확정한 대상 ID (콘테스트 시상 제외, PL-CTS-006, #295) */
@@ -74,9 +86,11 @@ public class MessageReader {
         if (targetIds.isEmpty()) {
             return Set.of();
         }
-        Map<Long, List<Report>> byTarget = reportRepository.findByTargetTypeAndTargetIdIn(ReportTargetType.valueOf(targetType), targetIds)
-                .stream().collect(Collectors.groupingBy(Report::getTargetId));
-        return byTarget.entrySet().stream()
+        return idsWhere(reportRepository.findByTargetTypeAndTargetIdIn(ReportTargetType.valueOf(targetType), targetIds), rule);
+    }
+
+    private static Set<Long> idsWhere(List<Report> reports, Predicate<List<Report>> rule) {
+        return reports.stream().collect(Collectors.groupingBy(Report::getTargetId)).entrySet().stream()
                 .filter(entry -> rule.test(entry.getValue()))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());

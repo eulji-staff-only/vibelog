@@ -26,6 +26,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.vibelog.domain.message.model.service.MessageReader;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +52,7 @@ public class CommunityReader {
     private final FavoriteRepository favoriteRepository;
     private final FollowRepository followRepository;
     private final MemberReader memberReader;
+    private final MessageReader messageReader;
     private final RecommendService recommendService;
     private final PeerReviewService peerReviewService;
     private final PeerReviewRepository peerReviewRepository;
@@ -58,6 +61,13 @@ public class CommunityReader {
     public Page<MemberPostItem> getPostsOf(Long memberId, int page) {
         return toItems(postRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
                 memberId, PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE)));
+    }
+
+    /* 공개 프로필 게시글 (API-CMT-14). 신고로 숨긴 글은 뺀다 (FR-RPT-003, #256). 내 프로필이면 getPostsOf */
+    public Page<MemberPostItem> getPublicPostsOf(Long memberId, int page) {
+        return toItems(postRepository.findByMemberIdAndDeletedAtIsNullAndPostIdNotInOrderByCreatedAtDescPostIdDesc(memberId,
+                PostService.orZero(messageReader.findAllHiddenTargetIds(PostService.REPORT_TYPE)),
+                PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE)));
     }
 
     /* 마이페이지 즐겨찾기 탭 (API-USR-15 P2, FR-CMT-007). 지운 글은 빼고 즐겨찾기한 순서 최신순 */
