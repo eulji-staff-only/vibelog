@@ -18,6 +18,7 @@ public enum CommunityErrorCode implements ErrorCode {
     REPLY_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST, "답글에는 답글을 달 수 없습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다."),
     SELF_FOLLOW(HttpStatus.BAD_REQUEST, "나는 팔로우할 수 없습니다."),
+    INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력 값을 확인해주세요."),
     PORTFOLIO_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다."),
     PRIVATE_PORTFOLIO(HttpStatus.FORBIDDEN, "비공개된 작품입니다."),
     REVIEW_REQUEST_OPEN(HttpStatus.CONFLICT, "이 작품은 이미 리뷰를 요청했습니다."),

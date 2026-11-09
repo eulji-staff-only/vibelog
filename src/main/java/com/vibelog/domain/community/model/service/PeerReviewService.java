@@ -296,7 +296,7 @@ public class PeerReviewService {
                 ? sent.size() == 1 && sent.get(0) == null
                 : sent.size() == expected.size() && sentSet.size() == sent.size() && sentSet.equals(new HashSet<>(expected));
         if (!matches) {
-            throw new BusinessException(CommonErrorCode.INVALID_INPUT);
+            throw new BusinessException(CommunityErrorCode.INVALID_INPUT);
         }
     }
 
