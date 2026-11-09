@@ -126,7 +126,7 @@ class LessonAdminTest {
                         containsString("퀴즈 1-1"),
                         containsString("문항 내용"),
                         containsString("변수"),
-                        containsString("다음 업데이트에서 열립니다"))));
+                        containsString("아직 등록된 문항이 없습니다"))));   // 퀴즈 문항 조각 (quiz #102)
     }
 
     @Test

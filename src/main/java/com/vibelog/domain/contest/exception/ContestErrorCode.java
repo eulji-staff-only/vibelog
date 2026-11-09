@@ -17,6 +17,8 @@ public enum ContestErrorCode implements ErrorCode {
     CONTEST_MONTH_EXISTS(HttpStatus.CONFLICT, "그 달의 콘테스트가 이미 있습니다."),
     CONTEST_STARTED(HttpStatus.CONFLICT, "출품이 시작된 콘테스트는 월과 기간을 바꿀 수 없습니다."),
     ENTRY_CLOSED(HttpStatus.CONFLICT, "지금은 출품 기간이 아닙니다."),
+    PORTFOLIO_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다."),
+    PRIVATE_PORTFOLIO(HttpStatus.FORBIDDEN, "비공개된 작품입니다."),
     ALREADY_ENTERED(HttpStatus.CONFLICT, "이번 달 콘테스트에는 이미 출품했습니다."),
     VOTE_CLOSED(HttpStatus.CONFLICT, "지금은 투표 기간이 아닙니다."),
     ENTRY_NOT_FOUND(HttpStatus.NOT_FOUND, "출품작을 찾을 수 없습니다."),
