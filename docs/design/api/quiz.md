@@ -47,7 +47,7 @@
 | Reader·메서드 | 쓰는 곳 |
 | --- | --- |
 | `LessonReader.getQuizActivityPlaces(Collection<Long> quizActivityIds)` → `Map<Long activityId, QuizActivityPlace>`, `QuizActivityPlace(Long courseId, Long lessonId)` (제안, 새로 추가) | 코스·수업 필터 (API-LSN-10) |
-| `LessonReader.getConceptActivityIdsByTag(Collection<Long> lessonIds)` → `Map<Long lessonId, Map<Long conceptTagId, Long conceptActivityId>>` — 수업마다 개념 활동의 태그(`activity_tag`)를 모아, 같은 태그가 여러 개념에 붙어 있으면 `sort_order`가 가장 앞인 개념 (제안, 새로 추가. #284 "이 개념 다시 보기"와 같은 규칙) | 개념으로 가기 링크: 문항의 `concept_tag_id`로 찾는다 (API-LSN-10) |
+| `LessonReader.getConceptActivityIdsByTag(Collection<Long> lessonIds)` → `Map<Long lessonId, Map<Long conceptTagId, Long conceptActivityId>>` — 수업마다 **사용 중인 개념 활동**(`activity_type = CONCEPT`, `is_active = true`)의 태그(`activity_tag`)를 모아, 같은 태그가 여러 개념에 붙어 있으면 `sort_order`가 가장 앞인 개념. 사용 중지한 개념은 U-13에 보이지 않아(API-ADM-23) 고르지 않는다 (제안, 새로 추가. #284 "이 개념 다시 보기"와 같은 규칙) | 개념으로 가기 링크: 문항의 `concept_tag_id`로 찾는다 (API-LSN-10) |
 | `LessonReader.getLessonTitles(Collection<Long> lessonIds)` (이미 있음) | 수업 제목 |
 | `LessonReader.getConceptTagNames(Collection<Long> conceptTagIds)` (이미 있음) | 개념 태그 이름 |
 | `CourseReader.getCourseTitles(Collection<Long> courseIds)` (course 영역, 이미 있음) | 코스 제목 |
@@ -61,4 +61,4 @@
 | 1 | 다시 맞힌 문항 | 목록에서 빼지 않는다 | FR-LSN-008 "틀렸던 퀴즈 문제를 모아 다시 본다". 한 번 틀린 문항을 복습하는 목적 |
 | 2 | 같은 문항을 여러 번 틀림 | 가장 최근 답 1줄만 | 같은 문항이 여러 번 나오면 목록이 길어지기만 한다 |
 | 3 | 한 쪽 개수 | 20개씩 (`page`) | 게시판 목록(U-21)과 같은 수 |
-| 4 | 개념으로 가기 | 문항의 개념 태그(`quiz_question.concept_tag_id`)가 붙은 같은 수업의 개념 활동(`activity_tag`)으로 간다. 여러 개면 순서가 가장 앞인 것, 없으면 수업 화면 | 화면 흐름 U-28 "문항 → U-13 해당 개념". 퀴즈의 위치(바로 앞 개념)로 정하면 운영자가 활동 순서를 바꿀 때(API-ADM-24) 다른 개념을 가리키게 된다. 태그로 찾으면 순서와 상관없고 테이블을 바꾸지 않아도 된다. #284(채점 결과 "이 개념 다시 보기")가 제안한 규칙과 같다 |
+| 4 | 개념으로 가기 | 문항의 개념 태그(`quiz_question.concept_tag_id`)가 붙은 같은 수업의 **사용 중인** 개념 활동(`activity_tag`)으로 간다. 여러 개면 순서가 가장 앞인 것, 없으면 수업 화면 | 화면 흐름 U-28 "문항 → U-13 해당 개념". 퀴즈의 위치(바로 앞 개념)로 정하면 운영자가 활동 순서를 바꿀 때(API-ADM-24) 다른 개념을 가리키게 된다. 태그로 찾으면 순서와 상관없고 테이블을 바꾸지 않아도 된다. #284(채점 결과 "이 개념 다시 보기")가 제안한 규칙과 같다 |
