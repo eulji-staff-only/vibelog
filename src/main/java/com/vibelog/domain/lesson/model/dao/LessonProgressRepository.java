@@ -19,11 +19,14 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
     List<LessonProgress> findByEnrollmentIdAndLessonIdIn(Long enrollmentId, Collection<Long> lessonIds);
 
     /*
-     * 수업 비공개 영향 확인(API-ADM-32, FR-LSN-014, #118): 이 수업 진도가 있으면서(열어본 적 있음)
-     * 수강이 아직 끝나지 않은(완료·포기 안 함) 학습자 수. 코스 전체 수강자 수가 아니라 이 수업에
-     * 실제로 영향받는 학습자만 센다.
+     * 수업 비공개 영향 확인(API-ADM-32, FR-LSN-014, #118): "학습자가 진행 중인 수업"만 센다 — 이 수업을
+     * 열었지만(unlocked_at 있음) 아직 끝내지 않았고(completed_at 없음), 수강 자체도 끝나지 않은(완료·포기
+     * 안 함) 학습자 수. 공개 수업은 수강 시작·공개 시점에 모든 수강에 진도 행이 미리 생기고 열지 않았으면
+     * unlocked_at이 비어 있으므로(lesson_progress 행 존재 자체는 "열어봄"을 뜻하지 않는다), unlocked_at도
+     * 같이 검사해야 코스 전체 수강자 수로 되돌아가지 않는다 (Choyeonik 리뷰, #220 머지 후 추가 지적).
      */
-    @Query("select count(lp) from LessonProgress lp where lp.lessonId = :lessonId and lp.enrollmentId in "
+    @Query("select count(lp) from LessonProgress lp where lp.lessonId = :lessonId "
+            + "and lp.unlockedAt is not null and lp.completedAt is null and lp.enrollmentId in "
             + "(select e.enrollmentId from Enrollment e where e.completedAt is null and e.droppedAt is null)")
     long countActiveLearnersOf(@Param("lessonId") Long lessonId);
 }

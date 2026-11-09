@@ -86,18 +86,24 @@ class LessonVisibilityControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void 영향_확인_API가_이_수업_진도가_있으면서_완료_포기하지_않은_수강_수를_JSON으로_돌려준다() throws Exception {
+    void 영향_확인_API가_이_수업을_열었고_아직_끝내지_않았고_수강도_끝나지_않은_학습자_수를_JSON으로_돌려준다() throws Exception {
         long courseId = courseOf();
         long lessonId = lessonOf(courseId, "수업 1", 1, true);
         long activeMemberId = memberOf("active-learner");
         long droppedMemberId = memberOf("dropped-learner");
         long notReachedMemberId = memberOf("not-reached-learner");
+        long finishedMemberId = memberOf("finished-learner");
         long activeEnrollmentId = enrollmentOf(activeMemberId, courseId, false, false);
         long droppedEnrollmentId = enrollmentOf(droppedMemberId, courseId, false, true);
-        enrollmentOf(notReachedMemberId, courseId, false, false);
-        lessonProgressOf(activeEnrollmentId, lessonId);
-        lessonProgressOf(droppedEnrollmentId, lessonId);
-        // notReachedMemberId는 같은 코스를 수강 중이지만 이 수업 진도가 없어 영향 학습자 수에 안 들어가야 한다
+        long notReachedEnrollmentId = enrollmentOf(notReachedMemberId, courseId, false, false);
+        long finishedEnrollmentId = enrollmentOf(finishedMemberId, courseId, false, false);
+        lessonProgressOf(activeEnrollmentId, lessonId, true, false);
+        lessonProgressOf(droppedEnrollmentId, lessonId, true, false);
+        // 같은 코스를 수강 중이지만 이 수업을 아직 안 열어봄(unlocked_at NULL) — 공개 수업은 수강 시작 때
+        // 진도 행이 미리 생기므로, 행이 있다는 것만으로 "열어봤다"로 보면 안 된다
+        lessonProgressOf(notReachedEnrollmentId, lessonId, false, false);
+        // 수강 중이고 이 수업도 열었지만 이미 끝냄 — "진행 중"이 아니라 빠져야 한다
+        lessonProgressOf(finishedEnrollmentId, lessonId, true, true);
 
         mockMvc.perform(get("/api/admin/lessons/{lessonId}/impact", lessonId))
                 .andExpect(status().isOk())
@@ -160,8 +166,10 @@ class LessonVisibilityControllerTest {
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
     }
 
-    private void lessonProgressOf(long enrollmentId, long lessonId) {
-        jdbcTemplate.update("INSERT INTO lesson_progress (enrollment_id, lesson_id, unlocked_at) VALUES (?, ?, NOW())",
-                enrollmentId, lessonId);
+    /* unlockedAt false면 아직 안 연 상태(unlocked_at NULL)로, completed true면 이 수업을 끝낸 상태로 넣는다 */
+    private void lessonProgressOf(long enrollmentId, long lessonId, boolean unlocked, boolean completed) {
+        jdbcTemplate.update("INSERT INTO lesson_progress (enrollment_id, lesson_id, unlocked_at, completed_at) VALUES (?, ?, ?, ?)",
+                enrollmentId, lessonId, unlocked ? java.time.LocalDateTime.now() : null,
+                completed ? java.time.LocalDateTime.now() : null);
     }
 }
