@@ -61,6 +61,7 @@
             <div class="cc-actions">
                 <a class="cc-btn cc-btn-navy" href="/my/portfolios">내 포트폴리오 보기</a>
                 <div class="cc-actions-sub">
+                    <a class="cc-btn cc-btn-outline" th:href="@{/courses/{courseId}/portfolios(courseId=${courseComplete.courseId()})}">같은 코스 작품 보기</a>
                     <a class="cc-btn cc-btn-outline" href="/courses">다음 코스 찾기</a>
                     <a class="cc-btn cc-btn-outline" href="/my/learning">내 학습으로</a>
                 </div>
