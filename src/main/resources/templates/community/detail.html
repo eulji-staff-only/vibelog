@@ -43,6 +43,13 @@
             <button class="cm-btn is-outline is-s" type="button" th:if="${loggedIn}" data-favorite
                     th:attr="data-url=@{/api/posts/{id}/favorite(id=${post.postId()})},aria-pressed=${post.favorited()}"
                     th:text="${post.favorited()} ? '즐겨찾기 취소' : '즐겨찾기'">즐겨찾기</button>
+            <!-- 추천 (작품 공유 글만, API-CMT-11). 회원이고 내 글이 아니면 버튼, 그 외에는 수만 보인다 -->
+            <p class="cm-recommend" th:if="${recommend != null}">
+                <button class="cm-btn is-outline is-s" type="button" th:if="${loggedIn and !post.mine()}" data-recommend
+                        th:attr="data-url=@{/api/posts/{id}/recommend(id=${post.postId()})},aria-pressed=${recommend.recommended()}"
+                        th:text="${recommend.recommended()} ? '추천 취소' : '추천'">추천</button>
+                <span class="cm-muted" data-recommend-count th:text="|추천 ${recommend.recommendCount()}|">추천 0</span>
+            </p>
             <p class="cm-post__body" th:text="${post.body()}">본문</p>
             <div class="cm-photos" th:unless="${post.imageUrls().empty}">
                 <img th:each="url, stat : ${post.imageUrls()}" th:src="${url}" th:alt="|게시글 사진 ${stat.count}|" class="cm-photo" loading="lazy">
