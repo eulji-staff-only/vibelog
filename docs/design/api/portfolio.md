@@ -30,10 +30,10 @@
 | API-PRT-10 | 같은 코스 작품 보기 | GET | `/courses/{courseId}/portfolios` | 회원(그 코스에 포트폴리오를 낸 사람) | path `courseId`, query `page`(1부터) | U-35 + 그 코스의 공개 포트폴리오 카드(제목, 한 줄 요약, 작성자, 제출일, 상세 링크 → `/portfolios/{portfolioId}`) 최근 제출순 20개씩. 삭제 표시한 것, 영구 정지 회원의 것(`MemberReader.findHiddenMemberIds`, PL-RPT-006)은 뺀다. 작성자 닉네임은 `MemberReader` | `PORTFOLIO_NOT_SUBMITTED`(삭제 표시 없는 내 포트폴리오가 그 코스에 없음) → ③ `/courses/{courseId}/portfolio` + toast, `COURSE_NOT_FOUND` | FR-PRT-009, PL-PRT-011 |
 | API-PRT-11 | 과제 FAQ 저장 (운영자) | POST | `/admin/courses/{courseId}/portfolio/faq` | 운영자 | path `courseId`, form `faqs[i].portfolioFaqId`(새 항목은 비움), `faqs[i].question`, `faqs[i].answer` (보낸 순서 = `sort_order`) | 그 과제의 FAQ를 보낸 목록으로 맞춘다: 있는 ID는 고치고, 새 항목은 추가하고, 목록에 없는 기존 FAQ는 지운다 → `/admin/courses/{courseId}/portfolio?tab=faq` | `COURSE_NOT_FOUND`(`CourseReader`), `INVALID_INPUT`(질문 1~300자·답 필수, 다른 과제의 `portfolioFaqId`, 과제를 아직 저장하지 않음) → A-07 FAQ 탭 다시 | FR-PRT-014 |
 
-- **A-07 FAQ 탭 (FR-PRT-014):** API-ADM-34(admin.md, 코드는 portfolio 영역 #104)의 `tab`에 `faq`를 더한다. `tab=faq`면 A-07 FAQ 탭 + 그 과제의 FAQ 목록(질문, 답) `sort_order` 순. 과제(API-ADM-35)를 저장하기 전에는 FAQ를 저장할 수 없다 (`portfolio_faq`가 과제 ID를 가짐).
+- **A-07 FAQ 탭 (FR-PRT-014):** API-ADM-34(admin.md, 코드는 portfolio 영역 #104)의 `tab`에 `faq`를 더한다. `tab=faq`면 A-07 FAQ 탭 + 그 과제의 FAQ 목록(`portfolioFaqId`, 질문, 답) `sort_order` 순. `portfolioFaqId`는 API-PRT-11로 기존 FAQ를 고칠 때 다시 보낸다. 과제(API-ADM-35)를 저장하기 전에는 FAQ를 저장할 수 없다 (`portfolio_faq`가 과제 ID를 가짐).
 - FAQ는 운영자가 쓰는 안내 문구라 삭제 표시 없이 행을 지운다. 학습자 콘텐츠의 삭제 표시 규칙(PL-DAT-002)의 대상이 아니고, 테이블에도 `deleted_at`이 없다.
 - **같은 코스 작품 보기 (FR-PRT-009):** 들어오는 링크는 U-18 코스 완료의 "같은 코스 작품 보기"다 (lesson 화면). 내 포트폴리오도 공개면 목록에 나온다. 개인 작품(`portfolio_type` = PERSONAL)은 코스가 없어 나오지 않는다.
-- **작성 중 내용 보존 (FR-PRT-010):** 서버 API가 없다. U-17 제출 영역(새 제출·수정 상태)의 입력 값을 제출이 실패하면(서버 오류·네트워크 끊김) 브라우저 저장소에 코스별로 7일 보관하고(PL-ERR-003·004), 다시 열면 채워 넣는다. 제출에 성공하면 지운다. 스크린샷 파일은 보관하지 않는다.
+- **작성 중 내용 보존 (FR-PRT-010):** 서버 API가 없다. U-17 제출 영역(새 제출·수정 상태)의 입력 값을 제출 버튼을 누를 때 브라우저 저장소에 코스별로 7일 보관하고(PL-ERR-003·004), 제출 성공을 확인하면 지운다. 그래서 제출이 실패해도(서버 오류·네트워크 끊김) 작성 중 세션이 만료되어 로그인 화면으로 가도(PL-ERR-005) 내용이 남고, 다시 로그인해 U-17을 열면 채워 넣는다. 스크린샷 파일은 보관하지 않는다.
 - **콘테스트 출품 중 수정 막기 (PL-PRT-007, PL-CTS-002):** portfolio가 contest에 "이 포트폴리오가 출품 중인가"를 묻는 계약이 필요하다. 계약 이름·메서드·"출품 중"의 기간은 contest 명세(#174)에서 정하고, 그 전에는 `CONTEST_ENTERED` 검사를 붙이지 않는다. 출품한 작품의 삭제(API-PRT-07)·비공개 전환(API-PRT-08)을 막을지도 #174에서 정한다.
 - **개인 작품 템플릿 (FR-PRT-011, U-34):** #168 결정 후 이 표에 추가한다 (_template.md 8장 후보 `POST /my/portfolios`).
 
