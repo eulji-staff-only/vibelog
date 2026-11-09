@@ -116,7 +116,8 @@ a.crs-eyebrow:hover { border-color: var(--glow); }
 }
 .crs-recommend .crs-h2 { margin-top: var(--space-2); }
 
-.crs-empty { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+.crs-empty { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-3); }
+.crs-empty > .vl-ui-btn { align-self: center; }
 .crs-empty[hidden] { display: none; }
 
 /* 코스 상세: 요약 + 수강 시작 */

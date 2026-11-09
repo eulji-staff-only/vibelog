@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>트랙 소개 | 바이브로그</title>
+    <title th:text="${track.name()} + ' | 바이브로그'">트랙 소개 | 바이브로그</title>
     <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
     <link rel="stylesheet" th:href="@{/css/course.css}" href="/css/course.css">
 </head>
 <body>
-<!-- U-09 트랙 소개 (FR-CRS-004, #53 화면 선행). 문구는 샘플이고, 트랙·코스 데이터는 ③ 단계(#97)에서 붙인다. -->
+<!-- U-09 트랙 소개 (FR-CRS-004, API-CRS-01, #97). CoursePageController 가 담아 주는 track(TrackIntroView)으로 그린다.
+     소속 공개 코스만 보여준다. 없는 트랙은 TRACK_NOT_FOUND → E-01. -->
 <div th:replace="~{common/layout :: header}"></div>
 
 <section class="crs-band">
     <a class="crs-back" href="/courses">← 코스 목록</a>
-    <span class="crs-eyebrow">2단계 트랙</span>
-    <h1 class="crs-title">Controller 트랙</h1>
-    <p class="crs-lead">AI가 만든 코드를 그대로 받지 않고, 작업 범위와 결과를 직접 통제하고 싶은 학습자를 위한 트랙입니다.</p>
+    <span class="crs-eyebrow" th:text="${track.stage()} + '단계 트랙'">2단계 트랙</span>
+    <h1 class="crs-title" th:text="${track.name()}">Controller 트랙</h1>
+    <p class="crs-lead" th:text="${track.target()}">대상 학습자</p>
 </section>
 
 <main class="crs-main">
@@ -26,47 +27,31 @@
             <dl class="crs-facts">
                 <div class="crs-fact">
                     <dt>대상 학습자</dt>
-                    <dd>AI로 간단한 기능은 만들어 봤지만, 수정할 때마다 다른 곳이 깨져 고민인 분</dd>
+                    <dd th:text="${track.target()}">대상 학습자</dd>
                 </div>
                 <div class="crs-fact">
                     <dt>단계</dt>
-                    <dd>Starter → <strong>Controller</strong> → Builder → Explorer</dd>
+                    <dd th:text="${track.stage()} + '단계'">2단계</dd>
                 </div>
             </dl>
-            <p class="crs-body">요청할 범위를 정하고, 바뀐 부분을 확인하고, 원하는 결과가 아니면 되돌리는 방법을 배웁니다. 수업마다 개념과 퀴즈, 모의고사로 익히고 마지막에 포트폴리오로 결과물을 남깁니다.</p>
+            <p class="crs-body" th:text="${track.description()}">트랙 설명</p>
         </section>
 
         <section class="crs-section" aria-labelledby="crs-track-courses">
             <div class="crs-section__head">
                 <h2 class="crs-h2" id="crs-track-courses">이 트랙의 코스</h2>
-                <a th:replace="~{common/ui :: btnLink('/courses/1', '첫 코스 보기', 'navy', '')}" href="/courses/1">첫 코스 보기</a>
+                <th:block th:if="${track.firstCourse() != null}">
+                    <a th:replace="~{common/ui :: btnLink(@{/courses/{id}(id=${track.firstCourse().courseId()})}, '첫 코스 보기', 'navy', '')}">첫 코스 보기</a>
+                </th:block>
             </div>
-            <ul class="crs-cards">
-                <li>
-                    <a class="crs-card" href="/courses/1">
-                        <span class="crs-card__meta">Controller 트랙</span>
-                        <h3 class="crs-card__title">AI 작업 범위 통제하기</h3>
-                        <p class="crs-card__summary">수정 범위를 지정해서 요청하고, 바뀐 곳만 확인하는 방법을 익힙니다.</p>
-                        <p class="crs-card__info"><span>학습 대상 · AI 코딩 경험 1개월 이상</span><span>예상 기간 · 14일</span></p>
-                    </a>
-                </li>
-                <li>
-                    <a class="crs-card" href="/courses/2">
-                        <span class="crs-card__meta">Controller 트랙</span>
-                        <h3 class="crs-card__title">결과 검증하며 개발하기</h3>
-                        <p class="crs-card__summary">AI가 만든 결과를 테스트와 체크리스트로 확인하는 습관을 만듭니다.</p>
-                        <p class="crs-card__info"><span>학습 대상 · AI 코딩 경험 1개월 이상</span><span>예상 기간 · 10일</span></p>
-                    </a>
-                </li>
-                <li>
-                    <a class="crs-card" href="/courses/3">
-                        <span class="crs-card__meta">Controller 트랙</span>
-                        <h3 class="crs-card__title">되돌리기와 버전 관리</h3>
-                        <p class="crs-card__summary">원하지 않은 변경을 안전하게 되돌리는 방법을 배웁니다.</p>
-                        <p class="crs-card__info"><span>학습 대상 · AI 코딩 경험 1개월 이상</span><span>예상 기간 · 7일</span></p>
-                    </a>
+            <ul class="crs-cards" th:unless="${track.courses().empty}">
+                <li th:each="card : ${track.courses()}">
+                    <a th:replace="~{course/list :: courseCard(${card})}">코스 카드</a>
                 </li>
             </ul>
+            <th:block th:if="${track.courses().empty}">
+                <div th:replace="~{common/ui :: notice('empty', '', '아직 공개된 코스가 없습니다')}"></div>
+            </th:block>
         </section>
 
     </div>
