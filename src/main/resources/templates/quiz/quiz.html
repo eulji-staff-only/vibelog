@@ -83,6 +83,28 @@
                 <p>개념을 다시 보거나 퀴즈를 다시 풀어 보세요.</p>
             </div>
 
+            <!-- 개념 태그별 오답 비율 (FR-LSN-007). 약한 개념 = 그 태그 정답률 60% 미만 (PL-LSN-008). 막대는 CSS 로만 그린다 -->
+            <div class="qz-tags" data-quiz-tags-box>
+                <h3 class="qz-h3">개념 태그별 오답 비율</h3>
+                <p class="qz-muted">개념별 정답률이 60% 미만이면 약한 개념으로 표시합니다.</p>
+                <ul class="qz-tag-list" data-quiz-tags>
+                    <!-- 태그 줄 틀: quiz.js 가 tagStats 수만큼 복사해 채운다 -->
+                    <li class="qz-tag" data-quiz-tag-template hidden>
+                        <div class="vl-ui-progress qz-tag__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                            <div class="vl-ui-progress__top">
+                                <span class="vl-ui-progress__label" data-tag-name>개념 태그</span>
+                                <span class="vl-ui-progress__value" data-tag-text>오답 0%</span>
+                            </div>
+                            <div class="vl-ui-progress__track"><div class="vl-ui-progress__fill is-wrong" data-tag-fill></div></div>
+                        </div>
+                        <span class="qz-tag__weak" data-tag-weak hidden>
+                            <span class="vl-ui-badge is-danger">약한 개념</span>
+                            <a class="qz-link" th:href="${lessonUrl}">이 개념 다시 보기</a>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
             <div class="qz-result__actions">
                 <a class="vl-ui-btn is-text" th:href="${lessonUrl}">수업으로 돌아가기</a>
                 <div class="vl-ui-btn-group">

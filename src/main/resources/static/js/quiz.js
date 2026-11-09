@@ -5,6 +5,7 @@
  * - 보기 선택 → "확인" → 문항 확인(API-LSN-05)이 정답·해설을 준다. 확인한 문항은 답을 바꿀 수 없다 (PL-LSN-006).
  *   낚시 문제(TRICK)는 물고기를 누르면 확인 버튼 없이 바로 확인한다 (설계서 U-14).
  * - 마지막 문항 뒤 "결과 보기" → 제출·채점(API-LSN-06) 결과를 같은 화면에 그린다. 통과하면 열린 것을 토스트로 알린다.
+ *   개념 태그별 오답 비율(tagStats)을 막대로 그리고, 약한 개념에는 "이 개념 다시 보기"를 붙인다 (FR-LSN-007, #109).
  * - "퀴즈 다시 풀기"는 풀이 시작을 다시 부른다 (서버가 문항·보기 순서를 섞어 준다, PL-LSN-004·005).
  * - 서버 값은 모두 textContent 로 넣는다 (innerHTML 을 쓰지 않는다).
  * - 실패 응답은 {code, message} JSON 이다. message 를 오류 토스트로 보여 준다.
@@ -230,6 +231,7 @@
         root.querySelector('[data-quiz-score]').setAttribute('aria-valuenow', String(Math.round(rate)));
         root.querySelector('[data-quiz-score-fill]').style.width = rate + '%';
         root.querySelector('[data-quiz-score-text]').textContent = rate.toFixed(0) + '%';
+        renderTagStats(data.tagStats || []);
 
         if (data.isPassed) {
             root.querySelector('[data-quiz-pass-title]').textContent = data.message ? '통과했습니다. ' + data.message + '.' : '통과했습니다.';
@@ -242,6 +244,30 @@
         solve.hidden = true;
         result.hidden = false;
         result.querySelector('#qz-result-h').focus();
+    }
+
+    /* 개념 태그별 오답 비율 (FR-LSN-007). 틀 줄을 복사해 태그 수만큼 그린다. 약한 개념이면 배지와 "이 개념 다시 보기" */
+    function renderTagStats(tagStats) {
+        const box = root.querySelector('[data-quiz-tags-box]');
+        const list = root.querySelector('[data-quiz-tags]');
+        const template = list.querySelector('[data-quiz-tag-template]');
+        list.querySelectorAll('[data-quiz-tag-row]').forEach((row) => row.remove());
+        box.hidden = tagStats.length === 0;
+
+        tagStats.forEach((stat) => {
+            const row = template.cloneNode(true);
+            row.removeAttribute('data-quiz-tag-template');
+            row.setAttribute('data-quiz-tag-row', '');
+            row.hidden = false;
+            row.querySelector('[data-tag-name]').textContent = stat.conceptTagName || '';
+            row.querySelector('[data-tag-text]').textContent = '오답 ' + stat.wrongRate + '%';
+            row.querySelector('[data-tag-fill]').style.width = stat.wrongRate + '%';
+            const bar = row.querySelector('[role="progressbar"]');
+            bar.setAttribute('aria-label', (stat.conceptTagName || '') + ' 오답 비율');
+            bar.setAttribute('aria-valuenow', String(stat.wrongRate));
+            row.querySelector('[data-tag-weak]').hidden = !stat.weak;
+            list.appendChild(row);
+        });
     }
 
     /* ---- API-LSN-04 풀이 시작 (처음·다시 풀기) ---- */
