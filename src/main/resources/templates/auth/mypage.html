@@ -35,10 +35,23 @@
                 <h2 class="au-h2" id="au-account-h">계정 정보</h2>
                 <dl class="au-info">
                     <dt>이메일</dt><dd th:text="${info.email()}">learner@vibelog.test</dd>
-                    <dt>닉네임</dt><dd th:text="${info.nickname()}">바이브학습자</dd>
                     <dt>가입 방식</dt><dd th:text="${info.joinMethod()}">이메일</dd>
                 </dl>
                 <a class="au-btn is-outline is-fit" href="/my/portfolios">내 포트폴리오 보기</a>
+            </section>
+
+            <section class="au-section" aria-labelledby="au-nickname-h">
+                <h2 class="au-h2" id="au-nickname-h">닉네임</h2>
+                <form class="au-form" th:action="@{/mypage/profile}" th:object="${nicknameChangeRequest}" method="post" novalidate>
+                    <div class="au-field">
+                        <label class="au-label" for="nickname">닉네임</label>
+                        <input class="au-input" id="nickname" type="text" autocomplete="nickname" required maxlength="12"
+                               aria-describedby="nickname-hint nickname-error" th:field="*{nickname}" th:attrappend="aria-invalid=${#fields.hasErrors('nickname')} ? 'true'">
+                        <p class="au-hint" id="nickname-hint" th:unless="${#fields.hasErrors('nickname')}">2~12자 한글·영문·숫자 (공백·특수문자 불가)</p>
+                        <p class="au-hint is-error" id="nickname-error" role="alert" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}">닉네임 오류</p>
+                    </div>
+                    <button class="au-btn is-navy is-fit" type="submit">닉네임 저장</button>
+                </form>
             </section>
 
             <section class="au-section" aria-labelledby="au-password-h">
