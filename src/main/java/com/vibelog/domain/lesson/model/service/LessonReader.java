@@ -1,5 +1,6 @@
 package com.vibelog.domain.lesson.model.service;
 
+import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
@@ -9,6 +10,7 @@ import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
+import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,12 @@ public class LessonReader {
                 .toList();
     }
 
+    /* 코스의 마지막 공개 수업 ID, 공개 수업이 없으면 null. 포트폴리오 잠김 안내의 "리포트 보러 가기"(portfolio #112)가 쓴다 */
+    public Long getLastLessonId(Long courseId) {
+        List<Lesson> lessons = lessonRepository.findByCourseIdAndIsPublicTrueOrderBySortOrderAsc(courseId);
+        return lessons.isEmpty() ? null : lessons.get(lessons.size() - 1).getLessonId();
+    }
+
     /* 수업 ID → 수업 제목. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 모의고사 결과(auth #119)가 쓴다 */
     public Map<Long, String> getLessonTitles(Collection<Long> lessonIds) {
         return lessonRepository.findAllById(lessonIds).stream()
@@ -56,6 +64,13 @@ public class LessonReader {
     public Map<Long, String> getActivityTitles(Collection<Long> activityIds) {
         return activityRepository.findAllById(activityIds).stream()
                 .collect(Collectors.toMap(Activity::getActivityId, Activity::getTitle));
+    }
+
+    /* 수업이 속한 코스 ID. 없는 수업이면 LESSON_NOT_FOUND. 모의고사 화면의 수업 화면 링크(exam #110)가 쓴다 */
+    public Long getCourseId(Long lessonId) {
+        return lessonRepository.findById(lessonId)
+                .map(Lesson::getCourseId)
+                .orElseThrow(() -> new BusinessException(LessonErrorCode.LESSON_NOT_FOUND));
     }
 
     /*
