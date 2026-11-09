@@ -1,6 +1,11 @@
 package com.vibelog.domain.community.controller;
 
+import com.vibelog.domain.auth.model.service.MemberLoginService;
 import com.vibelog.domain.community.model.dto.RankingItem;
+import com.vibelog.domain.community.model.dto.ReviewRequestCard;
+import com.vibelog.domain.community.model.dto.ReviewView;
+import com.vibelog.domain.community.model.service.CommunityReader;
+import com.vibelog.domain.community.model.service.PeerReviewService;
 import com.vibelog.domain.community.model.service.RecommendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,21 +14,24 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /*
- * 영구 정지 회원의 공개 콘텐츠 숨김 — 게시판 목록·상세·댓글, 추천 랭킹 (PL-RPT-006, PL-ERR-006, #215).
+ * 영구 정지 회원의 공개 콘텐츠 숨김 — 게시판 목록·상세·댓글, 공개 프로필, 추천 랭킹, 동료 리뷰 (PL-RPT-006, PL-ERR-006, #215).
  * 기간 정지와 해제된 영구 정지는 그대로 보인다. 넣은 데이터는 끝나면 롤백된다.
  */
 @SpringBootTest
@@ -35,7 +43,10 @@ class HiddenContentTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired JdbcTemplate jdbcTemplate;
+    @Autowired MemberLoginService memberLoginService;
     @Autowired RecommendService recommendService;
+    @Autowired PeerReviewService peerReviewService;
+    @Autowired CommunityReader communityReader;
 
     private long adminId;
     private long writerId;
@@ -87,6 +98,14 @@ class HiddenContentTest {
     }
 
     @Test
+    void 영구_정지_회원의_공개_프로필은_없는_회원처럼_보인다() throws Exception {
+        long viewer = member("LEARNER");
+        suspend(writerId, "PERMANENT", null, null);
+
+        mockMvc.perform(get("/users/{id}", writerId).with(as(viewer))).andExpect(status().isNotFound());
+    }
+
+    @Test
     void 영구_정지_회원의_작품_공유_글은_추천_랭킹에서_빠진다() {
         long hiddenPost = showcase(writerId);
         long other = member("LEARNER");
@@ -98,10 +117,47 @@ class HiddenContentTest {
         assertThat(recommendService.getWeeklyTop(100)).extracting(RankingItem::postId).contains(shownPost).doesNotContain(hiddenPost);
     }
 
+    @Test
+    void 영구_정지_회원의_리뷰_요청은_목록에서_빠지고_쓴_리뷰는_내용을_숨긴다() {
+        long hiddenPortfolio = portfolio(writerId);
+        long owner = member("LEARNER");
+        long shownPortfolio = portfolio(owner);
+        jdbcTemplate.update("INSERT INTO review_request (portfolio_id, requested_at) VALUES (?, NOW())", hiddenPortfolio);
+        jdbcTemplate.update("INSERT INTO review_request (portfolio_id, requested_at) VALUES (?, NOW())", shownPortfolio);
+        long shownRequest = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        jdbcTemplate.update("INSERT INTO peer_review (review_request_id, reviewer_member_id) VALUES (?, ?)", shownRequest, writerId);
+        long reviewId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        jdbcTemplate.update("INSERT INTO review_comment (peer_review_id, content) VALUES (?, '숨겨야 할 리뷰')", reviewId);
+        long totalBefore = peerReviewService.getOpenRequests(1).getTotalElements();
+        suspend(writerId, "PERMANENT", null, null);
+
+        // 페이지를 자르기 전에 빼므로 전체 건수에서도 빠진다
+        var requests = peerReviewService.getOpenRequests(1);
+        assertThat(requests.getContent()).extracting(ReviewRequestCard::portfolioId).contains(shownPortfolio).doesNotContain(hiddenPortfolio);
+        assertThat(requests.getTotalElements()).isEqualTo(totalBefore - 1);
+        List<ReviewView> reviews = communityReader.findReviewsOfPortfolio(shownPortfolio, owner);
+        assertThat(reviews).singleElement().satisfies(review -> {
+            assertThat(review.hidden()).isTrue();
+            assertThat(review.reviewerNickname()).isNull();
+            assertThat(review.comments()).isEmpty();
+        });
+    }
+
     private long showcase(long memberId) {
         jdbcTemplate.update("INSERT INTO post (member_id, category, title, body, work_url) VALUES (?, 'SHOWCASE', '작품', '본문', 'https://example.com')",
                 memberId);
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+    }
+
+    private long portfolio(long memberId) {
+        jdbcTemplate.update("INSERT INTO portfolio (member_id, portfolio_type, title, result_url, summary, retrospective, ai_tools, is_public) "
+                + "VALUES (?, 'PERSONAL', '리뷰 받을 작품', 'https://example.com', '요약', '회고', 'Claude', TRUE)", memberId);
+        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+    }
+
+    private RequestPostProcessor as(long memberId) {
+        String email = jdbcTemplate.queryForObject("SELECT email FROM member WHERE member_id = ?", String.class, memberId);
+        return user(memberLoginService.loadUserByUsername(email));
     }
 
     private static String link(long postId) {

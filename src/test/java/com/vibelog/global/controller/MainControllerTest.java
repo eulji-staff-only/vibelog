@@ -2,6 +2,10 @@ package com.vibelog.global.controller;
 
 import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.auth.model.service.MemberReader;
+import com.vibelog.domain.community.model.dto.RankingItem;
+import com.vibelog.domain.community.model.service.CommunityReader;
+import com.vibelog.domain.message.model.dto.NoticeSummary;
+import com.vibelog.domain.message.model.service.MessageReader;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -11,12 +15,16 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -33,11 +41,35 @@ class MainControllerTest {
     @MockitoBean
     private MemberReader memberReader;
 
+    @MockitoBean
+    private MessageReader messageReader;
+
+    @MockitoBean
+    private CommunityReader communityReader;
+
     @Test
     void 메인_화면_요청하면_공통_메인_뷰를_돌려준다() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("common/main"));
+    }
+
+    @Test
+    void 최근_공지와_이번_주_추천_작품을_보여준다() throws Exception {
+        given(messageReader.findRecentNotices(3)).willReturn(List.of(
+                new NoticeSummary(7L, "11월 점검 안내", LocalDateTime.of(2026, 11, 9, 10, 0))));
+        given(communityReader.findWeeklyTop(3)).willReturn(List.of(new RankingItem(1, 42L, "할 일 앱", "코딩곰", 5)));
+
+        mockMvc.perform(get("/"))
+                .andExpect(content().string(allOf(containsString("/notices/7"), containsString("11월 점검 안내"),
+                        containsString("2026-11-09"), containsString("/community/42"), containsString("할 일 앱 — 코딩곰 (추천 5)"))));
+    }
+
+    @Test
+    void 공지와_추천_작품이_없으면_안내_문구를_보여준다() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(content().string(allOf(containsString("등록된 공지사항이 없습니다"),
+                        containsString("이번 주에 추천받은 작품이 아직 없습니다"))));
     }
 
     @Test

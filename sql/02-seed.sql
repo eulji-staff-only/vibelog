@@ -233,3 +233,10 @@ INSERT INTO guide_step (portfolio_assignment_id, content, sort_order) VALUES
     (1, '고칠 기능 하나를 고르고, 고칠 파일·함수와 건드리지 않을 곳을 적는다', 1),
     (1, '적은 범위를 넣어 AI에게 요청하고 결과를 받는다', 2),
     (1, 'diff를 확인해 요청하지 않은 변경은 되돌리고, 과정을 회고로 정리한다', 3);
+
+-- 동료 리뷰 평가 기준 3개 (FR-REV-003, PL-REV-003, #209). 과제 1의 평가 에이전트 안내(agent_guide) "평가 기준" 세 가지와 같다.
+-- 기준을 넣는 운영자 화면이 없어 새 과제의 기준도 DB 팀이 SQL 로 넣는다 (community.md 동료 리뷰 "평가 기준")
+INSERT INTO review_criterion (review_criterion_id, portfolio_assignment_id, name, description, sort_order, is_active) VALUES
+    (1, 1, '요청 범위', '요청에 고칠 곳(파일·함수)과 건드리지 않을 곳이 모두 적혀 있는가', 1, TRUE),
+    (2, 1, '요청하지 않은 변경', '요청하지 않은 파일·코드가 바뀌지 않았는가 (diff로 확인)', 2, TRUE),
+    (3, 1, '되돌리기', '의도와 다른 변경을 찾아 되돌렸는가', 3, TRUE);
