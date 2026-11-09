@@ -95,6 +95,50 @@ class MyLearningPageControllerTest {
     }
 
     @Test
+    void 리포트_링크가_있는_수업에만_리포트_보기가_그려진다() throws Exception {
+        LoginMember loginMember = mock(LoginMember.class);
+        given(loginMember.getMemberId()).willReturn(1L);
+        MyLearningLessonCard withReport = new MyLearningLessonCard(
+                11L, 1, "응시한 수업", LessonStatus.IN_PROGRESS, LessonExamStatus.ATTEMPTED,
+                "/lessons/11/exam/report?attempt=2");
+        MyLearningLessonCard withoutReport = new MyLearningLessonCard(
+                12L, 2, "안 응시한 수업", LessonStatus.IN_PROGRESS, LessonExamStatus.OPEN);
+        MyLearningCourseCard course = new MyLearningCourseCard(
+                1L, "테스트 트랙", "테스트 코스", 0, "다음", List.of(withReport, withoutReport),
+                PortfolioStatus.LOCKED, List.of(), false, null);
+        given(myLearningService.getActiveCourses(1L)).willReturn(List.of(course));
+        given(myLearningService.getCompletedCourses(1L)).willReturn(List.of());
+
+        mockMvc.perform(get("/my/learning")
+                        .with(authentication(new UsernamePasswordAuthenticationToken(loginMember, "N/A",
+                                List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.allOf(
+                        Matchers.containsString("href=\"/lessons/11/exam/report?attempt=2\""),
+                        Matchers.containsString("리포트 보기"),
+                        Matchers.not(Matchers.containsString("/lessons/12/exam/report")))));
+    }
+
+    @Test
+    void 리포트_링크가_없는_수업만_있으면_리포트_보기가_없다() throws Exception {
+        LoginMember loginMember = mock(LoginMember.class);
+        given(loginMember.getMemberId()).willReturn(1L);
+        MyLearningLessonCard lesson = new MyLearningLessonCard(
+                12L, 1, "안 응시한 수업", LessonStatus.IN_PROGRESS, LessonExamStatus.OPEN);
+        MyLearningCourseCard course = new MyLearningCourseCard(
+                1L, "테스트 트랙", "테스트 코스", 0, "다음", List.of(lesson),
+                PortfolioStatus.LOCKED, List.of(), false, null);
+        given(myLearningService.getActiveCourses(1L)).willReturn(List.of(course));
+        given(myLearningService.getCompletedCourses(1L)).willReturn(List.of());
+
+        mockMvc.perform(get("/my/learning")
+                        .with(authentication(new UsernamePasswordAuthenticationToken(loginMember, "N/A",
+                                List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.not(Matchers.containsString("리포트 보기"))));
+    }
+
+    @Test
     void 수강_중_코스에는_수강_포기_버튼과_확인_모달이_있고_완료_코스에는_없다() throws Exception {
         LoginMember loginMember = mock(LoginMember.class);
         given(loginMember.getMemberId()).willReturn(1L);
