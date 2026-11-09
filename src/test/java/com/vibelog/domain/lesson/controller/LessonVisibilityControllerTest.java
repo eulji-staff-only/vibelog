@@ -112,7 +112,7 @@ class LessonVisibilityControllerTest {
     }
 
     private long courseOf() {
-        jdbcTemplate.update("INSERT INTO track (name, target, description, sort_order) VALUES ('트랙', '대상', '설명', 1)");
+        jdbcTemplate.update("INSERT INTO track (name, target, description, sort_order) VALUES ('트랙', '대상', '설명', 9901)");
         Long trackId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
         jdbcTemplate.update("INSERT INTO course_category (name, sort_order) VALUES ('카테고리', 1)");
         Long categoryId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
