@@ -6,6 +6,7 @@ import com.vibelog.domain.community.model.dao.FavoriteRepository;
 import com.vibelog.domain.community.model.dao.FollowRepository;
 import com.vibelog.domain.community.model.dao.PostCommentCount;
 import com.vibelog.domain.community.model.dao.PostRepository;
+import com.vibelog.domain.community.model.dto.ReviewView;
 import com.vibelog.domain.community.model.dto.MemberCommentItem;
 import com.vibelog.domain.community.model.dto.MemberPostItem;
 import com.vibelog.domain.community.model.dto.MemberSummary;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +46,7 @@ public class CommunityReader {
     private final FollowRepository followRepository;
     private final MemberReader memberReader;
     private final RecommendService recommendService;
+    private final PeerReviewService peerReviewService;
 
     public Page<MemberPostItem> getPostsOf(Long memberId, int page) {
         return toItems(postRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
@@ -97,5 +100,27 @@ public class CommunityReader {
     /* 메인 화면 이번 주 추천 작품 (API-USR-01, #203). 랭킹(U-30)과 같은 순서 */
     public List<RankingItem> findWeeklyTop(int limit) {
         return recommendService.getWeeklyTop(limit);
+    }
+
+    /* 동료 리뷰 (#182·#183). U-19·U-20 은 portfolio 화면이라 이 값으로 버튼·받은 리뷰를 붙인다 (그 PR 은 portfolio 영역 리뷰) */
+
+    /* 알림 도착지 (message API-NTF-02). 지운 리뷰도 작품 ID 를 돌려준다. 행이 없으면 빈 값 */
+    public Optional<Long> findPortfolioIdOfReview(Long peerReviewId) {
+        return peerReviewService.findPortfolioIdOfReview(peerReviewId);
+    }
+
+    /* U-20 받은 리뷰·도움됨·내 리뷰 수정 */
+    public List<ReviewView> findReviewsOfPortfolio(Long portfolioId, Long viewerMemberId) {
+        return peerReviewService.findReviewsOfPortfolio(portfolioId, viewerMemberId);
+    }
+
+    /* U-20 리뷰 요청·마감 버튼: 열린 요청이 있으면 그 ID */
+    public Optional<Long> findOpenReviewRequestId(Long portfolioId) {
+        return peerReviewService.findOpenReviewRequestId(portfolioId);
+    }
+
+    /* U-19 카드: 열린 리뷰 요청이 있는 작품 */
+    public Set<Long> findPortfolioIdsWithOpenRequest(Collection<Long> portfolioIds) {
+        return peerReviewService.findPortfolioIdsWithOpenRequest(portfolioIds);
     }
 }
