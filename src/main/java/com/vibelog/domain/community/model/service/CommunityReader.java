@@ -154,6 +154,24 @@ public class CommunityReader {
         };
     }
 
+    /*
+     * 신고 심사용 (message A-13·HIDDEN 알림, P3 #257). findReportTargets 와 같지만 삭제 표시한 것도 돌려준다.
+     * 운영자 쪽에서만 쓴다 (학습자 화면에서 쓰면 지운 글이 보인다)
+     */
+    public Map<Long, ReportTarget> findReportReviewTargets(String targetType, Collection<Long> targetIds) {
+        if (targetIds.isEmpty()) {
+            return Map.of();
+        }
+        return switch (targetType) {
+            case "POST" -> postRepository.findAllById(targetIds).stream()
+                    .collect(Collectors.toMap(Post::getPostId, post -> new ReportTarget(post.getMemberId(), post.getTitle(), post.getBody())));
+            case "COMMENT" -> commentRepository.findAllById(targetIds).stream()
+                    .collect(Collectors.toMap(Comment::getCommentId, comment -> ReportTarget.ofText(comment.getMemberId(), comment.getContent())));
+            case "REVIEW" -> reviewTargets(peerReviewRepository.findAllById(targetIds));
+            default -> Map.of();
+        };
+    }
+
     /* 댓글은 그 글이 남아 있고 글쓴이가 영구 정지가 아닐 때만 보인다 (PostService.getPost 와 같은 조건) */
     private Map<Long, ReportTarget> commentTargets(Collection<Long> commentIds) {
         List<Comment> comments = commentRepository.findAllById(commentIds).stream().filter(comment -> !comment.isDeleted()).toList();
@@ -169,7 +187,10 @@ public class CommunityReader {
 
     /* 리뷰 원문 = 기준별 코멘트를 줄바꿈으로 이은 것 */
     private Map<Long, ReportTarget> reviewTargets(Collection<Long> peerReviewIds) {
-        List<PeerReview> reviews = peerReviewRepository.findAllById(peerReviewIds).stream().filter(review -> !review.isDeleted()).toList();
+        return reviewTargets(peerReviewRepository.findAllById(peerReviewIds).stream().filter(review -> !review.isDeleted()).toList());
+    }
+
+    private Map<Long, ReportTarget> reviewTargets(List<PeerReview> reviews) {
         Map<Long, String> contents = reviewCommentRepository.findByPeerReviewIdInOrderByReviewCommentIdAsc(
                         reviews.stream().map(PeerReview::getPeerReviewId).toList()).stream()
                 .collect(Collectors.groupingBy(ReviewComment::getPeerReviewId,

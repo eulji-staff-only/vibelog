@@ -43,6 +43,9 @@
         <a class="vl-admin__link" href="/admin/contests"
            th:classappend="${active == 'contests'} ? 'is-active' : ''"
            th:attr="aria-current=${active == 'contests'} ? 'page' : null">콘테스트</a>
+        <a class="vl-admin__link" href="/admin/reports"
+           th:classappend="${active == 'reports'} ? 'is-active' : ''"
+           th:attr="aria-current=${active == 'reports'} ? 'page' : null">신고</a>
     </nav>
 
     <a class="vl-admin__exit" href="/">← 학습자 화면으로</a>

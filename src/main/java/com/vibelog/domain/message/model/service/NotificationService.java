@@ -83,16 +83,33 @@ public class NotificationService {
         Long targetId = notification.getTargetId();
         return switch (notification.getNotificationType()) {
             case RECOMMEND -> "/community/" + targetId;
-            // 댓글은 지워도 행이 남는다. 행이 아예 없을 때만 E-01
-            case COMMENT, REPLY -> communityReader.findPostIdOfComment(targetId)
-                    .map(postId -> "/community/" + postId + "#comment-" + targetId)
-                    .orElseThrow(() -> new BusinessException(MessageErrorCode.NOTIFICATION_NOT_FOUND));
+            case COMMENT, REPLY -> commentUrl(targetId);
+            case REVIEW -> reviewUrl(targetId);
             case MESSAGE -> "/messages?box=received&messageId=" + targetId;
             case BADGE -> "/mypage?tab=badges";
             case NOTICE -> "/notices/" + targetId;
-            // ponytail: REVIEW 는 동료 리뷰(#183)가 생겨야 남는다. 그때 CommunityReader 로 portfolioId 를 받아 /portfolios/{id} 로 보낸다
-            // HIDDEN 은 P3
-            case REVIEW, HIDDEN -> throw new BusinessException(MessageErrorCode.NOTIFICATION_NOT_FOUND);
+            // 신고로 숨겨진 내 콘텐츠 (P3 #257). 쪽지는 작성자가 보낸 사람이라 보낸 쪽지함
+            case HIDDEN -> switch (notification.getTargetType()) {
+                case POST -> "/community/" + targetId;
+                case COMMENT -> commentUrl(targetId);
+                case REVIEW -> reviewUrl(targetId);
+                case PORTFOLIO -> "/portfolios/" + targetId;
+                case MESSAGE -> "/messages?box=sent&messageId=" + targetId;
+                default -> throw new BusinessException(MessageErrorCode.NOTIFICATION_NOT_FOUND);
+            };
         };
+    }
+
+    // 댓글·리뷰는 지워도 행이 남는다. 행이 아예 없을 때만 E-01
+    private String commentUrl(Long commentId) {
+        return communityReader.findPostIdOfComment(commentId)
+                .map(postId -> "/community/" + postId + "#comment-" + commentId)
+                .orElseThrow(() -> new BusinessException(MessageErrorCode.NOTIFICATION_NOT_FOUND));
+    }
+
+    private String reviewUrl(Long peerReviewId) {
+        return communityReader.findPortfolioIdOfReview(peerReviewId)
+                .map(portfolioId -> "/portfolios/" + portfolioId)
+                .orElseThrow(() -> new BusinessException(MessageErrorCode.NOTIFICATION_NOT_FOUND));
     }
 }

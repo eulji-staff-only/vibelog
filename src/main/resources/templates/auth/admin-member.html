@@ -24,6 +24,8 @@
         <dt>이메일 인증</dt><dd th:text="${member.emailVerified()} ? '인증' : '미인증'">인증</dd>
         <dt>가입일</dt><dd th:text="${#temporals.format(member.joinedAt(), 'yyyy.MM.dd')}">2026.11.01</dd>
         <dt>포트폴리오</dt><dd th:text="|${member.portfolioCount()}개|">0개</dd>
+        <!-- 이 회원의 콘텐츠가 받은 신고 (FR-USR-009, P3 #257) -->
+        <dt>신고 이력</dt><dd th:text="|대기 ${member.reportHistory().pending()} · 숨김 ${member.reportHistory().hidden()} · 기각 ${member.reportHistory().rejected()}|">대기 0 · 숨김 0 · 기각 0</dd>
     </dl>
 
     <p class="am-muted" role="status" th:if="${toast}" th:text="${toast}">알림</p>

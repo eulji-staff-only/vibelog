@@ -3,6 +3,7 @@ package com.vibelog.domain.message.model.service;
 import com.vibelog.domain.message.model.dao.NoticeRepository;
 import com.vibelog.domain.message.model.dao.ReportRepository;
 import com.vibelog.domain.message.model.dto.NoticeSummary;
+import com.vibelog.domain.message.model.dto.ReportHistory;
 import com.vibelog.domain.message.model.entity.Report;
 import com.vibelog.domain.message.model.entity.ReportStatus;
 import com.vibelog.domain.message.model.entity.ReportTargetType;
@@ -59,6 +60,13 @@ public class MessageReader {
     /* 숨김 확정 없이 PENDING 3건 이상으로 자동 숨김인 대상 ID (콘테스트 시상 보류, PL-CTS-006, #295) */
     public Set<Long> findAutoHiddenTargetIds(String targetType, Collection<Long> targetIds) {
         return targetIdsWhere(targetType, targetIds, reports -> !hasHidden(reports) && pendingCount(reports) >= AUTO_HIDE_COUNT);
+    }
+
+    /* 이 회원의 콘텐츠가 받은 신고 건수 (A-08 회원 상세 신고 이력, FR-USR-009, #257) */
+    public ReportHistory getReportHistory(Long memberId) {
+        return new ReportHistory(reportRepository.countByTargetMemberIdAndStatus(memberId, ReportStatus.PENDING),
+                reportRepository.countByTargetMemberIdAndStatus(memberId, ReportStatus.HIDDEN),
+                reportRepository.countByTargetMemberIdAndStatus(memberId, ReportStatus.REJECTED));
     }
 
     /* 대상별 신고 묶음이 rule 에 맞는 대상 ID. 신고가 없는 대상은 빠진다. 빈 묶음이면 빈 결과 */

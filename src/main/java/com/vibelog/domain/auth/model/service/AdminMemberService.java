@@ -17,6 +17,7 @@ import com.vibelog.domain.exam.model.dto.MemberExamResult;
 import com.vibelog.domain.exam.model.service.ExamReader;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.service.LessonReader;
+import com.vibelog.domain.message.model.service.MessageReader;
 import com.vibelog.domain.portfolio.model.service.PortfolioReader;
 import com.vibelog.domain.quiz.model.dto.MemberQuizResult;
 import com.vibelog.domain.quiz.model.service.QuizReader;
@@ -53,6 +54,7 @@ public class AdminMemberService {
     private final QuizReader quizReader;
     private final ExamReader examReader;
     private final PortfolioReader portfolioReader;
+    private final MessageReader messageReader;
 
     /* page 는 화면 그대로 1부터 센다 */
     public Page<AdminMemberItem> search(String q, int page) {
@@ -86,7 +88,8 @@ public class AdminMemberService {
         boolean suspendable = member.getStatus() == MemberStatus.ACTIVE && member.getRole() != MemberRole.ADMIN && current == null;
         AdminSanction sanction = AdminSanction.of(current, suspendable,
                 memberSuspensionRepository.findByMemberIdOrderByStartsAtDescMemberSuspensionIdDesc(memberId));
-        return AdminMemberDetail.of(member, enrollments, quizResults, examResults, portfolioReader.countOf(memberId), sanction);
+        return AdminMemberDetail.of(member, enrollments, quizResults, examResults, portfolioReader.countOf(memberId), sanction,
+                messageReader.getReportHistory(memberId));
     }
 
     /* API-USR-19. 이용 중인 학습자만. 이미 정지 중이면 막는다 (해제한 뒤 다시) */

@@ -76,6 +76,12 @@ public class PortfolioReader {
                 .collect(Collectors.toMap(Portfolio::getPortfolioId, p -> new ReportTarget(p.getMemberId(), p.getTitle(), p.getSummary())));
     }
 
+    /* 신고 심사용 (message A-13·HIDDEN 알림, P3 #257): 비공개·삭제 표시 포함 전부. 운영자 쪽에서만 쓴다 (PL-SEC-002) */
+    public Map<Long, ReportTarget> findReportReviewTargets(Collection<Long> portfolioIds) {
+        return portfolioIds.isEmpty() ? Map.of() : portfolioRepository.findAllById(portfolioIds).stream()
+                .collect(Collectors.toMap(Portfolio::getPortfolioId, p -> new ReportTarget(p.getMemberId(), p.getTitle(), p.getSummary())));
+    }
+
     /* 회원들의 포트폴리오 ID, 삭제 표시한 것도 포함 (U-31 리뷰 요청 목록에서 영구 정지 회원 작품을 미리 뺀다, #215). 빈 묶음이면 빈 결과 */
     public List<Long> findIdsOf(Collection<Long> memberIds) {
         return memberIds.isEmpty() ? List.of() : portfolioRepository.findIdsByMemberIdIn(memberIds);
