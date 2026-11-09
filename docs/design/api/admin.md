@@ -71,7 +71,7 @@ A-09 `/admin/diagnosis`. 코드는 course 영역에 둔다(진단 테이블이 c
 | ID | 기능 | Method | URL | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | API-ADM-41 | 진단 설정 화면 | GET | `/admin/diagnosis` | - | A-09 + 문항 전체(사용 중지 포함, `sort_order` 순: `diagnosisQuestionId`, 내용, 순서, 사용 여부) + 보기(`sort_order` 순: `diagnosisOptionId`, 내용, `trackId`·트랙 이름, 점수) + 트랙 목록(`trackId`, 이름) + (테스트 응답 직후) 미리 보기 결과 | - | FR-DGN-004 |
-| API-ADM-42 | 문항 추가 | POST | `/admin/diagnosis/questions` | form `content`, `sortOrder`, `options[]`(`content`, `trackId`, `score`) | 사용 중으로 저장 → `/admin/diagnosis` + toast | `INVALID_INPUT`(빈 칸, 문항 500자·보기 255자 초과(`sql/01-schema.sql` 컬럼 길이), 보기 2개 미만, 없는 트랙, 점수 1 미만) → 같은 폼 다시 | FR-DGN-004, PL-DGN-002 |
+| API-ADM-42 | 문항 추가 | POST | `/admin/diagnosis/questions` | form `content`, `sortOrder`, `options[]`(`content`, `trackId`, `score`) | 사용 중으로 저장 → `/admin/diagnosis` + toast | `INVALID_INPUT`(빈 칸, 문항 500자·보기 255자 초과(`sql/01-schema.sql` 컬럼 길이), 보기 2개 미만, 없는 트랙, 점수가 1 미만이거나 `INT` 범위 초과) → 같은 폼 다시 | FR-DGN-004, PL-DGN-002 |
 | API-ADM-43 | 문항 수정 | POST | `/admin/diagnosis/questions/{diagnosisQuestionId}/edit` | form API-ADM-42와 같음 + `options[].diagnosisOptionId`(있는 보기) | 문항·보기를 그 자리에서 고친다. 폼에 없는 기존 보기는 지운다(응답을 저장하지 않아 가리키는 기록이 없다) → `/admin/diagnosis` + toast | API-ADM-42와 같음 | FR-DGN-004 |
 | API-ADM-44 | 문항 사용·중지 | POST | `/admin/diagnosis/questions/{diagnosisQuestionId}/active` | form `active` | → `/admin/diagnosis` + toast. 중지한 문항은 진단 설문(API-DGN-01)에 나오지 않는다 | `INVALID_INPUT`(마지막 사용 중 문항은 중지할 수 없음) → toast | FR-DGN-004 |
 | API-ADM-45 | 테스트 응답 | POST | `/admin/diagnosis/test` | form `diagnosisOptionIds`(사용 중 문항마다 1개, API-DGN-02와 같음) | 진단 제출과 같은 규칙(PL-DGN-002: 점수 합계, 동점이면 트랙 순서 앞)으로 추천 트랙을 계산만 하고 **저장하지 않는다** → `/admin/diagnosis` + 미리 보기(추천 트랙, 트랙별 점수 합계) | `INVALID_INPUT`(문항 수와 답 수가 다름) | FR-DGN-004, PL-DGN-002 |
@@ -79,7 +79,7 @@ A-09 `/admin/diagnosis`. 코드는 course 영역에 둔다(진단 테이블이 c
 - 보기 순서(`diagnosis_option.sort_order`)는 폼에 적힌 순서대로 1부터 다시 매긴다.
 - 테스트 응답은 API-DGN-02와 같은 계산(course 영역 `TrackRecommendPolicy`)을 그대로 써서, 실제 진단과 미리 보기 결과가 달라지지 않게 한다.
 - 이 명세에서 정한 것 (P2, 리뷰에서 확인):
-  1. 보기는 문항마다 **2개 이상** (고를 것이 하나뿐이면 문항이 아니다). 점수는 **1 이상** (`diagnosis_option.score` 기본값 1, 0점 보기는 추천에 영향이 없어 뜻이 없다). 보기 수·점수 상한은 두지 않는다.
+  1. 보기는 문항마다 **2개 이상** (고를 것이 하나뿐이면 문항이 아니다). 점수는 **1 이상, DB `INT` 범위(2,147,483,647) 이하** (`diagnosis_option.score` 기본값 1, 0점 보기는 추천에 영향이 없어 뜻이 없다). 그 밖의 보기 수·점수 상한은 두지 않는다. 큰 점수를 여러 개 골라도 넘치지 않게 **트랙별 점수 합계는 `long`으로 계산**한다 (실제 진단 API-DGN-02와 테스트 응답 API-ADM-45 모두. 지금 `TrackRecommendPolicy`의 `int` 합계는 진단 설정 구현 #187에서 `long`으로 바꾼다).
   2. 문항 순서는 폼의 `sortOrder` 숫자로 정한다 (드래그 정렬은 두지 않는다 — 문항 수가 적다).
   3. 사용 중인 문항이 하나도 없으면 진단을 할 수 없으므로 **마지막 사용 중 문항은 중지할 수 없다.**
   4. 문항은 지우지 않고 사용·중지만 한다 (화면 흐름 4장 A-09 "문항, 보기, 보기별 트랙 점수 … 저장").
