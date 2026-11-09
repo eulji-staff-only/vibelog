@@ -157,7 +157,7 @@ public class QuizSolveService {
         BigDecimal correctRate = quizGradingPolicy.correctRate(correctCount, questionIds.size());
         boolean passed = quizGradingPolicy.isPassed(correctRate, activity.passRate());
         attempt.submit(correctRate, passed, LocalDateTime.now());
-        List<QuizSubmitResponse.TagStat> tagStats = tagStatsOf(questions, answerByQuestion);
+        List<QuizSubmitResponse.TagStat> tagStats = tagStatsOf(questions, answerByQuestion, activity.lessonId());
 
         String lessonUrl = "/courses/" + activity.courseId() + "/lessons/" + activity.lessonId();
         if (!passed) {
@@ -177,11 +177,14 @@ public class QuizSolveService {
     /*
      * 개념 태그별 오답 비율과 약한 개념 (FR-LSN-007, PL-LSN-008). 문항 순서대로 처음 나온 태그 순서로 보여준다.
      * 태그 이름은 lesson 영역의 LessonReader 로 읽는다 (concept_tag 는 lesson 영역 테이블).
+     * 태그마다 "이 개념 다시 보기"로 갈 개념(같은 수업의 사용 중인 개념, 순서 앞)도 LessonReader 로 찾는다 (#284, 없으면 null)
      */
-    private List<QuizSubmitResponse.TagStat> tagStatsOf(List<QuizQuestion> questions, Map<Long, QuizAnswer> answerByQuestion) {
+    private List<QuizSubmitResponse.TagStat> tagStatsOf(List<QuizQuestion> questions, Map<Long, QuizAnswer> answerByQuestion,
+                                                        Long lessonId) {
         Map<Long, List<QuizQuestion>> questionsByTag = questions.stream()
                 .collect(Collectors.groupingBy(QuizQuestion::getConceptTagId, LinkedHashMap::new, Collectors.toList()));
         Map<Long, String> tagNames = lessonReader.getConceptTagNames(questionsByTag.keySet());
+        Map<Long, Long> conceptByTag = lessonReader.getConceptActivityIdsByTag(List.of(lessonId)).getOrDefault(lessonId, Map.of());
 
         return questionsByTag.entrySet().stream()
                 .map(entry -> {
@@ -190,7 +193,8 @@ public class QuizSolveService {
                             .filter(question -> answerByQuestion.get(question.getQuizQuestionId()).isCorrect())
                             .count();
                     return new QuizSubmitResponse.TagStat(tagNames.get(entry.getKey()),
-                            quizGradingPolicy.wrongRate(total - correct, total), quizGradingPolicy.isWeak(correct, total));
+                            quizGradingPolicy.wrongRate(total - correct, total), quizGradingPolicy.isWeak(correct, total),
+                            conceptByTag.get(entry.getKey()));
                 })
                 .toList();
     }

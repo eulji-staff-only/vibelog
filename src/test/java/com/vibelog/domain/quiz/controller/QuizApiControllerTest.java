@@ -100,7 +100,7 @@ class QuizApiControllerTest {
     @Test
     void 제출하면_정답률_통과_다음_위치를_준다() throws Exception {
         given(quizSolveService.submit(7L, 100L)).willReturn(new QuizSubmitResponse(new BigDecimal("75.00"), true,
-                List.of(new QuizSubmitResponse.TagStat("JSP 표현식", 50, true)),
+                List.of(new QuizSubmitResponse.TagStat("JSP 표현식", 50, true, 8L)),
                 new QuizSubmitResponse.Next("CONCEPT", "/courses/1/lessons/2?activity=5"), "다음 개념이 열렸습니다"));
 
         mockMvc.perform(post("/api/quiz-attempts/100/submit").with(member()).with(csrf()))
@@ -110,6 +110,7 @@ class QuizApiControllerTest {
                 .andExpect(jsonPath("$.tagStats[0].conceptTagName").value("JSP 표현식"))
                 .andExpect(jsonPath("$.tagStats[0].wrongRate").value(50))
                 .andExpect(jsonPath("$.tagStats[0].weak").value(true))
+                .andExpect(jsonPath("$.tagStats[0].conceptActivityId").value(8))
                 .andExpect(jsonPath("$.next.type").value("CONCEPT"))
                 .andExpect(jsonPath("$.next.url").value("/courses/1/lessons/2?activity=5"))
                 .andExpect(jsonPath("$.message").value("다음 개념이 열렸습니다"));

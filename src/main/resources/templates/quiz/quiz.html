@@ -99,7 +99,8 @@
                         </div>
                         <span class="qz-tag__weak" data-tag-weak hidden>
                             <span class="vl-ui-badge is-danger">약한 개념</span>
-                            <a class="qz-link" th:href="${lessonUrl}">이 개념 다시 보기</a>
+                            <!-- 그 태그가 붙은 개념 글로 (quiz.js 가 tagStats[].conceptActivityId 로 채운다, 없으면 수업 화면, #284) -->
+                            <a class="qz-link" th:href="${lessonUrl}" data-tag-review>이 개념 다시 보기</a>
                         </span>
                     </li>
                 </ul>

@@ -180,6 +180,22 @@ class QuizSolveServiceTest {
     }
 
     @Test
+    void 채점_결과의_개념_링크는_태그가_붙은_사용_중인_개념이고_없으면_null이다() {
+        // 'JSP 표현식'(9902)은 개념 9902에, 'JSP 동작 방식'(9901)은 사용 중지한 개념에만 붙어 있다 (#284)
+        jdbcTemplate.update("INSERT INTO activity (activity_id, lesson_id, activity_type, title, body, body_format, estimated_minutes, pass_rate, sort_order, is_active) "
+                + "VALUES (9903, 9901, 'CONCEPT', '중지한 개념', '본문', 'MARKDOWN', 10, NULL, 3, FALSE)");
+        jdbcTemplate.update("INSERT INTO activity_tag (activity_id, concept_tag_id) VALUES (9902, 9902), (9903, 9901)");
+        Long attemptId = quizSolveService.start(memberA, 9901L).quizAttemptId();
+        quizSolveService.check(memberA, attemptId, 99011L, 990112L);   // 오답
+        quizSolveService.check(memberA, attemptId, 99012L, 990122L);   // 오답
+
+        QuizSubmitResponse result = quizSolveService.submit(memberA, attemptId);
+
+        assertThat(result.tagStats()).extracting(QuizSubmitResponse.TagStat::conceptActivityId)
+                .containsExactly(null, 9902L);
+    }
+
+    @Test
     void 통과하지_못하면_다음_개념을_열지_않는다() {
         Long attemptId = quizSolveService.start(memberA, 9901L).quizAttemptId();
         quizSolveService.check(memberA, attemptId, 99011L, 990112L);   // 오답

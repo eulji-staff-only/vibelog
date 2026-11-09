@@ -266,6 +266,11 @@
             bar.setAttribute('aria-label', (stat.conceptTagName || '') + ' 오답 비율');
             bar.setAttribute('aria-valuenow', String(stat.wrongRate));
             row.querySelector('[data-tag-weak]').hidden = !stat.weak;
+            // 약한 개념의 "이 개념 다시 보기": 그 태그가 붙은 개념 글로, 없으면 수업 화면 (FR-LSN-007, #284)
+            const review = row.querySelector('[data-tag-review]');
+            if (review && stat.conceptActivityId) {
+                review.href = root.dataset.lessonUrl + '?activity=' + encodeURIComponent(stat.conceptActivityId);
+            }
             list.appendChild(row);
         });
     }
