@@ -12,6 +12,7 @@ import com.vibelog.domain.course.model.dto.DiagnosisQuestionForm;
 import com.vibelog.domain.course.model.entity.DiagnosisOption;
 import com.vibelog.domain.course.model.entity.DiagnosisQuestion;
 import com.vibelog.domain.course.model.entity.Track;
+import com.vibelog.domain.course.model.policy.DiagnosisAnswerPolicy;
 import com.vibelog.domain.course.model.policy.TrackRecommendPolicy;
 import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  *        - 수정: 문항 내용·순서와 보기의 트랙·점수·순서는 그 자리에서 고친다. 보기 내용이 바뀐 보기는 지우고 새 보기(새 ID)로
  *          만든다 — 고치기 전 설문으로 제출한 답이 없는 보기가 되어 다시 진단하게 (admin.md API-ADM-43, course.md 결정 7).
  *          폼에 없는 기존 보기는 지운다. 응답을 저장하지 않아(PL-DGN-001) 보기를 지워도 끊기는 기록이 없다.
- *        - 테스트 응답: 실제 진단과 같은 계산(TrackRecommendPolicy)으로 추천 트랙을 구하기만 하고 저장하지 않는다.
+ *        - 테스트 응답: 실제 진단과 같은 답 검사(DiagnosisAnswerPolicy)·계산(TrackRecommendPolicy)으로 추천 트랙을 구하기만 하고 저장하지 않는다.
  */
 @Service
 @RequiredArgsConstructor
@@ -46,6 +46,7 @@ public class DiagnosisAdminService {
     private final DiagnosisOptionRepository diagnosisOptionRepository;
     private final TrackRepository trackRepository;
     private final TrackRecommendPolicy trackRecommendPolicy;
+    private final DiagnosisAnswerPolicy diagnosisAnswerPolicy;
 
     /* API-ADM-41 */
     public DiagnosisAdminView getView() {
@@ -136,18 +137,14 @@ public class DiagnosisAdminService {
      */
     public Optional<DiagnosisPreview> preview(List<Long> diagnosisOptionIds) {
         List<DiagnosisQuestion> questions = diagnosisQuestionRepository.findByIsActiveTrueOrderBySortOrderAsc();
-        if (questions.isEmpty() || diagnosisOptionIds == null || diagnosisOptionIds.size() != questions.size()
-                || diagnosisOptionIds.stream().anyMatch(Objects::isNull)) {
+        List<DiagnosisOption> activeOptions = diagnosisOptionRepository.findByDiagnosisQuestionIdInOrderBySortOrderAsc(
+                questions.stream().map(DiagnosisQuestion::getDiagnosisQuestionId).toList());
+        // 실제 진단 제출(DiagnosisService)과 같은 검사 규칙 (#333)
+        Optional<List<DiagnosisOption>> answer = diagnosisAnswerPolicy.chosenOptions(questions.size(), activeOptions, diagnosisOptionIds);
+        if (answer.isEmpty()) {
             return Optional.empty();
         }
-        Map<Long, DiagnosisOption> optionsById = diagnosisOptionRepository.findByDiagnosisQuestionIdInOrderBySortOrderAsc(
-                        questions.stream().map(DiagnosisQuestion::getDiagnosisQuestionId).toList()).stream()
-                .collect(Collectors.toMap(DiagnosisOption::getDiagnosisOptionId, Function.identity()));
-        List<DiagnosisOption> chosen = diagnosisOptionIds.stream().map(optionsById::get).toList();
-        Set<Long> answered = new HashSet<>();
-        if (chosen.stream().anyMatch(option -> option == null || !answered.add(option.getDiagnosisQuestionId()))) {
-            return Optional.empty();
-        }
+        List<DiagnosisOption> chosen = answer.get();
 
         List<Track> tracks = trackRepository.findAllByOrderBySortOrderAsc();
         Long recommendedTrackId = trackRecommendPolicy.recommend(chosen, tracks);
