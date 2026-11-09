@@ -137,8 +137,16 @@
     });
 })();
 
-/* 배지 획득 축하 모달(M-10)이 떠 있으면 제목으로 포커스를 옮긴다 (5-2 키보드 포커스). 닫기는 "확인"(알림 열기)뿐이다 */
+/* 배지 획득 축하 모달(M-10)이 떠 있으면 제목으로 포커스를 옮긴다 (5-2 키보드 포커스). 닫기는 "확인"(알림 열기)뿐이다.
+   고를 수 있는 것이 "확인" 하나라 Tab·Shift+Tab 은 늘 "확인"에 머물게 해 모달 뒤 화면으로 빠지지 않게 한다 */
 (() => {
-    const title = document.querySelector('[data-badge-modal] [tabindex="-1"]');
-    if (title) title.focus();
+    const modal = document.querySelector('[data-badge-modal]');
+    if (!modal) return;
+    const confirm = modal.querySelector('a[href]');
+    modal.querySelector('[tabindex="-1"]').focus();
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        e.preventDefault();
+        confirm.focus();
+    });
 })();
