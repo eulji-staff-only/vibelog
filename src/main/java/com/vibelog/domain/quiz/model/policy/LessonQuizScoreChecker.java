@@ -5,8 +5,7 @@ import java.math.BigDecimal;
 /*
  * [LessonQuizScoreChecker] (quiz 영역이 아직 없어 lesson 영역이 추가함, 08 문서 "안 멈추는 규칙 1-1")
  * 역할 : lesson 영역이 수업 화면(API-LSN-01)에서 퀴즈 활동의 최고 점수를 물을 때 쓰는 계약 (계약 ⑤).
- * 책임 : quiz 영역(#84)이 구현되면 이 인터페이스의 진짜 구현으로 바꾸고 FakeLessonQuizScoreChecker 를 지운다.
- *        docs/design/api/quiz.md "영역 간 계약" 표 그대로.
+ * 책임 : docs/design/api/quiz.md "영역 간 계약" 표 그대로. 진짜 구현은 QuizContractService (#84).
  */
 public interface LessonQuizScoreChecker {
 

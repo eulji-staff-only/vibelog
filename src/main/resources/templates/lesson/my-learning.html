@@ -19,6 +19,9 @@
 
 <div th:replace="~{common/layout :: header}"></div>
 
+<!-- 잠긴 수업·모의고사로 되돌아올 때(LESSON_LOCKED, EXAM_LOCKED) 넘어온 안내. 공통 토스트(#139)가 머지되면 그것으로 바꾼다 -->
+<p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
+
 <div class="ml-page">
 
     <section class="ml-band">
