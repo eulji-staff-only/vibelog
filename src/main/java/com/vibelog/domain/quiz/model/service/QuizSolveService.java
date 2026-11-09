@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +43,7 @@ import java.util.stream.Collectors;
  *        - "확인"한 문항은 그 풀이 안에서 바꿀 수 없다 → ALREADY_CHECKED (PL-LSN-006). 남의 풀이는 NOT_OWNER.
  *        - 모든 문항을 확인해야 제출된다 → QUIZ_NOT_FINISHED. 채점 규칙은 QuizGradingPolicy (PL-LSN-002).
  *        - 통과하면 계약 ① recordQuizPassed 로 퀴즈 완료·다음 개념(마지막 퀴즈면 모의고사)을 연다.
- *        - 개념 태그별 오답 비율(tagStats)은 #109 에서 채운다.
+ *        - 채점 결과에 개념 태그별 오답 비율과 약한 개념(정답률 60% 미만)을 함께 준다 (FR-LSN-007, PL-LSN-008, #109).
  */
 @Service
 @RequiredArgsConstructor
@@ -140,35 +141,58 @@ public class QuizSolveService {
         QuizAttempt attempt = ownOpenAttempt(memberId, quizAttemptId);
         Long activityId = attempt.getActivityId();
 
-        Set<Long> questionIds = quizQuestionRepository.findByActivityIdAndIsActiveTrueOrderBySortOrderAsc(activityId).stream()
+        List<QuizQuestion> questions = quizQuestionRepository.findByActivityIdAndIsActiveTrueOrderBySortOrderAsc(activityId);
+        Set<Long> questionIds = questions.stream()
                 .map(QuizQuestion::getQuizQuestionId)
                 .collect(Collectors.toSet());
-        List<QuizAnswer> answers = quizAnswerRepository.findByQuizAttemptId(quizAttemptId).stream()
+        Map<Long, QuizAnswer> answerByQuestion = quizAnswerRepository.findByQuizAttemptId(quizAttemptId).stream()
                 .filter(answer -> questionIds.contains(answer.getQuizQuestionId()))
-                .toList();
-        if (questionIds.isEmpty() || answers.size() < questionIds.size()) {
+                .collect(Collectors.toMap(QuizAnswer::getQuizQuestionId, answer -> answer));
+        if (questionIds.isEmpty() || answerByQuestion.size() < questionIds.size()) {
             throw new BusinessException(QuizErrorCode.QUIZ_NOT_FINISHED);
         }
 
         QuizActivityInfo activity = quizActivityProgress.getQuizActivity(memberId, activityId);
-        int correctCount = (int) answers.stream().filter(QuizAnswer::isCorrect).count();
+        int correctCount = (int) answerByQuestion.values().stream().filter(QuizAnswer::isCorrect).count();
         BigDecimal correctRate = quizGradingPolicy.correctRate(correctCount, questionIds.size());
         boolean passed = quizGradingPolicy.isPassed(correctRate, activity.passRate());
         attempt.submit(correctRate, passed, LocalDateTime.now());
+        List<QuizSubmitResponse.TagStat> tagStats = tagStatsOf(questions, answerByQuestion);
 
         String lessonUrl = "/courses/" + activity.courseId() + "/lessons/" + activity.lessonId();
         if (!passed) {
-            return new QuizSubmitResponse(correctRate, false, List.of(), new QuizSubmitResponse.Next(NextStep.NONE, lessonUrl), null);
+            return new QuizSubmitResponse(correctRate, false, tagStats, new QuizSubmitResponse.Next(NextStep.NONE, lessonUrl), null);
         }
         NextStep next = quizActivityProgress.recordQuizPassed(memberId, activityId);
         return switch (next.type()) {
-            case NextStep.CONCEPT -> new QuizSubmitResponse(correctRate, true, List.of(),
+            case NextStep.CONCEPT -> new QuizSubmitResponse(correctRate, true, tagStats,
                     new QuizSubmitResponse.Next(NextStep.CONCEPT, lessonUrl + "?activity=" + next.activityId()), CONCEPT_OPENED);
-            case NextStep.EXAM -> new QuizSubmitResponse(correctRate, true, List.of(),
+            case NextStep.EXAM -> new QuizSubmitResponse(correctRate, true, tagStats,
                     new QuizSubmitResponse.Next(NextStep.EXAM, lessonUrl), EXAM_OPENED);
-            default -> new QuizSubmitResponse(correctRate, true, List.of(),
+            default -> new QuizSubmitResponse(correctRate, true, tagStats,
                     new QuizSubmitResponse.Next(NextStep.NONE, lessonUrl), null);
         };
+    }
+
+    /*
+     * 개념 태그별 오답 비율과 약한 개념 (FR-LSN-007, PL-LSN-008). 문항 순서대로 처음 나온 태그 순서로 보여준다.
+     * 태그 이름은 lesson 영역의 LessonReader 로 읽는다 (concept_tag 는 lesson 영역 테이블).
+     */
+    private List<QuizSubmitResponse.TagStat> tagStatsOf(List<QuizQuestion> questions, Map<Long, QuizAnswer> answerByQuestion) {
+        Map<Long, List<QuizQuestion>> questionsByTag = questions.stream()
+                .collect(Collectors.groupingBy(QuizQuestion::getConceptTagId, LinkedHashMap::new, Collectors.toList()));
+        Map<Long, String> tagNames = lessonReader.getConceptTagNames(questionsByTag.keySet());
+
+        return questionsByTag.entrySet().stream()
+                .map(entry -> {
+                    int total = entry.getValue().size();
+                    int correct = (int) entry.getValue().stream()
+                            .filter(question -> answerByQuestion.get(question.getQuizQuestionId()).isCorrect())
+                            .count();
+                    return new QuizSubmitResponse.TagStat(tagNames.get(entry.getKey()),
+                            quizGradingPolicy.wrongRate(total - correct, total), quizGradingPolicy.isWeak(correct, total));
+                })
+                .toList();
     }
 
     private QuizActivityInfo openActivity(Long memberId, Long activityId) {

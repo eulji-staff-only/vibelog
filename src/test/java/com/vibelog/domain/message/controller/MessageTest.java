@@ -179,6 +179,24 @@ class MessageTest {
     }
 
     @Test
+    void 공개_프로필_쪽지_모달은_닫혀_있다가_보내기에_실패해_돌아오면_연_채로_내용과_메시지를_보여준다() throws Exception {
+        String closed = mockMvc.perform(get("/users/{id}", receiverId).with(as(sender)))
+                .andExpect(content().string(containsString("data-ui-modal-open=\"message-modal\"")))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(closed).containsPattern("id=\"message-modal\"[^>]*hidden");
+
+        String opened = mockMvc.perform(get("/users/{id}", receiverId).with(as(sender))
+                        .flashAttr("messageContent", "다시 쓸 내용").flashAttr("messageError", "오늘은 쪽지를 더 보낼 수 없습니다."))
+                .andExpect(content().string(allOf(containsString("다시 쓸 내용"), containsString("오늘은 쪽지를 더 보낼 수 없습니다."))))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(opened).doesNotContainPattern("id=\"message-modal\"[^>]*hidden");
+
+        // 내 프로필에는 쪽지 보내기가 없다
+        mockMvc.perform(get("/users/{id}", senderId).with(as(sender)))
+                .andExpect(content().string(not(containsString("message-modal"))));
+    }
+
+    @Test
     void 일년_지난_쪽지는_지우고_그것을_가리키던_답장은_남긴다() {
         long old = messageOf(senderId, receiverId, null, "오래된 쪽지", LocalDateTime.now().minusYears(1).minusDays(1));
         long reply = messageOf(receiverId, senderId, old, "아직 남을 답장", LocalDateTime.now().minusMonths(11));
