@@ -134,6 +134,20 @@ class ExamAdminServiceTest {
     }
 
     @Test
+    void 사용_중지한_문항을_고쳐도_새_문항은_사용_중지_그대로다() {
+        examAdminService.changeActive(9302L, false);
+
+        examAdminService.edit(9302L, form(CONCEPT, 0));
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(examQuestionRepository.findByLessonIdOrderBySortOrderAsc(LESSON))
+                .filteredOn(q -> q.getSortOrder() == 2)
+                .extracting(ExamQuestion::getContent, ExamQuestion::isActive)
+                .containsExactlyInAnyOrder(tuple("푼 문항", false), tuple("새 문항", false));
+    }
+
+    @Test
     void 응시_기록이_없으면_4개를_넘는_예전_보기는_지운다() {
         examChoiceRepository.save(ExamChoice.create(examQuestionRepository.findById(9301L).orElseThrow(), "셋", false, 3));
         examChoiceRepository.save(ExamChoice.create(examQuestionRepository.findById(9301L).orElseThrow(), "넷", false, 4));

@@ -51,8 +51,9 @@ public class ExamAdminService {
         ExamQuestion question = getQuestion(examQuestionId);
         requireConceptOf(question.getLessonId(), form.getConceptActivityId());
         if (examAnswerRepository.existsByExamQuestion_ExamQuestionId(examQuestionId)) {
+            boolean active = question.isActive();   // 사용 중지해 둔 문항을 고쳐도 새 문항이 다시 살아나지 않게
             question.changeActive(false);
-            saveNew(question.getLessonId(), question.getSortOrder(), form);
+            saveNew(question.getLessonId(), question.getSortOrder(), form).changeActive(active);
             return question.getLessonId();
         }
         question.edit(form.getConceptActivityId(), form.getContent(), form.getExplanation());
