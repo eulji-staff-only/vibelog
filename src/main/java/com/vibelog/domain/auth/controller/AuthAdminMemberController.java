@@ -2,14 +2,18 @@ package com.vibelog.domain.auth.controller;
 
 import com.vibelog.domain.auth.exception.AuthErrorCode;
 import com.vibelog.domain.auth.model.dto.LoginMember;
+import com.vibelog.domain.auth.model.dto.SuspendRequest;
 import com.vibelog.domain.auth.model.entity.SuspensionLevel;
 import com.vibelog.domain.auth.model.service.AdminMemberService;
 import com.vibelog.global.exception.BusinessException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -44,15 +48,15 @@ public class AuthAdminMemberController {
 
     /* API-USR-19. A-08 사유·기간 모달에서 온다. 실패는 같은 화면 + toast (방식 ③) */
     @PostMapping("/admin/members/{memberId}/suspend")
-    public String suspend(@PathVariable Long memberId, @RequestParam(required = false) SuspensionLevel level,
-                          @RequestParam(required = false) String reason, @AuthenticationPrincipal LoginMember loginMember,
+    public String suspend(@PathVariable Long memberId, @Valid @ModelAttribute SuspendRequest suspendRequest,
+                          BindingResult bindingResult, @AuthenticationPrincipal LoginMember loginMember,
                           RedirectAttributes redirectAttributes) {
-        if (level == null || reason == null || reason.isBlank()) {
-            redirectAttributes.addFlashAttribute("toast", "제재 단계와 사유를 입력해 주세요");
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("toast", SuspendRequest.REQUIRED);
             return detailUrl(memberId);
         }
-        return run(memberId, redirectAttributes, "제재를 저장했습니다",
-                () -> adminMemberService.suspend(loginMember.getMemberId(), memberId, level, reason.strip()));
+        return run(memberId, redirectAttributes, "제재를 저장했습니다", () -> adminMemberService.suspend(
+                loginMember.getMemberId(), memberId, suspendRequest.getLevel(), suspendRequest.getReason().strip()));
     }
 
     /* API-USR-20 */

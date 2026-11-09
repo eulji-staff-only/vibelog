@@ -2,7 +2,10 @@ package com.vibelog.domain.lesson.model.dao;
 
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,4 +29,11 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     /* 수업 비공개 영향 확인(API-ADM-32, FR-LSN-014, #118) */
     long countByCourseIdAndCompletedAtIsNullAndDroppedAtIsNull(Long courseId);
+
+    /*
+     * 기간 내 수강 시작한 수강 전체 (started_at 기준). from·to 가 null 이면 그 쪽 제한 없음
+     * (운영자 대시보드 API-ADM-01, FR-ADM-002, LessonReader.getEnrollmentStatsByCourse)
+     */
+    @Query("select e from Enrollment e where (:from is null or e.startedAt >= :from) and (:to is null or e.startedAt <= :to)")
+    List<Enrollment> findStartedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }
