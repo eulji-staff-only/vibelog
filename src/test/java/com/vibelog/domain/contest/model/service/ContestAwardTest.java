@@ -92,8 +92,10 @@ class ContestAwardTest {
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notification WHERE member_id = ? AND notification_type = 'BADGE'",
                 Long.class, suspended)).isZero();
 
-        // 배지는 마이페이지 배지 탭에 보인다 (FR-RWD-002)
+        // 배지는 마이페이지 배지 탭과 공개 프로필(U-29)에 보인다 (FR-RWD-002)
         mockMvc.perform(get("/mypage").param("tab", "badges").with(as(first)))
+                .andExpect(content().string(containsString("2094년 1월 1등")));
+        mockMvc.perform(get("/users/{id}", first).with(as(second)))
                 .andExpect(content().string(containsString("2094년 1월 1등")));
     }
 
