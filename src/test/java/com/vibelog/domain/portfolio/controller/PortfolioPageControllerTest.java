@@ -84,9 +84,13 @@ class PortfolioPageControllerTest {
     }
 
     private PortfolioPageView openPage(Long submittedPortfolioId, boolean emailVerified) {
+        return openPage(submittedPortfolioId, emailVerified, List.of());
+    }
+
+    private PortfolioPageView openPage(Long submittedPortfolioId, boolean emailVerified, List<PortfolioPageView.Faq> faqs) {
         return new PortfolioPageView(3L, "바이브 코스", true, null, "할 일 앱 만들기", "목표", "세팅 방법 안내", true,
                 List.of(new PortfolioPageView.Step(11L, "첫 스텝", true), new PortfolioPageView.Step(12L, "둘째 스텝", false)),
-                1, submittedPortfolioId, emailVerified);
+                1, submittedPortfolioId, emailVerified, faqs);
     }
 
     @Test
@@ -105,6 +109,19 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("vl-header")))
                 .andExpect(content().string(Matchers.containsString("vl-footer")))
                 .andExpect(content().string(Matchers.not(Matchers.containsString("아직 열리지 않았습니다"))));
+    }
+
+    @Test
+    void FAQ가_있으면_4번_영역에_질문과_답을_그리고_없으면_그리지_않는다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true,
+                List.of(new PortfolioPageView.Faq("커밋을 안 했어요", "git stash 로 치워 두세요")))));
+        mockMvc.perform(get("/courses/3/portfolio").with(login()))
+                .andExpect(content().string(Matchers.containsString("커밋을 안 했어요")))
+                .andExpect(content().string(Matchers.containsString("git stash 로 치워 두세요")));
+
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+        mockMvc.perform(get("/courses/3/portfolio").with(login()))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("id=\"pf-faq-h\""))));
     }
 
     @Test

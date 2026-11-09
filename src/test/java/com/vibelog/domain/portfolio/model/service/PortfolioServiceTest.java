@@ -86,6 +86,17 @@ class PortfolioServiceTest {
     }
 
     @Test
+    void FAQ는_과제가_열렸을_때만_순서대로_보여_준다() {
+        jdbcTemplate.update("INSERT INTO portfolio_faq (portfolio_assignment_id, question, answer, sort_order) VALUES "
+                + "(9201, '두 번째 질문', '두 번째 답', 2), (9201, '첫 질문', '첫 답', 1)");
+
+        assertThat(portfolioService.getPage(OPEN, COURSE).orElseThrow().faqs())
+                .extracting(PortfolioPageView.Faq::question, PortfolioPageView.Faq::answer)
+                .containsExactly(tuple("첫 질문", "첫 답"), tuple("두 번째 질문", "두 번째 답"));
+        assertThat(portfolioService.getPage(LOCKED, COURSE).orElseThrow().faqs()).isEmpty();
+    }
+
+    @Test
     void 체크는_두_번_보내도_한_줄이고_풀면_지운다() {
         portfolioService.check(OPEN, 9201L, true);
         GuideStepCheckResult twice = portfolioService.check(OPEN, 9201L, true);
