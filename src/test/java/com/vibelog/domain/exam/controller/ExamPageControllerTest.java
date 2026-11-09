@@ -25,6 +25,8 @@ class ExamPageControllerTest {
         mockMvc.perform(get("/lessons/1/exam"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("exam/exam"))
-                .andExpect(content().string(Matchers.containsString("모의고사를 제출할까요?")));
+                .andExpect(content().string(Matchers.containsString("모의고사를 제출할까요?")))
+                .andExpect(content().string(Matchers.containsString("vl-header")))
+                .andExpect(content().string(Matchers.containsString("vl-footer")));
     }
 }

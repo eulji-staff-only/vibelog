@@ -25,6 +25,8 @@ class ExamReportPageControllerTest {
         mockMvc.perform(get("/lessons/1/exam/report").param("attempt", "1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("exam/report"))
-                .andExpect(content().string(Matchers.containsString("이 개념 다시 보기")));
+                .andExpect(content().string(Matchers.containsString("이 개념 다시 보기")))
+                .andExpect(content().string(Matchers.containsString("vl-header")))
+                .andExpect(content().string(Matchers.containsString("vl-footer")));
     }
 }

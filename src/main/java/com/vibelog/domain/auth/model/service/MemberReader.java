@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -61,5 +62,10 @@ public class MemberReader {
     /* 탈퇴하지 않은 회원 전체 ID. 공지 등록 때 모든 회원에게 알림을 남긴다 (message API-NTF-07, #186) */
     public List<Long> findActiveMemberIds() {
         return memberRepository.findActiveMemberIds();
+    }
+
+    /* 기간 내 가입자 수 (member.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (운영자 대시보드 API-ADM-01, FR-ADM-002) */
+    public long countJoinedBetween(LocalDateTime from, LocalDateTime to) {
+        return memberRepository.countByCreatedAtBetween(from, to);
     }
 }
