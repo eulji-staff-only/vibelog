@@ -2,10 +2,12 @@ package com.vibelog.domain.community.controller;
 
 import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.community.exception.CommunityErrorCode;
+import com.vibelog.domain.community.model.dto.PostDetail;
 import com.vibelog.domain.community.model.dto.PostWriteRequest;
 import com.vibelog.domain.community.model.entity.PostCategory;
 import com.vibelog.domain.community.model.service.PostService;
 import com.vibelog.domain.community.model.service.PostWriteService;
+import com.vibelog.domain.community.model.service.RecommendService;
 import com.vibelog.global.exception.BusinessException;
 import com.vibelog.global.exception.CommonErrorCode;
 import com.vibelog.global.exception.ErrorCode;
@@ -27,7 +29,7 @@ import java.util.List;
 /*
  * [CommunityPageController]
  * 역할 : 커뮤니티 화면 요청을 받는다.
- * 책임 : - 게시판 목록(U-21, API-CMT-01)·게시글 상세(U-22, API-CMT-02)를 보여 준다. 비회원도 연다 (PL-USR-008).
+ * 책임 : - 게시판 목록(U-21, API-CMT-01)·게시글 상세(U-22, API-CMT-02)·추천 랭킹(U-30, API-CMT-12)을 보여 준다. 비회원도 연다 (PL-USR-008).
  *        - 글쓰기·수정(U-23, API-CMT-03~06)과 삭제(API-CMT-07)는 회원만 (SecurityConfig). 작성자·인증 검사는 PostWriteService 가 한다.
  *        - 글쓰기와 수정은 같은 화면이고, 수정이면 editing 으로 주소·제목·버튼 문구를 바꾼다.
  *        - 입력 오류는 같은 폼에 입력값과 칸별 메시지로 다시 보여 준다 (방식 ④). 없는 글·남의 글은 오류 화면으로 간다 (방식 ①).
@@ -40,6 +42,7 @@ public class CommunityPageController {
 
     private final PostService postService;
     private final PostWriteService postWriteService;
+    private final RecommendService recommendService;
 
     @GetMapping("/community")
     public String listPage(@RequestParam(required = false) PostCategory category,
@@ -55,11 +58,21 @@ public class CommunityPageController {
     @GetMapping("/community/{postId}")
     public String detailPage(@PathVariable Long postId, @AuthenticationPrincipal LoginMember loginMember, Model model) {
         Long loginMemberId = loginMember == null ? null : loginMember.getMemberId();
-        model.addAttribute("post", postService.getPost(postId, loginMemberId));
+        PostDetail post = postService.getPost(postId, loginMemberId);
+        model.addAttribute("post", post);
+        // 작품 공유 글이면 추천 수·내가 추천했나 (API-CMT-02 P2), 아니면 null
+        model.addAttribute("recommend", recommendService.getStatus(post.postId(), post.category(), loginMemberId));
         // 댓글 입력: 비회원은 로그인 안내, 미인증 회원은 인증 안내 (U-22 예외, PL-USR-003)
         model.addAttribute("loggedIn", loginMemberId != null);
         model.addAttribute("canComment", loginMemberId != null && postWriteService.canWrite(loginMemberId));
         return "community/detail";
+    }
+
+    /* API-CMT-12. 이번 주 추천 수 상위 10개 작품 공유 글 */
+    @GetMapping("/community/ranking")
+    public String rankingPage(Model model) {
+        model.addAttribute("ranking", recommendService.getWeeklyTop(RecommendService.RANKING_SIZE));
+        return "community/ranking";
     }
 
     /* API-CMT-03. 미인증이면 안내 상자를 보여 주고 등록 버튼을 막는다 */

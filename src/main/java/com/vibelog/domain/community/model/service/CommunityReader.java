@@ -10,6 +10,7 @@ import com.vibelog.domain.community.model.dto.ReviewView;
 import com.vibelog.domain.community.model.dto.MemberCommentItem;
 import com.vibelog.domain.community.model.dto.MemberPostItem;
 import com.vibelog.domain.community.model.dto.MemberSummary;
+import com.vibelog.domain.community.model.dto.RankingItem;
 import com.vibelog.domain.community.model.entity.Comment;
 import com.vibelog.domain.community.model.entity.Follow;
 import com.vibelog.domain.community.model.entity.Post;
@@ -25,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /*
@@ -45,6 +45,7 @@ public class CommunityReader {
     private final FavoriteRepository favoriteRepository;
     private final FollowRepository followRepository;
     private final MemberReader memberReader;
+    private final RecommendService recommendService;
     private final PeerReviewService peerReviewService;
 
     public Page<MemberPostItem> getPostsOf(Long memberId, int page) {
@@ -94,6 +95,11 @@ public class CommunityReader {
                 .collect(Collectors.toMap(Post::getPostId, Post::getTitle, (a, b) -> a));
         return comments.map(comment -> new MemberCommentItem(comment.getPostId(), comment.getCommentId(),
                 comment.getContent(), titles.get(comment.getPostId()), comment.getCreatedAt()));
+    }
+
+    /* 메인 화면 이번 주 추천 작품 (API-USR-01, #203). 랭킹(U-30)과 같은 순서 */
+    public List<RankingItem> findWeeklyTop(int limit) {
+        return recommendService.getWeeklyTop(limit);
     }
 
     /* 동료 리뷰 (#182·#183). U-19·U-20 은 portfolio 화면이라 이 값으로 버튼·받은 리뷰를 붙인다 (그 PR 은 portfolio 영역 리뷰) */

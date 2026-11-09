@@ -30,6 +30,24 @@ class QuizGradingPolicyTest {
     }
 
     @Test
+    void 약한_개념은_그_태그_정답률이_60퍼센트_미만일_때다() {
+        assertThat(policy.isWeak(3, 5)).isFalse();   // 정확히 60% 는 약한 개념이 아니다
+        assertThat(policy.isWeak(2, 3)).isFalse();   // 66.67%
+        assertThat(policy.isWeak(1, 2)).isTrue();    // 50%
+        assertThat(policy.isWeak(7, 12)).isTrue();   // 58.33% — 반올림하면 58% 지만 개수로 비교한다
+        assertThat(policy.isWeak(0, 1)).isTrue();
+        assertThat(policy.isWeak(1, 1)).isFalse();
+    }
+
+    @Test
+    void 태그별_오답_비율은_정수로_반올림한다() {
+        assertThat(policy.wrongRate(1, 3)).isEqualTo(33);
+        assertThat(policy.wrongRate(2, 3)).isEqualTo(67);
+        assertThat(policy.wrongRate(1, 2)).isEqualTo(50);
+        assertThat(policy.wrongRate(0, 4)).isZero();
+    }
+
+    @Test
     void 활동의_통과_기준이_있으면_그_값을_쓴다() {
         assertThat(policy.isPassed(new BigDecimal("66.67"), 70)).isFalse();
         assertThat(policy.isPassed(new BigDecimal("75.00"), 70)).isTrue();
