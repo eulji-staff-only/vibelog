@@ -13,7 +13,9 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum MessageErrorCode implements ErrorCode {
-    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다.");
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
+    NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다."),
+    BANNER_PERIOD_OVERLAP(HttpStatus.CONFLICT, "같은 기간에 띄우는 배너 공지가 이미 있습니다. 배너 기간을 바꿔 주세요.");
 
     private final HttpStatus status;
     private final String message;
