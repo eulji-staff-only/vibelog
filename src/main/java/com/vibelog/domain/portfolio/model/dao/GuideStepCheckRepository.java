@@ -15,4 +15,7 @@ public interface GuideStepCheckRepository extends JpaRepository<GuideStepCheck, 
 
     /* 체크를 풀면 행을 지운다 (DB 설계서 5-1, API-PRT-02) */
     void deleteByMemberIdAndGuideStepId(Long memberId, Long guideStepId);
+
+    /* 이 스텝을 체크한 학습자가 있나. 있으면 스텝을 지우지 않고 끈다 (API-ADM-35) */
+    boolean existsByGuideStepId(Long guideStepId);
 }

@@ -74,6 +74,8 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("/courses/3/portfolio/agent-file")))
                 .andExpect(content().string(Matchers.containsString("세팅 방법 안내")))
                 .andExpect(content().string(Matchers.containsString("data-pf-form")))
+                .andExpect(content().string(Matchers.containsString("vl-header")))
+                .andExpect(content().string(Matchers.containsString("vl-footer")))
                 .andExpect(content().string(Matchers.not(Matchers.containsString("아직 열리지 않았습니다"))));
     }
 

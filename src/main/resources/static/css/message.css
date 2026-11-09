@@ -1,0 +1,61 @@
+/*
+ * message 영역 화면: 공지 목록(U-25)·상세(U-26), 백오피스 공지 관리(A-10) (#186).
+ * 색·간격은 common.css 디자인 토큰(설계서 6장)을 쓴다. 학습자 화면은 커뮤니티와 같은 "네이비 띠 + 흰 패널" 모양이다.
+ */
+.ms-band { background: var(--navy-900); color: var(--on-navy); padding: 48px var(--space-6) 116px; text-align: center; }
+.ms-title { margin: 0; font-size: 36px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.ms-main { max-width: 880px; margin: -88px auto 0; padding: 0 var(--space-6) 64px; box-sizing: border-box; }
+.ms-panel { display: flex; flex-direction: column; gap: var(--space-7); padding: var(--space-9); background: var(--surface-raised);
+    border-radius: var(--radius-panel); box-shadow: 0 12px 32px rgba(15, 27, 61, 0.08); }
+.ms-muted { margin: 0; font-size: 14px; color: var(--ink-muted); }
+.ms-link { color: var(--link); font-weight: 700; }
+
+.ms-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line-soft); }
+.ms-item { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-5) var(--space-3);
+    border-bottom: 1px solid var(--line-soft); }
+.ms-item:hover { background: var(--tint); }
+.ms-item__title { font-weight: 700; overflow-wrap: anywhere; }
+.ms-item time { flex: none; font-size: 14px; color: var(--ink-muted); }
+
+.ms-pages { display: flex; justify-content: center; gap: var(--space-2); }
+.ms-pages a { display: inline-flex; align-items: center; justify-content: center; min-width: var(--control-h); min-height: var(--control-h);
+    border-radius: var(--radius-pill); font-weight: 700; }
+.ms-pages a[aria-current="page"] { background: var(--navy-900); color: var(--on-navy); }
+
+.ms-article { display: flex; flex-direction: column; gap: var(--space-5); }
+.ms-article__title { margin: 0; font-size: 26px; line-height: 1.4; font-weight: 900; overflow-wrap: anywhere; }
+.ms-article__body { margin: 0; padding-top: var(--space-5); border-top: 1px solid var(--line-soft); line-height: 1.8;
+    white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* 백오피스 A-10 */
+.ms-admin-title { margin: 0 0 var(--space-7); font-size: 26px; font-weight: 900; }
+.ms-toast { margin: 0 0 var(--space-6); padding: var(--space-4) var(--space-5); border-radius: var(--radius-card);
+    background: var(--success-soft); color: var(--success); font-weight: 700; }
+.ms-form { display: flex; flex-direction: column; gap: var(--space-5); margin-bottom: var(--space-9); padding: var(--space-7);
+    border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface-raised); }
+.ms-form h2 { margin: 0; font-size: 18px; font-weight: 900; }
+.ms-field { display: flex; flex-direction: column; gap: var(--space-2); }
+.ms-field label { font-weight: 700; }
+.ms-input { min-height: var(--control-h); padding: 0 var(--space-4); border: 1px solid var(--line-strong); border-radius: var(--radius-card);
+    font: inherit; }
+textarea.ms-input { min-height: 160px; padding: var(--space-4); resize: vertical; }
+.ms-check { display: flex; align-items: center; gap: var(--space-3); font-weight: 700; }
+.ms-period { display: flex; flex-wrap: wrap; gap: var(--space-5); }
+.ms-error { margin: 0; font-size: 14px; color: var(--danger); }
+.ms-actions { display: flex; gap: var(--space-3); }
+.ms-btn { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-h); padding: 0 var(--space-6);
+    border: 1px solid var(--navy-900); border-radius: var(--radius-pill); background: var(--navy-900); color: var(--on-navy);
+    font: inherit; font-weight: 700; cursor: pointer; }
+.ms-btn.is-outline { background: none; color: var(--navy-900); }
+.ms-table { width: 100%; border-collapse: collapse; background: var(--surface-raised); }
+.ms-table th, .ms-table td { padding: var(--space-4); border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
+.ms-table th { font-size: 14px; color: var(--ink-muted); }
+.ms-scroll { overflow-x: auto; }
+
+@media (max-width: 767px) {
+    .ms-band { padding-left: var(--space-5); padding-right: var(--space-5); }
+    .ms-title { font-size: 26px; }
+    .ms-main { padding-left: var(--space-5); padding-right: var(--space-5); }
+    .ms-panel { padding: var(--space-7) var(--space-6); }
+    .ms-item { flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+}
