@@ -273,7 +273,7 @@ class PortfolioPageControllerTest {
 
     private PortfolioDetailView detailView(boolean isPublic, boolean mine) {
         return new PortfolioDetailView(7L, "할 일 앱", "https://github.com/me/todo", "요약", "회고", "Claude Code", null, null,
-                3L, "바이브 코스", "작성자", LocalDateTime.of(2026, 11, 9, 10, 0), isPublic, mine);
+                3L, "바이브 코스", "작성자", LocalDateTime.of(2026, 11, 9, 10, 0), isPublic, mine, false);
     }
 
     private ReviewView review(boolean helpful, boolean mine) {
@@ -355,7 +355,7 @@ class PortfolioPageControllerTest {
     void 내_비공개_상세는_안내와_수정을_그린다() throws Exception {
         given(portfolioManageService.getDetail(1L, 7L)).willReturn(new PortfolioDetailView(7L, "할 일 앱",
                 "https://github.com/me/todo", "요약", "회고", "Claude Code", null, null, 3L, "바이브 코스", "나",
-                LocalDateTime.of(2026, 11, 9, 10, 0), false, true));
+                LocalDateTime.of(2026, 11, 9, 10, 0), false, true, false));
 
         mockMvc.perform(get("/portfolios/7").with(login()))
                 .andExpect(status().isOk())
