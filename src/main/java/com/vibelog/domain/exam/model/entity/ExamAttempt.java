@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
  * 역할 : 회원의 수업별 모의고사 응시 1회 (exam_attempt).
  * 책임 : 회원·수업은 다른 영역이라 ID 로만 가진다.
  *        제출 전에는 score·correct_rate·submitted_at 이 비어 있다 (DB CHECK ck_exam_attempt_submitted).
- *        회차는 1부터 늘어난다 (PL-EXM-003). 리포트 확인 메서드는 #111 에서 추가한다.
+ *        회차는 1부터 늘어난다 (PL-EXM-003). 리포트를 처음 열면 연 일시를 남긴다 (PL-EXM-007, #111).
  */
 @Getter
 @Entity
@@ -72,6 +72,13 @@ public class ExamAttempt extends BaseTimeEntity {
 
     public boolean isReportViewed() {
         return reportViewedAt != null;
+    }
+
+    /* 리포트를 처음 연 일시를 남긴다. 다시 열면 처음 일시를 그대로 둔다 (PL-EXM-007) */
+    public void markReportViewed() {
+        if (reportViewedAt == null) {
+            reportViewedAt = LocalDateTime.now();
+        }
     }
 
     /* 채점 결과를 남기고 제출한다. score = 맞힌 문항 수, correctRate = 정답률(%) */
