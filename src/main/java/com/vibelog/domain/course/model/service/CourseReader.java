@@ -33,6 +33,11 @@ public class CourseReader {
                 .collect(Collectors.toMap(Course::getCourseId, Course::getTitle));
     }
 
+    /* 코스 존재 여부(공개 여부는 보지 않음). 운영자 수업 만들기(API-ADM-17, #100)가 COURSE_NOT_FOUND 판단에 쓴다 */
+    public boolean existsById(Long courseId) {
+        return courseRepository.existsById(courseId);
+    }
+
     /* 코스 ID → 트랙 ID. 없는 ID 는 결과에 빠진다. 운영자 대시보드(admin #120, FR-ADM-002)가 코스를 트랙별로 묶을 때 쓴다 */
     public Map<Long, Long> getTrackIdsByCourse(Collection<Long> courseIds) {
         return courseRepository.findAllById(courseIds).stream()
