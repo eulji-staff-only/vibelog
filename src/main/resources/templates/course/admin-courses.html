@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>코스 관리 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/course-admin.css}">
+</head>
+<body>
+<!--
+  A-04 코스 목록 (API-ADM-11, FR-CRS-005, #96). 트랙·카테고리로 거르고, 코스를 누르면 A-05 상세로 간다.
+  필터는 GET 폼이라 주소(?track=&category=)에 남는다.
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('courses')}"></div>
+    <main class="vl-admin__content">
+        <div class="ca-head">
+            <h1 class="ca-title">코스</h1>
+            <a class="vl-ui-btn is-navy" th:href="@{/admin/courses/new}">코스 만들기</a>
+        </div>
+
+        <form class="ca-filter" method="get" th:action="@{/admin/courses}">
+            <label class="ca-filter__field">
+                <span>트랙</span>
+                <select class="ca-input" name="track">
+                    <option value="">전체</option>
+                    <option th:each="option : ${trackOptions}" th:value="${option.id()}" th:text="${option.name()}"
+                            th:selected="${option.id() == selectedTrack}">Starter</option>
+                </select>
+            </label>
+            <label class="ca-filter__field">
+                <span>카테고리</span>
+                <select class="ca-input" name="category">
+                    <option value="">전체</option>
+                    <option th:each="option : ${categoryOptions}" th:value="${option.id()}" th:text="${option.name()}"
+                            th:selected="${option.id() == selectedCategory}">웹</option>
+                </select>
+            </label>
+            <button type="submit" class="vl-ui-btn is-outline">거르기</button>
+        </form>
+
+        <table class="ca-table" th:unless="${courses.empty}">
+            <thead>
+            <tr><th>이름</th><th>트랙</th><th>카테고리</th><th>공개 상태</th><th>수강자 수</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="course : ${courses}">
+                <td class="ca-strong"><a class="ca-link" th:href="@{/admin/courses/{id}(id=${course.courseId()})}" th:text="${course.title()}">코스 이름</a></td>
+                <td th:text="${course.trackName()}">Starter</td>
+                <td th:text="${course.categoryName()}">웹</td>
+                <td>
+                    <span th:replace="~{common/ui :: badge(${course.isPublic()} ? 'success' : 'neutral', ${course.isPublic()} ? '공개' : '비공개')}"></span>
+                </td>
+                <td th:text="${course.enrollmentCount()}">0</td>
+            </tr>
+            </tbody>
+        </table>
+        <th:block th:if="${courses.empty}">
+            <div th:replace="~{common/ui :: notice('empty', '', '조건에 맞는 코스가 없습니다. 코스 만들기로 시작하세요.')}"></div>
+        </th:block>
+    </main>
+</div>
+</body>
+</html>
