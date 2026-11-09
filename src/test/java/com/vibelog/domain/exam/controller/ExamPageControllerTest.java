@@ -18,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -123,6 +124,20 @@ class ExamPageControllerTest {
                         .param("answers[21]", "32"))
                 .andExpect(redirectedUrl("/lessons/7/exam/report?attempt=2"))
                 .andExpect(flash().attributeCount(0));
+    }
+
+    @Test
+    void 고르지_않은_문항은_빈_값으로_와서_선택_취소로_넘긴다() throws Exception {
+        Map<Long, Long> lastAnswers = new HashMap<>();
+        lastAnswers.put(21L, 32L);
+        lastAnswers.put(22L, null);
+        given(examService.submit(1L, 7L, 11L, lastAnswers)).willReturn(new ExamSubmitResult(2, false));
+
+        mockMvc.perform(post("/lessons/7/exam/submit").with(login()).with(csrf())
+                        .param("examAttemptId", "11")
+                        .param("answers[21]", "32")
+                        .param("answers[22]", ""))
+                .andExpect(redirectedUrl("/lessons/7/exam/report?attempt=2"));
     }
 
     @Test

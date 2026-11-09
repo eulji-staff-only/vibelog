@@ -22,6 +22,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -184,6 +185,25 @@ class ExamServiceTest {
                 .containsExactlyInAnyOrder(
                         tuple(9101L, true),
                         tuple(9102L, false));
+    }
+
+    @Test
+    void 제출할_때_빈_값으로_온_문항은_저장된_이전_답을_취소하고_오답으로_채점한다() {
+        examService.start(MEMBER, LESSON);
+        Long attemptId = latest().getExamAttemptId();
+        examService.saveAnswer(MEMBER, attemptId, 9101L, 9111L);   // 정답을 골라 둠 (취소 저장은 실패했다고 가정)
+        Map<Long, Long> lastAnswers = new HashMap<>();
+        lastAnswers.put(9101L, null);                                // 화면에서는 미선택
+
+        examService.submit(MEMBER, LESSON, attemptId, lastAnswers);
+
+        assertThat(latest().getScore()).isZero();
+        assertThat(examAnswerRepository.findByExamAttempt(latest()))
+                .filteredOn(a -> a.getExamQuestion().getExamQuestionId().equals(9101L))
+                .singleElement().satisfies(a -> {
+                    assertThat(a.getExamChoice()).isNull();
+                    assertThat(a.getCorrect()).isFalse();
+                });
     }
 
     @Test

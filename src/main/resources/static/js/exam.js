@@ -1,7 +1,8 @@
 /*
  * 모의고사 화면(U-15): 문항 전환, 보기 선택, 미선택 수 계산, 제출 확인 모달(M-02).
  * 보기를 고를 때마다 답을 저장한다 (API-EXM-03, PL-EXM-006). 고른 보기를 다시 누르면 선택 취소.
- * 제출(API-EXM-04)할 때는 마지막 답을 answers[문항 ID]=보기 ID 숨은 칸으로 함께 보낸다.
+ * 제출(API-EXM-04)할 때는 모든 문항의 마지막 답을 answers[문항 ID]=보기 ID 숨은 칸으로 함께 보낸다.
+ * 고르지 않은 문항은 빈 값으로 보내, 취소 저장이 실패했어도 서버에 남은 이전 답이 채점되지 않게 한다.
  * 저장이 실패해도 제출 폼이 마지막 답을 다시 보내므로 화면의 선택은 그대로 둔다.
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -109,11 +110,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = e.currentTarget;
         form.querySelector('button[type="submit"]').disabled = true;   // 중복 제출 막기 (PL-ERR-003)
         questions.forEach((q, qi) => {
-            if (answers[qi] === null) return;
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = `answers[${q.dataset.questionId}]`;
-            input.value = q.querySelectorAll('.exam-choice')[answers[qi]].dataset.choiceId;
+            // 미선택은 빈 값으로 보내 서버에 남은 이전 답을 취소한다
+            input.value = answers[qi] === null ? '' : q.querySelectorAll('.exam-choice')[answers[qi]].dataset.choiceId;
             form.appendChild(input);
         });
     });
