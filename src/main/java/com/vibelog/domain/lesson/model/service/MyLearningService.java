@@ -32,6 +32,7 @@ import java.util.Map;
  * 역할 : 내 학습 화면(U-12, API-ENR-02) 데이터를 만든다.
  * 책임 : - 탭(수강 중 · 완료)별 코스 카드, 수업·모의고사·포트폴리오 상태, 진행률(PL-ENR-006), 다음에 할 일 ·
  *          남은 완료 조건을 계산한다. 어떤 값도 저장하지 않고 조회할 때마다 계산한다.
+ *        - 제출한 모의고사 회차가 있는 수업에는 "리포트 보기" 링크(FR-EXM-006)를 만든다 (계약 ④ 최근 제출 회차).
  *        - 수업별 모의고사 상태는 계약 ④(LessonExamStatusChecker), 포트폴리오 제출 여부는 계약 ⑧(LessonPortfolioChecker)로 받는다.
  */
 @Service
@@ -86,7 +87,12 @@ public class MyLearningService {
             LessonStatus status = toLessonStatus(progress);
             LessonExamStatus examStatus = toExamStatus(status, enrollmentId, lesson.getLessonId(), latestSubmittedAttemptNos);
 
-            lessonCards.add(new MyLearningLessonCard(lesson.getLessonId(), order++, lesson.getTitle(), status, examStatus));
+            Integer attemptNo = latestSubmittedAttemptNos.get(lesson.getLessonId());
+            String reportUrl = attemptNo == null
+                    ? null
+                    : "/lessons/" + lesson.getLessonId() + "/exam/report?attempt=" + attemptNo;
+            lessonCards.add(new MyLearningLessonCard(
+                    lesson.getLessonId(), order++, lesson.getTitle(), status, examStatus, reportUrl));
             addLessonRemainingCondition(remainingConditions, lesson, status, examStatus);
         }
 

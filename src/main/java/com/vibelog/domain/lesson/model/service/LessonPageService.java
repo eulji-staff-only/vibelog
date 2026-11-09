@@ -1,5 +1,6 @@
 package com.vibelog.domain.lesson.model.service;
 
+import com.vibelog.domain.exam.model.policy.LessonExamStatusChecker;
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
  *          둘 다 에러 화면이 아니라 "다른 화면 + 토스트"(③)라
  *          LessonPageResult 로 돌려주고 Controller 가 redirect 한다 (BusinessException 을 쓰지 않는다).
  *        - 활동 목록은 개념·퀴즈(activity 테이블) + 모의고사(계약 ②, 활동 테이블에 없는 가상 항목) 순서로 만든다.
+ *        - 열린 모의고사 카드에는 제출한 회차가 있을 때 지난 리포트 링크(FR-EXM-006)를 담는다 (계약 ④).
  *        - 개념 카드에는 연관 개념(API-LSN-07)·개념 태그 ID·내 북마크 여부(API-LSN-08)를 함께 담는다 (ConceptService).
  *        - 기본 선택 활동은 "진행 중"인 첫 활동, 없으면 모의고사. query activity 가 있으면 그 활동(또는 "exam")으로 바꾼다.
  *        - 운영자 미리보기(P2, FR-LSN-015): preview 가 true 면 수강·잠김 검사를 하지 않고 모든 활동을 열린 상태로 보여 준다.
@@ -64,6 +66,7 @@ public class LessonPageService {
     private final LessonProgressRepository lessonProgressRepository;
     private final LessonQuizScoreChecker lessonQuizScoreChecker;
     private final ConceptService conceptService;
+    private final LessonExamStatusChecker lessonExamStatusChecker;
 
     public LessonPageResult getPage(Long memberId, Long courseId, Long lessonId, String activityQuery, boolean preview) {
         Lesson lesson = getLesson(lessonId, courseId);
@@ -99,7 +102,7 @@ public class LessonPageService {
         for (Activity activity : activities) {
             cards.add(toCard(memberId, activity, progressByActivityId.get(activity.getActivityId())));
         }
-        cards.add(toExamCard(enrollment.getEnrollmentId(), lessonId));
+        cards.add(toExamCard(memberId, enrollment.getEnrollmentId(), lessonId));
 
         cards = applySelection(cards, activityQuery);
 
@@ -175,15 +178,19 @@ public class LessonPageService {
        같은 조회 안에서 자기 계약 인터페이스를 다시 불러쓰면 그 인터페이스를 모킹하는 다른 테스트
        (예: SecurityConfigTest)가 lessonContractService 빈을 다른 타입으로 바꿔치기할 때 이 조회가
        같이 깨진다. 그래서 여기서는 리포지토리로 직접 계산한다. */
-    private LessonActivityCard toExamCard(Long enrollmentId, Long lessonId) {
+    private LessonActivityCard toExamCard(Long memberId, Long enrollmentId, Long lessonId) {
         boolean open = activityRepository
                 .findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(lessonId, ActivityType.QUIZ)
                 .flatMap(lastQuiz -> activityProgressRepository.findByEnrollmentIdAndActivityId(enrollmentId, lastQuiz.getActivityId()))
                 .map(ActivityProgress::isCompleted)
                 .orElse(false);
         if (open) {
+            // 제출한 회차가 있으면 "지난 리포트 다시 보기" 링크 (FR-EXM-006, 계약 ④ 최근 제출 회차)
+            Integer attemptNo = lessonExamStatusChecker.getLatestSubmittedAttemptNos(memberId, List.of(lessonId)).get(lessonId);
+            String reportUrl = attemptNo == null ? null : "/lessons/" + lessonId + "/exam/report?attempt=" + attemptNo;
             return new LessonActivityCard(null, LessonActivityCard.EXAM, "모의고사", ActivityStatus.IN_PROGRESS, false,
-                    null, null, null, null, null, null, "/lessons/" + lessonId + "/exam/attempts", null);
+                    null, null, null, null, null, null, "/lessons/" + lessonId + "/exam/attempts", null,
+                    List.of(), false, List.of(), reportUrl);
         }
         Long previousActivityId = activityRepository
                 .findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(lessonId, ActivityType.QUIZ)

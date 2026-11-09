@@ -117,6 +117,49 @@ class LessonPageControllerTest {
                         org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("퀴즈 풀기")))));
     }
 
+    private LessonPageData examPageData(boolean preview) {
+        LessonActivityCard exam = new LessonActivityCard(null, LessonActivityCard.EXAM, "모의고사",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null,
+                "/lessons/1/exam/attempts", null, List.of(), false, List.of(), "/lessons/1/exam/report?attempt=2");
+        return new LessonPageData(1L, 1L, "수업 1", "목표", List.of(exam), preview);
+    }
+
+    @Test
+    void 제출한_회차가_있으면_모의고사_활동에_지난_리포트_다시_보기가_보인다() throws Exception {
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(examPageData(false)));
+
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("지난 리포트 다시 보기"),
+                        org.hamcrest.Matchers.containsString("href=\"/lessons/1/exam/report?attempt=2\""))));
+    }
+
+    @Test
+    void 제출한_회차가_없으면_지난_리포트_다시_보기가_없다() throws Exception {
+        LessonActivityCard exam = new LessonActivityCard(null, LessonActivityCard.EXAM, "모의고사",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null,
+                "/lessons/1/exam/attempts", null);
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(
+                new LessonPageData(1L, 1L, "수업 1", "목표", List.of(exam))));
+
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("모의고사 응시하기"),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("지난 리포트 다시 보기")))));
+    }
+
+    @Test
+    void 운영자_미리보기에서는_리포트_링크가_값이_있어도_숨긴다() throws Exception {
+        given(lessonPageService.getPage(2L, 1L, 1L, null, true)).willReturn(LessonPageResult.ok(examPageData(true)));
+
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAsAdmin(2L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("지난 리포트 다시 보기"))));
+    }
+
     @Test
     void 학습자_화면에는_미리보기_안내가_없다() throws Exception {
         LessonActivityCard concept = new LessonActivityCard(1L, LessonActivityCard.CONCEPT, "개념 1",

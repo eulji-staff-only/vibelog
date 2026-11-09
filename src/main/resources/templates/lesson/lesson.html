@@ -135,6 +135,8 @@
                             <form method="post" th:action="${card.examUrl}">
                                 <button type="submit" class="ls-btn ls-btn-navy">모의고사 응시하기</button>
                             </form>
+                            <a class="ls-btn ls-btn-outline" th:if="${card.reportUrl != null}"
+                               th:href="${card.reportUrl}">지난 리포트 다시 보기</a>
                         </div>
                     </th:block>
 

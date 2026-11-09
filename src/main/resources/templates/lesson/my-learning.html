@@ -89,6 +89,7 @@
                                                   th:classappend="${lesson.examStatus().badgeClass()}"
                                                   th:text="'모의고사 ' + ${lesson.examStatus().label()}">모의고사 상태</span>
                                         </div>
+                                        <a class="ml-link" th:if="${lesson.hasReport()}" th:href="${lesson.reportUrl()}">리포트 보기</a>
                                         <a class="ml-link" th:unless="${lesson.status().isLocked()}"
                                            th:href="@{/courses/{courseId}/lessons/{lessonId}(courseId=${course.courseId()},lessonId=${lesson.lessonId()})}">
                                             바로 가기

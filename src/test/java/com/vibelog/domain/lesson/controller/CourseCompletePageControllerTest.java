@@ -89,6 +89,24 @@ class CourseCompletePageControllerTest {
     }
 
     @Test
+    void 같은_코스_작품_보기_링크가_코스_작품_목록_주소로_그려진다() throws Exception {
+        LoginMember loginMember = mock(LoginMember.class);
+        given(loginMember.getMemberId()).willReturn(1L);
+        CourseCompleteView view = new CourseCompleteView(
+                7L, "테스트 트랙", "테스트 코스", true, LocalDateTime.of(2026, 10, 20, 14, 32),
+                List.of(new CourseCompleteCondition("포트폴리오 제출", true)), List.of());
+        given(courseCompleteService.getCourseComplete(1L, 7L)).willReturn(Optional.of(view));
+
+        mockMvc.perform(get("/courses/7/complete")
+                        .with(authentication(new UsernamePasswordAuthenticationToken(loginMember, "N/A",
+                                List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.allOf(
+                        Matchers.containsString("같은 코스 작품 보기"),
+                        Matchers.containsString("href=\"/courses/7/portfolios\""))));
+    }
+
+    @Test
     void 수강하지_않았으면_코스_상세로_돌려보낸다() throws Exception {
         LoginMember loginMember = mock(LoginMember.class);
         given(loginMember.getMemberId()).willReturn(1L);

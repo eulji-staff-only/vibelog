@@ -12,7 +12,7 @@ import java.util.List;
  *             conceptTagIds(conceptTags 와 같은 순서, 태그 칩 → 검색 API-LSN-09), bookmarked(API-LSN-08),
  *             relatedConcepts(연관 개념, API-LSN-07)
  *  - QUIZ: title, status, bestCorrectRate(계약 ⑤, 없으면 null)
- *  - EXAM: title, status(LOCKED·IN_PROGRESS 만 씀), examUrl(열렸을 때)
+ *  - EXAM: title, status(LOCKED·IN_PROGRESS 만 씀), examUrl(열렸을 때), reportUrl(제출한 회차가 있을 때 "지난 리포트 다시 보기", FR-EXM-006)
  *  - status == LOCKED 면 kind 상관없이 previousActivityId(앞 활동 바로가기, FR-LSN-009)만 쓴다
  */
 public record LessonActivityCard(
@@ -31,7 +31,8 @@ public record LessonActivityCard(
         Long previousActivityId,
         List<Long> conceptTagIds,
         boolean bookmarked,
-        List<RelatedConcept> relatedConcepts
+        List<RelatedConcept> relatedConcepts,
+        String reportUrl
 ) {
     public static final String CONCEPT = "CONCEPT";
     public static final String QUIZ = "QUIZ";
@@ -42,13 +43,22 @@ public record LessonActivityCard(
                               String body, BodyFormat bodyFormat, List<String> conceptTags, String toolNoteUrl,
                               Long quizActivityId, BigDecimal bestCorrectRate, String examUrl, Long previousActivityId) {
         this(activityId, kind, title, status, selected, body, bodyFormat, conceptTags, toolNoteUrl, quizActivityId,
-                bestCorrectRate, examUrl, previousActivityId, List.of(), false, List.of());
+                bestCorrectRate, examUrl, previousActivityId, List.of(), false, List.of(), null);
+    }
+
+    /* 지난 리포트 링크가 필요 없는 카드(개념·퀴즈·미리보기)용 */
+    public LessonActivityCard(Long activityId, String kind, String title, ActivityStatus status, boolean selected,
+                              String body, BodyFormat bodyFormat, List<String> conceptTags, String toolNoteUrl,
+                              Long quizActivityId, BigDecimal bestCorrectRate, String examUrl, Long previousActivityId,
+                              List<Long> conceptTagIds, boolean bookmarked, List<RelatedConcept> relatedConcepts) {
+        this(activityId, kind, title, status, selected, body, bodyFormat, conceptTags, toolNoteUrl, quizActivityId,
+                bestCorrectRate, examUrl, previousActivityId, conceptTagIds, bookmarked, relatedConcepts, null);
     }
 
     public LessonActivityCard select() {
         return new LessonActivityCard(activityId, kind, title, status, true, body, bodyFormat, conceptTags,
                 toolNoteUrl, quizActivityId, bestCorrectRate, examUrl, previousActivityId,
-                conceptTagIds, bookmarked, relatedConcepts);
+                conceptTagIds, bookmarked, relatedConcepts, reportUrl);
     }
 
     /* 템플릿에서 복잡한 삼항식을 쓰지 않도록 화면 표시용 값을 미리 계산해 둔다 */
