@@ -1,35 +1,80 @@
 package com.vibelog.domain.quiz.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
-
+import com.vibelog.domain.auth.model.dto.LoginMember;
+import com.vibelog.domain.quiz.model.dto.QuizPageView;
+import com.vibelog.domain.quiz.model.service.QuizSolveService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
-/* 화면 URL 로 들어오면 템플릿이 오류 없이 그려지는지 확인한다. (템플릿 문법 오류를 build 에서 잡는다, #54) */
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+
+/* 퀴즈 화면 (U-14, API-LSN-03, #54·#108) */
 @WebMvcTest(QuizPageController.class)
-@WithMockUser   // @WebMvcTest 는 SecurityConfig 를 읽지 않고 기본 보안으로 모든 주소를 막는다 (CLAUDE.md 화면 선행 작업)
 class QuizPageControllerTest {
 
     @Autowired
     MockMvc mockMvc;
 
+    @MockitoBean
+    QuizSolveService quizSolveService;
+
+    private RequestPostProcessor member() {
+        LoginMember loginMember = mock(LoginMember.class);
+        given(loginMember.getMemberId()).willReturn(7L);
+        return authentication(new UsernamePasswordAuthenticationToken(loginMember, "N/A",
+                List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))));
+    }
+
     @Test
-    void 퀴즈_화면을_표시_유형_4가지와_채점_결과_영역까지_연다() throws Exception {
-        mockMvc.perform(get("/courses/1/lessons/1/quizzes/1"))
+    void 열린_퀴즈는_제목_최고점수와_풀이_시작_주소를_담아_그린다() throws Exception {
+        given(quizSolveService.getPage(7L, 3L)).willReturn(Optional.of(
+                new QuizPageView(1L, 2L, 3L, "JSP 기초 퀴즈", 4, new BigDecimal("75.00"))));
+
+        mockMvc.perform(get("/courses/1/lessons/2/quizzes/3").with(member()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("quiz/quiz"))
-                .andExpect(content().string(Matchers.containsString("코드 빈칸 채우기")))
-                .andExpect(content().string(Matchers.containsString("개념 문제")))
-                .andExpect(content().string(Matchers.containsString("결과 유추하기")))
-                .andExpect(content().string(Matchers.containsString("낚시 문제")))
-                .andExpect(content().string(Matchers.containsString("개념 태그별 오답 비율")))
-                .andExpect(content().string(Matchers.containsString("vl-footer")));
+                .andExpect(content().string(Matchers.containsString("JSP 기초 퀴즈")))
+                .andExpect(content().string(Matchers.containsString("최고 점수 75%")))
+                .andExpect(content().string(Matchers.containsString("data-start-url=\"/api/quizzes/3/attempts\"")))
+                .andExpect(content().string(Matchers.containsString("name=\"_csrf\"")))
+                .andExpect(content().string(Matchers.containsString("1 / 4")));
+    }
+
+    @Test
+    void 닫힌_퀴즈는_수업_화면으로_보내고_잠김_안내를_띄운다() throws Exception {
+        given(quizSolveService.getPage(7L, 3L)).willReturn(Optional.empty());
+
+        mockMvc.perform(get("/courses/1/lessons/2/quizzes/3").with(member()))
+                .andExpect(redirectedUrl("/courses/1/lessons/2"))
+                .andExpect(flash().attribute("toast", "앞 퀴즈를 정답률 50% 이상으로 통과하면 열립니다."));
+    }
+
+    @Test
+    void 문항이_없는_퀴즈는_안내_상자를_보여준다() throws Exception {
+        given(quizSolveService.getPage(7L, 3L)).willReturn(Optional.of(new QuizPageView(1L, 2L, 3L, "빈 퀴즈", 0, null)));
+
+        mockMvc.perform(get("/courses/1/lessons/2/quizzes/3").with(member()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("아직 준비된 문항이 없습니다")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("data-quiz-solve"))));
     }
 }

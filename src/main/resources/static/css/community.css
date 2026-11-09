@@ -50,6 +50,7 @@
 /* 목록: 카테고리 칩 · 검색 */
 .cm-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-4); }
 .cm-toolbar__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.cm-recommend { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-3) 0 0; }
 .cm-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .cm-chip { display: inline-flex; align-items: center; min-height: var(--control-h); box-sizing: border-box; padding: 0 var(--space-5); border: 1px solid var(--line-strong);
     border-radius: var(--radius-pill); font-size: 14px; font-weight: 700; }
@@ -124,6 +125,12 @@
 .cm-showcase { display: none; flex-direction: column; gap: var(--space-6); padding: var(--space-6); border-radius: var(--radius-card); background: var(--surface); }
 .cm-form:has(input[value="SHOWCASE"]:checked) .cm-showcase { display: flex; }
 .cm-actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
+/* U-31 리뷰 요청·내가 쓴 리뷰 카드 (#182·#183) */
+.cm-review-card { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-5) var(--space-3);
+    border-bottom: 1px solid var(--line-soft); }
+.cm-review-card__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-4); }
+.cm-review-card__actions { display: flex; gap: var(--space-3); }
+.cm-review-card__actions form { display: contents; }
 .cm-actions form { display: contents; }
 .cm-keep { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .cm-keep label { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); font-size: 13px; cursor: pointer; }
