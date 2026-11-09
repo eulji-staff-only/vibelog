@@ -30,6 +30,8 @@ public class ActivityFormRequest {
     @Size(max = 100, message = "활동 제목은 100자까지 쓸 수 있습니다")
     private String title;
 
+    /* activity.body는 TEXT(최대 65,535바이트). utf8mb4 한글은 글자당 최대 3바이트라 21,845자로 넉넉히 제한한다 */
+    @Size(max = 21_845, message = "본문이 너무 깁니다")
     private String body;
 
     private BodyFormat bodyFormat;

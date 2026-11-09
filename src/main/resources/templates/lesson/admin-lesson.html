@@ -16,10 +16,12 @@
 <body>
 <!--
   A-06 수업 편집 (API-ADM-19·20, FR-LSN-011, #100 / 활동 추가·수정·사용 중지·순서 API-ADM-21~24, 개념
-  이미지 올리기 API-ADM-25, #101). 퀴즈 문항(API-ADM-26~28, FR-LSN-012)·모의고사 문항(API-ADM-29~31,
-  FR-EXM-007) 등록·수정은 이 이슈 범위 밖이라 읽기만 하고, 추가 버튼은 비활성 + 이유 문구로 자리만
-  잡아둔다 (common/ui :: btnReason). 퀴즈 문항은 quiz_question Entity가 아직 없어(quiz 영역 기반 작업
-  전) 목록 대신 안내 상자를 보여준다.
+  이미지 올리기 API-ADM-25, #101 / 공개·비공개 API-ADM-32·33, FR-LSN-014, #118). 퀴즈 문항(API-ADM-26~28,
+  FR-LSN-012)·모의고사 문항(API-ADM-29~31, FR-EXM-007) 등록·수정은 이 이슈 범위 밖이라 읽기만 하고, 추가
+  버튼은 비활성 + 이유 문구로 자리만 잡아둔다 (common/ui :: btnReason). 퀴즈 문항은 quiz_question Entity가
+  아직 없어(quiz 영역 기반 작업 전) 목록 대신 안내 상자를 보여준다.
+  공개 버튼은 빠진 항목(PL-LSN-003)이 있으면 비활성 + 이유 문구로 막는다. 비공개 버튼은 영향 학습자 수
+  (API-ADM-32)를 모달을 열 때 lesson-admin.js가 불러와 경고 문구로 보여준다.
   개념 본문은 지금 textarea 하나뿐이다 (마크다운↔리치 텍스트 전환 에디터는 의존성 추가라 이번 이슈
   범위 밖, 팀 논의 뒤 결정). 저장 값은 Service가 항상 MARKDOWN으로 맞춘다.
 -->
@@ -34,9 +36,18 @@
         </nav>
 
         <h1 class="al-title" th:text="${lesson.title()}">수업 제목</h1>
-        <p class="al-sub">
+        <!-- 공개·비공개 (API-ADM-32·33, FR-LSN-014, #118). 비공개→공개는 필수 항목 검사(PL-LSN-003)를 통과해야 한다 -->
+        <div class="al-visibility">
             <span th:replace="~{common/ui :: badge(${lesson.publicLesson()} ? 'success' : 'neutral', ${lesson.publicLesson()} ? '공개' : '비공개')}"></span>
-        </p>
+            <button type="button" class="vl-ui-btn is-navy is-s" th:if="${!lesson.publicLesson()}"
+                    th:attr="aria-disabled=${!lesson.publishStatus().publishable()}"
+                    data-ui-modal-open="lesson-publish-modal">공개</button>
+            <button type="button" class="vl-ui-btn is-outline is-s" th:if="${lesson.publicLesson()}"
+                    id="lesson-unpublish-trigger" th:attr="data-lesson-id=${lesson.lessonId()}"
+                    data-ui-modal-open="lesson-unpublish-modal">비공개</button>
+        </div>
+        <p th:replace="~{common/ui :: btnReason(${'빠진 항목: ' + lesson.publishStatus().missingSummary()})}"
+           th:if="${!lesson.publicLesson() and !lesson.publishStatus().publishable()}"></p>
 
         <!-- 수업 정보 (API-ADM-20). 틀리면 같은 화면에 칸별 메시지로 다시 보여준다 -->
         <section class="vl-ui-panel al-form-panel">
@@ -268,6 +279,38 @@
         </div>
     </div>
 </th:block>
+
+<!-- 수업 공개 (API-ADM-33, FR-LSN-014) -->
+<div class="vl-ui-modal" hidden id="lesson-publish-modal" role="dialog" aria-modal="true"
+     th:attr="data-ui-modal='lesson-publish-modal', aria-labelledby='lesson-publish-modal-title'">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="lesson-publish-modal-title" tabindex="-1">수업 공개</h2>
+        <p class="vl-ui-modal__body">이 수업을 공개할까요? 공개하면 학습자가 이 수업을 볼 수 있습니다.</p>
+        <form method="post" th:action="@{/admin/lessons/{id}/visibility(id=${lesson.lessonId()})}">
+            <input type="hidden" name="isPublic" value="true">
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">공개</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 수업 비공개 (API-ADM-33, FR-LSN-014). 영향 학습자 수(API-ADM-32)는 열 때 lesson-admin.js가 채운다 -->
+<div class="vl-ui-modal" hidden id="lesson-unpublish-modal" role="dialog" aria-modal="true"
+     th:attr="data-ui-modal='lesson-unpublish-modal', aria-labelledby='lesson-unpublish-modal-title'">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="lesson-unpublish-modal-title" tabindex="-1">수업 비공개</h2>
+        <p class="vl-ui-modal__body" id="lesson-unpublish-modal-body">이 수업을 비공개할까요?</p>
+        <form method="post" th:action="@{/admin/lessons/{id}/visibility(id=${lesson.lessonId()})}">
+            <input type="hidden" name="isPublic" value="false">
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">비공개</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <div th:replace="~{common/ui :: toastContainer}"></div>
 </body>

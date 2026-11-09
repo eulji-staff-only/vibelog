@@ -8,7 +8,10 @@
 .al-breadcrumb a { color: var(--link); font-weight: 700; }
 
 .al-title { margin: 0 0 var(--space-2); font-size: 26px; font-weight: 900; color: var(--ink); }
-.al-sub { margin: 0 0 var(--space-6); }
+
+/* 공개·비공개 (API-ADM-32·33, FR-LSN-014, #118) */
+.al-visibility { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); }
+.al-visibility + .vl-ui-btn-reason { margin-top: calc(-1 * var(--space-4)); margin-bottom: var(--space-6); }
 
 .al-h2 { margin: 0; font-size: 17px; font-weight: 800; color: var(--ink); }
 
