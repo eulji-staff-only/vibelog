@@ -5,6 +5,8 @@ import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dto.GuideStepCheckResult;
 import com.vibelog.domain.community.model.dto.ReviewView;
 import com.vibelog.domain.community.model.service.CommunityReader;
+import com.vibelog.domain.portfolio.model.dto.CoursePortfolioCard;
+import com.vibelog.domain.portfolio.model.dto.CoursePortfoliosView;
 import com.vibelog.domain.portfolio.model.dto.MyPortfolioCard;
 import com.vibelog.domain.portfolio.model.dto.PortfolioDetailView;
 import com.vibelog.domain.portfolio.model.dto.PortfolioPageView;
@@ -198,6 +200,32 @@ class PortfolioPageControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"checked\": true}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("PORTFOLIO_LOCKED"));
+    }
+
+    @Test
+    void 같은_코스_작품은_카드와_상세_링크_페이지_번호를_그린다() throws Exception {
+        given(portfolioManageService.getCoursePortfolios(1L, 3L, 2)).willReturn(new CoursePortfoliosView(3L, "바이브 코스",
+                new org.springframework.data.domain.PageImpl<>(List.of(new CoursePortfolioCard(7L, "할 일 앱", "요약", "작성자",
+                        LocalDateTime.of(2026, 11, 9, 10, 0))), org.springframework.data.domain.PageRequest.of(1, 20), 21)));
+
+        mockMvc.perform(get("/courses/3/portfolios").param("page", "2").with(login()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portfolio/course-portfolios"))
+                .andExpect(content().string(Matchers.containsString("바이브 코스")))
+                .andExpect(content().string(Matchers.containsString("/portfolios/7")))
+                .andExpect(content().string(Matchers.containsString("작성자 · 제출일 2026.11.09")))
+                .andExpect(content().string(Matchers.containsString("/courses/3/portfolios?page=2")))
+                .andExpect(content().string(Matchers.containsString("aria-current=\"page\">2</a>")));
+    }
+
+    @Test
+    void 포트폴리오를_내지_않았으면_과제_화면으로_보내고_안내한다() throws Exception {
+        given(portfolioManageService.getCoursePortfolios(1L, 3L, 1))
+                .willThrow(new BusinessException(PortfolioErrorCode.PORTFOLIO_NOT_SUBMITTED));
+
+        mockMvc.perform(get("/courses/3/portfolios").with(login()))
+                .andExpect(redirectedUrl("/courses/3/portfolio"))
+                .andExpect(flash().attribute("toast", PortfolioErrorCode.PORTFOLIO_NOT_SUBMITTED.getMessage()));
     }
 
     @Test
