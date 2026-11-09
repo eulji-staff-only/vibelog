@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +28,8 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
             + " from Recommendation r join Post p on p.postId = r.postId"
             + " where r.createdAt >= :since and p.deletedAt is null"
             + " and p.category = com.vibelog.domain.community.model.entity.PostCategory.SHOWCASE"
+            + " and p.memberId not in :hiddenMemberIds"
             + " group by r.postId order by count(r) desc, min(r.createdAt) asc, r.postId asc")
-    List<WeeklyRecommendCount> findWeeklyCounts(@Param("since") LocalDateTime since, Pageable pageable);
+    List<WeeklyRecommendCount> findWeeklyCounts(@Param("since") LocalDateTime since,
+                                                @Param("hiddenMemberIds") Collection<Long> hiddenMemberIds, Pageable pageable);
 }
