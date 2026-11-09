@@ -184,6 +184,48 @@ class ReportHiddenContentTest {
         assertThat(contestService.getCurrent(writerId).orElseThrow().entries()).extracting(EntryCard::portfolioId).contains(portfolioId);
     }
 
+    @Test
+    void 숨긴_포트폴리오는_남에게_숨김_문구_작성자에게_내용과_안내이고_같은_코스_작품에서_빠진다() throws Exception {
+        jdbcTemplate.update("INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9701, '트랙', '대상', '설명', 9701)");
+        jdbcTemplate.update("INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9701, '카테고리', 9701)");
+        jdbcTemplate.update("INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days, is_public) "
+                + "VALUES (9701, 9701, 9701, '신고 코스', '요약', '설명', '대상', '목표', 7, TRUE)");
+        long viewer = member();
+        long hidden = coursePortfolio(writerId, "숨길 코스 작품");
+        long shown = coursePortfolio(viewer, "보이는 코스 작품");
+        report("PORTFOLIO", hidden, writerId, 3, "PENDING");
+
+        mockMvc.perform(get("/portfolios/{id}", hidden).with(as(viewer)))
+                .andExpect(status().isForbidden()).andExpect(content().string(allOf(containsString(HIDDEN_TEXT), not(containsString("숨길 코스 작품")))));
+        mockMvc.perform(get("/portfolios/{id}", hidden).with(as(writerId)))
+                .andExpect(status().isOk()).andExpect(content().string(allOf(containsString("숨길 코스 작품"), containsString(NOTICE))));
+        mockMvc.perform(get("/courses/9701/portfolios").with(as(viewer)))
+                .andExpect(content().string(allOf(containsString("/portfolios/" + shown + "\""), not(containsString("/portfolios/" + hidden + "\"")))));
+    }
+
+    @Test
+    void 포트폴리오_상세에는_남의_작품과_남의_리뷰에만_신고_버튼이_보인다() throws Exception {
+        long portfolioId = portfolio(writerId);
+        long requestId = insert("INSERT INTO review_request (portfolio_id, requested_at) VALUES (?, NOW())", portfolioId);
+        long reviewer = member();
+        long reviewId = insert("INSERT INTO peer_review (review_request_id, reviewer_member_id) VALUES (?, ?)", requestId, reviewer);
+        insert("INSERT INTO review_comment (peer_review_id, content) VALUES (?, '리뷰 내용')", reviewId);
+        String portfolioButton = "data-report-type=\"PORTFOLIO\"";
+        String reviewButton = "data-report-type=\"REVIEW\"";
+
+        mockMvc.perform(get("/portfolios/{id}", portfolioId).with(as(member())))
+                .andExpect(content().string(allOf(containsString(portfolioButton), containsString(reviewButton), containsString("id=\"report-modal\""))));
+        mockMvc.perform(get("/portfolios/{id}", portfolioId).with(as(writerId)))
+                .andExpect(content().string(allOf(not(containsString(portfolioButton)), containsString(reviewButton))));
+        mockMvc.perform(get("/portfolios/{id}", portfolioId).with(as(reviewer)))
+                .andExpect(content().string(allOf(containsString(portfolioButton), not(containsString(reviewButton)))));
+    }
+
+    private long coursePortfolio(long memberId, String title) {
+        return insert("INSERT INTO portfolio (member_id, course_id, portfolio_type, title, result_url, summary, retrospective, ai_tools, is_public) "
+                + "VALUES (?, 9701, 'COURSE', ?, 'https://example.com', '요약', '회고', 'Claude', TRUE)", memberId, title);
+    }
+
     /* 서로 다른 신고자 count 명이 status 로 신고한다 */
     private void report(String targetType, long targetId, long authorId, int count, String status) {
         for (int i = 0; i < count; i++) {

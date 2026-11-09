@@ -5,6 +5,7 @@ import com.vibelog.domain.community.model.policy.ReviewRequestCloser;
 import com.vibelog.domain.contest.model.policy.ContestEntryCanceler;
 import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.lesson.model.policy.PortfolioEnrollmentProgress;
+import com.vibelog.domain.message.model.service.MessageReader;
 import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
 import com.vibelog.domain.portfolio.model.dto.CoursePortfolioCard;
@@ -54,6 +55,7 @@ public class PortfolioManageService {
     private final MemberReader memberReader;
     private final ReviewRequestCloser reviewRequestCloser;
     private final ContestEntryCanceler contestEntryCanceler;
+    private final MessageReader messageReader;
 
     private static final int COURSE_PORTFOLIO_PAGE_SIZE = 20;   // API-PRT-10 20개씩
 
@@ -78,12 +80,17 @@ public class PortfolioManageService {
         if (!p.isPublic() && !mine) {
             throw new BusinessException(PortfolioErrorCode.PRIVATE_PORTFOLIO);
         }
+        // 신고로 숨긴 작품은 작성자에게만 내용 + 숨김 안내 (FR-RPT-003, message 명세 결정 19, #256)
+        boolean reportHidden = !messageReader.findHiddenTargetIds("PORTFOLIO", List.of(portfolioId)).isEmpty();
+        if (reportHidden && !mine) {
+            throw new BusinessException(PortfolioErrorCode.HIDDEN_CONTENT);
+        }
         String courseTitle = p.getCourseId() == null ? null
                 : courseReader.getCourseTitles(List.of(p.getCourseId())).get(p.getCourseId());
         return new PortfolioDetailView(p.getPortfolioId(), p.getTitle(), p.getResultUrl(), p.getSummary(),
                 p.getRetrospective(), p.getAiTools(), p.getAgentResult(), p.getScreenshotUrl(),
                 p.getCourseId(), courseTitle, memberReader.getNickname(p.getMemberId()),
-                p.getCreatedAt(), p.isPublic(), mine);
+                p.getCreatedAt(), p.isPublic(), mine, reportHidden);
     }
 
     /* U-35 같은 코스 작품 보기 (API-PRT-10). page 는 화면 그대로 1부터 */
@@ -95,9 +102,10 @@ public class PortfolioManageService {
             throw new BusinessException(PortfolioErrorCode.PORTFOLIO_NOT_SUBMITTED);
         }
         Set<Long> hidden = memberReader.findAllHiddenMemberIds();
-        // 없으면 NOT IN () 이 되지 않게 0 을 넣는다 (회원 ID 는 1부터, PostService 와 같은 방식)
-        Page<Portfolio> portfolios = portfolioRepository.findByCourseIdAndIsPublicTrueAndDeletedAtIsNullAndMemberIdNotIn(
-                courseId, hidden.isEmpty() ? Set.of(0L) : hidden,
+        Set<Long> hiddenPortfolios = messageReader.findAllHiddenTargetIds("PORTFOLIO");
+        // 영구 정지 회원 작품(#215)과 신고로 숨긴 작품(#256)은 뺀다. 없으면 NOT IN () 이 되지 않게 0 (ID 는 1부터)
+        Page<Portfolio> portfolios = portfolioRepository.findByCourseIdAndIsPublicTrueAndDeletedAtIsNullAndMemberIdNotInAndPortfolioIdNotIn(
+                courseId, hidden.isEmpty() ? Set.of(0L) : hidden, hiddenPortfolios.isEmpty() ? Set.of(0L) : hiddenPortfolios,
                 PageRequest.of(Math.max(page, 1) - 1, COURSE_PORTFOLIO_PAGE_SIZE,
                         Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("portfolioId"))));
         Map<Long, String> nicknames = memberReader.getNicknames(portfolios.map(Portfolio::getMemberId).toSet());

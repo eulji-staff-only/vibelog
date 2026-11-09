@@ -11,5 +11,5 @@ import java.time.LocalDateTime;
 public record PortfolioDetailView(Long portfolioId, String title, String resultUrl, String summary, String retrospective,
                                   String aiTools, String agentResult, String screenshotUrl,
                                   Long courseId, String courseTitle, String authorNickname,
-                                  LocalDateTime submittedAt, boolean isPublic, boolean mine) {
+                                  LocalDateTime submittedAt, boolean isPublic, boolean mine, boolean hiddenNotice) {
 }
