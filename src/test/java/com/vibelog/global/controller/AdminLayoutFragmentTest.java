@@ -35,13 +35,13 @@ class AdminLayoutFragmentTest {
                 .andExpect(content().string(containsString("href=\"/\"")));
     }
 
-    /* 설정(P2) 메뉴는 화면이 생긴 것만 둔다: 공지(A-10, #186). 진단·콘테스트 화면은 아직 없다 */
+    /* 설정(P2) 메뉴는 화면이 생긴 것만 둔다: 공지(A-10, #186)·콘테스트(A-11, #200). 진단 화면은 아직 없다 */
     @Test
-    void 설정_메뉴에는_화면이_있는_공지만_있다() throws Exception {
+    void 설정_메뉴에는_화면이_있는_것만_있다() throws Exception {
         mockMvc.perform(get("/admintest/sample").param("active", "dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("href=\"/admin/notices\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("/admin/contests"))))
+                .andExpect(content().string(containsString("href=\"/admin/contests\"")))
                 .andExpect(content().string(org.hamcrest.Matchers.not(containsString("/admin/diagnosis"))));
     }
 
