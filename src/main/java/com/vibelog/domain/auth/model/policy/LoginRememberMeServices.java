@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.rememberme.InvalidCookieException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.stereotype.Component;
 
@@ -23,11 +25,25 @@ import java.time.Duration;
 @Component
 public class LoginRememberMeServices extends TokenBasedRememberMeServices {
 
+    private final SuspensionPolicy suspensionPolicy;
+
     public LoginRememberMeServices(@Value("${REMEMBER_ME_KEY:#{T(java.util.UUID).randomUUID().toString()}}") String key,
-                                   UserDetailsService userDetailsService) {
+                                   UserDetailsService userDetailsService, SuspensionPolicy suspensionPolicy) {
         super(key, userDetailsService);
+        this.suspensionPolicy = suspensionPolicy;
         setParameter("rememberMe");     // API-USR-05 form 이름
         setTokenValiditySeconds((int) Duration.ofDays(14).toSeconds());
+    }
+
+    /* 쿠키로 자동 로그인할 때도 정지 회원이면 거부한다. 쿠키는 부모 클래스가 지운다 (API-USR-05 P2) */
+    @Override
+    protected UserDetails processAutoLoginCookie(String[] cookieTokens, HttpServletRequest request,
+                                                 HttpServletResponse response) {
+        UserDetails user = super.processAutoLoginCookie(cookieTokens, request, response);
+        if (suspensionPolicy.isSuspended(((LoginMember) user).getMemberId())) {
+            throw new InvalidCookieException("이용 정지 회원");
+        }
+        return user;
     }
 
     @Override

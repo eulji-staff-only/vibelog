@@ -1,6 +1,7 @@
 package com.vibelog.domain.auth.model.policy;
 
 import com.vibelog.domain.auth.model.dto.LoginMember;
+import com.vibelog.domain.auth.model.dto.SuspensionNotice;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +21,18 @@ import java.io.IOException;
 public class SocialLoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private final LoginSuccessHandler loginSuccessHandler;
+    private final SuspensionPolicy suspensionPolicy;
+    private final SuspendedLoginResponder suspendedLoginResponder;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
+        // 정지 회원은 계정을 확인한 뒤 돌려보낸다 (API-USR-07 P2)
+        var suspension = suspensionPolicy.findActive(((LoginMember) authentication.getPrincipal()).getMemberId());
+        if (suspension.isPresent()) {
+            suspendedLoginResponder.respond(request, response, authentication, SuspensionNotice.from(suspension.get()));
+            return;
+        }
         if (((LoginMember) authentication.getPrincipal()).isFirstLogin()) {
             response.sendRedirect("/diagnosis");
             return;

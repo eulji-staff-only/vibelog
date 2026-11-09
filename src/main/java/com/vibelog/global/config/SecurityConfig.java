@@ -1,6 +1,9 @@
 package com.vibelog.global.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vibelog.domain.auth.model.policy.SuspendedLoginResponder;
+import com.vibelog.domain.auth.model.policy.SuspendedMemberFilter;
+import com.vibelog.domain.auth.model.policy.SuspensionPolicy;
 import com.vibelog.global.exception.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,6 +24,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.RememberMeServices;
@@ -55,6 +59,8 @@ public class SecurityConfig {
     private final AuthenticationSuccessHandler socialLoginSuccessHandler;
     private final AuthenticationFailureHandler socialLoginFailureHandler;
     private final ObjectMapper objectMapper;
+    private final SuspensionPolicy suspensionPolicy;
+    private final SuspendedLoginResponder suspendedLoginResponder;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -82,6 +88,9 @@ public class SecurityConfig {
                         .failureHandler(loginFailureHandler))
                 // 로그인 유지(rememberMe) 쿠키. 로그아웃하면 쿠키도 지운다
                 .rememberMe(remember -> remember.rememberMeServices(loginRememberMeServices))
+                // 로그인한 채로 정지된 회원의 POST 를 막는다 (FR-USR-010). 로그인 유지 쿠키 처리 뒤에 둔다
+                .addFilterAfter(new SuspendedMemberFilter(suspensionPolicy, suspendedLoginResponder),
+                        AnonymousAuthenticationFilter.class)
                 .logout(logout -> logout.logoutSuccessUrl("/"))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(this::sendToLogin)

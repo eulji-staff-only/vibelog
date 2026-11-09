@@ -241,6 +241,133 @@ img {
   cursor: pointer;
 }
 
+/* 헤더 알림 (1-5, #185). 아이콘 → 드롭다운, 안 읽은 알림은 굵게 + 왼쪽 표시 */
+.vl-notify {
+  position: relative;
+}
+
+.vl-notify__btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--on-navy-muted);
+  cursor: pointer;
+}
+
+.vl-notify__btn:hover,
+.vl-notify__btn[aria-expanded="true"] {
+  color: var(--on-navy);
+  background: var(--navy-700);
+}
+
+.vl-notify__count {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  min-width: 18px;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: var(--on-navy);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 18px;
+  text-align: center;
+}
+
+.vl-notify__panel {
+  position: absolute;
+  top: calc(100% + var(--space-3));
+  right: 0;
+  z-index: 20;
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-raised);
+  color: var(--ink);
+  box-shadow: var(--shadow-panel);
+  white-space: normal;
+}
+
+.vl-notify__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.vl-notify__read-all,
+.vl-notify__more {
+  border: none;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vl-notify__read-all:hover,
+.vl-notify__more:hover {
+  color: var(--link-hover);
+}
+
+.vl-notify__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vl-header__member .vl-notify__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* 모바일 헤더의 링크 가운데 정렬을 덮는다 */
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  border-left: 3px solid transparent;
+  color: var(--ink-muted);
+  font-weight: 400;
+}
+
+.vl-header__member .vl-notify__item:hover {
+  color: var(--ink);
+  background: var(--tint);
+}
+
+.vl-header__member .vl-notify__item.is-unread {
+  border-left-color: var(--link);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.vl-notify__item time {
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.vl-notify__empty {
+  margin: 0;
+  padding: var(--space-6) var(--space-5);
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.vl-notify__more {
+  display: block;
+  width: 100%;
+  min-height: var(--control-h);
+  border-top: 1px solid var(--line-soft);
+}
+
 /* 푸터 */
 .vl-footer {
   background: var(--navy-900);
@@ -810,6 +937,17 @@ img {
     width: 100%;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  /* 펼친 메뉴 안에서는 드롭다운을 겹치지 않고 아래로 펼친다 */
+  .vl-notify {
+    width: 100%;
+  }
+
+  .vl-notify__panel {
+    position: static;
+    width: 100%;
+    margin-top: var(--space-3);
   }
 
   .vl-content {
