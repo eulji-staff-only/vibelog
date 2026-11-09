@@ -245,7 +245,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 | 콘텐츠 | track, course_category, course, lesson, concept_tag, activity_tag, concept_relation |
 | 문항 | quiz_choice, exam_choice |
 | 학습 기록 | enrollment, lesson_progress, activity_progress, quiz_attempt, quiz_answer, exam_attempt, exam_answer |
-| 포트폴리오 | portfolio_assignment, portfolio_faq, portfolio_template_item(항목 5개 고정, 이름·안내만 고침) |
+| 포트폴리오 | portfolio_assignment, portfolio_faq, portfolio_template_item(항목 5개 고정, 이름·안내 문구·순서만 고침) |
 | 커뮤니티 | post_image |
 | 콘테스트 | contest, contest_entry, contest_vote, contest_award |
 | 리뷰 | review_request, review_comment |

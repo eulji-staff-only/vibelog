@@ -19,7 +19,7 @@ DROP TABLE IF EXISTS
     contest, contest_entry, contest_vote, contest_award,
     review_criterion, review_request, peer_review, review_comment,
     message, notification, notice,
-    report, banned_word;
+    report, banned_word, portfolio_template_item;
 
 -- =====================================================================
 -- 1. 회원 (P1)
