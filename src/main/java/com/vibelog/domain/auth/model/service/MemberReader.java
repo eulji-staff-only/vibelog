@@ -3,6 +3,7 @@ package com.vibelog.domain.auth.model.service;
 import com.vibelog.domain.auth.model.dao.MemberRepository;
 import com.vibelog.domain.auth.model.dao.MemberSuspensionRepository;
 import com.vibelog.domain.auth.model.entity.Member;
+import com.vibelog.domain.auth.model.entity.MemberRole;
 import com.vibelog.domain.auth.model.entity.MemberStatus;
 import com.vibelog.domain.auth.model.entity.MemberSuspension;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,14 @@ public class MemberReader {
     /* 영구 정지 중인 회원 ID (PL-RPT-006). 공개 콘텐츠를 숨길 때 쓴다 (명세 auth.md P2). 빈 묶음이면 빈 결과 */
     public Set<Long> findHiddenMemberIds(Collection<Long> memberIds) {
         return memberIds.isEmpty() ? Set.of() : memberSuspensionRepository.findPermanentlySuspendedIn(memberIds);
+    }
+
+    /* 통계에서 뺄 회원 ID: 운영자·테스트 계정 (PL-EXM-008, exam.md P2 평균 점수 #195). 빈 묶음이면 빈 결과 */
+    public Set<Long> findStatExcludedIds(Collection<Long> memberIds) {
+        return memberIds.isEmpty() ? Set.of() : memberRepository.findAllById(memberIds).stream()
+                .filter(member -> member.getRole() == MemberRole.ADMIN || member.isTest())
+                .map(Member::getMemberId)
+                .collect(Collectors.toSet());
     }
 
     /* 영구 정지 중인 회원 전체 (PL-RPT-006). 게시판 목록처럼 페이지를 나누는 조회에서 미리 빼려고 쓴다 (#215) */
