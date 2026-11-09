@@ -34,9 +34,10 @@ public class MessageHeaderAdvice {
     }
 
     @ModelAttribute("badgeCelebration")
-    public NotificationItem badgeCelebration(@AuthenticationPrincipal LoginMember loginMember) {
+    public NotificationItem badgeCelebration(@AuthenticationPrincipal LoginMember loginMember, HttpServletRequest request) {
         NotificationService service = notificationService.getIfAvailable();
-        return loginMember == null || service == null ? null : service.findUnreadBadge(loginMember.getMemberId()).orElse(null);
+        return loginMember == null || service == null || isApi(request) ? null
+                : service.findUnreadBadge(loginMember.getMemberId()).orElse(null);
     }
 
     @ModelAttribute("noticeBanner")
