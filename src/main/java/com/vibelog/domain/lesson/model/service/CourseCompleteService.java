@@ -45,9 +45,9 @@ public class CourseCompleteService {
     private final LessonExamStatusChecker lessonExamStatusChecker;
     private final LessonPortfolioChecker lessonPortfolioChecker;
 
-    /* 수강하지 않았으면 빈 값을 돌려준다 (Controller 가 /courses/{courseId}로 돌려보낸다, API-ENR-03 실패) */
+    /* 수강하지 않았거나 포기한 수강이면(수강 안 함으로 본다, #306) 빈 값을 돌려준다 (Controller 가 /courses/{courseId}로 돌려보낸다, API-ENR-03 실패) */
     public Optional<CourseCompleteView> getCourseComplete(Long memberId, Long courseId) {
-        Enrollment enrollment = enrollmentRepository.findByMemberIdAndCourseId(memberId, courseId).orElse(null);
+        Enrollment enrollment = enrollmentRepository.findByMemberIdAndCourseIdAndDroppedAtIsNull(memberId, courseId).orElse(null);
         if (enrollment == null) {
             return Optional.empty();
         }

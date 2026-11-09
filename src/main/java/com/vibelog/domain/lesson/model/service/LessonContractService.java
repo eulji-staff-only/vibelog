@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
  * 책임 : - 다른 영역은 이 클래스가 아니라 model/policy 의 계약 인터페이스를 주입해 쓴다.
  *        - 조회 계약은 읽기 전용, 기록 계약(①③⑥⑦)은 부르는 쪽 트랜잭션에 함께 묶인다 (08 문서 규칙 1-6).
  *        - 열림·완료 기록(①③⑦)은 처음 한 번만 하고, 다시 불러도 다음 행동만 돌려준다.
+ *        - 포기한 수강(dropped_at)은 ①②③⑥⑦의 열림·완료·제출 판단에서 "수강 안 함"으로 본다 (#306).
+ *          예외: 포트폴리오 삭제의 완료 기록 비우기(⑦ recordDeleted)는 이미 있는 기록을 정리하므로 포기한 수강도 처리한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -58,7 +60,7 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
     public QuizActivityInfo getQuizActivity(Long memberId, Long activityId) {
         Activity activity = getActivity(activityId);
         Lesson lesson = getLesson(activity.getLessonId());
-        boolean unlocked = enrollmentRepository.findByMemberIdAndCourseId(memberId, lesson.getCourseId())
+        boolean unlocked = enrollmentRepository.findByMemberIdAndCourseIdAndDroppedAtIsNull(memberId, lesson.getCourseId())
                 .flatMap(enrollment -> activityProgressRepository
                         .findByEnrollmentIdAndActivityId(enrollment.getEnrollmentId(), activityId))
                 .map(ActivityProgress::isUnlocked)
@@ -98,7 +100,7 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
     @Override
     public boolean isExamOpen(Long memberId, Long lessonId) {
         Lesson lesson = getLesson(lessonId);
-        return enrollmentRepository.findByMemberIdAndCourseId(memberId, lesson.getCourseId())
+        return enrollmentRepository.findByMemberIdAndCourseIdAndDroppedAtIsNull(memberId, lesson.getCourseId())
                 .flatMap(enrollment -> activityRepository
                         .findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(lessonId, ActivityType.QUIZ)
                         .flatMap(lastQuiz -> activityProgressRepository
@@ -143,7 +145,7 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
     /* ⑥ unlocked = enrollment.portfolio_unlocked_at 이 있음 */
     @Override
     public PortfolioAccess getAccess(Long memberId, Long courseId) {
-        return enrollmentRepository.findByMemberIdAndCourseId(memberId, courseId)
+        return enrollmentRepository.findByMemberIdAndCourseIdAndDroppedAtIsNull(memberId, courseId)
                 .map(enrollment -> new PortfolioAccess(true, enrollment.isPortfolioUnlocked()))
                 .orElse(new PortfolioAccess(false, false));
     }
@@ -169,7 +171,10 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
     @Override
     @Transactional
     public void recordDeleted(Long memberId, Long courseId) {
-        getEnrollment(memberId, courseId).cancelCompletion();
+        // 이미 있는 완료 기록을 정리하는 쪽이라 포기한 수강도 막지 않는다 (안 비우면 다시 시작했을 때 작품 없이 완료로 남는다, #306)
+        enrollmentRepository.findByMemberIdAndCourseId(memberId, courseId)
+                .orElseThrow(() -> new BusinessException(LessonErrorCode.ENROLLMENT_NOT_FOUND))
+                .cancelCompletion();
     }
 
     /* ⑨ 공개 수업이 하나 이상 있음 */
@@ -243,8 +248,9 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
                 .orElseThrow(() -> new BusinessException(LessonErrorCode.ACTIVITY_NOT_FOUND));
     }
 
+    /* 진행 기록을 바꾸는 계약용. 포기한 수강은 수강 안 함과 같게 ENROLLMENT_NOT_FOUND (#306) */
     private Enrollment getEnrollment(Long memberId, Long courseId) {
-        return enrollmentRepository.findByMemberIdAndCourseId(memberId, courseId)
+        return enrollmentRepository.findByMemberIdAndCourseIdAndDroppedAtIsNull(memberId, courseId)
                 .orElseThrow(() -> new BusinessException(LessonErrorCode.ENROLLMENT_NOT_FOUND));
     }
 
