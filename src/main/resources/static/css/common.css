@@ -241,6 +241,39 @@ img {
   cursor: pointer;
 }
 
+/* 공지 배너 (1-5, #186). 상단 바 위 한 줄, 누르면 공지 상세(U-26) */
+.vl-banner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: var(--glow);
+  color: var(--navy-900);
+  font-weight: 700;
+}
+
+.vl-banner:hover .vl-banner__title {
+  text-decoration: underline;
+}
+
+.vl-banner__label {
+  flex: none;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--navy-900);
+  color: var(--on-navy);
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.vl-banner__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* 헤더 알림 (1-5, #185). 아이콘 → 드롭다운, 안 읽은 알림은 굵게 + 왼쪽 표시 */
 .vl-notify {
   position: relative;
