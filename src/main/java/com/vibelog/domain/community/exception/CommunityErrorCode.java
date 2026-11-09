@@ -23,7 +23,8 @@ public enum CommunityErrorCode implements ErrorCode {
     REVIEW_REQUEST_NOT_FOUND(HttpStatus.NOT_FOUND, "리뷰 요청을 찾을 수 없습니다."),
     REVIEW_REQUEST_CLOSED(HttpStatus.CONFLICT, "마감된 리뷰 요청입니다."),
     SELF_REVIEW(HttpStatus.BAD_REQUEST, "내 작품에는 리뷰를 쓸 수 없습니다."),
-    ALREADY_REVIEWED(HttpStatus.CONFLICT, "이미 리뷰를 남겼습니다. 내 리뷰를 수정해 주세요.");
+    ALREADY_REVIEWED(HttpStatus.CONFLICT, "이미 리뷰를 남겼습니다. 내 리뷰를 수정해 주세요."),
+    HIDDEN_CONTENT(HttpStatus.FORBIDDEN, "운영 정책에 따라 숨겨진 콘텐츠입니다.");
 
     private final HttpStatus status;
     private final String message;

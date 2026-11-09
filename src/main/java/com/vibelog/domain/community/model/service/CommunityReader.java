@@ -58,6 +58,11 @@ public class CommunityReader {
                 post.getCreatedAt(), commentCounts.getOrDefault(post.getPostId(), 0L)));
     }
 
+    /* 알림 도착지 (message API-NTF-02). 지운 댓글도 행이 남아 글 ID 를 돌려준다. 행이 없으면 빈 값 */
+    public Optional<Long> findPostIdOfComment(Long commentId) {
+        return commentRepository.findById(commentId).map(Comment::getPostId);
+    }
+
     public Page<MemberCommentItem> getCommentsOf(Long memberId, int page) {
         Page<Comment> comments = commentRepository.findLiveByMemberId(
                 memberId, PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE));
