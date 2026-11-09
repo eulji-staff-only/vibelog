@@ -34,7 +34,8 @@ report="### 리뷰 검사 (작성자: $author, base: $base_ref)"$'\n'
 if [ "$base_ref" != "main" ]; then
   # P1 인지: PR 마일스톤 + 본문에 연결한 이슈의 마일스톤
   milestones=$(pr_view '.milestone.title // ""')
-  issues=$(pr_view '.body // ""' \
+  body=$(pr_view '.body // ""')   # 조회가 실패하면 set -e 로 여기서 검사가 실패한다
+  issues=$(printf '%s\n' "$body" \
     | grep -oiE '(close[sd]?|fix(e[sd])?|resolve[sd]?|part of|refs?) #[0-9]+' | grep -oE '[0-9]+' | sort -u || true)
   for n in $issues; do
     if ! m=$(gh api "repos/$REPO/issues/$n" --jq '.milestone.title // ""'); then
