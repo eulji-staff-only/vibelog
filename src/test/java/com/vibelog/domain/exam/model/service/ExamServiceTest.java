@@ -268,6 +268,41 @@ class ExamServiceTest {
     }
 
     @Test
+    void 수강을_포기해_모의고사가_닫히면_답_저장과_제출이_막히고_저장되지_않는다() {
+        examService.start(MEMBER, LESSON);
+        Long attemptId = latest().getExamAttemptId();
+        examService.saveAnswer(MEMBER, attemptId, 9101L, 9112L);
+        willReturn(false).given(examLessonProgress).isExamOpen(MEMBER, LESSON);   // 수강 포기 → 계약 ② 가 닫힘으로 답한다
+
+        assertThatThrownBy(() -> examService.saveAnswer(MEMBER, attemptId, 9101L, 9111L))
+                .extracting("errorCode").isEqualTo(ExamErrorCode.EXAM_LOCKED);
+        assertThatThrownBy(() -> examService.submit(MEMBER, LESSON, attemptId, Map.of(9102L, 9122L)))
+                .extracting("errorCode").isEqualTo(ExamErrorCode.EXAM_LOCKED);
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(latest().isSubmitted()).isFalse();
+        assertThat(examAnswerRepository.findByExamAttempt(latest()))
+                .extracting(a -> a.getExamChoice().getExamChoiceId()).containsExactly(9112L);
+    }
+
+    @Test
+    void 다시_수강한_뒤에는_포기_전에_시작한_응시를_이어_저장하고_제출할_수_있다() {
+        examService.start(MEMBER, LESSON);
+        Long attemptId = latest().getExamAttemptId();
+        willReturn(false).given(examLessonProgress).isExamOpen(MEMBER, LESSON);
+        assertThatThrownBy(() -> examService.saveAnswer(MEMBER, attemptId, 9101L, 9111L))
+                .extracting("errorCode").isEqualTo(ExamErrorCode.EXAM_LOCKED);
+        willReturn(true).given(examLessonProgress).isExamOpen(MEMBER, LESSON);   // 재시작·복습 등으로 다시 열림
+
+        examService.saveAnswer(MEMBER, attemptId, 9101L, 9111L);
+        ExamSubmitResult result = examService.submit(MEMBER, LESSON, attemptId, Map.of());
+
+        assertThat(result.alreadySubmitted()).isFalse();
+        assertThat(latest().getScore()).isEqualTo(1);
+    }
+
+    @Test
     void 정답률은_소수_둘째_자리에서_반올림한다() {
         assertThat(ExamService.correctRate(1, 3)).isEqualByComparingTo(new BigDecimal("33.33"));
         assertThat(ExamService.correctRate(2, 3)).isEqualByComparingTo(new BigDecimal("66.67"));

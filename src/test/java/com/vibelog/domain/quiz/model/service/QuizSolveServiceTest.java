@@ -211,6 +211,38 @@ class QuizSolveServiceTest {
         assertThat(jdbcTemplate.queryForObject("SELECT completed_at IS NULL FROM activity_progress WHERE enrollment_id = ? AND activity_id = 9901", Boolean.class, enrollmentA)).isTrue();
     }
 
+    @Test
+    void 수강을_포기하면_포기_전에_시작한_풀이도_확인과_제출이_막히고_저장되지_않는다() {
+        Long attemptId = quizSolveService.start(memberA, 9901L).quizAttemptId();
+        quizSolveService.check(memberA, attemptId, 99011L, 990111L);
+        dropEnrollmentA();
+
+        assertError(() -> quizSolveService.check(memberA, attemptId, 99012L, 990121L), QuizErrorCode.ACTIVITY_LOCKED);
+        assertError(() -> quizSolveService.submit(memberA, attemptId), QuizErrorCode.ACTIVITY_LOCKED);
+
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM quiz_answer WHERE quiz_attempt_id = ?", Integer.class, attemptId)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT submitted_at IS NULL FROM quiz_attempt WHERE quiz_attempt_id = ?", Boolean.class, attemptId)).isTrue();
+    }
+
+    @Test
+    void 완료했지만_포기하지_않은_수강의_열린_퀴즈는_계속_확인하고_제출할_수_있다() {
+        Long attemptId = quizSolveService.start(memberA, 9901L).quizAttemptId();
+        jdbcTemplate.update("UPDATE enrollment SET completed_at = NOW() WHERE enrollment_id = ?", enrollmentA);
+        entityManager.flush();
+        entityManager.clear();
+
+        quizSolveService.check(memberA, attemptId, 99011L, 990111L);
+        quizSolveService.check(memberA, attemptId, 99012L, 990121L);
+
+        assertThat(quizSolveService.submit(memberA, attemptId).isPassed()).isTrue();
+    }
+
+    private void dropEnrollmentA() {
+        entityManager.flush();
+        jdbcTemplate.update("UPDATE enrollment SET dropped_at = NOW() WHERE enrollment_id = ?", enrollmentA);
+        entityManager.clear();
+    }
+
     private void assertError(Runnable call, ErrorCode expected) {
         assertThatThrownBy(call::run)
                 .isInstanceOf(BusinessException.class)

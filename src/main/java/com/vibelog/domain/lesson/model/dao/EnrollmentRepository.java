@@ -13,6 +13,12 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     Optional<Enrollment> findByMemberIdAndCourseId(Long memberId, Long courseId);
 
+    /*
+     * 포기하지 않은 수강만 (진행 기록을 바꾸는 경로가 쓴다, #306). 포기한 수강은 "수강 안 함"과 같게 없는 것으로 본다.
+     * 포기 여부만 보므로 완료한 코스(복습, PL-ENR-004)는 그대로 찾힌다
+     */
+    Optional<Enrollment> findByMemberIdAndCourseIdAndDroppedAtIsNull(Long memberId, Long courseId);
+
     boolean existsByMemberIdAndCompletedAtIsNullAndDroppedAtIsNull(Long memberId);
 
     /* 내 학습(API-ENR-02) "수강 중" 탭: 완료·포기하지 않은 수강 */
