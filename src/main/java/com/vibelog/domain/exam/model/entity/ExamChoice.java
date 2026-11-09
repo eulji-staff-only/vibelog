@@ -41,4 +41,19 @@ public class ExamChoice extends BaseTimeEntity {
 
     @Column(nullable = false)
     private int sortOrder;
+
+    public static ExamChoice create(ExamQuestion examQuestion, String content, boolean correct, int sortOrder) {
+        ExamChoice choice = new ExamChoice();
+        choice.examQuestion = examQuestion;
+        choice.content = content;
+        choice.correct = correct;
+        choice.sortOrder = sortOrder;
+        return choice;
+    }
+
+    /* API-ADM-30. 응시 기록이 없는 문항의 보기만 그 자리에서 고친다 (기록이 있으면 새 문항을 만든다, DB 설계서 5-4) */
+    public void edit(String content, boolean correct) {
+        this.content = content;
+        this.correct = correct;
+    }
 }
