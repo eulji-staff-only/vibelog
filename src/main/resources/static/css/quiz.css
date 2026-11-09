@@ -109,13 +109,13 @@
 .qz-choices.is-chips .qz-choice { min-width: 72px; text-align: center; }
 .qz-choices.is-grid .qz-choice { min-height: 88px; text-align: center; }
 .qz-choice.is-mono { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; }
-.qz-choice:hover { border-color: var(--line-strong); }
+/* 마우스 오버(5-2)는 아직 확인 전이고 고르지 않은 보기에만. 확인 뒤(disabled)·고른 보기는 그 상태 색을 그대로 둔다 */
+.qz-choice:not([disabled]):not([aria-pressed="true"]):hover { border-color: var(--line-strong); }
 .qz-choice[aria-pressed="true"] { border-color: var(--link); background: var(--tint); }
 /* 확인 뒤: 정답은 --success, 고른 오답은 --danger (5-2) */
 .qz-choice.is-correct { border-color: var(--success); background: var(--success-soft); }
 .qz-choice.is-wrong { border-color: var(--danger); background: var(--danger-soft); }
 .qz-choice[disabled] { cursor: default; }
-.qz-choice[disabled]:hover { border-color: inherit; }
 
 /* 낚시 문제: 연못 위 물고기 4마리. 물고기 자체가 보기 버튼이다 */
 .qz-pond {
