@@ -62,6 +62,12 @@ public class MemberSuspension extends BaseTimeEntity {
         return releasedAt == null && level.blocks() && (endsAt == null || endsAt.isAfter(now));
     }
 
+    /* 지난 그 시각에 막던 제재였나 (콘테스트 집계는 투표가 끝난 시각으로 본다, contest 명세 결정 8) */
+    public boolean wasActiveAt(LocalDateTime at) {
+        return level.blocks() && !startsAt.isAfter(at) && (endsAt == null || endsAt.isAfter(at))
+                && (releasedAt == null || releasedAt.isAfter(at));
+    }
+
     public void release(Long releaserMemberId, LocalDateTime now) {
         this.releasedAt = now;
         this.releaserMemberId = releaserMemberId;

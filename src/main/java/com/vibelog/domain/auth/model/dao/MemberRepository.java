@@ -10,7 +10,9 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
@@ -46,4 +48,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     /* 기간 내 가입자 수 (member.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (운영자 대시보드 API-ADM-01, FR-ADM-002) */
     @Query("select count(m) from Member m where (:from is null or m.createdAt >= :from) and (:to is null or m.createdAt <= :to)")
     long countByCreatedAtBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /* 그 시각까지 탈퇴한 회원 (콘테스트 집계, contest 명세 결정 8) */
+    @Query("select m.memberId from Member m where m.memberId in :memberIds and m.withdrawnAt <= :at")
+    Set<Long> findWithdrawnIn(@Param("memberIds") Collection<Long> memberIds, @Param("at") LocalDateTime at);
 }
