@@ -4,6 +4,7 @@ import com.vibelog.domain.auth.model.dao.MemberRepository;
 import com.vibelog.domain.auth.model.dao.MemberSuspensionRepository;
 import com.vibelog.domain.auth.model.entity.Member;
 import com.vibelog.domain.auth.model.entity.MemberStatus;
+import com.vibelog.domain.auth.model.entity.MemberSuspension;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -98,5 +99,21 @@ public class MemberReader {
     /* 기간 내 가입자 수 (member.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (운영자 대시보드 API-ADM-01, FR-ADM-002) */
     public long countJoinedBetween(LocalDateTime from, LocalDateTime to) {
         return memberRepository.countByCreatedAtBetween(from, to);
+    }
+
+    /* 그 시각에 이용 정지 중이던 회원 ID (해제·끝난 제재도 그 시각 기준으로 본다). 콘테스트 집계는 투표가 끝난 시각으로 본다 (PL-CTS-006, contest 명세 결정 8) */
+    public Set<Long> findSuspendedMemberIds(Collection<Long> memberIds, LocalDateTime at) {
+        if (memberIds.isEmpty()) {
+            return Set.of();
+        }
+        return memberSuspensionRepository.findByMemberIdIn(memberIds).stream()
+                .filter(suspension -> suspension.wasActiveAt(at))
+                .map(MemberSuspension::getMemberId)
+                .collect(Collectors.toSet());
+    }
+
+    /* 그 시각까지 탈퇴한 회원 ID (contest 명세 결정 8) */
+    public Set<Long> findWithdrawnMemberIds(Collection<Long> memberIds, LocalDateTime at) {
+        return memberIds.isEmpty() ? Set.of() : memberRepository.findWithdrawnIn(memberIds, at);
     }
 }
