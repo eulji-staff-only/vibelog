@@ -20,9 +20,12 @@ public interface ReviewRequestRepository extends JpaRepository<ReviewRequest, Lo
 
     List<ReviewRequest> findByPortfolioIdInAndClosedAtIsNullAndRequestedAtAfter(Collection<Long> portfolioIds, LocalDateTime since);
 
-    /* U-31 열린 요청 카드, 최근 요청순 */
-    Page<ReviewRequest> findByClosedAtIsNullAndRequestedAtAfterOrderByRequestedAtDescReviewRequestIdDesc(LocalDateTime since,
-                                                                                                          Pageable pageable);
+    /*
+     * U-31 열린 요청 카드, 최근 요청순. hiddenPortfolioIds(영구 정지 회원 작품, PL-RPT-006)의 요청은 뺀다.
+     * 빈 묶음이면 IN () 이 되지 않게 부르는 쪽이 0 하나를 넣는다.
+     */
+    Page<ReviewRequest> findByClosedAtIsNullAndRequestedAtAfterAndPortfolioIdNotInOrderByRequestedAtDescReviewRequestIdDesc(
+            LocalDateTime since, Collection<Long> hiddenPortfolioIds, Pageable pageable);
 
     List<ReviewRequest> findByPortfolioId(Long portfolioId);
 }

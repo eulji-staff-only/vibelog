@@ -60,6 +60,11 @@ public class PortfolioReader {
                 p.getCourseId() == null ? null : assignmentIds.get(p.getCourseId()), p.isPublic(), p.isDeleted()), (a, b) -> a));
     }
 
+    /* 회원들의 포트폴리오 ID, 삭제 표시한 것도 포함 (U-31 리뷰 요청 목록에서 영구 정지 회원 작품을 미리 뺀다, #215). 빈 묶음이면 빈 결과 */
+    public List<Long> findIdsOf(Collection<Long> memberIds) {
+        return memberIds.isEmpty() ? List.of() : portfolioRepository.findIdsByMemberIdIn(memberIds);
+    }
+
     /*
      * 회원의 삭제 표시 없는 포트폴리오 ID (리뷰 요청 동시 3개 제한, PL-REV-002).
      * 그 행들에 쓰기 잠금을 걸어, 같은 회원의 동시 리뷰 요청이 차례로 검사되게 한다. 부르는 쪽 트랜잭션이 끝나면 풀린다.
