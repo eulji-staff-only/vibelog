@@ -214,10 +214,12 @@
                   th:action="@{/admin/activities/{id}/edit(id=${activity.activityId()})}">
                 <div class="al-field">
                     <label th:for="'activity-edit-type-' + ${activity.activityId()}">활동 종류</label>
-                    <select th:id="'activity-edit-type-' + ${activity.activityId()}" name="activityType">
+                    <!-- 만든 뒤에는 바꿀 수 없다 (모의고사 열림 계약·연관 개념 참조가 깨짐, Choyeonik 리뷰) -->
+                    <select th:id="'activity-edit-type-' + ${activity.activityId()}" disabled>
                         <option value="CONCEPT" th:selected="${activity.activityType().name() == 'CONCEPT'}">개념</option>
                         <option value="QUIZ" th:selected="${activity.activityType().name() == 'QUIZ'}">퀴즈</option>
                     </select>
+                    <input type="hidden" name="activityType" th:value="${activity.activityType()}">
                 </div>
                 <div class="al-field">
                     <label th:for="'activity-edit-title-' + ${activity.activityId()}">제목</label>
