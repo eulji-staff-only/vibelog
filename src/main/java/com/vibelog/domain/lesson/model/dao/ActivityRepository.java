@@ -2,12 +2,32 @@ package com.vibelog.domain.lesson.model.dao;
 
 import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.ActivityType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface ActivityRepository extends JpaRepository<Activity, Long> {
+
+    /*
+     * 회원이 북마크한 개념, 북마크한 순서 최신순 (concept_bookmark, FR-LSN-004). 마이페이지 목록은 읽기만 해서 행 값만 읽는다.
+     * 북마크 Entity·토글(API-LSN-08)은 #192 에서 만든다. 정렬은 쿼리에 고정돼 있어 Pageable 에 Sort 를 넣지 않는다.
+     */
+    @Query(value = "SELECT activity_id AS activityId, created_at AS bookmarkedAt FROM concept_bookmark WHERE member_id = :memberId"
+            + " ORDER BY created_at DESC, concept_bookmark_id DESC",
+            countQuery = "SELECT COUNT(*) FROM concept_bookmark WHERE member_id = :memberId", nativeQuery = true)
+    Page<BookmarkRow> findBookmarksOf(@Param("memberId") Long memberId, Pageable pageable);
+
+    interface BookmarkRow {
+        Long getActivityId();
+
+        LocalDateTime getBookmarkedAt();
+    }
 
     List<Activity> findByLessonIdAndIsActiveTrueOrderBySortOrderAsc(Long lessonId);
 

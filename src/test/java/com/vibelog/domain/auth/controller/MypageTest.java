@@ -216,6 +216,40 @@ class MypageTest {
                 .andExpect(content().string(containsString("회원 탈퇴가 완료되었습니다")));
     }
 
+    @Test
+    void 북마크_탭에_북마크한_개념이_최근_순으로_보이고_누르면_수업_화면으로_간다() throws Exception {
+        jdbcTemplate.update("INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9601, '트랙', '대상', '설명', 9601)");
+        jdbcTemplate.update("INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9601, '카테고리', 9601)");
+        jdbcTemplate.update("INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days, is_public) "
+                + "VALUES (9601, 9601, 9601, '북마크 코스', '요약', '설명', '대상', '목표', 7, TRUE)");
+        jdbcTemplate.update("INSERT INTO lesson (lesson_id, course_id, title, intro, goal, contents, estimated_minutes, sort_order, is_public) VALUES "
+                + "(9601, 9601, '북마크 수업', '소개', '목표', '본문', 30, 1, TRUE)");
+        jdbcTemplate.update("INSERT INTO activity (activity_id, lesson_id, activity_type, title, body, body_format, estimated_minutes, pass_rate, sort_order) VALUES "
+                + "(9601, 9601, 'CONCEPT', '먼저 담은 개념', '본문', 'MARKDOWN', 10, NULL, 1), (9602, 9601, 'CONCEPT', '나중에 담은 개념', '본문', 'MARKDOWN', 10, NULL, 2)");
+        jdbcTemplate.update("INSERT INTO concept_bookmark (member_id, activity_id, created_at) VALUES (?, 9601, NOW() - INTERVAL 1 DAY), (?, 9602, NOW())",
+                memberId, memberId);
+
+        String html = mockMvc.perform(get("/mypage").param("tab", "bookmarks").with(as(EMAIL)))
+                .andExpect(content().string(allOf(containsString("북마크 코스 · 북마크 수업"),
+                        containsString("href=\"/courses/9601/lessons/9601?activity=9602\""))))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(html.indexOf("나중에 담은 개념")).isLessThan(html.indexOf("먼저 담은 개념"));
+
+        mockMvc.perform(get("/mypage").param("tab", "bookmarks").with(as(SOCIAL_EMAIL)))
+                .andExpect(content().string(containsString("북마크한 개념이 없습니다")));
+
+        // 20개씩: 19개를 더 담으면 21개라 2쪽에는 가장 먼저 담은 1개만 남는다
+        for (int i = 1; i <= 19; i++) {
+            jdbcTemplate.update("INSERT INTO activity (activity_id, lesson_id, activity_type, title, body, body_format, estimated_minutes, pass_rate, sort_order)"
+                    + " VALUES (?, 9601, 'CONCEPT', ?, '본문', 'MARKDOWN', 10, NULL, ?)", 9602 + i, "추가 개념 " + i, 2 + i);
+            jdbcTemplate.update("INSERT INTO concept_bookmark (member_id, activity_id, created_at) VALUES (?, ?, NOW() - INTERVAL 2 DAY - INTERVAL ? MINUTE)",
+                    memberId, 9602 + i, i);
+        }
+        mockMvc.perform(get("/mypage").param("tab", "bookmarks").param("page", "2").with(as(EMAIL)))
+                .andExpect(content().string(allOf(containsString("추가 개념 19"), not(containsString("추가 개념 18")),
+                        not(containsString("먼저 담은 개념")), containsString("2 / 2"), containsString("tab=bookmarks&amp;page=1"))));
+    }
+
     private RequestPostProcessor as(String email) {
         return user(memberLoginService.loadUserByUsername(email));
     }
