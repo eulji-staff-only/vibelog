@@ -2,15 +2,19 @@ package com.vibelog.domain.course.model.service;
 
 import com.vibelog.domain.course.model.dao.CourseCategoryRepository;
 import com.vibelog.domain.course.model.dao.CourseRepository;
+import com.vibelog.domain.course.model.dao.DiagnosisResultRepository;
 import com.vibelog.domain.course.model.dao.TrackRepository;
 import com.vibelog.domain.course.model.entity.Course;
 import com.vibelog.domain.course.model.entity.CourseCategory;
+import com.vibelog.domain.course.model.entity.DiagnosisStatus;
 import com.vibelog.domain.course.model.entity.Track;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,6 +34,7 @@ public class CourseReader {
     private final CourseRepository courseRepository;
     private final TrackRepository trackRepository;
     private final CourseCategoryRepository courseCategoryRepository;
+    private final DiagnosisResultRepository diagnosisResultRepository;
 
     /* 코스 ID → 코스 이름. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 수강 코스(auth #119)가 쓴다 */
     public Map<Long, String> getCourseTitles(Collection<Long> courseIds) {
@@ -66,5 +71,20 @@ public class CourseReader {
     public Map<Long, String> getCategoryNames(Collection<Long> categoryIds) {
         return courseCategoryRepository.findAllById(categoryIds).stream()
                 .collect(Collectors.toMap(CourseCategory::getCourseCategoryId, CourseCategory::getName));
+    }
+
+    /*
+     * 기간 내 진단 결과 수를 상태별로 센다 (diagnosis_result.created_at 기준). 키는 COMPLETED·SKIPPED 둘 다 항상 있고 없으면 0.
+     * from·to 가 null 이면 그 쪽 제한 없음. 운영자 확장 대시보드(admin #194, FR-ADM-003)가 쓴다
+     */
+    public Map<String, Integer> countDiagnosisResultsByStatus(LocalDateTime from, LocalDateTime to) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (DiagnosisStatus status : DiagnosisStatus.values()) {
+            counts.put(status.name(), 0);
+        }
+        for (Object[] row : diagnosisResultRepository.countByStatusBetween(from, to)) {
+            counts.put(((DiagnosisStatus) row[0]).name(), ((Long) row[1]).intValue());
+        }
+        return counts;
     }
 }

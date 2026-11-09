@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -94,5 +95,10 @@ public class PortfolioReader {
     @Transactional
     public List<Long> lockLivePortfolioIdsOf(Long memberId) {
         return portfolioRepository.findLiveByMemberIdForUpdate(memberId).stream().map(Portfolio::getPortfolioId).toList();
+    }
+
+    /* 기간 내 제출된 포트폴리오 수 (삭제 표시 제외, portfolio.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음. admin 확장 대시보드(#194, FR-ADM-003) */
+    public long countSubmitted(LocalDateTime from, LocalDateTime to) {
+        return portfolioRepository.countSubmittedBetween(from, to);
     }
 }

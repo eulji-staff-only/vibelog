@@ -1,5 +1,6 @@
 package com.vibelog.domain.message.model.service;
 
+import com.vibelog.domain.message.model.dao.MessageRepository;
 import com.vibelog.domain.message.model.dao.NoticeRepository;
 import com.vibelog.domain.message.model.dao.ReportRepository;
 import com.vibelog.domain.message.model.dto.NoticeSummary;
@@ -39,6 +40,7 @@ public class MessageReader {
 
     private static final Predicate<List<Report>> HIDDEN_RULE = reports -> hasHidden(reports) || pendingCount(reports) >= AUTO_HIDE_COUNT;
 
+    private final MessageRepository messageRepository;
     private final NoticeRepository noticeRepository;
     private final ReportRepository reportRepository;
 
@@ -102,5 +104,15 @@ public class MessageReader {
 
     private static long pendingCount(List<Report> reports) {
         return reports.stream().filter(report -> report.getStatus() == ReportStatus.PENDING).count();
+    }
+
+    /* 기간 내 쪽지 수 (message.created_at 기준, 보낸 사람·받은 사람이 둘 다 지운 쪽지 제외). from·to 가 null 이면 그 쪽 제한 없음. admin 확장 대시보드(#194, FR-ADM-003) */
+    public long countMessages(LocalDateTime from, LocalDateTime to) {
+        return messageRepository.countSentBetween(from, to);
+    }
+
+    /* 기간 내 접수된 신고 수 (report.created_at 기준, 처리 상태 무관). from·to 가 null 이면 그 쪽 제한 없음. admin 확장 대시보드(#194, FR-ADM-003) */
+    public long countReports(LocalDateTime from, LocalDateTime to) {
+        return reportRepository.countCreatedBetween(from, to);
     }
 }

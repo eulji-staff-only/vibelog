@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Lock;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -46,4 +47,9 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Portfolio p where p.memberId = :memberId and p.deletedAt is null")
     List<Portfolio> findLiveByMemberIdForUpdate(@Param("memberId") Long memberId);
+
+    /* 기간 내 제출(생성)된 포트폴리오 수, 삭제 표시 제외 (created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (admin 확장 대시보드, FR-ADM-003) */
+    @Query("select count(p) from Portfolio p where p.deletedAt is null and (:from is null or p.createdAt >= :from)"
+            + " and (:to is null or p.createdAt <= :to)")
+    long countSubmittedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

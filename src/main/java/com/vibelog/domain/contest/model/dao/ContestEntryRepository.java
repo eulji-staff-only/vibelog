@@ -26,4 +26,9 @@ public interface ContestEntryRepository extends JpaRepository<ContestEntry, Long
 
     /* 투표 목록: 취소되지 않은 출품, 출품순 */
     List<ContestEntry> findByContestIdAndCanceledAtIsNullOrderByContestEntryIdAsc(Long contestId);
+
+    /* 기간 내 출품 수, 취소 제외 (created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (admin 확장 대시보드, FR-ADM-003) */
+    @Query("select count(e) from ContestEntry e where e.canceledAt is null and (:from is null or e.createdAt >= :from)"
+            + " and (:to is null or e.createdAt <= :to)")
+    long countCreatedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

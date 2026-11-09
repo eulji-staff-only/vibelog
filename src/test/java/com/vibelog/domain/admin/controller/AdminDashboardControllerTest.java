@@ -84,6 +84,32 @@ class AdminDashboardControllerTest {
                 .andExpect(content().string(containsString("시작일이 종료일보다 늦습니다")));
     }
 
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void 진단_비율과_활동_건수를_기간에_맞춰_보여준다() throws Exception {
+        seedActivityData();
+
+        mockMvc.perform(get("/admin").param("from", "2020-05-01").param("to", "2020-05-31"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("진단 완료 3건 (75%) · 건너뜀 1건 (25%)"),
+                        containsString("포트폴리오 제출"),
+                        containsString("게시글"),
+                        containsString("동료 리뷰"),
+                        containsString("쪽지"),
+                        containsString("신고"),
+                        containsString("콘테스트 참여"),
+                        containsString("2건"))));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void 진단_결과가_없는_기간은_비율이_0퍼센트로_나온다() throws Exception {
+        mockMvc.perform(get("/admin").param("from", "2019-01-01").param("to", "2019-01-31"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("진단 완료 0건 (0%) · 건너뜀 0건 (0%)")));
+    }
+
     private void seedData() {
         memberOf(9401, "dash-a1@vibelog.test", "대시A1", "2026-01-05 00:00:00");
         memberOf(9402, "dash-a2@vibelog.test", "대시A2", "2026-01-20 00:00:00");
@@ -116,6 +142,21 @@ class AdminDashboardControllerTest {
         jdbcTemplate.update("INSERT INTO enrollment (member_id, course_id, started_at, completed_at) VALUES "
                 + "(9407, 9403, '2026-01-02 10:00:00', '2026-01-05 10:00:00'), "
                 + "(9408, 9403, '2026-01-28 10:00:00', '2026-01-30 10:00:00')");
+    }
+
+    // 2020-05: 진단 완료 3·건너뜀 1, 게시글 2(+삭제 표시 1은 빠진다)
+    private void seedActivityData() {
+        memberOf(9411, "dash-b1@vibelog.test", "활동1", "2020-01-01 00:00:00");
+        memberOf(9412, "dash-b2@vibelog.test", "활동2", "2020-01-01 00:00:00");
+        memberOf(9413, "dash-b3@vibelog.test", "활동3", "2020-01-01 00:00:00");
+        memberOf(9414, "dash-b4@vibelog.test", "활동4", "2020-01-01 00:00:00");
+        jdbcTemplate.update("INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9411, '활동트랙', '대상', '설명', 9411)");
+        jdbcTemplate.update("INSERT INTO diagnosis_result (member_id, recommended_track_id, status, created_at) VALUES "
+                + "(9411, 9411, 'COMPLETED', '2020-05-02 10:00:00'), (9412, 9411, 'COMPLETED', '2020-05-03 10:00:00'), "
+                + "(9413, 9411, 'COMPLETED', '2020-05-04 10:00:00'), (9414, NULL, 'SKIPPED', '2020-05-05 10:00:00')");
+        jdbcTemplate.update("INSERT INTO post (post_id, member_id, category, title, body, created_at, deleted_at) VALUES "
+                + "(9411, 9411, 'FREE', '글1', '본문', '2020-05-02 10:00:00', NULL), (9412, 9412, 'FREE', '글2', '본문', '2020-05-03 10:00:00', NULL), "
+                + "(9413, 9411, 'FREE', '삭제글', '본문', '2020-05-04 10:00:00', '2020-05-05 10:00:00')");
     }
 
     private void memberOf(long memberId, String email, String nickname, String createdAt) {
