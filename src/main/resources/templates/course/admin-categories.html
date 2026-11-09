@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>카테고리 관리 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/course-admin.css}">
+    <script th:src="@{/js/ui.js}" defer></script>
+    <script th:src="@{/js/course-admin.js}" defer></script>
+</head>
+<body>
+<!--
+  A-03 카테고리 관리 (API-ADM-06~10, FR-CRS-008, #95). 만들기·수정은 모달 폼, 줄을 드래그하면 순서가 바로 저장된다(API-ADM-10, JSON).
+  이름 중복과 입력 오류는 모달을 연 채로 칸 메시지(④), 코스가 있는 카테고리 삭제는 막고 위에 안내(③).
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('categories')}"></div>
+    <main class="vl-admin__content">
+        <div class="ca-head">
+            <h1 class="ca-title">카테고리</h1>
+            <button type="button" class="vl-ui-btn is-navy" data-ui-modal-open="ca-category-modal" data-ca-create>카테고리 만들기</button>
+        </div>
+        <div class="vl-ui-notice is-info ca-toast" role="status" th:if="${toast}"><p th:text="${toast}">안내</p></div>
+        <p class="ca-muted" th:unless="${categories.empty}">줄을 끌어 놓으면 순서가 바로 저장됩니다. 키보드로는 줄의 ↑·↓ 버튼을 쓰세요.</p>
+
+        <ol class="ca-order" data-ca-order th:unless="${categories.empty}">
+            <li class="ca-order__row" draggable="true" th:each="category : ${categories}"
+                th:attr="data-id=${category.courseCategoryId()}">
+                <span class="ca-order__handle" aria-hidden="true">⋮⋮</span>
+                <span class="ca-strong ca-order__name" th:text="${category.name()}">웹 기초</span>
+                <span class="ca-muted" th:text="'코스 ' + ${category.courseCount()} + '개'">코스 0개</span>
+                <span class="ca-actions">
+                    <button type="button" class="vl-ui-btn is-text is-s" data-ca-move="up"
+                            th:attr="aria-label=${category.name()} + ' 위로'">↑</button>
+                    <button type="button" class="vl-ui-btn is-text is-s" data-ca-move="down"
+                            th:attr="aria-label=${category.name()} + ' 아래로'">↓</button>
+                    <a class="vl-ui-btn is-outline is-s" th:href="@{/admin/categories(courseCategoryId=${category.courseCategoryId()})}">수정</a>
+                    <form th:action="@{/admin/categories/{id}/delete(id=${category.courseCategoryId()})}" method="post"
+                          th:attr="data-ca-delete=${category.name()}">
+                        <button type="submit" class="vl-ui-btn is-text is-s ca-danger">삭제</button>
+                    </form>
+                </span>
+            </li>
+        </ol>
+        <th:block th:if="${categories.empty}">
+            <div th:replace="~{common/ui :: notice('empty', '', '아직 카테고리가 없습니다. 카테고리 만들기로 시작하세요.')}"></div>
+        </th:block>
+    </main>
+</div>
+
+<!-- 카테고리 만들기·수정 모달. 오류가 있으면 열린 채로 그린다 -->
+<div class="vl-ui-modal" id="ca-category-modal" data-ui-modal="ca-category-modal" role="dialog" aria-modal="true"
+     aria-labelledby="ca-category-modal-title" th:hidden="${!modalOpen}">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="ca-category-modal-title" tabindex="-1"
+            th:text="${editingId == null} ? '카테고리 만들기' : '카테고리 수정'">카테고리 만들기</h2>
+        <form class="ca-form" method="post" novalidate th:object="${categoryForm}" data-create-action="/admin/categories" data-create-title="카테고리 만들기"
+              th:action="${editingId == null} ? @{/admin/categories} : @{/admin/categories/{id}/edit(id=${editingId})}">
+            <div class="ca-field">
+                <label for="name">이름</label>
+                <input class="ca-input" id="name" type="text" maxlength="30" th:field="*{name}"
+                       th:attrappend="aria-invalid=${#fields.hasErrors('name')} ? 'true'" aria-describedby="name-error">
+                <p class="ca-error" id="name-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">이름 오류</p>
+            </div>
+            <p class="ca-muted" th:if="${editingId == null}">새 카테고리는 맨 뒤 순서로 만들어집니다.</p>
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy" th:text="${editingId == null} ? '만들기' : '저장'">만들기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div th:replace="~{common/ui :: confirmModal('ca-delete-modal', '삭제할까요?', '삭제하면 되돌릴 수 없습니다.', '삭제', '취소')}"></div>
+<div th:replace="~{common/ui :: toastContainer}"></div>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>트랙 관리 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/course-admin.css}">
+    <script th:src="@{/js/ui.js}" defer></script>
+    <script th:src="@{/js/course-admin.js}" defer></script>
+</head>
+<body>
+<!--
+  A-02 트랙 관리 (API-ADM-02~05, FR-CRS-007, #95). 만들기·수정은 모달 폼, 목록의 "수정"은 ?trackId= 로 모달을 채워 연다.
+  이름·순서 중복과 입력 오류는 모달을 연 채로 칸 메시지(④), 코스가 있는 트랙 삭제는 막고 위에 안내(③).
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('tracks')}"></div>
+    <main class="vl-admin__content">
+        <div class="ca-head">
+            <h1 class="ca-title">트랙</h1>
+            <button type="button" class="vl-ui-btn is-navy" data-ui-modal-open="ca-track-modal" data-ca-create>트랙 만들기</button>
+        </div>
+        <div class="vl-ui-notice is-info ca-toast" role="status" th:if="${toast}"><p th:text="${toast}">안내</p></div>
+
+        <table class="ca-table" th:unless="${tracks.empty}">
+            <thead>
+            <tr><th>순서</th><th>이름</th><th>대상</th><th>설명</th><th>코스 수</th><th><span class="ca-sr">관리</span></th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="track : ${tracks}">
+                <td th:text="${track.sortOrder()}">1</td>
+                <td class="ca-strong" th:text="${track.name()}">Starter</td>
+                <td th:text="${track.target()}">대상</td>
+                <td class="ca-desc" th:text="${track.description()}">설명</td>
+                <td th:text="${track.courseCount()}">0</td>
+                <td class="ca-actions">
+                    <a class="vl-ui-btn is-outline is-s" th:href="@{/admin/tracks(trackId=${track.trackId()})}">수정</a>
+                    <form th:action="@{/admin/tracks/{id}/delete(id=${track.trackId()})}" method="post"
+                          th:attr="data-ca-delete=${track.name()}">
+                        <button type="submit" class="vl-ui-btn is-text is-s ca-danger">삭제</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <th:block th:if="${tracks.empty}">
+            <div th:replace="~{common/ui :: notice('empty', '', '아직 트랙이 없습니다. 트랙 만들기로 시작하세요.')}"></div>
+        </th:block>
+    </main>
+</div>
+
+<!-- 트랙 만들기·수정 모달. 오류가 있으면 열린 채로 그린다 -->
+<div class="vl-ui-modal" id="ca-track-modal" data-ui-modal="ca-track-modal" role="dialog" aria-modal="true"
+     aria-labelledby="ca-track-modal-title" th:hidden="${!modalOpen}">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="ca-track-modal-title" tabindex="-1"
+            th:text="${editingId == null} ? '트랙 만들기' : '트랙 수정'">트랙 만들기</h2>
+        <form class="ca-form" method="post" novalidate th:object="${trackForm}" data-create-action="/admin/tracks" data-create-title="트랙 만들기"
+              th:action="${editingId == null} ? @{/admin/tracks} : @{/admin/tracks/{id}/edit(id=${editingId})}">
+            <div class="ca-field">
+                <label for="name">이름</label>
+                <input class="ca-input" id="name" type="text" maxlength="30" th:field="*{name}"
+                       th:attrappend="aria-invalid=${#fields.hasErrors('name')} ? 'true'" aria-describedby="name-error">
+                <p class="ca-error" id="name-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">이름 오류</p>
+            </div>
+            <div class="ca-field">
+                <label for="target">대상 학습자</label>
+                <input class="ca-input" id="target" type="text" maxlength="200" th:field="*{target}"
+                       th:attrappend="aria-invalid=${#fields.hasErrors('target')} ? 'true'" aria-describedby="target-error">
+                <p class="ca-error" id="target-error" th:if="${#fields.hasErrors('target')}" th:errors="*{target}">대상 오류</p>
+            </div>
+            <div class="ca-field">
+                <label for="description">설명</label>
+                <textarea class="ca-input" id="description" rows="4" th:field="*{description}"
+                          th:attrappend="aria-invalid=${#fields.hasErrors('description')} ? 'true'" aria-describedby="description-error"></textarea>
+                <p class="ca-error" id="description-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">설명 오류</p>
+            </div>
+            <div class="ca-field">
+                <label for="sortOrder">순서 <span class="ca-hint">(진단 동점일 때 앞 순서 트랙을 추천합니다)</span></label>
+                <input class="ca-input is-short" id="sortOrder" type="number" min="1" th:field="*{sortOrder}"
+                       th:attrappend="aria-invalid=${#fields.hasErrors('sortOrder')} ? 'true'" aria-describedby="sortOrder-error">
+                <p class="ca-error" id="sortOrder-error" th:if="${#fields.hasErrors('sortOrder')}" th:errors="*{sortOrder}">순서 오류</p>
+            </div>
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy" th:text="${editingId == null} ? '만들기' : '저장'">만들기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div th:replace="~{common/ui :: confirmModal('ca-delete-modal', '삭제할까요?', '삭제하면 되돌릴 수 없습니다.', '삭제', '취소')}"></div>
+</body>
+</html>
