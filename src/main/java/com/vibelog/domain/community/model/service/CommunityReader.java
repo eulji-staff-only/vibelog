@@ -4,6 +4,7 @@ import com.vibelog.domain.auth.model.service.MemberReader;
 import com.vibelog.domain.community.model.dao.CommentRepository;
 import com.vibelog.domain.community.model.dao.FavoriteRepository;
 import com.vibelog.domain.community.model.dao.FollowRepository;
+import com.vibelog.domain.community.model.dao.PeerReviewRepository;
 import com.vibelog.domain.community.model.dao.PostCommentCount;
 import com.vibelog.domain.community.model.dao.PostRepository;
 import com.vibelog.domain.community.model.dto.ReviewView;
@@ -13,6 +14,7 @@ import com.vibelog.domain.community.model.dto.MemberSummary;
 import com.vibelog.domain.community.model.dto.RankingItem;
 import com.vibelog.domain.community.model.entity.Comment;
 import com.vibelog.domain.community.model.entity.Follow;
+import com.vibelog.domain.community.model.entity.PeerReview;
 import com.vibelog.domain.community.model.entity.Post;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -47,6 +49,7 @@ public class CommunityReader {
     private final MemberReader memberReader;
     private final RecommendService recommendService;
     private final PeerReviewService peerReviewService;
+    private final PeerReviewRepository peerReviewRepository;
 
     public Page<MemberPostItem> getPostsOf(Long memberId, int page) {
         return toItems(postRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
@@ -117,6 +120,12 @@ public class CommunityReader {
     /* U-20 리뷰 요청·마감 버튼: 열린 요청이 있으면 그 ID */
     public Optional<Long> findOpenReviewRequestId(Long portfolioId) {
         return peerReviewService.findOpenReviewRequestId(portfolioId);
+    }
+
+    /* U-20 내 리뷰 수정 링크(/reviews?reviewRequestId=): 리뷰 ID → 그 리뷰의 요청 ID. 빈 묶음이면 빈 결과 (portfolio #281) */
+    public Map<Long, Long> findReviewRequestIdsOfReviews(Collection<Long> peerReviewIds) {
+        return peerReviewIds.isEmpty() ? Map.of() : peerReviewRepository.findAllById(peerReviewIds).stream()
+                .collect(Collectors.toMap(PeerReview::getPeerReviewId, PeerReview::getReviewRequestId));
     }
 
     /* U-19 카드: 열린 리뷰 요청이 있는 작품 */
