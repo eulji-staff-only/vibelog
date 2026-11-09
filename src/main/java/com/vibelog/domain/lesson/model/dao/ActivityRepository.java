@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +34,9 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
     /* 운영자 수업 편집 화면(API-ADM-19, #100): 사용 중지된 활동도 함께 보여준다 */
     List<Activity> findByLessonIdOrderBySortOrderAsc(Long lessonId);
+
+    /* 여러 수업의 사용 중인 활동, 순서대로 (틀린 문제의 개념 링크, quiz #190) */
+    List<Activity> findByLessonIdInAndIsActiveTrueOrderBySortOrderAsc(Collection<Long> lessonIds);
 
     Optional<Activity> findTopByLessonIdAndIsActiveTrueOrderBySortOrderDesc(Long lessonId);
 

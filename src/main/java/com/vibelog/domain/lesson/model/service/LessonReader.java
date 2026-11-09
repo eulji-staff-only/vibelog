@@ -2,6 +2,7 @@ package com.vibelog.domain.lesson.model.service;
 
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
+import com.vibelog.domain.lesson.model.dao.ActivityTagRepository;
 import com.vibelog.domain.lesson.model.dao.ConceptTagRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
@@ -11,7 +12,9 @@ import com.vibelog.domain.lesson.model.dto.BookmarkedConceptSummary;
 import com.vibelog.domain.lesson.model.dto.CourseEnrollmentStat;
 import com.vibelog.domain.lesson.model.dto.CourseLessonRow;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
+import com.vibelog.domain.lesson.model.dto.QuizActivityPlace;
 import com.vibelog.domain.lesson.model.entity.Activity;
+import com.vibelog.domain.lesson.model.entity.ActivityTag;
 import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
@@ -24,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +49,7 @@ public class LessonReader {
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final ConceptTagRepository conceptTagRepository;
+    private final ActivityTagRepository activityTagRepository;
     private final CourseReader courseReader;
 
     /* 마이페이지 북마크 탭 한 쪽 개수 (auth API-USR-15 P2) */
@@ -117,6 +122,38 @@ public class LessonReader {
     public Map<Long, String> getConceptTagNames(Collection<Long> conceptTagIds) {
         return conceptTagRepository.findAllById(conceptTagIds).stream()
                 .collect(Collectors.toMap(ConceptTag::getConceptTagId, ConceptTag::getName));
+    }
+
+    /* 퀴즈 활동 ID → 속한 코스·수업. 없는 활동은 결과에 빠진다. 틀린 문제 모아보기(API-LSN-10, quiz #190)의 필터·링크가 쓴다 */
+    public Map<Long, QuizActivityPlace> getQuizActivityPlaces(Collection<Long> quizActivityIds) {
+        List<Activity> activities = activityRepository.findAllById(quizActivityIds);
+        Map<Long, Long> courseIdByLesson = lessonRepository.findAllById(activities.stream().map(Activity::getLessonId).distinct().toList())
+                .stream().collect(Collectors.toMap(Lesson::getLessonId, Lesson::getCourseId));
+        return activities.stream()
+                .filter(activity -> courseIdByLesson.containsKey(activity.getLessonId()))
+                .collect(Collectors.toMap(Activity::getActivityId,
+                        activity -> new QuizActivityPlace(courseIdByLesson.get(activity.getLessonId()), activity.getLessonId())));
+    }
+
+    /*
+     * 수업마다 개념 태그 ID → 그 태그가 붙은 사용 중인 개념 활동 ID (같은 태그가 여러 개념에 붙어 있으면 순서가 가장 앞인 것).
+     * 사용 중지한 개념은 수업 화면에 보이지 않아 고르지 않는다. 틀린 문제의 "개념으로 가기"(API-LSN-10, quiz #190)가 쓴다
+     */
+    public Map<Long, Map<Long, Long>> getConceptActivityIdsByTag(Collection<Long> lessonIds) {
+        List<Activity> concepts = activityRepository.findByLessonIdInAndIsActiveTrueOrderBySortOrderAsc(lessonIds).stream()
+                .filter(Activity::isConcept)
+                .toList();
+        Map<Long, List<ActivityTag>> tagsByActivity = activityTagRepository.findByActivityIdIn(
+                        concepts.stream().map(Activity::getActivityId).toList()).stream()
+                .collect(Collectors.groupingBy(ActivityTag::getActivityId));
+        Map<Long, Map<Long, Long>> result = new HashMap<>();
+        for (Activity concept : concepts) {   // 순서대로 돌며 먼저 나온 개념을 남긴다
+            Map<Long, Long> byTag = result.computeIfAbsent(concept.getLessonId(), lessonId -> new HashMap<>());
+            for (ActivityTag tag : tagsByActivity.getOrDefault(concept.getActivityId(), List.of())) {
+                byTag.putIfAbsent(tag.getConceptTagId(), concept.getActivityId());
+            }
+        }
+        return result;
     }
 
     /*

@@ -95,6 +95,9 @@
                             <a class="ls-btn ls-btn-navy"
                                th:href="@{'/courses/' + ${page.courseId} + '/lessons/' + ${page.lessonId} + '/quizzes/' + ${card.activityId}}"
                                th:text="${card.isCompleted()} ? '퀴즈 다시 풀기' : '퀴즈 풀기'">퀴즈 풀기</a>
+                            <!-- 틀린 문제 모아보기 U-28 (FR-LSN-008, quiz #190): 이 수업으로 걸러 연다 -->
+                            <a class="ls-btn ls-btn-outline"
+                               th:href="@{/my/wrong-answers(course=${page.courseId},lesson=${page.lessonId})}">틀린 문제 모아보기</a>
                         </div>
                     </th:block>
 

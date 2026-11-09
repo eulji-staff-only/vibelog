@@ -214,3 +214,25 @@
     .qz-actions .vl-ui-btn, .qz-result__actions .vl-ui-btn { width: 100%; }
     .qz-actions .vl-ui-btn-reason { text-align: center; }
 }
+
+/* ---- U-28 틀린 문제 모아보기 (#190) ---- */
+.wa-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin-bottom: var(--space-4); }
+.wa-filter__field { display: flex; flex-direction: column; gap: var(--space-1); font-size: 13px; font-weight: 700; }
+.wa-filter select {
+    min-width: 180px; min-height: 40px; padding: 0 var(--space-3);
+    border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface-raised); font: inherit;
+}
+.wa-count { margin: 0 0 var(--space-3); }
+.wa-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.wa-item { padding: var(--space-4); border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface-raised); }
+.wa-where { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-2); font-size: 13px; color: var(--ink-muted); }
+.wa-q { margin: 0 0 var(--space-3); font-size: 17px; font-weight: 800; }
+.wa-answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-2); margin: 0 0 var(--space-3); }
+.wa-answer { padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--surface); }
+.wa-answer dt { font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.wa-answer dd { margin: 0; }
+.wa-answer.is-mine dd { color: var(--danger); }
+.wa-answer.is-correct dd { font-weight: 700; }
+.wa-explanation { margin: 0 0 var(--space-3); font-size: 14px; }
+.wa-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin: 0; }
+.wa-pages { display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin: var(--space-5) 0; }

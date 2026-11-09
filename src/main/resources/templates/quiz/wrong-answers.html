@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>틀린 문제 모아보기 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/quiz.css}">
+    <script th:src="@{/js/ui.js}" defer></script>
+</head>
+<body>
+<!--
+  U-28 틀린 문제 모아보기 (API-LSN-10, FR-LSN-008, #190). QuizWrongAnswerController 가 담아 주는 wrong(WrongAnswerView)으로 그린다.
+  - 내가 확인한 답 중 틀린 문항, 문항마다 가장 최근 답 하나, 최근에 틀린 순 20개씩. 다시 맞혀도 남는다.
+  - 코스·수업 필터는 GET 폼이라 주소(?course=&lesson=)에 남는다. 문항을 누르면 그 개념(U-13)으로 간다.
+-->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="qz-band">
+    <span class="qz-eyebrow">복습</span>
+    <h1 class="qz-title">틀린 문제 모아보기</h1>
+    <p class="qz-lead">퀴즈에서 틀렸던 문항을 모아 정답과 해설을 다시 봅니다. 나중에 맞혀도 여기 남아요.</p>
+</section>
+
+<main class="qz-main">
+    <div class="vl-ui-panel qz-panel">
+        <form class="wa-filter" th:action="@{/my/wrong-answers}" method="get">
+            <label class="wa-filter__field">
+                <span>코스</span>
+                <select name="course">
+                    <option value="">전체 코스</option>
+                    <option th:each="option : ${wrong.courseOptions()}" th:value="${option.id()}" th:text="${option.title()}"
+                            th:selected="${option.id() == wrong.selectedCourseId()}">코스</option>
+                </select>
+            </label>
+            <label class="wa-filter__field">
+                <span>수업</span>
+                <select name="lesson">
+                    <option value="">전체 수업</option>
+                    <option th:each="option : ${wrong.lessonOptions()}" th:value="${option.id()}" th:text="${option.title()}"
+                            th:selected="${option.id() == wrong.selectedLessonId()}">수업</option>
+                </select>
+            </label>
+            <button type="submit" class="vl-ui-btn is-outline is-s">거르기</button>
+            <a class="qz-link" th:href="@{/my/wrong-answers}" th:if="${wrong.isFiltered()}">조건 초기화</a>
+        </form>
+
+        <p class="qz-muted wa-count" th:unless="${wrong.isEmpty()}">틀린 문항 <strong th:text="${wrong.totalCount()}">0</strong>개</p>
+
+        <th:block th:if="${wrong.isEmpty()}">
+            <div th:replace="~{common/ui :: notice('empty', '', '틀린 문제가 없습니다. 퀴즈를 풀고 다시 확인해 보세요.')}"></div>
+            <a class="vl-ui-btn is-outline" th:href="@{/my/learning}">내 학습으로</a>
+        </th:block>
+
+        <ol class="wa-list" th:unless="${wrong.isEmpty()}">
+            <li class="wa-item" th:each="item : ${wrong.items()}">
+                <p class="wa-where">
+                    <span th:text="${item.courseTitle()}">코스</span> · <span th:text="${item.lessonTitle()}">수업</span>
+                    <span class="qz-type" th:text="${item.displayTypeLabel()}">개념 문제</span>
+                </p>
+                <h2 class="wa-q" th:text="${item.content()}">문항</h2>
+                <pre class="qz-code" th:if="${item.codeSnippet() != null}"><code th:text="${item.codeSnippet()}">코드</code></pre>
+                <dl class="wa-answers">
+                    <div class="wa-answer is-mine"><dt>내 답</dt><dd th:text="${item.myAnswer()}">내 답</dd></div>
+                    <div class="wa-answer is-correct"><dt>정답</dt><dd th:text="${item.correctAnswer()}">정답</dd></div>
+                </dl>
+                <p class="wa-explanation" th:text="${item.explanation()}">해설</p>
+                <p class="wa-foot">
+                    <span class="qz-tag" th:if="${item.conceptTagName() != null}" th:text="${item.conceptTagName()}">개념 태그</span>
+                    <a class="qz-link" th:href="${item.conceptUrl()}">개념 다시 보기 →</a>
+                </p>
+            </li>
+        </ol>
+
+        <nav class="wa-pages" aria-label="쪽" th:if="${wrong.totalPages() > 1}">
+            <a class="vl-ui-btn is-outline is-s" th:if="${wrong.page() > 1}"
+               th:href="@{/my/wrong-answers(course=${wrong.selectedCourseId()},lesson=${wrong.selectedLessonId()},page=${wrong.page() - 1})}">이전</a>
+            <span class="qz-muted" th:text="${wrong.page()} + ' / ' + ${wrong.totalPages()}">1 / 1</span>
+            <a class="vl-ui-btn is-outline is-s" th:if="${wrong.page() < wrong.totalPages()}"
+               th:href="@{/my/wrong-answers(course=${wrong.selectedCourseId()},lesson=${wrong.selectedLessonId()},page=${wrong.page() + 1})}">다음</a>
+        </nav>
+
+        <a class="qz-link" th:href="@{/my/learning}">← 내 학습</a>
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>
