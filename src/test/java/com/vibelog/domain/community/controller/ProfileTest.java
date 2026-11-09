@@ -95,6 +95,21 @@ class ProfileTest {
     }
 
     @Test
+    void 팔로우_탭은_탈퇴한_회원을_뺀_뒤_쪽을_나눈다() throws Exception {
+        // 먼저 팔로우한 활동 회원 1명 뒤에, 더 최근에 팔로우했다가 탈퇴한 회원 20명 (한 쪽 20명)
+        jdbcTemplate.update("INSERT INTO follow (follower_member_id, following_member_id, created_at) VALUES (?, ?, ?)",
+                meId, writerId, LocalDateTime.now().minusDays(1));
+        for (int i = 0; i < 20; i++) {
+            jdbcTemplate.update("INSERT INTO member (email, password_hash, nickname, status) VALUES (NULL, NULL, '탈퇴한 사용자', 'WITHDRAWN')");
+            long gone = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+            jdbcTemplate.update("INSERT INTO follow (follower_member_id, following_member_id) VALUES (?, ?)", meId, gone);
+        }
+
+        mockMvc.perform(get("/mypage").param("tab", "following").with(as(ME)))
+                .andExpect(content().string(allOf(containsString("프로필주인"), not(containsString("1 / 2")))));
+    }
+
+    @Test
     void 나와_탈퇴한_회원은_팔로우할_수_없다() throws Exception {
         mockMvc.perform(post("/api/users/{id}/follow", meId).with(as(ME)).with(csrf()))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("SELF_FOLLOW"));
