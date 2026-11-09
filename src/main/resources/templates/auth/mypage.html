@@ -9,7 +9,7 @@
     <script th:src="@{/js/auth.js}" defer></script>
 </head>
 <body class="au-page">
-<!-- U-24 마이페이지 (/mypage?tab=info|posts|comments|favorites|badges, API-USR-15~17, #116). Controller 가 tab 에 맞는 값만 담는다.
+<!-- U-24 마이페이지 (/mypage?tab=info|posts|comments|bookmarks|favorites|badges, API-USR-15~17, #116). Controller 가 tab 에 맞는 값만 담는다.
      작성한 글·댓글은 20개씩 page 로 넘긴다. 비밀번호 변경은 이메일 가입 회원만, 탈퇴는 M-06 에서 확인한 뒤 보낸다. -->
 <div th:replace="~{common/layout :: header}"></div>
 
@@ -26,6 +26,7 @@
             <a href="/mypage?tab=info" th:attr="aria-current=${tab == 'info'} ? 'page'">내 정보</a>
             <a href="/mypage?tab=posts" th:attr="aria-current=${tab == 'posts'} ? 'page'">작성한 글</a>
             <a href="/mypage?tab=comments" th:attr="aria-current=${tab == 'comments'} ? 'page'">작성한 댓글</a>
+            <a href="/mypage?tab=bookmarks" th:attr="aria-current=${tab == 'bookmarks'} ? 'page'">북마크</a>
             <a href="/mypage?tab=favorites" th:attr="aria-current=${tab == 'favorites'} ? 'page'">즐겨찾기</a>
             <a href="/mypage?tab=following" th:attr="aria-current=${tab == 'following'} ? 'page'">팔로우</a>
             <a href="/mypage?tab=badges" th:attr="aria-current=${tab == 'badges'} ? 'page'">배지</a>
@@ -110,6 +111,27 @@
         </section>
 
         <!-- 즐겨찾기한 글 (P2, FR-CMT-007). 삭제 표시된 글은 Reader 가 뺀다 -->
+        <!-- 북마크한 개념 (P2, FR-LSN-004, #315). 누르면 그 개념의 수업 화면 -->
+        <section class="au-section" th:if="${tab == 'bookmarks'}" aria-label="북마크">
+            <ul class="au-list" th:unless="${bookmarks.empty}">
+                <li th:each="b : ${bookmarks}">
+                    <a th:href="@{/courses/{courseId}/lessons/{lessonId}(courseId=${b.courseId()}, lessonId=${b.lessonId()}, activity=${b.activityId()})}">
+                        <strong th:text="${b.title()}">개념 이름</strong>
+                        <span th:text="|${b.courseTitle()} · ${b.lessonTitle()} · ${#temporals.format(b.bookmarkedAt(), 'yyyy.MM.dd')}|">코스 · 수업 · 2026.11.09</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="au-empty" th:if="${bookmarks.empty}">
+                <p class="au-text">북마크한 개념이 없습니다</p>
+                <a class="au-btn is-outline is-fit" href="/my/learning">내 학습으로 가기</a>
+            </div>
+            <nav class="au-pager" aria-label="페이지" th:if="${bookmarks.totalPages > 1}">
+                <a th:if="${bookmarks.hasPrevious()}" th:href="@{/mypage(tab='bookmarks', page=${bookmarks.number})}">← 이전</a>
+                <span th:text="|${bookmarks.number + 1} / ${bookmarks.totalPages}|">1 / 2</span>
+                <a th:if="${bookmarks.hasNext()}" th:href="@{/mypage(tab='bookmarks', page=${bookmarks.number + 2})}">다음 →</a>
+            </nav>
+        </section>
+
         <section class="au-section" th:if="${tab == 'favorites'}" aria-label="즐겨찾기">
             <ul class="au-list" th:unless="${favorites.empty}">
                 <li th:each="post : ${favorites}">

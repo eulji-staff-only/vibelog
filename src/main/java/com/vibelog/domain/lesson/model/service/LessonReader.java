@@ -6,6 +6,8 @@ import com.vibelog.domain.lesson.model.dao.ConceptTagRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
+import com.vibelog.domain.course.model.service.CourseReader;
+import com.vibelog.domain.lesson.model.dto.BookmarkedConceptSummary;
 import com.vibelog.domain.lesson.model.dto.CourseEnrollmentStat;
 import com.vibelog.domain.lesson.model.dto.CourseLessonRow;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
@@ -15,6 +17,8 @@ import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
 import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +45,30 @@ public class LessonReader {
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final ConceptTagRepository conceptTagRepository;
+    private final CourseReader courseReader;
+
+    /* 마이페이지 북마크 탭 한 쪽 개수 (auth API-USR-15 P2) */
+    static final int BOOKMARK_PAGE_SIZE = 20;
+
+    /*
+     * 회원이 북마크한 개념, 북마크한 시각 최신순 20개씩. page 는 1부터, 0 이하는 1쪽 (lesson 명세 "다른 영역에 주는 읽기 값", #315).
+     * 개념 이름·수업·코스 이름을 붙여 수업 화면 링크(/courses/{courseId}/lessons/{lessonId}?activity={activityId})를 만들 수 있게 한다.
+     */
+    public Page<BookmarkedConceptSummary> findBookmarkedConcepts(Long memberId, int page) {
+        Page<ActivityRepository.BookmarkRow> rows = activityRepository.findBookmarksOf(memberId,
+                PageRequest.of(Math.max(page, 1) - 1, BOOKMARK_PAGE_SIZE));
+        Map<Long, Activity> activities = activityRepository.findAllById(rows.map(ActivityRepository.BookmarkRow::getActivityId).toList())
+                .stream().collect(Collectors.toMap(Activity::getActivityId, a -> a));
+        Map<Long, Lesson> lessons = lessonRepository.findAllById(activities.values().stream().map(Activity::getLessonId).toList())
+                .stream().collect(Collectors.toMap(Lesson::getLessonId, l -> l));
+        Map<Long, String> courseTitles = courseReader.getCourseTitles(lessons.values().stream().map(Lesson::getCourseId).toList());
+        return rows.map(row -> {
+            Activity activity = activities.get(row.getActivityId());
+            Lesson lesson = lessons.get(activity.getLessonId());
+            return new BookmarkedConceptSummary(lesson.getCourseId(), lesson.getLessonId(), activity.getActivityId(), activity.getTitle(),
+                    courseTitles.get(lesson.getCourseId()), lesson.getTitle(), row.getBookmarkedAt());
+        });
+    }
 
     /*
      * 회원의 수강 목록과 진행률. 운영자 회원 상세(API-ADM-38, auth #119)가 쓴다.
