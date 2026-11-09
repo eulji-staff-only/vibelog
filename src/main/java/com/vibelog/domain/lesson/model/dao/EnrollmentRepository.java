@@ -27,9 +27,6 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     /* 수업 공개(API-ADM-33, PL-ENR-005, #118): 새로 공개된 수업의 진도를 기존 수강에 추가할 때 쓴다 */
     List<Enrollment> findByCourseId(Long courseId);
 
-    /* 수업 비공개 영향 확인(API-ADM-32, FR-LSN-014, #118) */
-    long countByCourseIdAndCompletedAtIsNullAndDroppedAtIsNull(Long courseId);
-
     /*
      * 기간 내 수강 시작한 수강 전체 (started_at 기준). from·to 가 null 이면 그 쪽 제한 없음
      * (운영자 대시보드 API-ADM-01, FR-ADM-002, LessonReader.getEnrollmentStatsByCourse)

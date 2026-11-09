@@ -127,10 +127,10 @@ public class LessonAdminService {
                 request.getEstimatedMinutes());
     }
 
-    /* API-ADM-32. 그 수업이 속한 코스를 수강 중이면서 아직 완료·포기 안 한 학습자 수 (경고 모달) */
+    /* API-ADM-32. 이 수업 진도가 있으면서 아직 수강이 끝나지 않은(완료·포기 안 함) 학습자 수 (경고 모달) */
     public int getActiveLearnerCount(Long lessonId) {
-        Lesson lesson = getLesson(lessonId);
-        return (int) enrollmentRepository.countByCourseIdAndCompletedAtIsNullAndDroppedAtIsNull(lesson.getCourseId());
+        getLesson(lessonId);
+        return (int) lessonProgressRepository.countActiveLearnersOf(lessonId);
     }
 
     /*

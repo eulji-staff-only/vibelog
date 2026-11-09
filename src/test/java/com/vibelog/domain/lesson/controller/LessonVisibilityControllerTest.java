@@ -86,13 +86,18 @@ class LessonVisibilityControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void 영향_확인_API가_완료_포기하지_않은_수강_수를_JSON으로_돌려준다() throws Exception {
+    void 영향_확인_API가_이_수업_진도가_있으면서_완료_포기하지_않은_수강_수를_JSON으로_돌려준다() throws Exception {
         long courseId = courseOf();
         long lessonId = lessonOf(courseId, "수업 1", 1, true);
         long activeMemberId = memberOf("active-learner");
         long droppedMemberId = memberOf("dropped-learner");
-        enrollmentOf(activeMemberId, courseId, false, false);
-        enrollmentOf(droppedMemberId, courseId, false, true);
+        long notReachedMemberId = memberOf("not-reached-learner");
+        long activeEnrollmentId = enrollmentOf(activeMemberId, courseId, false, false);
+        long droppedEnrollmentId = enrollmentOf(droppedMemberId, courseId, false, true);
+        enrollmentOf(notReachedMemberId, courseId, false, false);
+        lessonProgressOf(activeEnrollmentId, lessonId);
+        lessonProgressOf(droppedEnrollmentId, lessonId);
+        // notReachedMemberId는 같은 코스를 수강 중이지만 이 수업 진도가 없어 영향 학습자 수에 안 들어가야 한다
 
         mockMvc.perform(get("/api/admin/lessons/{lessonId}/impact", lessonId))
                 .andExpect(status().isOk())
@@ -148,9 +153,15 @@ class LessonVisibilityControllerTest {
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
     }
 
-    private void enrollmentOf(long memberId, long courseId, boolean completed, boolean dropped) {
+    private long enrollmentOf(long memberId, long courseId, boolean completed, boolean dropped) {
         jdbcTemplate.update("INSERT INTO enrollment (member_id, course_id, started_at, completed_at, dropped_at) "
                         + "VALUES (?, ?, NOW(), ?, ?)",
                 memberId, courseId, completed ? java.time.LocalDateTime.now() : null, dropped ? java.time.LocalDateTime.now() : null);
+        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+    }
+
+    private void lessonProgressOf(long enrollmentId, long lessonId) {
+        jdbcTemplate.update("INSERT INTO lesson_progress (enrollment_id, lesson_id, unlocked_at) VALUES (?, ?, NOW())",
+                enrollmentId, lessonId);
     }
 }
