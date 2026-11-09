@@ -29,7 +29,7 @@
 | API-PRT-06 (P2) | 포트폴리오 수정 | POST | `/portfolios/{portfolioId}/edit` | 인증(본인) | (그대로) | (그대로) | P1 실패에 `CONTEST_ENTERED`(④) 추가: 콘테스트에 출품한 작품이면 수정하지 않는다. 출품 여부는 contest 영역 계약으로 묻는다 (아래 메모) | PL-PRT-007, PL-CTS-002 |
 | API-PRT-10 | 같은 코스 작품 보기 | GET | `/courses/{courseId}/portfolios` | 회원(그 코스에 포트폴리오를 낸 사람) | path `courseId`, query `page`(1부터) | U-35 + 그 코스의 공개 포트폴리오 카드(제목, 한 줄 요약, 작성자, 제출일, 상세 링크 → `/portfolios/{portfolioId}`) 최근 제출순 20개씩. 삭제 표시한 것, 영구 정지 회원의 것(`MemberReader.findHiddenMemberIds`, PL-RPT-006)은 뺀다. 작성자 닉네임은 `MemberReader` | `PORTFOLIO_NOT_SUBMITTED`(삭제 표시 없는 내 포트폴리오가 그 코스에 없음) → ③ `/courses/{courseId}/portfolio` + toast, `COURSE_NOT_FOUND` | FR-PRT-009, PL-PRT-011 |
 | API-PRT-11 | 과제 FAQ 저장 (운영자) | POST | `/admin/courses/{courseId}/portfolio/faq` | 운영자 | path `courseId`, form `faqs[i].portfolioFaqId`(새 항목은 비움), `faqs[i].question`, `faqs[i].answer` (보낸 순서 = `sort_order`) | 그 과제의 FAQ를 보낸 목록으로 맞춘다: 있는 ID는 고치고, 새 항목은 추가하고, 목록에 없는 기존 FAQ는 지운다 → `/admin/courses/{courseId}/portfolio?tab=faq` | `COURSE_NOT_FOUND`(`CourseReader`), `INVALID_INPUT`(질문 1~300자·답 필수, 다른 과제의 `portfolioFaqId`, 과제를 아직 저장하지 않음) → A-07 FAQ 탭 다시 | FR-PRT-014 |
-| API-PRT-12 | 개인 작품 추가 화면 | GET | `/my/portfolios/new` | 인증 | query `template`(선택. 항목이 고정이라 템플릿이 하나뿐이어서 지금은 쓰지 않는다. 템플릿 관리 P3 #253에서 정한다) | U-34 + 고정 항목 5개(제목, 링크, 설명, 사용한 AI 도구, 회고)와 공개 여부 입력 양식. 이메일 미인증이면 양식 대신 인증 안내(PL-USR-003) | - | FR-PRT-011 |
+| API-PRT-12 | 개인 작품 추가·수정 화면 | GET | `/my/portfolios/new` | 회원 | query `template`(선택. 항목이 고정이라 템플릿이 하나뿐이어서 지금은 쓰지 않는다. 템플릿 관리 P3 #253에서 정한다), query `edit`(선택, 내 개인 작품 `portfolioId`) | U-34 + 고정 항목 5개(제목, 링크, 설명, 사용한 AI 도구, 회고)와 공개 여부 입력 양식. `edit`가 있으면 그 작품 값으로 채운 수정 상태(보내는 곳은 API-PRT-06). 이메일 미인증이면 양식 대신 인증 안내(PL-USR-003) | `edit`: `NOT_OWNER`, `PORTFOLIO_NOT_FOUND`(삭제됨·코스 포트폴리오) | FR-PRT-011, FR-PRT-006 |
 | API-PRT-13 | 개인 작품 등록 | POST | `/my/portfolios` | 인증 | form `title`, `resultUrl`, `summary`(설명), `retrospective`, `aiTools`, `isPublic` | `portfolio` 저장(`portfolio_type` = PERSONAL, `course_id` 비움). 글 칸의 API 키 형식은 가린다(PL-PRT-008) → `/my/portfolios` + toast "개인 작품을 등록했습니다" | `INVALID_INPUT`(코스 포트폴리오와 같은 규칙: 제목 50자, 설명 100자, 회고 100~2,000자, 링크 URL 형식, 공개 여부 필수, PL-PRT-002~004·006) → U-34 같은 폼 다시, `EMAIL_NOT_VERIFIED`, `BANNED_WORD` | FR-PRT-011, PL-PRT-002~004·006·008 |
 
 - **A-07 FAQ 탭 (FR-PRT-014):** API-ADM-34(admin.md, 코드는 portfolio 영역 #104)의 `tab`에 `faq`를 더한다. `tab=faq`면 A-07 FAQ 탭 + 그 과제의 FAQ 목록(`portfolioFaqId`, 질문, 답) `sort_order` 순. `portfolioFaqId`는 API-PRT-11로 기존 FAQ를 고칠 때 다시 보낸다. 과제(API-ADM-35)를 저장하기 전에는 FAQ를 저장할 수 없다 (`portfolio_faq`가 과제 ID를 가짐).
@@ -40,8 +40,10 @@
 - **개인 작품 템플릿 (FR-PRT-011, U-34, #168 결정 A):** 템플릿 항목은 5개로 고정하고, 운영자가 항목을 바꾸는 템플릿 관리(FR-PRT-015, A-12)는 P3에서 정한다.
   - 항목은 코스 포트폴리오와 같은 칸에 저장한다: 제목 → `title`, 링크 → `result_url`, 설명 → `summary`(한 줄 요약), 사용한 AI 도구 → `ai_tools`, 회고 → `retrospective`. 그래서 U-19·U-20·공개 프로필이 그대로 보여 준다. 길이·형식·API 키 가리기·금칙어도 코스 포트폴리오와 같다.
   - 공개 여부는 기본값 없이 고른다 (PL-PRT-006). 에이전트 점검 결과·스크린샷은 코스 과제(평가 에이전트) 전용이라 받지 않는다. 개수 제한은 없다.
+  - 화면(API-PRT-12)은 미인증 회원도 열어 인증 안내를 본다(접근 "회원"). 등록·수정(API-PRT-13·06)은 "인증"이다.
   - 등록 뒤 목록(U-19, API-PRT-05)·상세(U-20, API-PRT-09)·공개 전환(API-PRT-08)·삭제(API-PRT-07)는 기존 API를 그대로 쓴다. 코스가 없어 삭제해도 완료 일시 계약 ⑦은 부르지 않는다. 같은 코스 작품 보기(U-35)에는 나오지 않는다.
-  - **수정은 이번 P2에서 하지 않는다.** 수정 화면은 코스 과제 화면(U-17)뿐이라, U-19·U-20의 "수정"은 개인 작품에 그리지 않는다.
+  - **수정 (FR-PRT-006, PL-PRT-007):** 새 화면 없이 U-34를 수정 상태로 연다. U-19·U-20의 개인 작품 "수정"은 `/my/portfolios/new?edit={portfolioId}`(코스 포트폴리오는 그대로 U-17 `?edit=true`). 보내는 곳은 기존 수정 API-PRT-06 `POST /portfolios/{portfolioId}/edit`이고, 개인 작품은 위 6개 값만 받는다(에이전트 점검 결과·스크린샷 없음). 입력 오류(`INVALID_INPUT`·`BANNED_WORD`)·출품 중(`CONTEST_ENTERED`)이면 U-34 수정 상태 폼을 다시 그린다. 최신본으로 덮고 수정 일시를 남기며, 콘테스트 출품 중에는 막는 규칙은 코스 포트폴리오와 같다.
+  - **작성 중 내용 보존 (FR-PRT-010, PL-ERR-003~005):** U-34도 U-17과 같은 방식으로 입력 값을 브라우저에 7일 보관하고 다시 열면 채운다. 키는 회원별로 나누고 새 등록과 수정(작품별)을 나눈다. 보관 전에 API 키 형식은 가리고(PL-PRT-008), 등록·수정에 성공하면 내 포트폴리오(U-19)에서 지운다.
   - 공개한 개인 작품은 콘테스트에 출품할 수 있다 (PL-CTS-002).
 
 ## 영역 간 계약 (portfolio 영역이 받는 것)
