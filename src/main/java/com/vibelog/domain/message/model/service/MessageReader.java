@@ -1,31 +1,84 @@
 package com.vibelog.domain.message.model.service;
 
 import com.vibelog.domain.message.model.dao.NoticeRepository;
+import com.vibelog.domain.message.model.dao.ReportRepository;
 import com.vibelog.domain.message.model.dto.NoticeSummary;
+import com.vibelog.domain.message.model.entity.Report;
+import com.vibelog.domain.message.model.entity.ReportStatus;
+import com.vibelog.domain.message.model.entity.ReportTargetType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /*
  * [MessageReader]
  * 역할 : 다른 영역이 message 영역 값(최근 공지 등)을 읽어 가는 곳. 읽기 전용이다.
  * 책임 : 다른 영역은 Notice·Repository 를 import 하지 않고 이 클래스만 주입해 쓴다 (08 문서 규칙 1).
- *        메서드는 쓰는 쪽이 필요할 때 추가한다.
+ *        메서드는 쓰는 쪽이 필요할 때 추가한다. 신고 숨김 여부는 컬럼 없이 report 에서 계산한다 (P3).
  */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MessageReader {
 
+    /* 서로 다른 회원의 처리 대기 신고가 이만큼 쌓이면 자동 숨김 (PL-RPT-002) */
+    static final int AUTO_HIDE_COUNT = 3;
+
     private final NoticeRepository noticeRepository;
+    private final ReportRepository reportRepository;
 
     /* 최신순 limit 개 (메인 화면 최근 공지, #203) */
     public List<NoticeSummary> findRecentNotices(int limit) {
         return noticeRepository.findAllByOrderByCreatedAtDescNoticeIdDesc(PageRequest.of(0, limit)).stream()
                 .map(NoticeSummary::from)
                 .toList();
+    }
+
+    /*
+     * 신고로 숨겨진 대상 ID (FR-RPT-002·003, P3). HIDDEN 신고가 있거나 PENDING 신고가 3건 이상이면 숨김.
+     * targetType 은 report.target_type 값(POST·PORTFOLIO·COMMENT·REVIEW·MESSAGE). 공개 목록·상세에서 거를 때 쓴다 (#256)
+     */
+    public Set<Long> findHiddenTargetIds(String targetType, Collection<Long> targetIds) {
+        return targetIdsWhere(targetType, targetIds, reports -> hasHidden(reports) || pendingCount(reports) >= AUTO_HIDE_COUNT);
+    }
+
+    /* at 까지 운영자가 숨김으로 확정한 대상 ID (콘테스트 시상 제외, PL-CTS-006, #295) */
+    public Set<Long> findConfirmedHiddenTargetIds(String targetType, Collection<Long> targetIds, LocalDateTime at) {
+        return targetIdsWhere(targetType, targetIds, reports -> reports.stream().anyMatch(report -> report.isHiddenBy(at)));
+    }
+
+    /* 숨김 확정 없이 PENDING 3건 이상으로 자동 숨김인 대상 ID (콘테스트 시상 보류, PL-CTS-006, #295) */
+    public Set<Long> findAutoHiddenTargetIds(String targetType, Collection<Long> targetIds) {
+        return targetIdsWhere(targetType, targetIds, reports -> !hasHidden(reports) && pendingCount(reports) >= AUTO_HIDE_COUNT);
+    }
+
+    /* 대상별 신고 묶음이 rule 에 맞는 대상 ID. 신고가 없는 대상은 빠진다. 빈 묶음이면 빈 결과 */
+    private Set<Long> targetIdsWhere(String targetType, Collection<Long> targetIds, Predicate<List<Report>> rule) {
+        if (targetIds.isEmpty()) {
+            return Set.of();
+        }
+        Map<Long, List<Report>> byTarget = reportRepository.findByTargetTypeAndTargetIdIn(ReportTargetType.valueOf(targetType), targetIds)
+                .stream().collect(Collectors.groupingBy(Report::getTargetId));
+        return byTarget.entrySet().stream()
+                .filter(entry -> rule.test(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+
+    private static boolean hasHidden(List<Report> reports) {
+        return reports.stream().anyMatch(report -> report.getStatus() == ReportStatus.HIDDEN);
+    }
+
+    private static long pendingCount(List<Report> reports) {
+        return reports.stream().filter(report -> report.getStatus() == ReportStatus.PENDING).count();
     }
 }
