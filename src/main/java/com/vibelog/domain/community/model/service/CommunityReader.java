@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.vibelog.domain.message.model.service.MessageReader;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -207,5 +208,15 @@ public class CommunityReader {
                         Collectors.mapping(ReviewComment::getContent, Collectors.joining("\n"))));
         return reviews.stream().collect(Collectors.toMap(PeerReview::getPeerReviewId,
                 review -> ReportTarget.ofText(review.getReviewerMemberId(), contents.getOrDefault(review.getPeerReviewId(), ""))));
+    }
+
+    /* 기간 내 게시글 수 (삭제 표시 제외, post.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음. admin 확장 대시보드(#194, FR-ADM-003) */
+    public long countPosts(LocalDateTime from, LocalDateTime to) {
+        return postRepository.countCreatedBetween(from, to);
+    }
+
+    /* 기간 내 동료 리뷰 수 (삭제 표시 제외, peer_review.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음. admin 확장 대시보드(#194, FR-ADM-003) */
+    public long countPeerReviews(LocalDateTime from, LocalDateTime to) {
+        return peerReviewRepository.countCreatedBetween(from, to);
     }
 }

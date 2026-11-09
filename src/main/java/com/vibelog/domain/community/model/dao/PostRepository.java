@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -35,4 +36,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /* 공개 프로필 게시글 (API-CMT-14). 신고로 숨긴 글(FR-RPT-003)은 뺀다. 빈 묶음이면 부르는 쪽이 0 하나를 넣는다 */
     Page<Post> findByMemberIdAndDeletedAtIsNullAndPostIdNotInOrderByCreatedAtDescPostIdDesc(Long memberId, Collection<Long> hiddenPostIds,
                                                                                             Pageable pageable);
+
+    /* 기간 내 게시글 수, 삭제 표시 제외 (created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (admin 확장 대시보드, FR-ADM-003) */
+    @Query("select count(p) from Post p where p.deletedAt is null and (:from is null or p.createdAt >= :from)"
+            + " and (:to is null or p.createdAt <= :to)")
+    long countCreatedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

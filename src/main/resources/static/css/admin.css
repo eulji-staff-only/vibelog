@@ -175,6 +175,12 @@
   font-weight: 900;
 }
 
+.vl-admin-dash__stat-detail {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .vl-admin-dash__subtitle {
   margin: 0 0 var(--space-5);
 }

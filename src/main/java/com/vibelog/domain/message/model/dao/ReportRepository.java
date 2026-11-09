@@ -4,7 +4,10 @@ import com.vibelog.domain.message.model.entity.Report;
 import com.vibelog.domain.message.model.entity.ReportStatus;
 import com.vibelog.domain.message.model.entity.ReportTargetType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -31,4 +34,8 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     /* 운영자가 이미 숨긴 대상인가 (그 대상은 신고를 받지 않는다) */
     boolean existsByTargetTypeAndTargetIdAndStatus(ReportTargetType targetType, Long targetId, ReportStatus status);
+
+    /* 기간 내 접수된 신고 수, 처리 상태와 상관없이 전부 (created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (admin 확장 대시보드, FR-ADM-003) */
+    @Query("select count(r) from Report r where (:from is null or r.createdAt >= :from) and (:to is null or r.createdAt <= :to)")
+    long countCreatedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

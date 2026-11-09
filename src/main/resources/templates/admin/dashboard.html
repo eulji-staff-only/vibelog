@@ -9,7 +9,8 @@
 </head>
 <body>
 <!-- A-01 대시보드 (API-ADM-01, FR-ADM-001, FR-ADM-002, #120). 운영자 로그인 도착지.
-     기간을 바꾸면(from, to) 가입자 수·트랙·코스별 수강 수·완료율이 다시 조회된다. -->
+     기간을 바꾸면(from, to) 가입자 수·트랙·코스별 수강 수·완료율이 다시 조회된다.
+     확장(API-ADM-40, FR-ADM-003, #194 1차): 진단 완료·건너뜀 비율, 포트폴리오·게시글·리뷰·쪽지·신고·콘테스트 참여 건수. -->
 <div class="vl-admin">
     <div th:replace="~{common/admin-layout :: sidebar('dashboard')}"></div>
 
@@ -28,6 +29,40 @@
             <div class="vl-ui-panel is-tight vl-admin-dash__stat">
                 <p class="vl-admin-dash__stat-label">가입자 수</p>
                 <p class="vl-admin-dash__stat-value" th:text="|${dashboard.memberCount()}명|">0명</p>
+            </div>
+        </section>
+
+        <h2 class="vl-admin-dash__subtitle">진단·활동 현황</h2>
+
+        <section class="vl-admin-dash__summary" id="dashboard-activity">
+            <div class="vl-ui-panel is-tight vl-admin-dash__stat">
+                <p class="vl-admin-dash__stat-label">진단</p>
+                <p class="vl-admin-dash__stat-detail"
+                   th:text="|진단 완료 ${dashboard.diagnosis().completedCount()}건 (${dashboard.diagnosis().completedRate()}%) · 건너뜀 ${dashboard.diagnosis().skippedCount()}건 (${dashboard.diagnosis().skippedRate()}%)|">진단 완료 0건 (0%) · 건너뜀 0건 (0%)</p>
+            </div>
+            <div class="vl-ui-panel is-tight vl-admin-dash__stat">
+                <p class="vl-admin-dash__stat-label">포트폴리오 제출</p>
+                <p class="vl-admin-dash__stat-value" th:text="|${dashboard.activity().portfolioCount()}건|">0건</p>
+            </div>
+            <div class="vl-ui-panel is-tight vl-admin-dash__stat">
+                <p class="vl-admin-dash__stat-label">게시글</p>
+                <p class="vl-admin-dash__stat-value" th:text="|${dashboard.activity().postCount()}건|">0건</p>
+            </div>
+            <div class="vl-ui-panel is-tight vl-admin-dash__stat">
+                <p class="vl-admin-dash__stat-label">동료 리뷰</p>
+                <p class="vl-admin-dash__stat-value" th:text="|${dashboard.activity().peerReviewCount()}건|">0건</p>
+            </div>
+            <div class="vl-ui-panel is-tight vl-admin-dash__stat">
+                <p class="vl-admin-dash__stat-label">쪽지</p>
+                <p class="vl-admin-dash__stat-value" th:text="|${dashboard.activity().messageCount()}건|">0건</p>
+            </div>
+            <div class="vl-ui-panel is-tight vl-admin-dash__stat">
+                <p class="vl-admin-dash__stat-label">신고</p>
+                <p class="vl-admin-dash__stat-value" th:text="|${dashboard.activity().reportCount()}건|">0건</p>
+            </div>
+            <div class="vl-ui-panel is-tight vl-admin-dash__stat">
+                <p class="vl-admin-dash__stat-label">콘테스트 참여</p>
+                <p class="vl-admin-dash__stat-value" th:text="|${dashboard.activity().contestEntryCount()}건|">0건</p>
             </div>
         </section>
 

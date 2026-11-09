@@ -47,4 +47,12 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Modifying(clearAutomatically = true)
     @Query("delete from Message m where m.messageId in :ids")
     int deleteByIdIn(@Param("ids") Collection<Long> ids);
+
+    /*
+     * 기간 내 보낸 쪽지 수 (created_at 기준). 보낸 사람·받은 사람이 둘 다 지운 쪽지는 뺀다 (한쪽만 지운 것은 이미 오간 쪽지라 센다).
+     * from·to 가 null 이면 그 쪽 제한 없음 (admin 확장 대시보드, FR-ADM-003)
+     */
+    @Query("select count(m) from Message m where not (m.senderDeletedAt is not null and m.receiverDeletedAt is not null)"
+            + " and (:from is null or m.createdAt >= :from) and (:to is null or m.createdAt <= :to)")
+    long countSentBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }
