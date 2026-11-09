@@ -75,7 +75,7 @@
     padding-top: var(--space-5); border-top: 1px solid var(--line-soft); }
 .report-actions-sub { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .report-btn { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-h);
-    padding: 11px 18px; font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none;
+    padding: 11px 18px; font-size: 15px; font-weight: 700; line-height: 1.4; font-family: inherit; text-decoration: none; cursor: pointer;
     border: 1px solid transparent; border-radius: var(--radius-pill); white-space: nowrap; }
 .report-btn-navy { background: var(--navy-900); color: var(--on-navy); }
 .report-btn-navy:hover { background: var(--navy-800); }
