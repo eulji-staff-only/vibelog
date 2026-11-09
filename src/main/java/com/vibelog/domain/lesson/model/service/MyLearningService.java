@@ -57,7 +57,7 @@ public class MyLearningService {
 
     /* "완료" 탭 */
     public List<MyLearningCourseCard> getCompletedCourses(Long memberId) {
-        return enrollmentRepository.findByMemberIdAndCompletedAtIsNotNull(memberId).stream()
+        return enrollmentRepository.findByMemberIdAndCompletedAtIsNotNullAndDroppedAtIsNull(memberId).stream()
                 .map(this::toCard)
                 .toList();
     }

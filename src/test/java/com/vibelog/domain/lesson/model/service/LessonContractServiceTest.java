@@ -250,6 +250,19 @@ class LessonContractServiceTest {
     }
 
     @Test
+    void 계약11_getEnrollmentStatus_포기가_완료보다_우선해_NONE() {
+        Enrollment enrollment = enroll(LEARNER, COURSE_A);
+        enrollment.drop();
+        enrollment.complete(); // 포기한 동안 포트폴리오를 제출해 완료 시각이 기록된 경우
+        em.flush();
+        assertThat(courseLessonInfo.getEnrollmentStatus(LEARNER, COURSE_A)).isEqualTo("NONE");
+
+        enrollment.restart(); // 다시 시작하면 그 완료 기록이 반영된다
+        em.flush();
+        assertThat(courseLessonInfo.getEnrollmentStatus(LEARNER, COURSE_A)).isEqualTo("COMPLETED");
+    }
+
+    @Test
     void 계약11_getPublicLessons_공개_수업만_sort_order_순으로() {
         List<LessonSummary> lessons = courseLessonInfo.getPublicLessons(COURSE_A);
 
