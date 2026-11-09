@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -19,11 +20,18 @@ import java.nio.charset.StandardCharsets;
  *          그 전에는 /login?error (LOGIN_FAILED). 돌아갈 주소(redirect)는 유지한다.
  */
 @Component
+@RequiredArgsConstructor
 public class LoginFailureHandler implements AuthenticationFailureHandler {
+
+    private final SuspendedLoginResponder suspendedLoginResponder;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException e) throws IOException {
+        if (e instanceof LoginAuthenticationProvider.SuspendedLoginException suspended) {
+            suspendedLoginResponder.respond(request, response, null, suspended.getNotice());
+            return;
+        }
         String url = e instanceof LockedException ? "/login?locked"
                 : e instanceof LoginAuthenticationProvider.SocialAccountLoginException ? "/login?social"
                 : "/login?error";

@@ -2,9 +2,16 @@ package com.vibelog.domain.auth.model.service;
 
 import com.vibelog.domain.auth.exception.AuthErrorCode;
 import com.vibelog.domain.auth.model.dao.MemberRepository;
+import com.vibelog.domain.auth.model.dao.MemberSuspensionRepository;
 import com.vibelog.domain.auth.model.dto.AdminMemberDetail;
 import com.vibelog.domain.auth.model.dto.AdminMemberItem;
+import com.vibelog.domain.auth.model.dto.AdminSanction;
 import com.vibelog.domain.auth.model.entity.Member;
+import com.vibelog.domain.auth.model.entity.MemberRole;
+import com.vibelog.domain.auth.model.entity.MemberStatus;
+import com.vibelog.domain.auth.model.entity.MemberSuspension;
+import com.vibelog.domain.auth.model.entity.SuspensionLevel;
+import com.vibelog.domain.auth.model.policy.SuspensionPolicy;
 import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.exam.model.dto.MemberExamResult;
 import com.vibelog.domain.exam.model.service.ExamReader;
@@ -20,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +46,8 @@ public class AdminMemberService {
     public static final int PAGE_SIZE = 20;
 
     private final MemberRepository memberRepository;
+    private final MemberSuspensionRepository memberSuspensionRepository;
+    private final SuspensionPolicy suspensionPolicy;
     private final LessonReader lessonReader;
     private final CourseReader courseReader;
     private final QuizReader quizReader;
@@ -72,7 +82,34 @@ public class AdminMemberService {
                 .map(r -> new AdminMemberDetail.ExamResult(lessonTitles.getOrDefault(r.lessonId(), "수업 " + r.lessonId()),
                         r.attemptNo(), r.score(), r.submittedAt()))
                 .toList();
-        return AdminMemberDetail.of(member, enrollments, quizResults, examResults, portfolioReader.countOf(memberId));
+        MemberSuspension current = suspensionPolicy.findActive(memberId).orElse(null);
+        boolean suspendable = member.getStatus() == MemberStatus.ACTIVE && member.getRole() != MemberRole.ADMIN && current == null;
+        AdminSanction sanction = AdminSanction.of(current, suspendable,
+                memberSuspensionRepository.findByMemberIdOrderByStartsAtDescMemberSuspensionIdDesc(memberId));
+        return AdminMemberDetail.of(member, enrollments, quizResults, examResults, portfolioReader.countOf(memberId), sanction);
+    }
+
+    /* API-USR-19. 이용 중인 학습자만. 이미 정지 중이면 막는다 (해제한 뒤 다시) */
+    @Transactional
+    public void suspend(Long adminMemberId, Long memberId, SuspensionLevel level, String reason) {
+        Member member = memberRepository.findById(memberId)
+                .filter(found -> found.getStatus() == MemberStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(AuthErrorCode.USER_NOT_FOUND));
+        if (member.getRole() == MemberRole.ADMIN) {
+            throw new BusinessException(AuthErrorCode.CANNOT_SUSPEND_ADMIN);
+        }
+        if (suspensionPolicy.isSuspended(memberId)) {
+            throw new BusinessException(AuthErrorCode.ALREADY_SUSPENDED);
+        }
+        memberSuspensionRepository.save(MemberSuspension.create(memberId, adminMemberId, level, reason, LocalDateTime.now()));
+    }
+
+    /* API-USR-20. 지금 정지 중인 제재를 푼다. 변경 감지로 저장된다 */
+    @Transactional
+    public void release(Long adminMemberId, Long memberId) {
+        suspensionPolicy.findActive(memberId)
+                .orElseThrow(() -> new BusinessException(AuthErrorCode.NOT_SUSPENDED))
+                .release(adminMemberId, LocalDateTime.now());
     }
 
     /* LIKE 검색어의 ! % _ 를 글자 그대로 찾도록 이스케이프한다 (MemberRepository.searchActive 의 escape '!') */

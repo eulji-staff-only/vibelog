@@ -19,7 +19,8 @@ public enum CommunityErrorCode implements ErrorCode {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다."),
     SELF_FOLLOW(HttpStatus.BAD_REQUEST, "나는 팔로우할 수 없습니다."),
     NOT_SHOWCASE(HttpStatus.BAD_REQUEST, "작품 공유 글만 추천할 수 있습니다."),
-    SELF_RECOMMEND(HttpStatus.BAD_REQUEST, "내 글은 추천할 수 없습니다.");
+    SELF_RECOMMEND(HttpStatus.BAD_REQUEST, "내 글은 추천할 수 없습니다."),
+    HIDDEN_CONTENT(HttpStatus.FORBIDDEN, "운영 정책에 따라 숨겨진 콘텐츠입니다.");
 
     private final HttpStatus status;
     private final String message;
