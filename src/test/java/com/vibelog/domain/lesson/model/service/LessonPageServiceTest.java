@@ -69,6 +69,44 @@ class LessonPageServiceTest {
     }
 
     @Test
+    void 수강을_포기했으면_열려_있던_수업도_NOT_ENROLLED() {
+        Enrollment enrollment = enroll();
+        unlockLesson(enrollment);
+        enrollment.drop();
+        enrollmentRepository.saveAndFlush(enrollment);
+
+        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null);
+
+        assertThat(result.status()).isEqualTo(LessonPageResult.Status.NOT_ENROLLED);
+    }
+
+    @Test
+    void 포기한_코스를_다시_시작하면_수업_화면이_다시_열린다() {
+        Enrollment enrollment = enroll();
+        unlockLesson(enrollment);
+        enrollment.drop();
+        enrollmentRepository.saveAndFlush(enrollment);
+        enrollment.restart();
+        enrollmentRepository.saveAndFlush(enrollment);
+
+        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null);
+
+        assertThat(result.status()).isEqualTo(LessonPageResult.Status.OK);
+    }
+
+    @Test
+    void 완료한_코스는_복습할_수_있어_수업_화면이_열린다() {
+        Enrollment enrollment = enroll();
+        unlockLesson(enrollment);
+        enrollment.complete();
+        enrollmentRepository.saveAndFlush(enrollment);
+
+        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null);
+
+        assertThat(result.status()).isEqualTo(LessonPageResult.Status.OK);
+    }
+
+    @Test
     void 수강은_했지만_수업이_안_열렸으면_LOCKED() {
         enroll();
 

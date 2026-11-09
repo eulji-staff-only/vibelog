@@ -38,7 +38,8 @@ import java.util.stream.Collectors;
 /*
  * [LessonPageService]
  * 역할 : 수업 화면 GET(API-LSN-01)의 데이터를 만든다.
- * 책임 : - 수강 여부·수업 열림 여부부터 본다. 둘 다 에러 화면이 아니라 "다른 화면 + 토스트"(③)라
+ * 책임 : - 수강 여부·수업 열림 여부부터 본다. 포기한 수강은 수강 안 함으로 본다 (API-ENR-04, 계약 ⑪과 같게).
+ *          둘 다 에러 화면이 아니라 "다른 화면 + 토스트"(③)라
  *          LessonPageResult 로 돌려주고 Controller 가 redirect 한다 (BusinessException 을 쓰지 않는다).
  *        - 활동 목록은 개념·퀴즈(activity 테이블) + 모의고사(계약 ②, 활동 테이블에 없는 가상 항목) 순서로 만든다.
  *        - 기본 선택 활동은 "진행 중"인 첫 활동, 없으면 모의고사. query activity 가 있으면 그 활동(또는 "exam")으로 바꾼다.
@@ -62,7 +63,9 @@ public class LessonPageService {
     public LessonPageResult getPage(Long memberId, Long courseId, Long lessonId, String activityQuery) {
         Lesson lesson = getLesson(lessonId, courseId);
 
-        Optional<Enrollment> enrollmentOpt = enrollmentRepository.findByMemberIdAndCourseId(memberId, courseId);
+        // 포기한 수강은 수강 안 함과 같다 (계약 ⑪ NONE, PL-ENR-004). 완료한 코스는 복습할 수 있어서 포기 여부만 본다
+        Optional<Enrollment> enrollmentOpt = enrollmentRepository.findByMemberIdAndCourseId(memberId, courseId)
+                .filter(enrollment -> !enrollment.isDropped());
         if (enrollmentOpt.isEmpty()) {
             return LessonPageResult.notEnrolled();
         }
