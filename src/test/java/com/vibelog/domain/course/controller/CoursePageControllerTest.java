@@ -10,11 +10,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.vibelog.domain.course.exception.CourseErrorCode;
 import com.vibelog.domain.course.model.dto.CourseCard;
+import com.vibelog.domain.course.model.dto.CourseDetailView;
 import com.vibelog.domain.course.model.dto.CourseListView;
 import com.vibelog.domain.course.model.dto.TrackChip;
 import com.vibelog.domain.course.model.dto.TrackCourseGroup;
 import com.vibelog.domain.course.model.dto.TrackIntroView;
 import com.vibelog.domain.course.model.service.CourseBrowseService;
+import com.vibelog.domain.lesson.model.policy.LessonSummary;
 import com.vibelog.global.exception.BusinessException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -88,12 +90,44 @@ class CoursePageControllerTest {
                 .andExpect(content().string(Matchers.not(Matchers.containsString("class=\"crs-recommend\""))));
     }
 
+    private static CourseDetailView detail(String enrollmentStatus) {
+        return new CourseDetailView(1L, "AI 작업 범위 통제하기", 2L, "Controller", "프롬프트", "한 줄 소개", "학습 대상",
+                "학습 목표", 14, "코스 소개", List.of(new LessonSummary(10L, "수정 범위 지정하기", "수업 목표", 3, 3, 40)),
+                enrollmentStatus);
+    }
+
+    /* 비회원 화면은 SecurityConfig 를 읽는 CourseDetailAnonymousTest 에서 본다 (@WebMvcTest 는 비회원을 401로 막는다) */
+
     @Test
-    void 코스_상세_화면을_연다() throws Exception {
+    void 수강_전_회원은_수강_시작_폼을_본다() throws Exception {
+        given(courseBrowseService.getCourseDetail(any(), eq(1L))).willReturn(detail("NONE"));
+
         mockMvc.perform(get("/courses/1"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("course/detail"))
-                .andExpect(content().string(Matchers.containsString("수강 시작")))
-                .andExpect(content().string(Matchers.containsString("vl-footer")));
+                .andExpect(content().string(Matchers.containsString("action=\"/courses/1/enroll\"")))
+                .andExpect(content().string(Matchers.containsString("name=\"_csrf\"")))
+                .andExpect(content().string(Matchers.containsString("수정 범위 지정하기")))
+                .andExpect(content().string(Matchers.containsString("개념 3 · 퀴즈 3")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString(">내 학습으로 가기</a>"))));
+    }
+
+    @Test
+    void 수강_중인_회원은_내_학습으로_가기를_본다() throws Exception {
+        given(courseBrowseService.getCourseDetail(any(), eq(1L))).willReturn(detail("ENROLLED"));
+
+        mockMvc.perform(get("/courses/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString(">내 학습으로 가기</a>")))
+                .andExpect(content().string(Matchers.containsString(">진행 중</span>")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("action=\"/courses/1/enroll\""))));
+    }
+
+    @Test
+    void 없거나_비공개인_코스는_404_오류_화면() throws Exception {
+        given(courseBrowseService.getCourseDetail(any(), eq(999L))).willThrow(new BusinessException(CourseErrorCode.COURSE_NOT_FOUND));
+
+        mockMvc.perform(get("/courses/999"))
+                .andExpect(status().isNotFound());
     }
 }

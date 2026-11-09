@@ -1,7 +1,11 @@
 package com.vibelog.domain.portfolio.model.dao;
 
 import com.vibelog.domain.portfolio.model.entity.Portfolio;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,8 +18,18 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     /* 그 코스에 제출한 내 포트폴리오 (삭제 표시 제외). U-17 "제출한 내 포트폴리오" (API-PRT-01) */
     Optional<Portfolio> findFirstByMemberIdAndCourseIdAndDeletedAtIsNull(Long memberId, Long courseId);
 
+    /* 그 코스의 내 포트폴리오, 삭제 표시한 것도 포함 (uk_portfolio_member_course 라 최대 1개). 다시 제출하면 이 행을 되살린다 (API-PRT-04) */
+    Optional<Portfolio> findByMemberIdAndCourseId(Long memberId, Long courseId);
+
     /* 회원의 삭제 표시 없는 포트폴리오 (계약 ⑩) */
     List<Portfolio> findAllByMemberIdAndDeletedAtIsNull(Long memberId);
 
     long countByMemberIdAndDeletedAtIsNull(Long memberId);
+
+    List<Portfolio> findAllByMemberIdAndIsPublicTrueAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(Long memberId);
+
+    /* 리뷰 요청(community #182)을 같은 회원끼리 차례로 처리하려고 그 회원의 포트폴리오 행을 쓰기 잠금으로 읽는다 */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Portfolio p where p.memberId = :memberId and p.deletedAt is null")
+    List<Portfolio> findLiveByMemberIdForUpdate(@Param("memberId") Long memberId);
 }

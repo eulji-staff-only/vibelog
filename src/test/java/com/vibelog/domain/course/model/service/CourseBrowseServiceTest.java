@@ -2,7 +2,9 @@ package com.vibelog.domain.course.model.service;
 
 import com.vibelog.domain.course.exception.CourseErrorCode;
 import com.vibelog.domain.course.model.dto.CourseCard;
+import com.vibelog.domain.course.model.dto.CourseDetailView;
 import com.vibelog.domain.course.model.dto.CourseListView;
+import com.vibelog.domain.lesson.model.policy.LessonSummary;
 import com.vibelog.domain.course.model.dto.TrackCourseGroup;
 import com.vibelog.domain.course.model.dto.TrackIntroView;
 import com.vibelog.global.exception.BusinessException;
@@ -19,8 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /*
- * 트랙 소개(API-CRS-01)·코스 목록(API-CRS-02, #97)
- * - 비공개 코스는 어디에도 보이지 않는다 (FR-CRS-001, 004)
+ * 트랙 소개(API-CRS-01)·코스 목록(API-CRS-02, #97)·코스 상세(API-CRS-03, #98)
+ * - 비공개 코스는 어디에도 보이지 않는다. 상세로 직접 열어도 COURSE_NOT_FOUND (FR-CRS-001, 002, 004)
  * - 진단을 마친 회원(COMPLETED)에게만 추천 트랙이 보인다. 건너뜀·비회원은 없다
  * - 수업 수는 공개 수업만 센다 (계약 ⑪)
  * DB 에 다른 코스가 있을 수 있어 이 테스트가 넣은 ID(97xx)만 본다.
@@ -105,6 +107,41 @@ class CourseBrowseServiceTest {
 
         assertThat(courseBrowseService.getCourseList(skipped, null).recommended()).isNull();
         assertThat(courseBrowseService.getCourseList(none, null).recommended()).isNull();
+    }
+
+    @Test
+    void 코스_상세는_공개_수업만_순서대로_보여준다() {
+        CourseDetailView view = courseBrowseService.getCourseDetail(null, 9701L);
+
+        assertThat(view.trackName()).isEqualTo("테스트 Starter");
+        assertThat(view.categoryName()).isEqualTo("테스트 웹 기초");
+        assertThat(view.lessons()).extracting(LessonSummary::title).containsExactly("공개 수업1", "공개 수업2");
+        assertThat(view.lessonCount()).isEqualTo(2);
+    }
+
+    @Test
+    void 없거나_비공개인_코스_상세는_COURSE_NOT_FOUND() {
+        assertThatThrownBy(() -> courseBrowseService.getCourseDetail(null, 9702L))   // 비공개
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(CourseErrorCode.COURSE_NOT_FOUND);
+        assertThatThrownBy(() -> courseBrowseService.getCourseDetail(null, 9999L))   // 없음
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode").isEqualTo(CourseErrorCode.COURSE_NOT_FOUND);
+    }
+
+    @Test
+    void 코스_상세의_수강_상태는_비회원_NONE_수강중_ENROLLED_완료_COMPLETED() {
+        long notEnrolled = member("detail-none@vibelog.test");
+        long enrolled = member("detail-ing@vibelog.test");
+        long completed = member("detail-done@vibelog.test");
+        jdbcTemplate.update("INSERT INTO enrollment (member_id, course_id, started_at) VALUES (?, 9701, NOW())", enrolled);
+        jdbcTemplate.update("INSERT INTO enrollment (member_id, course_id, started_at, completed_at) VALUES (?, 9701, NOW(), NOW())", completed);
+
+        assertThat(courseBrowseService.getCourseDetail(null, 9701L).enrollmentStatus()).isEqualTo("NONE");
+        assertThat(courseBrowseService.getCourseDetail(notEnrolled, 9701L).enrollmentStatus()).isEqualTo("NONE");
+        assertThat(courseBrowseService.getCourseDetail(enrolled, 9701L).enrollmentStatus()).isEqualTo("ENROLLED");
+        assertThat(courseBrowseService.getCourseDetail(completed, 9701L).enrollmentStatus()).isEqualTo("COMPLETED");
+        assertThat(courseBrowseService.getCourseDetail(completed, 9701L).isEnrolled()).isTrue();
     }
 
     private List<String> titlesOf(CourseListView view, Long trackId) {

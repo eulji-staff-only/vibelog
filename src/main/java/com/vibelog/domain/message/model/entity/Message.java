@@ -50,4 +50,20 @@ public class Message extends BaseTimeEntity {
     public static Message create(Long senderMemberId, Long receiverMemberId, Long parentMessageId, String content) {
         return new Message(senderMemberId, receiverMemberId, parentMessageId, content);
     }
+
+    /* 주고받은 두 사람만 본다 (PL-MSG-001) */
+    public boolean isBetween(Long memberId) {
+        return senderMemberId.equals(memberId) || receiverMemberId.equals(memberId);
+    }
+
+    public boolean isReceivedBy(Long memberId) {
+        return receiverMemberId.equals(memberId);
+    }
+
+    /* 받은 사람이 처음 열 때만 읽은 시각을 남긴다 (API-MSG-01) */
+    public void read() {
+        if (readAt == null) {
+            readAt = LocalDateTime.now();
+        }
+    }
 }

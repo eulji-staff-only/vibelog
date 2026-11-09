@@ -1,5 +1,6 @@
 package com.vibelog.domain.lesson.model.service;
 
+import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
@@ -9,6 +10,7 @@ import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
+import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,10 +60,24 @@ public class LessonReader {
                 .collect(Collectors.toMap(Lesson::getLessonId, Lesson::getTitle));
     }
 
+    /* 그 수업의 개념 활동인가 (사용 중지 여부는 보지 않는다). 모의고사 문항의 연관 개념 검사(exam #103, PL-EXM-002)가 쓴다 */
+    public boolean isConceptOf(Long lessonId, Long activityId) {
+        return activityRepository.findById(activityId)
+                .filter(activity -> activity.getLessonId().equals(lessonId) && activity.isConcept())
+                .isPresent();
+    }
+
     /* 활동 ID → 활동 제목. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 퀴즈 결과(auth #119)가 쓴다 */
     public Map<Long, String> getActivityTitles(Collection<Long> activityIds) {
         return activityRepository.findAllById(activityIds).stream()
                 .collect(Collectors.toMap(Activity::getActivityId, Activity::getTitle));
+    }
+
+    /* 수업이 속한 코스 ID. 없는 수업이면 LESSON_NOT_FOUND. 모의고사 화면의 수업 화면 링크(exam #110)가 쓴다 */
+    public Long getCourseId(Long lessonId) {
+        return lessonRepository.findById(lessonId)
+                .map(Lesson::getCourseId)
+                .orElseThrow(() -> new BusinessException(LessonErrorCode.LESSON_NOT_FOUND));
     }
 
     /*

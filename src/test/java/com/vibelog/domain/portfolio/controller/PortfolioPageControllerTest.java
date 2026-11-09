@@ -4,8 +4,11 @@ import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dto.GuideStepCheckResult;
 import com.vibelog.domain.portfolio.model.dto.PortfolioPageView;
+import com.vibelog.domain.portfolio.model.dto.PortfolioSubmitForm;
 import com.vibelog.domain.portfolio.model.service.PortfolioService;
+import com.vibelog.domain.portfolio.model.service.PortfolioSubmitService;
 import com.vibelog.global.exception.BusinessException;
+import com.vibelog.global.exception.CommonErrorCode;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,13 +23,21 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -47,6 +58,9 @@ class PortfolioPageControllerTest {
 
     @MockitoBean
     PortfolioService portfolioService;
+
+    @MockitoBean
+    PortfolioSubmitService portfolioSubmitService;
 
     private RequestPostProcessor login() {
         LoginMember loginMember = mock(LoginMember.class);
@@ -169,5 +183,79 @@ class PortfolioPageControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("portfolio/detail"))
                 .andExpect(content().string(Matchers.containsString("비공개된 작품입니다.")));
+    }
+
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder submitRequest(String retrospective, String isPublic) {
+        return multipart("/courses/3/portfolio").with(login()).with(csrf())
+                .param("title", "할 일 앱").param("resultUrl", "https://github.com/me/todo").param("summary", "요약")
+                .param("retrospective", retrospective).param("aiTools", "Claude Code").param("isPublic", isPublic);
+    }
+
+    private static final String RETRO = "배운 점을 적습니다. ".repeat(12);
+
+    @Test
+    void 제출하면_코스_완료_화면으로_간다() throws Exception {
+        mockMvc.perform(submitRequest(RETRO, "true"))
+                .andExpect(redirectedUrl("/courses/3/complete"));
+
+        verify(portfolioSubmitService).submit(eq(1L), eq(3L), any(PortfolioSubmitForm.class), isNull());
+    }
+
+    @Test
+    void 입력이_틀리면_같은_폼을_보낸_값과_칸별_메시지로_다시_그린다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+
+        mockMvc.perform(submitRequest("너무 짧은 회고", ""))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portfolio/portfolio"))
+                .andExpect(content().string(Matchers.containsString("회고는 100자 이상 2,000자 이하로 입력해 주세요.")))
+                .andExpect(content().string(Matchers.containsString("공개 여부를 골라 주세요.")))
+                .andExpect(content().string(Matchers.containsString("value=\"할 일 앱\"")))
+                .andExpect(content().string(Matchers.containsString("너무 짧은 회고")));
+
+        verify(portfolioSubmitService, never()).submit(any(), any(), any(), any());
+    }
+
+    @Test
+    void 금칙어면_같은_폼_위에_메시지를_보여_준다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+        willThrow(new BusinessException(CommonErrorCode.BANNED_WORD))
+                .given(portfolioSubmitService).submit(eq(1L), eq(3L), any(), any());
+
+        mockMvc.perform(submitRequest(RETRO, "false"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString(CommonErrorCode.BANNED_WORD.getMessage())))
+                .andExpect(content().string(Matchers.containsString("aria-pressed=\"true\">비공개")));
+    }
+
+    @Test
+    void 에이전트_점검_결과가_너무_길면_그_칸에_메시지를_보여_준다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+        willThrow(new BusinessException(PortfolioErrorCode.INVALID_INPUT))
+                .given(portfolioSubmitService).submit(eq(1L), eq(3L), any(), any());
+
+        mockMvc.perform(submitRequest(RETRO, "true"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("에이전트 점검 결과가 너무 깁니다.")));
+    }
+
+    @Test
+    void 이미_제출했으면_과제_화면으로_보내고_안내한다() throws Exception {
+        willThrow(new BusinessException(PortfolioErrorCode.ALREADY_SUBMITTED))
+                .given(portfolioSubmitService).submit(eq(1L), eq(3L), any(), any());
+
+        mockMvc.perform(submitRequest(RETRO, "true"))
+                .andExpect(redirectedUrl("/courses/3/portfolio"))
+                .andExpect(flash().attribute("toast", PortfolioErrorCode.ALREADY_SUBMITTED.getMessage()));
+    }
+
+    @Test
+    void 과제가_잠겼으면_오류_화면으로_보낸다() throws Exception {
+        willThrow(new BusinessException(PortfolioErrorCode.PORTFOLIO_LOCKED))
+                .given(portfolioSubmitService).submit(eq(1L), eq(3L), any(), any());
+
+        mockMvc.perform(submitRequest(RETRO, "true"))
+                .andExpect(status().isForbidden())
+                .andExpect(view().name("error/error"));
     }
 }
