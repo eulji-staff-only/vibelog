@@ -49,7 +49,7 @@ class ExamReportPageControllerTest {
 
     private ExamReportView report(Long nextLessonId) {
         return new ExamReportView(7L, 3L, "범위 정하기", 2, 1, 3,
-                List.of(new ExamReportView.Concept(11L, "개념 A", 100), new ExamReportView.Concept(12L, "개념 B", 0)),
+                List.of(ExamReportView.Concept.of(11L, "개념 A", 1, 1), ExamReportView.Concept.of(12L, "개념 B", 0, 1)),
                 List.of(new ExamReportView.Wrong(3, "세 번째 문항", null, "정답 보기", "해설입니다", 12L, "개념 B")),
                 nextLessonId);
     }

@@ -74,15 +74,14 @@ public class ExamReportService {
                 concepts(answers, conceptTitles), wrongs(answers, correctChoices, conceptTitles), next.nextLessonId()));
     }
 
-    /* 문항 순서대로 처음 나온 개념부터. 정답률 = 맞힌 수 ÷ 그 개념 문항 수 × 100 (정수로 반올림) */
+    /* 문항 순서대로 처음 나온 개념부터. 정답률 = 맞힌 수 ÷ 그 개념 문항 수 × 100 (ExamReportView.Concept.of) */
     private List<ExamReportView.Concept> concepts(List<ExamAnswer> answers, Map<Long, String> conceptTitles) {
         Map<Long, List<ExamAnswer>> byConcept = answers.stream().collect(Collectors.groupingBy(
                 answer -> answer.getExamQuestion().getConceptActivityId(), LinkedHashMap::new, Collectors.toList()));
         List<ExamReportView.Concept> concepts = new ArrayList<>();
         byConcept.forEach((activityId, group) -> {
             long correct = group.stream().filter(this::isCorrect).count();
-            int rate = (int) Math.round(correct * 100.0 / group.size());
-            concepts.add(new ExamReportView.Concept(activityId, conceptTitles.get(activityId), rate));
+            concepts.add(ExamReportView.Concept.of(activityId, conceptTitles.get(activityId), correct, group.size()));
         });
         return concepts;
     }
