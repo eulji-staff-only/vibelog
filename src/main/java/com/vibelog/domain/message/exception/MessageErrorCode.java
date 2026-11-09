@@ -15,7 +15,12 @@ import org.springframework.http.HttpStatus;
 public enum MessageErrorCode implements ErrorCode {
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
     NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다."),
-    BANNER_PERIOD_OVERLAP(HttpStatus.CONFLICT, "같은 기간에 띄우는 배너 공지가 이미 있습니다. 배너 기간을 바꿔 주세요.");
+    BANNER_PERIOD_OVERLAP(HttpStatus.CONFLICT, "같은 기간에 띄우는 배너 공지가 이미 있습니다. 배너 기간을 바꿔 주세요."),
+    MESSAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "쪽지를 찾을 수 없습니다."),
+    MESSAGE_SELF(HttpStatus.BAD_REQUEST, "나에게는 쪽지를 보낼 수 없습니다."),
+    MESSAGE_RECEIVER_NOT_FOUND(HttpStatus.NOT_FOUND, "받는 사람을 찾을 수 없습니다. 닉네임을 다시 확인해 주세요."),
+    MESSAGE_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "쪽지는 하루 20통까지 보낼 수 있습니다. 내일 다시 보내 주세요."),
+    MESSAGE_UNANSWERED_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "답장이 없는 상대에게는 연속 3통까지 보낼 수 있습니다. 답장을 기다려 주세요.");
 
     private final HttpStatus status;
     private final String message;
