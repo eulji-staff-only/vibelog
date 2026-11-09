@@ -57,3 +57,21 @@
 .ca-input.is-short { width: 120px; }
 .ca-input[aria-invalid="true"] { border-color: var(--danger); }
 .ca-error { margin: 0; font-size: 13px; color: var(--danger); }
+
+/* ---- A-04 코스 목록 · A-05 코스 상세 (#96) ---- */
+.ca-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin-bottom: var(--space-5); }
+.ca-filter__field { display: flex; flex-direction: column; gap: var(--space-1); font-size: 13px; font-weight: 700; }
+.ca-filter .ca-input { min-width: 160px; }
+.ca-link { color: inherit; text-decoration: none; }
+.ca-link:hover { text-decoration: underline; }
+.ca-back { display: inline-block; margin-bottom: var(--space-3); font-size: 14px; color: var(--ink-muted); text-decoration: none; }
+.ca-back:hover { text-decoration: underline; }
+.ca-head__side { display: flex; align-items: center; gap: var(--space-3); }
+.ca-section { margin-bottom: var(--space-6); padding: var(--space-5); background: var(--surface-raised); border-radius: var(--radius-md); }
+.ca-section__head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+.ca-section__title { margin: 0 0 var(--space-4); font-size: 18px; font-weight: 800; }
+.ca-section__head .ca-section__title { margin: 0; }
+.ca-form__row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); }
+.ca-form__actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-3); }
+.ca-assignment { display: flex; align-items: center; gap: var(--space-3); margin: 0; }
+.ca-assignment .ca-muted { margin: 0; }
