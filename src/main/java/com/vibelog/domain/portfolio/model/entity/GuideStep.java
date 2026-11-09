@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
  * 역할 : 과제 스텝 테이블(guide_step)과 매핑된다. 포트폴리오 과제의 스텝 가이드 한 줄.
  * 책임 : 컬럼은 sql/01-schema.sql 의 guide_step 그대로 둔다.
  *        체크 기록이 있는 스텝은 지우지 않고 is_active = FALSE 로 끈다 (DB 설계서 5-1).
- *        만들기·끄기 메서드는 과제 작성 기능(FR-PRT-012)에서 추가한다.
+ *        순서(sort_order)는 운영자가 보낸 목록 순서다 (API-ADM-35).
  */
 @Getter
 @Entity
@@ -32,4 +32,23 @@ public class GuideStep extends BaseTimeEntity {
     private int sortOrder;
 
     private boolean isActive;
+
+    public static GuideStep create(Long portfolioAssignmentId, String content, int sortOrder) {
+        GuideStep step = new GuideStep();
+        step.portfolioAssignmentId = portfolioAssignmentId;
+        step.content = content;
+        step.sortOrder = sortOrder;
+        step.isActive = true;
+        return step;
+    }
+
+    public void edit(String content, int sortOrder) {
+        this.content = content;
+        this.sortOrder = sortOrder;
+    }
+
+    /* 학습자 체크 기록이 있어 지우지 않고 끈다 (DB 설계서 5-1) */
+    public void deactivate() {
+        this.isActive = false;
+    }
 }

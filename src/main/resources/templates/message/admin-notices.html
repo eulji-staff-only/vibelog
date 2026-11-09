@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>공지 관리 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/message.css}">
+</head>
+<body>
+<!--
+  A-10 공지 관리 (API-NTF-06~08, #186). 위는 작성·수정 폼, 아래는 공지 목록(최신순 10개씩).
+  목록의 "수정"을 누르면 ?noticeId= 로 폼이 채워진다. 배너는 동시에 1개라 기간이 겹치면 저장을 막는다 (PL-NTF-003).
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('notices')}"></div>
+    <main class="vl-admin__content">
+        <h1 class="ms-admin-title">공지 관리</h1>
+        <p class="ms-toast" role="status" th:if="${toast}" th:text="${toast}">공지를 등록했습니다</p>
+
+        <form class="ms-form" method="post" th:object="${noticeForm}" novalidate
+              th:action="${editingId == null} ? @{/admin/notices} : @{/admin/notices/{id}/edit(id=${editingId})}">
+            <h2 th:text="${editingId == null} ? '공지 작성' : '공지 수정'">공지 작성</h2>
+            <div class="ms-field">
+                <label for="title">제목</label>
+                <input class="ms-input" id="title" type="text" maxlength="100" th:field="*{title}"
+                       th:attrappend="aria-invalid=${#fields.hasErrors('title')} ? 'true'" aria-describedby="title-error">
+                <p class="ms-error" id="title-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">제목 오류</p>
+            </div>
+            <div class="ms-field">
+                <label for="body">본문</label>
+                <textarea class="ms-input" id="body" th:field="*{body}"
+                          th:attrappend="aria-invalid=${#fields.hasErrors('body')} ? 'true'" aria-describedby="body-error"></textarea>
+                <p class="ms-error" id="body-error" th:if="${#fields.hasErrors('body')}" th:errors="*{body}">본문 오류</p>
+            </div>
+            <label class="ms-check"><input type="checkbox" th:field="*{isBannerShown}"> 상단 배너로 띄우기</label>
+            <div class="ms-period">
+                <div class="ms-field">
+                    <label for="bannerStartsAt">배너 시작</label>
+                    <input class="ms-input" id="bannerStartsAt" type="datetime-local" th:field="*{bannerStartsAt}" aria-describedby="banner-error">
+                </div>
+                <div class="ms-field">
+                    <label for="bannerEndsAt">배너 끝</label>
+                    <input class="ms-input" id="bannerEndsAt" type="datetime-local" th:field="*{bannerEndsAt}" aria-describedby="banner-error">
+                </div>
+            </div>
+            <div id="banner-error">
+                <p class="ms-error" th:if="${#fields.hasErrors('bannerPeriodValid')}" th:errors="*{bannerPeriodValid}">배너 기간 오류</p>
+                <p class="ms-error" th:if="${#fields.hasErrors('bannerStartsAt')}" th:errors="*{bannerStartsAt}">배너 겹침</p>
+            </div>
+            <div class="ms-actions">
+                <button class="ms-btn" type="submit" th:text="${editingId == null} ? '등록' : '저장'">등록</button>
+                <a class="ms-btn is-outline" href="/admin/notices" th:if="${editingId != null}">새 공지 쓰기</a>
+            </div>
+        </form>
+
+        <p class="ms-muted" th:if="${notices.empty}">등록된 공지사항이 없습니다</p>
+        <div class="ms-scroll" th:unless="${notices.empty}">
+            <table class="ms-table">
+                <thead>
+                <tr><th>제목</th><th>게시일</th><th>배너</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="n : ${notices.content}">
+                    <td><a class="ms-link" th:href="@{/notices/{id}(id=${n.noticeId()})}" th:text="${n.title()}">공지 제목</a></td>
+                    <td th:text="${#temporals.format(n.createdAt(), 'yyyy.MM.dd')}">2026.11.09</td>
+                    <td th:text="${n.bannerShown()} ? |${#temporals.format(n.bannerStartsAt(), 'MM.dd HH:mm')} ~ ${#temporals.format(n.bannerEndsAt(), 'MM.dd HH:mm')}| : '-'">-</td>
+                    <td><a class="ms-link" th:href="@{/admin/notices(noticeId=${n.noticeId()}, page=${notices.number + 1})}">수정</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="ms-pages" aria-label="페이지" th:if="${notices.totalPages > 1}"
+             th:with="current=${notices.number + 1},
+                      start=${T(java.lang.Math).max(1, current - 4)},
+                      end=${T(java.lang.Math).min(notices.totalPages, start + 9)}">
+            <a th:each="p : ${#numbers.sequence(start, end)}" th:href="@{/admin/notices(page=${p})}"
+               th:attr="aria-current=${p == current} ? 'page'" th:text="${p}">1</a>
+        </nav>
+    </main>
+</div>
+</body>
+</html>
