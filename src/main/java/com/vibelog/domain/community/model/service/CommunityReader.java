@@ -54,16 +54,20 @@ public class CommunityReader {
                 memberId, PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE)));
     }
 
-    /* 마이페이지 팔로우 탭 (API-USR-15 P2, FR-CMT-008). 내가 팔로우한 회원, 최근 팔로우 순. 탈퇴한 회원은 뺀다 */
+    /*
+     * 마이페이지 팔로우 탭 (API-USR-15 P2, FR-CMT-008). 내가 팔로우한 회원, 최근 팔로우 순. 볼 수 없는 회원(탈퇴 등)은 뺀다.
+     * 회원 상태는 auth 테이블이라 쿼리로 거를 수 없어서, 내 팔로우를 모두 읽고 거른 뒤 쪽을 나눈다 (쪽마다 20명·전체 수가 맞게).
+     */
+    // ponytail: 한 회원의 팔로우를 모두 읽는다. 팔로우가 수천 명 규모가 되면 MemberReader 에 볼 수 없는 회원 조회를 두고 쿼리로 나눈다
     public Page<MemberSummary> getFollowingOf(Long memberId, int page) {
-        Page<Follow> follows = followRepository.findByFollowerMemberIdOrderByCreatedAtDescFollowIdDesc(
-                memberId, PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE));
-        List<Long> ids = follows.map(Follow::getFollowingMemberId).toList();
-        Map<Long, String> nicknames = memberReader.getNicknames(ids);
+        List<Long> ids = followRepository.findByFollowerMemberIdOrderByCreatedAtDescFollowIdDesc(memberId).stream()
+                .map(Follow::getFollowingMemberId).toList();
         Set<Long> visible = memberReader.findVisibleIds(ids);
-        return new PageImpl<>(
-                ids.stream().filter(visible::contains).map(id -> new MemberSummary(id, nicknames.get(id))).toList(),
-                follows.getPageable(), follows.getTotalElements());
+        List<Long> shown = ids.stream().filter(visible::contains).toList();
+        PageRequest pageable = PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE);
+        List<Long> pageIds = shown.stream().skip(pageable.getOffset()).limit(pageable.getPageSize()).toList();
+        Map<Long, String> nicknames = memberReader.getNicknames(pageIds);
+        return new PageImpl<>(pageIds.stream().map(id -> new MemberSummary(id, nicknames.get(id))).toList(), pageable, shown.size());
     }
 
     private Page<MemberPostItem> toItems(Page<Post> posts) {
