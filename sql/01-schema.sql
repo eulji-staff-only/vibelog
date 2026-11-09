@@ -836,4 +836,19 @@ CREATE TABLE banned_word (
     CONSTRAINT uk_banned_word_word UNIQUE (word)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '금칙어';
 
+-- 개인 작품 템플릿 항목 (P3 FR-PRT-015, #253). 항목은 5개로 고정이고(#168 결정 A) 운영자는 이름·안내 문구·순서만 바꾼다.
+-- 값은 항목 키에 맞는 portfolio 칸에 저장한다: TITLE → title, LINK → result_url, DESCRIPTION → summary, AI_TOOLS → ai_tools, RETROSPECTIVE → retrospective
+CREATE TABLE portfolio_template_item (
+    portfolio_template_item_id BIGINT       NOT NULL AUTO_INCREMENT,
+    item_key                   VARCHAR(20)  NOT NULL,
+    label                      VARCHAR(50)  NOT NULL,
+    guide                      VARCHAR(200) NULL,
+    sort_order                 INT          NOT NULL,
+    created_at                 DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at                 DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_portfolio_template_item PRIMARY KEY (portfolio_template_item_id),
+    CONSTRAINT uk_portfolio_template_item_item_key UNIQUE (item_key),
+    CONSTRAINT ck_portfolio_template_item_item_key CHECK (item_key IN ('TITLE', 'LINK', 'DESCRIPTION', 'AI_TOOLS', 'RETROSPECTIVE'))
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '개인 작품 템플릿 항목';
+
 SET FOREIGN_KEY_CHECKS = 1;
