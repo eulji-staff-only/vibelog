@@ -1,23 +1,42 @@
 /*
- * 포트폴리오 화면(U-17) 안에서만 도는 동작: 스텝 완료 수, 글자 수 표시, 입력 확인, 공개 여부 선택, 제출 버튼 켜고 끄기.
- * 서버를 부르지 않는다. 스텝 체크 저장(API-PRT-02)과 제출(API-PRT-04)은 ③ 단계에서 붙인다.
- * 여기 확인은 안내용이고, 실제 검증은 ③ 단계에서 서버가 한다 (NFR-SEC-004).
+ * 포트폴리오 화면(U-17) 동작: 스텝 체크 자동 저장(API-PRT-02), 글자 수 표시, 입력 확인, 공개 여부 선택, 제출 버튼 켜고 끄기.
+ * 제출(API-PRT-04)은 #113 에서 붙인다. 여기 확인은 안내용이고, 실제 검증은 서버가 한다 (NFR-SEC-004).
  */
 document.addEventListener('DOMContentLoaded', () => {
     const root = document.querySelector('[data-pf]');
     if (!root) return;
 
-    // 스텝 가이드: n / 전체 완료
-    const steps = [...root.querySelectorAll('[data-step]')];
-    const renderSteps = () => {
-        root.querySelector('[data-step-done]').textContent = steps.filter((s) => s.checked).length;
-        root.querySelector('[data-step-total]').textContent = steps.length;
-    };
-    steps.forEach((s) => s.addEventListener('change', renderSteps));
-    renderSteps();
+    // 스텝 가이드: 체크하면 바로 저장하고, 서버가 돌려준 "n / 전체"로 고친다. 실패하면 체크를 되돌린다
+    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+    const stepError = root.querySelector('[data-step-error]');
+    root.querySelectorAll('[data-step]').forEach((step) => step.addEventListener('change', () => {
+        fetch(step.dataset.checkUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
+            body: JSON.stringify({ checked: step.checked }),
+        })
+            .then((res) => res.json().then((body) => {
+                if (!res.ok) throw body;   // 서버 오류 {code, message}
+                return body;
+            }))
+            .then((body) => {
+                root.querySelector('[data-step-done]').textContent = body.checkedCount;
+                root.querySelector('[data-step-total]').textContent = body.totalCount;
+                stepError.hidden = true;
+            })
+            .catch((err) => {
+                // 네트워크 끊김 같은 브라우저 오류(Error)는 기술 문구라 보여 주지 않는다 (PL-ERR-001)
+                step.checked = !step.checked;
+                stepError.textContent = err instanceof Error || !err.message
+                    ? '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.' : err.message;
+                stepError.hidden = false;
+            });
+    }));
 
-    // 제출 양식
+    // 제출 양식: 이미 제출했거나 이메일 미인증이면 양식이 없다
     const url = root.querySelector('[data-url]');
+    if (!url) return;
     const urlMsg = root.querySelector('[data-url-msg]');
     const urlHint = urlMsg.textContent;
     const retro = root.querySelector('[data-retro]');

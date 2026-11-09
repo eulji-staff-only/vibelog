@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
  * [GuideStepCheck]
  * 역할 : 스텝 완료 체크 테이블(guide_step_check)과 매핑된다. 회원·스텝당 한 줄 (uk_guide_step_check_member_step).
  * 책임 : 컬럼은 sql/01-schema.sql 의 guide_step_check 그대로 둔다. 체크를 풀면 행을 지운다 (DB 설계서 5-1).
- *        만들기 메서드는 스텝 체크 기능(API-PRT-02)에서 추가한다.
+ *        체크하면 create 로 한 줄을 만든다 (API-PRT-02).
  */
 @Getter
 @Entity
@@ -31,4 +31,12 @@ public class GuideStepCheck extends BaseTimeEntity {
     private Long guideStepId;
 
     private LocalDateTime checkedAt;
+
+    public static GuideStepCheck create(Long memberId, Long guideStepId) {
+        GuideStepCheck check = new GuideStepCheck();
+        check.memberId = memberId;
+        check.guideStepId = guideStepId;
+        check.checkedAt = LocalDateTime.now();
+        return check;
+    }
 }

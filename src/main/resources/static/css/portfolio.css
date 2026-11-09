@@ -42,11 +42,9 @@
 .pf-step strong { display: block; }
 .pf-step:has(input:checked) { background: var(--tint); }
 
-/* 평가 에이전트 안내 (펼침 목록은 브라우저 기본 details 사용) */
-.pf-accordion { border-top: 1px solid var(--line-soft); }
-.pf-accordion details { border-bottom: 1px solid var(--line-soft); }
-.pf-accordion summary { min-height: 60px; display: flex; align-items: center; padding: 0 var(--space-1); font-size: 16px; font-weight: 700; cursor: pointer; }
-.pf-accordion details p { margin: 0; padding: 0 var(--space-1) var(--space-5); font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
+/* 운영자가 쓴 여러 줄 글(학습 목표·스텝·평가 에이전트 안내)은 줄바꿈을 그대로 보여 준다 */
+.pf-pre { white-space: pre-line; }
+.pf-guide { margin: 0; padding-top: var(--space-4); border-top: 1px solid var(--line-soft); font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
 
 /* 안내 상자 (공통 조각 #46 전까지) */
 .pf-notice { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) 20px;

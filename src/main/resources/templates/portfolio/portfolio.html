@@ -6,6 +6,9 @@
     <title>포트폴리오 | 바이브로그</title>
     <link rel="stylesheet" th:href="@{/css/portfolio.css}" href="/css/portfolio.css">
     <script th:src="@{/js/portfolio.js}" src="/js/portfolio.js" defer></script>
+
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
 </head>
 <body>
 <!-- U-17 포트폴리오. 화면 선행 작업(#57): 문구는 샘플이고, 과제 데이터·스텝 체크 저장·제출은 ③ 단계(API-PRT-01~04)에서 붙인다.
@@ -13,7 +16,7 @@
 <div class="pf-page">
 
     <section class="pf-band">
-        <span class="pf-eyebrow">[트랙] · [코스 이름]</span>
+        <span class="pf-eyebrow" th:text="${page.courseTitle}">[코스 이름]</span>
         <h1 class="pf-title">포트폴리오</h1>
         <p class="pf-lead">과제를 읽고 결과물을 만든 뒤, 맨 아래에서 제출하세요.</p>
     </section>
@@ -21,36 +24,43 @@
     <main class="pf-main">
         <div class="pf-panel">
 
-            <!-- 잠김 상태 (PL-PRT-001). ③ 단계에서 실제 조건으로 보여 준다. -->
-            <section class="pf-locked" data-pf-locked hidden>
+            <!-- 잠김 상태 (PL-PRT-001): 마지막 공개 수업의 리포트(U-16)로 안내한다. 공개 수업이 없으면 내 학습으로 -->
+            <section class="pf-locked" th:if="${!page.unlocked}">
                 <h2 class="pf-h2">아직 열리지 않았습니다</h2>
                 <div class="pf-notice">
                     <strong>마지막 수업의 오답 분석 리포트를 확인하면 열립니다.</strong>
                     <p>남은 수업을 마치면 포트폴리오 과제를 볼 수 있습니다.</p>
-                    <!-- 리포트 화면(U-16) 주소에는 lessonId 가 필요해 ③ 단계에서 연결한다. -->
-                    <a class="pf-link" href="#">리포트 보러 가기</a>
+                    <a class="pf-link" th:if="${page.reportLessonId != null}"
+                       th:href="@{/lessons/{id}/exam/report(id=${page.reportLessonId})}">리포트 보러 가기</a>
+                    <a class="pf-link" th:unless="${page.reportLessonId != null}" th:href="@{/my/learning}">내 학습으로</a>
                 </div>
             </section>
 
-            <div class="pf-body" data-pf>
+            <div class="pf-body" data-pf th:if="${page.unlocked}">
                 <section class="pf-section" aria-labelledby="pf-task-h">
                     <h2 class="pf-h2" id="pf-task-h">과제</h2>
                     <dl class="pf-task">
-                        <dt>주제</dt><dd>[과제 주제]</dd>
-                        <dt>학습 목표</dt><dd>[학습 목표]</dd>
+                        <dt>주제</dt><dd th:text="${page.topic}">[과제 주제]</dd>
+                        <dt>학습 목표</dt><dd class="pf-pre" th:text="${page.goal}">[학습 목표]</dd>
                     </dl>
                 </section>
 
-                <section class="pf-section" aria-labelledby="pf-step-h">
+                <section class="pf-section" aria-labelledby="pf-step-h" th:if="${!#lists.isEmpty(page.steps)}">
                     <div class="pf-section-head">
                         <h2 class="pf-h2" id="pf-step-h">스텝 가이드</h2>
-                        <span class="pf-muted">체크는 자동 저장됩니다 · <span data-step-done>0</span> / <span data-step-total>3</span> 완료</span>
+                        <span class="pf-muted">체크는 자동 저장됩니다 ·
+                            <span data-step-done th:text="${page.checkedCount}">0</span> / <span data-step-total th:text="${#lists.size(page.steps)}">3</span> 완료</span>
                     </div>
                     <ul class="pf-steps">
-                        <li><label class="pf-step"><input type="checkbox" data-step><span><strong>[스텝 1 제목]</strong><span class="pf-muted">[스텝 설명]</span></span></label></li>
-                        <li><label class="pf-step"><input type="checkbox" data-step><span><strong>[스텝 2 제목]</strong><span class="pf-muted">[스텝 설명]</span></span></label></li>
-                        <li><label class="pf-step"><input type="checkbox" data-step><span><strong>[스텝 3 제목]</strong><span class="pf-muted">[스텝 설명]</span></span></label></li>
+                        <li th:each="step : ${page.steps}">
+                            <label class="pf-step">
+                                <input type="checkbox" data-step th:checked="${step.checked}"
+                                       th:attr="data-check-url=@{/api/guide-steps/{id}/check(id=${step.guideStepId})}">
+                                <span class="pf-pre" th:text="${step.content}">[스텝 내용]</span>
+                            </label>
+                        </li>
                     </ul>
+                    <p class="pf-msg is-error" role="alert" data-step-error hidden></p>
                 </section>
 
                 <section class="pf-section" aria-labelledby="pf-agent-h">
@@ -59,17 +69,29 @@
                         <strong>실행은 내 환경에서 합니다.</strong>
                         <p>서비스는 설명과 설정 파일만 제공하고, 실행 결과는 자동으로 받지 않습니다. 점검 결과는 제출 양식의 선택 항목에 직접 적을 수 있습니다.</p>
                     </div>
-                    <div><a class="pf-btn pf-btn-outline" href="portfolio/agent-file">설정 파일 내려받기</a></div>
-                    <div class="pf-accordion">
-                        <details><summary>세팅 방법</summary><p>[세팅 방법 설명]</p></details>
-                        <details><summary>평가 기준</summary><p>[평가 기준 설명]</p></details>
-                        <details><summary>실행 방법</summary><p>[실행 방법 설명]</p></details>
-                        <details><summary>실행이 안 될 때</summary><p>[체크리스트]</p></details>
+                    <div th:if="${page.hasAgentFile}">
+                        <a class="pf-btn pf-btn-outline" th:href="@{/courses/{id}/portfolio/agent-file(id=${page.courseId})}">설정 파일 내려받기</a>
                     </div>
+                    <!-- 세팅 방법·평가 기준·실행 방법·"실행이 안 될 때"는 운영자가 한 칸(agent_guide)에 함께 쓴다 (FR-PRT-013) -->
+                    <p class="pf-guide pf-pre" th:text="${page.agentGuide}">[세팅 방법 · 평가 기준 · 실행 방법 · 실행이 안 될 때]</p>
                 </section>
 
                 <section class="pf-section" aria-labelledby="pf-submit-h">
                     <h2 class="pf-h2" id="pf-submit-h">포트폴리오 제출</h2>
+
+                    <!-- 이미 제출함: 수정 상태(edit=true)는 #114 에서 붙인다 -->
+                    <div class="pf-notice" th:if="${page.submittedPortfolioId != null}">
+                        <strong>이 코스의 포트폴리오를 제출했습니다.</strong>
+                        <a class="pf-link" th:href="@{/portfolios/{id}(id=${page.submittedPortfolioId})}">내 포트폴리오 보기</a>
+                    </div>
+
+                    <!-- 이메일 미인증: 제출 대신 인증 안내 (PL-USR-003) -->
+                    <div class="pf-notice" th:if="${page.submittedPortfolioId == null and !page.emailVerified}">
+                        <strong>이메일 인증 후 포트폴리오를 제출할 수 있습니다.</strong>
+                        <a class="pf-link" th:href="@{/auth/verify}">인증 메일 받기</a>
+                    </div>
+
+                    <th:block th:if="${page.submittedPortfolioId == null and page.emailVerified}">
                     <p class="pf-muted">제출하면 그대로 포트폴리오 카드로 등록되고 코스가 완료됩니다.</p>
 
                     <div class="pf-form" data-pf-form>
@@ -124,9 +146,10 @@
 
                     <div class="pf-submit">
                         <span class="pf-muted" id="pf-submit-reason">필수 항목을 모두 입력하고 공개 여부를 고르면 제출할 수 있습니다.</span>
-                        <!-- 제출(API-PRT-04, POST)은 ③ 단계. 지금은 코스 완료 화면(U-18)으로 이동만 한다. -->
+                        <!-- 제출(API-PRT-04, POST)은 #113 에서 붙인다. 지금은 코스 완료 화면(U-18)으로 이동만 한다. -->
                         <a class="pf-btn pf-btn-navy" href="complete" aria-disabled="true" aria-describedby="pf-submit-reason" data-submit>제출하기</a>
                     </div>
+                    </th:block>
                 </section>
             </div>
         </div>
