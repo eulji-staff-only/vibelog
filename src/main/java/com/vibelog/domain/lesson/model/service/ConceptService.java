@@ -49,10 +49,15 @@ public class ConceptService {
     private final LessonRepository lessonRepository;
     private final CourseReader courseReader;
 
-    /* API-LSN-08: 있으면 지우고 없으면 만든다 (멱등 아님, 누를 때마다 반대로) */
+    /*
+     * API-LSN-08: 있으면 지우고 없으면 만든다 (멱등 아님, 누를 때마다 반대로).
+     * 만들 때만 "보여줘도 되는 개념"(사용 중 + 공개 수업 + 공개 코스)인지 확인한다. 숫자 ID 를 직접 넣어 비공개 코스·수업의
+     * 개념을 북마크해 마이페이지 북마크 탭으로 제목이 새는 것을 막는다 (없는 활동과 같은 ACTIVITY_NOT_FOUND 로 존재를 숨긴다).
+     * 이미 있는 북마크는 나중에 비공개가 되어도 항상 해제할 수 있다.
+     */
     @Transactional
     public BookmarkResult toggleBookmark(Long memberId, Long activityId) {
-        activityRepository.findById(activityId)
+        Activity concept = activityRepository.findById(activityId)
                 .filter(Activity::isConcept)
                 .orElseThrow(() -> new BusinessException(LessonErrorCode.ACTIVITY_NOT_FOUND));
 
@@ -60,6 +65,9 @@ public class ConceptService {
         if (existing.isPresent()) {
             conceptBookmarkRepository.delete(existing.get());
             return new BookmarkResult(false);
+        }
+        if (!visibleItems(List.of(concept)).containsKey(activityId)) {
+            throw new BusinessException(LessonErrorCode.ACTIVITY_NOT_FOUND);
         }
         conceptBookmarkRepository.save(ConceptBookmark.create(memberId, activityId));
         return new BookmarkResult(true);

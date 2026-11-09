@@ -11,6 +11,7 @@ import com.vibelog.domain.lesson.model.dto.LessonActivityCard;
 import com.vibelog.domain.lesson.model.dto.LessonPageData;
 import com.vibelog.domain.lesson.model.dto.RelatedConcept;
 import com.vibelog.domain.lesson.model.entity.ActivityProgress;
+import com.vibelog.domain.lesson.model.entity.ConceptBookmark;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.LessonProgress;
 import com.vibelog.global.exception.BusinessException;
@@ -108,6 +109,24 @@ class ConceptServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class,
                         e -> assertThat(e.getErrorCode()).isEqualTo(LessonErrorCode.ACTIVITY_NOT_FOUND));
         assertThat(conceptBookmarkRepository.existsByMemberIdAndActivityId(LEARNER, 9205L)).isFalse();
+    }
+
+    @Test
+    void 비공개_수업_비공개_코스_사용_중지_개념은_북마크할_수_없다() {
+        for (long hidden : new long[]{9203L, 9204L, 9207L}) { // 비공개 수업 · 수업만 공개이고 코스는 비공개 · 사용 중지
+            assertThatThrownBy(() -> conceptService.toggleBookmark(LEARNER, hidden))
+                    .isInstanceOfSatisfying(BusinessException.class,
+                            e -> assertThat(e.getErrorCode()).isEqualTo(LessonErrorCode.ACTIVITY_NOT_FOUND));
+            assertThat(conceptBookmarkRepository.existsByMemberIdAndActivityId(LEARNER, hidden)).isFalse();
+        }
+    }
+
+    @Test
+    void 이미_있는_북마크는_나중에_비공개가_되어도_해제할_수_있다() {
+        conceptBookmarkRepository.saveAndFlush(ConceptBookmark.create(LEARNER, 9204L)); // 공개였을 때 북마크한 것으로 본다
+
+        assertThat(conceptService.toggleBookmark(LEARNER, 9204L).bookmarked()).isFalse();
+        assertThat(conceptBookmarkRepository.existsByMemberIdAndActivityId(LEARNER, 9204L)).isFalse();
     }
 
     @Test
