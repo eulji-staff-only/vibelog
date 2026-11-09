@@ -89,6 +89,16 @@ class CourseCatalogAdminServiceTest {
     }
 
     @Test
+    void 진단_보기가_쓰는_트랙은_코스가_없어도_지워지지_않는다() {
+        jdbcTemplate.update("INSERT INTO diagnosis_question (diagnosis_question_id, content, sort_order) VALUES (9951, '관리 문항', 9951)");
+        jdbcTemplate.update("INSERT INTO diagnosis_option (diagnosis_option_id, diagnosis_question_id, track_id, content, sort_order) "
+                + "VALUES (9951, 9951, 9952, '관리 보기', 1)");
+
+        assertError(() -> service.deleteTrack(9952L), CourseErrorCode.TRACK_IN_USE);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM track WHERE track_id = 9952", Integer.class)).isOne();
+    }
+
+    @Test
     void 카테고리는_이름이_겹치면_안_되고_새로_만들면_맨_뒤_순서다() {
         assertError(() -> service.createCategory(CategoryForm.of("관리 카테고리A")), CourseErrorCode.DUPLICATE_NAME);
 

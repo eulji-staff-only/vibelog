@@ -58,7 +58,7 @@
     <div class="vl-ui-modal__box">
         <h2 class="vl-ui-modal__title" id="ca-category-modal-title" tabindex="-1"
             th:text="${editingId == null} ? '카테고리 만들기' : '카테고리 수정'">카테고리 만들기</h2>
-        <form class="ca-form" method="post" novalidate th:object="${categoryForm}" data-create-action="/admin/categories" data-create-title="카테고리 만들기"
+        <form class="ca-form" method="post" novalidate th:object="${categoryForm}" th:attr="data-create-action=@{/admin/categories}" data-create-title="카테고리 만들기"
               th:action="${editingId == null} ? @{/admin/categories} : @{/admin/categories/{id}/edit(id=${editingId})}">
             <div class="ca-field">
                 <label for="name">이름</label>

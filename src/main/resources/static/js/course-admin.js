@@ -28,10 +28,11 @@
 
     /* ---- 삭제 확인 모달 ---- */
     const deleteModal = document.getElementById('ca-delete-modal');
-    let pendingDelete = null;
+    let pendingDelete = null;     // 모달을 띄운 폼 (취소하면 남아 있어도 그냥 보내지지 않는다)
+    let confirmedDelete = null;   // 확인을 눌러 실제로 보내는 폼
     document.querySelectorAll('form[data-ca-delete]').forEach((form) => {
         form.addEventListener('submit', (e) => {
-            if (form === pendingDelete) return;   // 확인을 눌러 보내는 중
+            if (form === confirmedDelete) return;   // 확인을 눌러 보내는 중
             e.preventDefault();
             pendingDelete = form;
             deleteModal.querySelector('.vl-ui-modal__title').textContent = '"' + form.dataset.caDelete + '"을(를) 삭제할까요?';
@@ -41,7 +42,10 @@
     });
     if (deleteModal) {
         deleteModal.querySelector('.vl-ui-btn.is-navy').addEventListener('click', () => {
-            if (pendingDelete) pendingDelete.requestSubmit();
+            if (!pendingDelete) return;
+            confirmedDelete = pendingDelete;
+            pendingDelete = null;
+            confirmedDelete.requestSubmit();
         });
     }
 

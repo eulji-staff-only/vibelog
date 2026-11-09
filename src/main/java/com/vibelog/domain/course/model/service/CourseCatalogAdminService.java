@@ -3,6 +3,8 @@ package com.vibelog.domain.course.model.service;
 import com.vibelog.domain.course.exception.CourseErrorCode;
 import com.vibelog.domain.course.model.dao.CourseCategoryRepository;
 import com.vibelog.domain.course.model.dao.CourseRepository;
+import com.vibelog.domain.course.model.dao.DiagnosisOptionRepository;
+import com.vibelog.domain.course.model.dao.DiagnosisResultRepository;
 import com.vibelog.domain.course.model.dao.TrackRepository;
 import com.vibelog.domain.course.model.dto.AdminCategoryItem;
 import com.vibelog.domain.course.model.dto.AdminTrackItem;
@@ -38,6 +40,8 @@ public class CourseCatalogAdminService {
     private final TrackRepository trackRepository;
     private final CourseCategoryRepository courseCategoryRepository;
     private final CourseRepository courseRepository;
+    private final DiagnosisOptionRepository diagnosisOptionRepository;
+    private final DiagnosisResultRepository diagnosisResultRepository;
 
     /* ---- 트랙 ---- */
 
@@ -83,6 +87,11 @@ public class CourseCatalogAdminService {
         Track track = getTrack(trackId);
         if (courseRepository.countByTrackId(trackId) > 0) {
             throw new BusinessException(CourseErrorCode.TRACK_HAS_COURSES);
+        }
+        /* 진단 보기(점수를 주는 트랙)·진단 결과(추천 트랙)가 FK 로 물고 있으면 지울 수 없다 */
+        if (diagnosisOptionRepository.existsByTrackId(trackId)
+                || diagnosisResultRepository.existsByRecommendedTrackId(trackId)) {
+            throw new BusinessException(CourseErrorCode.TRACK_IN_USE);
         }
         trackRepository.delete(track);
     }

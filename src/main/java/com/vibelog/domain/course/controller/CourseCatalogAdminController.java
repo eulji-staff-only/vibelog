@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Map;
+import java.util.Set;
 
 /*
  * [CourseCatalogAdminController]
@@ -88,7 +89,7 @@ public class CourseCatalogAdminController {
     @PostMapping("/admin/tracks/{trackId}/delete")
     public String deleteTrack(@PathVariable Long trackId, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("toast", deleteResult(() -> courseCatalogAdminService.deleteTrack(trackId),
-                CourseErrorCode.TRACK_HAS_COURSES, "트랙을 삭제했습니다"));
+                Set.of(CourseErrorCode.TRACK_HAS_COURSES, CourseErrorCode.TRACK_IN_USE), "트랙을 삭제했습니다"));
         return "redirect:/admin/tracks";
     }
 
@@ -138,7 +139,7 @@ public class CourseCatalogAdminController {
     @PostMapping("/admin/categories/{courseCategoryId}/delete")
     public String deleteCategory(@PathVariable Long courseCategoryId, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute("toast", deleteResult(() -> courseCatalogAdminService.deleteCategory(courseCategoryId),
-                CourseErrorCode.CATEGORY_HAS_COURSES, "카테고리를 삭제했습니다"));
+                Set.of(CourseErrorCode.CATEGORY_HAS_COURSES), "카테고리를 삭제했습니다"));
         return "redirect:/admin/categories";
     }
 
@@ -167,13 +168,13 @@ public class CourseCatalogAdminController {
         bindingResult.rejectValue(field, e.getErrorCode().name(), e.getMessage());
     }
 
-    /* 삭제: 코스가 있어 막힌 경우만 안내 문구로 바꾸고, 나머지는 그대로 던진다 */
-    private String deleteResult(Runnable delete, ErrorCode blocked, String done) {
+    /* 삭제: 코스·진단에 쓰여 막힌 경우만 안내 문구로 바꾸고, 나머지는 그대로 던진다 */
+    private String deleteResult(Runnable delete, Set<ErrorCode> blocked, String done) {
         try {
             delete.run();
             return done;
         } catch (BusinessException e) {
-            if (e.getErrorCode() != blocked) {
+            if (!blocked.contains(e.getErrorCode())) {
                 throw e;
             }
             return e.getMessage();

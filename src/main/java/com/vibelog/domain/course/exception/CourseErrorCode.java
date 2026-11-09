@@ -23,9 +23,11 @@ public enum CourseErrorCode implements ErrorCode {
     DUPLICATE_NAME(HttpStatus.CONFLICT, "같은 이름이 이미 있습니다."),
     TRACK_HAS_COURSES(HttpStatus.CONFLICT, "코스가 있어 삭제할 수 없습니다. 코스를 먼저 옮겨 주세요."),
     CATEGORY_HAS_COURSES(HttpStatus.CONFLICT, "코스가 있어 삭제할 수 없습니다. 코스를 먼저 옮겨 주세요."),
-    /* 명세 7장에 따로 없는 코드: 없는 카테고리(TRACK_NOT_FOUND 와 같은 방식), 트랙 순서 중복(DB uk_track_sort_order, 폼 칸 메시지) */
+    /* 명세 7장에 따로 없는 코드: 없는 카테고리(TRACK_NOT_FOUND 와 같은 방식), 트랙 순서 중복(DB uk_track_sort_order, 폼 칸 메시지),
+       진단 보기·결과가 쓰는 트랙 삭제(fk_diagnosis_option_track_id·fk_diagnosis_result_recommended_track_id) */
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "카테고리를 찾을 수 없습니다."),
-    SORT_ORDER_TAKEN(HttpStatus.CONFLICT, "다른 트랙이 이미 쓰는 순서입니다.");
+    SORT_ORDER_TAKEN(HttpStatus.CONFLICT, "다른 트랙이 이미 쓰는 순서입니다."),
+    TRACK_IN_USE(HttpStatus.CONFLICT, "진단 문항이나 진단 결과에 쓰이는 트랙이라 삭제할 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

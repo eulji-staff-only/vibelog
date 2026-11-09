@@ -57,7 +57,7 @@
     <div class="vl-ui-modal__box">
         <h2 class="vl-ui-modal__title" id="ca-track-modal-title" tabindex="-1"
             th:text="${editingId == null} ? '트랙 만들기' : '트랙 수정'">트랙 만들기</h2>
-        <form class="ca-form" method="post" novalidate th:object="${trackForm}" data-create-action="/admin/tracks" data-create-title="트랙 만들기"
+        <form class="ca-form" method="post" novalidate th:object="${trackForm}" th:attr="data-create-action=@{/admin/tracks}" data-create-title="트랙 만들기"
               th:action="${editingId == null} ? @{/admin/tracks} : @{/admin/tracks/{id}/edit(id=${editingId})}">
             <div class="ca-field">
                 <label for="name">이름</label>
