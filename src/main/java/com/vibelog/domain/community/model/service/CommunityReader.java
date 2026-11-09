@@ -148,8 +148,7 @@ public class CommunityReader {
         return switch (targetType) {
             case "POST" -> postRepository.findAllById(targetIds).stream().filter(post -> post.getDeletedAt() == null)
                     .collect(Collectors.toMap(Post::getPostId, post -> new ReportTarget(post.getMemberId(), post.getTitle(), post.getBody())));
-            case "COMMENT" -> commentRepository.findAllById(targetIds).stream().filter(comment -> !comment.isDeleted())
-                    .collect(Collectors.toMap(Comment::getCommentId, comment -> ReportTarget.ofText(comment.getMemberId(), comment.getContent())));
+            case "COMMENT" -> commentTargets(targetIds);
             case "REVIEW" -> reviewTargets(targetIds);
             default -> Map.of();
         };
@@ -171,6 +170,19 @@ public class CommunityReader {
             case "REVIEW" -> reviewTargets(peerReviewRepository.findAllById(targetIds));
             default -> Map.of();
         };
+    }
+
+    /* 댓글은 그 글이 남아 있고 글쓴이가 영구 정지가 아닐 때만 보인다 (PostService.getPost 와 같은 조건) */
+    private Map<Long, ReportTarget> commentTargets(Collection<Long> commentIds) {
+        List<Comment> comments = commentRepository.findAllById(commentIds).stream().filter(comment -> !comment.isDeleted()).toList();
+        Map<Long, Long> livePostAuthors = postRepository.findAllById(comments.stream().map(Comment::getPostId).toList()).stream()
+                .filter(post -> post.getDeletedAt() == null)
+                .collect(Collectors.toMap(Post::getPostId, Post::getMemberId));
+        Set<Long> hiddenAuthors = memberReader.findHiddenMemberIds(livePostAuthors.values());
+        return comments.stream()
+                .filter(comment -> livePostAuthors.containsKey(comment.getPostId())
+                        && !hiddenAuthors.contains(livePostAuthors.get(comment.getPostId())))
+                .collect(Collectors.toMap(Comment::getCommentId, comment -> ReportTarget.ofText(comment.getMemberId(), comment.getContent())));
     }
 
     /* 리뷰 원문 = 기준별 코멘트를 줄바꿈으로 이은 것 */
