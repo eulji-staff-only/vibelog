@@ -207,6 +207,21 @@ class ExamServiceTest {
     }
 
     @Test
+    void 응시_중에_사용_중지된_문항이_제출_폼에_남아_있어도_건너뛰고_채점한다() {
+        examService.start(MEMBER, LESSON);
+        Long attemptId = latest().getExamAttemptId();
+
+        // 9103 은 사용 중지된 문항 (응시를 시작한 뒤 운영자가 끈 경우와 같다)
+        ExamSubmitResult result = examService.submit(MEMBER, LESSON, attemptId, Map.of(9101L, 9111L, 9103L, 9131L));
+
+        assertThat(result.alreadySubmitted()).isFalse();
+        assertThat(latest().getScore()).isEqualTo(1);
+        assertThat(examAnswerRepository.findByExamAttempt(latest()))
+                .extracting(a -> a.getExamQuestion().getExamQuestionId())
+                .containsExactlyInAnyOrder(9101L, 9102L);
+    }
+
+    @Test
     void 아무것도_고르지_않고_제출하면_모든_문항이_오답으로_남는다() {
         examService.start(MEMBER, LESSON);
         Long attemptId = latest().getExamAttemptId();
