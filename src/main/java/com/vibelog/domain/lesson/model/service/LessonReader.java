@@ -4,6 +4,7 @@ import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
+import com.vibelog.domain.lesson.model.dto.CourseEnrollmentStat;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,19 @@ public class LessonReader {
     public Map<Long, String> getActivityTitles(Collection<Long> activityIds) {
         return activityRepository.findAllById(activityIds).stream()
                 .collect(Collectors.toMap(Activity::getActivityId, Activity::getTitle));
+    }
+
+    /*
+     * 기간 내 수강 시작한 수강을 코스별로 묶은 집계 (운영자 대시보드 API-ADM-01, FR-ADM-002).
+     * from·to 가 null 이면 그 쪽 기간 제한이 없다 (쿼리 파라미터 없으면 전체 기간).
+     */
+    public List<CourseEnrollmentStat> getEnrollmentStatsByCourse(LocalDateTime from, LocalDateTime to) {
+        Map<Long, List<Enrollment>> byCourse = enrollmentRepository.findStartedBetween(from, to).stream()
+                .collect(Collectors.groupingBy(Enrollment::getCourseId));
+        return byCourse.entrySet().stream()
+                .map(entry -> new CourseEnrollmentStat(entry.getKey(), entry.getValue().size(),
+                        entry.getValue().stream().filter(Enrollment::isCompleted).count()))
+                .toList();
     }
 
     private MemberEnrollmentSummary summaryOf(Enrollment enrollment) {
