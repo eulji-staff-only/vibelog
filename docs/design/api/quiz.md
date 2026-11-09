@@ -23,12 +23,13 @@
 
 | ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| API-LSN-10 | 틀린 문제 모아보기 | GET | `/my/wrong-answers` | 회원 | query `course`(`courseId`, 선택), `lesson`(`lessonId`, 선택), `page`(1부터, _template.md 0장) | U-28 + 필터 칸(내가 틀린 문항이 있는 코스·수업 목록) + 틀린 문항 목록(최근에 틀린 순, 20개씩): 코스·수업 제목, 표시 유형, 문항, 코드, 내 답(보기 내용), 정답(보기 내용), 해설, 개념 태그 이름, 개념으로 가기 링크(`/courses/{courseId}/lessons/{lessonId}?activity={그 퀴즈 바로 앞 개념}`, U-13) | 없는 `course`·`lesson`, 틀린 문항 없음은 빈 목록(화면이 안내 상자, 화면 흐름 5-4) | FR-LSN-008 |
+| API-LSN-10 | 틀린 문제 모아보기 | GET | `/my/wrong-answers` | 회원 | query `course`(`courseId`, 선택), `lesson`(`lessonId`, 선택), `page`(1부터, _template.md 0장) | U-28 + 필터 칸(내가 틀린 문항이 있는 코스·수업 목록) + 틀린 문항 목록(최근에 틀린 순, 20개씩): 코스·수업 제목, 표시 유형, 문항, 코드, 내 답(보기 내용), 정답(보기 내용), 해설, 개념 태그 이름, 개념으로 가기 링크(`/courses/{courseId}/lessons/{lessonId}?activity={그 문항의 개념 태그가 붙은 같은 수업의 개념 활동}`, U-13. 그런 개념이 없으면 `?activity=` 없이 수업 화면) | 없는 `course`·`lesson`, 틀린 문항 없음은 빈 목록(화면이 안내 상자, 화면 흐름 5-4) | FR-LSN-008 |
 
 - **무엇을 모으나:** 로그인 회원의 `quiz_answer` 중 `is_correct = false`인 답. 같은 문항을 여러 번 틀렸으면 **가장 최근 답 1개**만 보여준다. 나중에 다시 풀어 맞혔어도 목록에서 빼지 않는다 (아래 "이 명세에서 정한 것" 1).
 - 답은 "확인"하면 고정되므로(PL-LSN-006) 제출하지 않은 풀이의 답도 모은다.
 - 운영자가 나중에 고치거나 사용 중지한 문항(API-ADM-27·28)도 그대로 보여준다. 내 답은 예전 문항·보기를 가리키므로(DB 설계서 5-4) 그때 틀린 문항 그대로다.
 - `lesson`만 오고 `course`가 없으면 그 수업으로만 거른다. 둘 다 오면 둘 다 만족하는 것만.
+- 개념으로 가기가 가리키는 개념이 아직 잠겨 있으면(태그가 뒤쪽 개념에만 붙은 경우) U-13이 지금처럼 잠김 안내를 보여준다 (API-LSN-01 그대로, 이 API는 잠김을 따로 검사하지 않는다).
 - 들어오는 길: U-13 "틀린 문제 모아보기"(`?course=&lesson=`를 붙여 그 수업으로 걸러 연다, 화면 흐름 U-13 "누르면").
 
 ## 영역 간 계약 (quiz 영역이 받는 것)
@@ -45,7 +46,8 @@
 
 | Reader·메서드 | 쓰는 곳 |
 | --- | --- |
-| `LessonReader.getQuizActivityPlaces(Collection<Long> quizActivityIds)` → `Map<Long activityId, QuizActivityPlace>`, `QuizActivityPlace(Long courseId, Long lessonId, Long conceptActivityId)` — `conceptActivityId`는 같은 수업에서 그 퀴즈 바로 앞 개념 활동(PL-LSN-001 "개념 뒤에 퀴즈")(제안, 새로 추가) | 코스·수업 필터, 개념으로 가기 링크 (API-LSN-10) |
+| `LessonReader.getQuizActivityPlaces(Collection<Long> quizActivityIds)` → `Map<Long activityId, QuizActivityPlace>`, `QuizActivityPlace(Long courseId, Long lessonId)` (제안, 새로 추가) | 코스·수업 필터 (API-LSN-10) |
+| `LessonReader.getConceptActivityIdsByTag(Collection<Long> lessonIds)` → `Map<Long lessonId, Map<Long conceptTagId, Long conceptActivityId>>` — 수업마다 개념 활동의 태그(`activity_tag`)를 모아, 같은 태그가 여러 개념에 붙어 있으면 `sort_order`가 가장 앞인 개념 (제안, 새로 추가. #284 "이 개념 다시 보기"와 같은 규칙) | 개념으로 가기 링크: 문항의 `concept_tag_id`로 찾는다 (API-LSN-10) |
 | `LessonReader.getLessonTitles(Collection<Long> lessonIds)` (이미 있음) | 수업 제목 |
 | `LessonReader.getConceptTagNames(Collection<Long> conceptTagIds)` (이미 있음) | 개념 태그 이름 |
 | `CourseReader.getCourseTitles(Collection<Long> courseIds)` (course 영역, 이미 있음) | 코스 제목 |
@@ -59,4 +61,4 @@
 | 1 | 다시 맞힌 문항 | 목록에서 빼지 않는다 | FR-LSN-008 "틀렸던 퀴즈 문제를 모아 다시 본다". 한 번 틀린 문항을 복습하는 목적 |
 | 2 | 같은 문항을 여러 번 틀림 | 가장 최근 답 1줄만 | 같은 문항이 여러 번 나오면 목록이 길어지기만 한다 |
 | 3 | 한 쪽 개수 | 20개씩 (`page`) | 게시판 목록(U-21)과 같은 수 |
-| 4 | 개념으로 가기 | 그 퀴즈 바로 앞 개념으로 간다 | 화면 흐름 U-28 "문항 → U-13 해당 개념". 문항에 개념 활동 ID가 없어(`quiz_question`은 개념 태그만 가짐) 퀴즈 위치로 정한다 |
+| 4 | 개념으로 가기 | 문항의 개념 태그(`quiz_question.concept_tag_id`)가 붙은 같은 수업의 개념 활동(`activity_tag`)으로 간다. 여러 개면 순서가 가장 앞인 것, 없으면 수업 화면 | 화면 흐름 U-28 "문항 → U-13 해당 개념". 퀴즈의 위치(바로 앞 개념)로 정하면 운영자가 활동 순서를 바꿀 때(API-ADM-24) 다른 개념을 가리키게 된다. 태그로 찾으면 순서와 상관없고 테이블을 바꾸지 않아도 된다. #284(채점 결과 "이 개념 다시 보기")가 제안한 규칙과 같다 |
