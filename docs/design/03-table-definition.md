@@ -856,6 +856,7 @@
 | reporter_member_id | BIGINT | N | FK → member |  | 신고한 회원 |
 | target_type | VARCHAR(20) | N |  |  | 신고 대상 종류 (상태값 정의 참고) |
 | target_id | BIGINT | N |  |  | 신고 대상 번호. FK 아님 |
+| target_member_id | BIGINT | N | FK → member |  | 신고 대상 작성자. 작성자 이력(A-13)·신고 이력(A-08)을 report 만으로 구한다 (#270) |
 | reason | VARCHAR(20) | N |  |  | 신고 사유 (상태값 정의 참고) |
 | reason_detail | TEXT | Y |  |  | 사유 내용. 기타(ETC)면 필수 |
 | status | VARCHAR(20) | N |  | 'PENDING' | 처리 상태 (상태값 정의 참고) |
@@ -988,3 +989,4 @@ ERDCloud에서 Export → SQL Preview로 아래 숫자가 나오면 ERD와 이 �
 | --- | --- |
 | 2026-11-05 | 확정안에 없는 컬럼 6개(profile_image_url, bio, thumbnail_url, course.sort_order, correct_count, view_count)를 뺌. 확정안 컬럼만 남김 |
 | 2026-11-05 | P1 정의서 v2와 P2·P3 정의서를 51개 한 문서로 합침. P1의 `portfolio.kind`를 규칙 v2대로 `portfolio_type`으로 바꾸고 CHECK 이름을 `ck_portfolio_type`, `ck_portfolio_type_course`로 바꿈. 상태값 정의에 P2·P3 컬럼 5개 추가 |
+| 2026-11-09 | `report`에 `target_member_id`(BIGINT NOT NULL, FK → member RESTRICT) 추가 (#270) |

@@ -75,7 +75,7 @@
 | FK 예외 | 같은 테이블을 두 번 가리키거나, 자기 자신을 가리키거나, 역할이 있으면 `역할_테이블명_id` |
 | FK 삭제 옵션 | 전부 `ON DELETE RESTRICT`. CASCADE·SET NULL은 쓰지 않음 |
 
-역할이 붙는 FK는 12곳이다: `diagnosis_result.recommended_track_id`, `exam_question.concept_activity_id`, `comment.parent_comment_id`, `message.sender_member_id`·`receiver_member_id`·`parent_message_id`, `follow.follower_member_id`·`following_member_id`, `concept_relation.source_activity_id`·`related_activity_id`, `contest_vote.voter_member_id`, `peer_review.reviewer_member_id`, `member_suspension.admin_member_id`·`releaser_member_id`, `notice.admin_member_id`, `report.reporter_member_id`·`handler_member_id`.
+역할이 붙는 FK는 12곳이다: `diagnosis_result.recommended_track_id`, `exam_question.concept_activity_id`, `comment.parent_comment_id`, `message.sender_member_id`·`receiver_member_id`·`parent_message_id`, `follow.follower_member_id`·`following_member_id`, `concept_relation.source_activity_id`·`related_activity_id`, `contest_vote.voter_member_id`, `peer_review.reviewer_member_id`, `member_suspension.admin_member_id`·`releaser_member_id`, `notice.admin_member_id`, `report.reporter_member_id`·`target_member_id`·`handler_member_id`.
 
 `quiz_question.activity_id`처럼 특정 종류(CONCEPT·QUIZ)의 활동만 가리켜도 한 번만 가리키면 역할을 붙이지 않는다. 종류는 앱에서 검사한다.
 
@@ -418,3 +418,4 @@ P1 테이블 5개(member, email_verification, post, comment, quiz_attempt)는 P1
 | 2026-11-05 | 시작·확인 시각 컬럼 6개 유지로 확정. 포트폴리오 종류 컬럼을 `portfolio_type`으로 확정 |
 | 2026-11-05 | 확정안에 없는 컬럼 7개 제거. P1·P2·P3 정의서를 51개 한 문서로 합침 |
 | 2026-11-05 | 이 설계서로 ERD·정의서·이력 정책·인덱스·요구사항 대조를 한데 모음 |
+| 2026-11-09 | `report.target_member_id`(신고 대상 작성자, FK → member) 추가 (#270, P3 신고 명세 #262 결정 24) |
