@@ -1,6 +1,10 @@
 package com.vibelog.domain.portfolio.controller;
 
 import com.vibelog.domain.auth.model.dto.LoginMember;
+import com.vibelog.domain.community.model.dto.ReviewView;
+import com.vibelog.domain.community.model.service.CommunityReader;
+import com.vibelog.domain.portfolio.model.dto.MyPortfolioCard;
+import com.vibelog.domain.portfolio.model.dto.PortfolioDetailView;
 import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dto.PortfolioPageView;
 import com.vibelog.domain.portfolio.model.dto.PortfolioSubmitForm;
@@ -27,10 +31,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 /*
  * [PortfolioPageController]
  * 역할 : 포트폴리오 영역의 화면을 연다. 과제 화면(API-PRT-01)·설정 파일 내려받기(API-PRT-03)·제출(API-PRT-04),
- *        내 포트폴리오(API-PRT-05)·수정(API-PRT-06)·삭제(API-PRT-07)·상세(API-PRT-09)를 받는다.
+ *        내 포트폴리오(API-PRT-05)·수정(API-PRT-06)·삭제(API-PRT-07)·상세(API-PRT-09)·같은 코스 작품(API-PRT-10, P2)을 받는다.
  * 책임 : - 로그인 회원은 여기서만 꺼내고 Service 에는 memberId 만 넘긴다 (README "로그인 약속").
  *        - 수강하지 않은 코스면 코스 소개(/courses/{courseId})로 보낸다 (명세 실패 칸).
  *        - 제출 입력 오류(검증·금칙어·파일)는 같은 폼 다시 + 칸별 메시지(_template.md 7-1 ④). 이미 제출함은 과제 화면 + toast,
@@ -39,6 +45,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  *          수정·삭제가 끝나면 내 포트폴리오 + toast. 남의 비공개 상세(PRIVATE_PORTFOLIO)·NOT_OWNER 는 오류 화면(E-02)이다.
  *        - 작성 중 내용 보존(P2 FR-PRT-010)은 브라우저가 한다. 여기서는 회원·코스별 저장 키(draftKey)를 화면에 넘기고,
  *          수정이 끝나면 그 키를 flash(clearDraft)로 넘겨 내 포트폴리오 화면이 지우게 한다.
+ *        - 동료 리뷰(#281): U-20 받은 리뷰·리뷰 요청/마감 버튼, U-19 "리뷰 요청 중" 표시는 community 영역 CommunityReader 값을 붙인다.
+ *          요청·마감·도움됨 처리는 community 영역 API 가 한다 (community.md "U-19·U-20 은 portfolio 화면").
  */
 @Controller
 @RequiredArgsConstructor
@@ -49,6 +57,7 @@ public class PortfolioPageController {
     private final PortfolioService portfolioService;
     private final PortfolioSubmitService portfolioSubmitService;
     private final PortfolioManageService portfolioManageService;
+    private final CommunityReader communityReader;
 
     /* U-17 포트폴리오 (과제 → 평가 에이전트 자가 점검 → 제출). edit=true 면 제출한 내 포트폴리오 값으로 채운 수정 상태 */
     @GetMapping("/courses/{courseId}/portfolio")
@@ -174,8 +183,28 @@ public class PortfolioPageController {
     /* U-19 내 포트폴리오 (API-PRT-05) */
     @GetMapping("/my/portfolios")
     public String myPortfolios(@AuthenticationPrincipal LoginMember loginMember, Model model) {
-        model.addAttribute("portfolios", portfolioManageService.getMyPortfolios(loginMember.getMemberId()));
+        List<MyPortfolioCard> portfolios = portfolioManageService.getMyPortfolios(loginMember.getMemberId());
+        model.addAttribute("portfolios", portfolios);
+        model.addAttribute("reviewOpenIds", communityReader.findPortfolioIdsWithOpenRequest(
+                portfolios.stream().map(MyPortfolioCard::portfolioId).toList()));
         return "portfolio/my-portfolios";
+    }
+
+    /* U-35 같은 코스 작품 보기 (API-PRT-10). 포트폴리오를 내지 않았으면 과제 화면 + toast (③) */
+    @GetMapping("/courses/{courseId}/portfolios")
+    public String coursePortfolios(@PathVariable Long courseId, @RequestParam(defaultValue = "1") int page,
+                                   @AuthenticationPrincipal LoginMember loginMember,
+                                   Model model, RedirectAttributes redirectAttributes) {
+        try {
+            model.addAttribute("view", portfolioManageService.getCoursePortfolios(loginMember.getMemberId(), courseId, page));
+            return "portfolio/course-portfolios";
+        } catch (BusinessException e) {
+            if (e.getErrorCode() != PortfolioErrorCode.PORTFOLIO_NOT_SUBMITTED) {
+                throw e;
+            }
+            redirectAttributes.addFlashAttribute("toast", e.getMessage());
+            return "redirect:/courses/" + courseId + "/portfolio";
+        }
     }
 
     /* U-20 포트폴리오 상세 (API-PRT-09) */
@@ -183,7 +212,17 @@ public class PortfolioPageController {
     public String detail(@PathVariable Long portfolioId,
                          @AuthenticationPrincipal LoginMember loginMember,
                          Model model) {
-        model.addAttribute("portfolio", portfolioManageService.getDetail(loginMember.getMemberId(), portfolioId));
+        Long memberId = loginMember.getMemberId();
+        PortfolioDetailView portfolio = portfolioManageService.getDetail(memberId, portfolioId);
+        List<ReviewView> reviews = communityReader.findReviewsOfPortfolio(portfolioId, memberId);
+        model.addAttribute("portfolio", portfolio);
+        model.addAttribute("reviews", reviews);
+        // 내가 쓴 리뷰의 수정 링크(/reviews?reviewRequestId=)에 쓸 요청 ID
+        model.addAttribute("myReviewRequestIds", communityReader.findReviewRequestIdsOfReviews(
+                reviews.stream().filter(ReviewView::mine).map(ReviewView::peerReviewId).toList()));
+        if (portfolio.mine()) {
+            model.addAttribute("openReviewRequestId", communityReader.findOpenReviewRequestId(portfolioId).orElse(null));
+        }
         return "portfolio/detail";
     }
 }

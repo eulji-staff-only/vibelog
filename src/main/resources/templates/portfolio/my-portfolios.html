@@ -38,6 +38,7 @@
                     <div class="mp-card-meta">
                         <span class="mp-badge" data-vis-badge th:classappend="${card.isPublic()} ? 'mp-badge-strong' : 'mp-badge-neutral'"
                               th:text="${card.isPublic()} ? '공개' : '비공개'">공개</span>
+                        <span class="mp-badge mp-badge-neutral" th:if="${reviewOpenIds.contains(card.portfolioId())}">리뷰 요청 중</span>
                         <span class="mp-muted" th:text="${card.courseTitle()}">[코스 이름]</span>
                     </div>
                     <a class="mp-card-title" th:href="@{/portfolios/{id}(id=${card.portfolioId()})}" th:text="${card.title()}">[포트폴리오 제목]</a>

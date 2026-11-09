@@ -48,10 +48,25 @@ class ExamReportPageControllerTest {
     }
 
     private ExamReportView report(Long nextLessonId) {
+        return report(nextLessonId, null);
+    }
+
+    private ExamReportView report(Long nextLessonId, Double averageScore) {
         return new ExamReportView(7L, 3L, "범위 정하기", 2, 1, 3,
                 List.of(ExamReportView.Concept.of(11L, "개념 A", 1, 1), ExamReportView.Concept.of(12L, "개념 B", 0, 1)),
                 List.of(new ExamReportView.Wrong(3, "세 번째 문항", null, "정답 보기", "해설입니다", 12L, "개념 B")),
-                nextLessonId);
+                nextLessonId, averageScore);
+    }
+
+    @Test
+    void 평균_점수가_있으면_첫_응시_기준으로_보여_주고_없으면_숨긴다() throws Exception {
+        given(examReportService.getReport(1L, 7L, 2)).willReturn(Optional.of(report(8L, 2.2)));
+        mockMvc.perform(get("/lessons/7/exam/report").param("attempt", "2").with(login()))
+                .andExpect(content().string(Matchers.containsString("같은 수업 응시자 평균 2.2문항 정답 (첫 응시 기준)")));
+
+        given(examReportService.getReport(1L, 7L, 1)).willReturn(Optional.of(report(8L, null)));
+        mockMvc.perform(get("/lessons/7/exam/report").param("attempt", "1").with(login()))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("문항 정답 (첫 응시 기준)"))));
     }
 
     @Test

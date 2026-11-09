@@ -20,7 +20,13 @@ public enum MessageErrorCode implements ErrorCode {
     MESSAGE_SELF(HttpStatus.BAD_REQUEST, "나에게는 쪽지를 보낼 수 없습니다."),
     MESSAGE_RECEIVER_NOT_FOUND(HttpStatus.NOT_FOUND, "받는 사람을 찾을 수 없습니다. 닉네임을 다시 확인해 주세요."),
     MESSAGE_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "쪽지는 하루 20통까지 보낼 수 있습니다. 내일 다시 보내 주세요."),
-    MESSAGE_UNANSWERED_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "답장이 없는 상대에게는 연속 3통까지 보낼 수 있습니다. 답장을 기다려 주세요.");
+    MESSAGE_UNANSWERED_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "답장이 없는 상대에게는 연속 3통까지 보낼 수 있습니다. 답장을 기다려 주세요."),
+    // 신고 (P3, API-RPT-01~04). HIDDEN_CONTENT 는 숨긴 콘텐츠를 보여 주는 영역의 enum 에 있다 (community 등)
+    REPORT_TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, "신고할 콘텐츠를 찾을 수 없습니다."),
+    SELF_REPORT(HttpStatus.BAD_REQUEST, "내 콘텐츠는 신고할 수 없습니다."),
+    ALREADY_REPORTED(HttpStatus.CONFLICT, "이미 신고한 콘텐츠입니다."),
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "신고를 찾을 수 없습니다."),
+    REPORT_ALREADY_HANDLED(HttpStatus.CONFLICT, "이미 처리된 신고입니다.");
 
     private final HttpStatus status;
     private final String message;

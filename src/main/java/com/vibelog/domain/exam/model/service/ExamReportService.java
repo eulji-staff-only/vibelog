@@ -8,6 +8,7 @@ import com.vibelog.domain.exam.model.entity.ExamAnswer;
 import com.vibelog.domain.exam.model.entity.ExamAttempt;
 import com.vibelog.domain.exam.model.entity.ExamChoice;
 import com.vibelog.domain.exam.model.entity.ExamQuestion;
+import com.vibelog.domain.auth.model.service.MemberReader;
 import com.vibelog.domain.lesson.model.policy.ExamLessonProgress;
 import com.vibelog.domain.lesson.model.policy.ReportNextStep;
 import com.vibelog.domain.lesson.model.service.LessonReader;
@@ -21,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /*
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
  *          계약 ③은 수업 완료를 처음 한 번만 기록하고 다음 행동만 돌려주므로, 다시 열 때도 다음 행동을 얻으려고 부른다.
  *        - 채점은 제출 때 끝나 있다 (exam_answer.is_correct). 리포트는 저장된 결과로만 그린다.
  *        - 개념 이름·수업 제목·코스 ID 는 lesson 영역 LessonReader 로 읽는다.
+ *        - 같은 수업 응시자 평균 점수 (P2 FR-EXM-005, PL-EXM-004·008): 학습자마다 1회차 제출 점수만 모아 평균, 소수 첫째 자리.
+ *          운영자·테스트 계정은 뺀다(MemberReader). 넣은 응시자가 5명 미만이면 보내지 않는다. 저장하지 않고 열 때 계산한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,6 +48,9 @@ public class ExamReportService {
     private final ExamChoiceRepository examChoiceRepository;
     private final ExamLessonProgress examLessonProgress;
     private final LessonReader lessonReader;
+    private final MemberReader memberReader;
+
+    private static final int AVERAGE_MIN_COUNT = 5;   // PL-EXM-008 응시자가 5명 미만이면 평균을 보여주지 않는다
 
     public Optional<ExamReportView> getReport(Long memberId, Long lessonId, Integer attemptNo) {
         Optional<ExamAttempt> found = attemptNo == null
@@ -71,7 +78,23 @@ public class ExamReportService {
         return Optional.of(new ExamReportView(lessonId, next.courseId(),
                 lessonReader.getLessonTitles(List.of(lessonId)).get(lessonId), attempt.getAttemptNo(),
                 (int) answers.stream().filter(this::isCorrect).count(), answers.size(),
-                concepts(answers, conceptTitles), wrongs(answers, correctChoices, conceptTitles), next.nextLessonId()));
+                concepts(answers, conceptTitles), wrongs(answers, correctChoices, conceptTitles), next.nextLessonId(),
+                averageFirstScore(lessonId)));
+    }
+
+    /* 같은 수업 응시자의 1회차 점수 평균 (소수 첫째 자리 반올림). 넣은 응시자가 5명 미만이면 null */
+    private Double averageFirstScore(Long lessonId) {
+        List<ExamAttempt> firstAttempts = examAttemptRepository.findByLessonIdAndAttemptNoAndSubmittedAtIsNotNull(lessonId, 1);
+        Set<Long> excluded = memberReader.findStatExcludedIds(firstAttempts.stream().map(ExamAttempt::getMemberId).toList());
+        List<Integer> scores = firstAttempts.stream()
+                .filter(attempt -> !excluded.contains(attempt.getMemberId()))
+                .map(ExamAttempt::getScore)
+                .toList();
+        if (scores.size() < AVERAGE_MIN_COUNT) {
+            return null;
+        }
+        double average = scores.stream().mapToInt(Integer::intValue).average().orElseThrow();
+        return Math.round(average * 10) / 10.0;
     }
 
     /* 문항 순서대로 처음 나온 개념부터. 정답률 = 맞힌 수 ÷ 그 개념 문항 수 × 100 (ExamReportView.Concept.of) */

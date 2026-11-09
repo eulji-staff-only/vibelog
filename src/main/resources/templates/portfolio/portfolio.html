@@ -79,6 +79,17 @@
                     <p class="pf-guide pf-pre" th:text="${page.agentGuide}">[세팅 방법 · 평가 기준 · 실행 방법 · 실행이 안 될 때]</p>
                 </section>
 
+                <!-- 4번 FAQ (P2 FR-PRT-008): 자주 막히는 문제와 해결 방법. 없으면 그리지 않는다 -->
+                <section class="pf-section" aria-labelledby="pf-faq-h" th:unless="${#lists.isEmpty(page.faqs)}">
+                    <h2 class="pf-h2" id="pf-faq-h">FAQ</h2>
+                    <dl class="pf-faqs">
+                        <div class="pf-faq" th:each="faq : ${page.faqs}">
+                            <dt th:text="${faq.question}">[질문]</dt>
+                            <dd class="pf-pre" th:text="${faq.answer}">[답]</dd>
+                        </div>
+                    </dl>
+                </section>
+
                 <section class="pf-section" aria-labelledby="pf-submit-h">
                     <h2 class="pf-h2" id="pf-submit-h">포트폴리오 제출</h2>
 

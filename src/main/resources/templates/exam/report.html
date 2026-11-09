@@ -28,6 +28,9 @@
                 <span class="report-label">내 점수</span>
                 <p class="report-numeral"><strong th:text="${report.correctCount()}">3</strong> / <th:block th:text="${report.totalCount()}">5</th:block><span class="report-unit">문항 정답</span></p>
                 <p class="report-caption" th:text="|${report.attemptNo()}회차 응시 기준|">가장 최근 응시 기준</p>
+                <!-- 같은 수업 응시자 평균 (P2 FR-EXM-005): 첫 응시 기준, 응시자 5명 미만이면 숨김 (PL-EXM-008) -->
+                <p class="report-caption" th:if="${report.averageScore() != null}"
+                   th:text="|같은 수업 응시자 평균 ${#numbers.formatDecimal(report.averageScore(), 1, 1)}문항 정답 (첫 응시 기준)|">같은 수업 응시자 평균 3.4문항 정답 (첫 응시 기준)</p>
             </section>
 
             <!-- 개념별 정답률 · 약한 부분 60% 미만 (PL-LSN-008). 다시 보기는 그 개념 활동(U-13)으로 -->
