@@ -7,6 +7,7 @@
     const form = document.querySelector('[data-report-form]');
     if (!form) return;
     const error = form.querySelector('[data-report-error]');
+    const submit = form.querySelector('button[type="submit"]');
     // 모달을 새로 열 때마다 올린다. 이전 신고의 응답이 늦게 와도 새로 연 모달은 바꾸지 않는다.
     let generation = 0;
 
@@ -14,6 +15,7 @@
         const button = e.target.closest('[data-report-type]');
         if (!button) return;
         generation++;
+        submit.disabled = false;
         form.reset();
         error.textContent = '';
         form.elements.targetType.value = button.dataset.reportType;
@@ -22,6 +24,9 @@
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        // 응답 전에 다시 보내면 사유가 바뀐 줄 알 수 있어 요청 중에는 버튼을 막는다
+        if (submit.disabled) return;
+        submit.disabled = true;
         const sent = generation;
         error.textContent = '';
         const detail = form.elements.reasonDetail.value.trim();
@@ -49,6 +54,8 @@
         } catch (err) {
             if (sent !== generation) return;
             error.textContent = '신고하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+        } finally {
+            if (sent === generation) submit.disabled = false;
         }
     });
 })();
