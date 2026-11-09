@@ -4,6 +4,7 @@ import com.vibelog.domain.exam.model.entity.ExamQuestion;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 /*
  * [ExamQuestionRepository]
@@ -13,4 +14,7 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long
 
     /* 운영자 수업 편집 화면(API-ADM-19, #100)의 모의고사 문항 목록 */
     List<ExamQuestion> findByLessonIdOrderBySortOrderAsc(Long lessonId);
+
+    /* 새 문항의 순서 = 그 수업 마지막 문항 + 1 (API-ADM-29) */
+    Optional<ExamQuestion> findTopByLessonIdOrderBySortOrderDesc(Long lessonId);
 }
