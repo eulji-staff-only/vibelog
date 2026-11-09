@@ -2,6 +2,7 @@ package com.vibelog.domain.portfolio.model.service;
 
 import com.vibelog.domain.auth.model.service.MemberReader;
 import com.vibelog.domain.community.model.policy.ReviewRequestCloser;
+import com.vibelog.domain.contest.model.policy.ContestEntryChecker;
 import com.vibelog.domain.lesson.model.policy.PortfolioEnrollmentProgress;
 import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
@@ -33,7 +34,8 @@ import static com.vibelog.domain.portfolio.model.policy.ApiKeyMasker.mask;
  *        - 에이전트 점검 결과는 명세에 길이가 없어 저장 칸 크기(agent_result TEXT, 65,535바이트)를 가린 뒤의 값으로 검사한다.
  *          넘으면 INVALID_INPUT (Controller 가 그 칸의 메시지로 바꾼다).
  *        - 수정은 제출과 같은 폼·같은 검사(인증·금칙어·API 키·길이)를 하고 최신본으로 덮는다 (PL-PRT-007).
- *          본인 것이 아니면 NOT_OWNER. 스크린샷은 새로 올렸을 때만 바꾼다. 콘테스트 출품 중 수정 막기(CONTEST_ENTERED)는 P2.
+ *          본인 것이 아니면 NOT_OWNER. 스크린샷은 새로 올렸을 때만 바꾼다.
+ *          콘테스트 출품 중(투표가 끝나기 전)이면 contest 계약 ⑮ isEntered 로 막는다 (CONTEST_ENTERED, PL-PRT-007, #314).
  *          수정 폼에도 공개 여부가 있어, 비공개로 저장하면 계약 ⑭ 로 열린 리뷰 요청을 닫는다 (FR-REV-005).
  */
 @Service
@@ -48,6 +50,7 @@ public class PortfolioSubmitService {
     private final FileStorage fileStorage;
     private final PortfolioManageService portfolioManageService;
     private final ReviewRequestCloser reviewRequestCloser;
+    private final ContestEntryChecker contestEntryChecker;
 
     private static final int AGENT_RESULT_MAX_BYTES = 65_535;   // sql/01-schema.sql portfolio.agent_result TEXT
 
@@ -78,6 +81,9 @@ public class PortfolioSubmitService {
     @Transactional
     public void edit(Long memberId, Long portfolioId, PortfolioSubmitForm form, MultipartFile screenshot) {
         Portfolio portfolio = portfolioManageService.getOwned(memberId, portfolioId);
+        if (contestEntryChecker.isEntered(portfolioId)) {
+            throw new BusinessException(PortfolioErrorCode.CONTEST_ENTERED);
+        }
         requireEmailVerified(memberId);
         String agentResult = checkAndMaskAgentResult(form);
         portfolio.edit(mask(form.getTitle()), form.getResultUrl(), mask(form.getSummary()), mask(form.getRetrospective()),
