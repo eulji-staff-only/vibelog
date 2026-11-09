@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface ContestEntryRepository extends JpaRepository<ContestEntry, Long> {
 
@@ -19,4 +20,10 @@ public interface ContestEntryRepository extends JpaRepository<ContestEntry, Long
     /* A-11 출품 수 (취소 제외): [contestId, count] */
     @Query("select e.contestId, count(e) from ContestEntry e where e.contestId in :contestIds and e.canceledAt is null group by e.contestId")
     List<Object[]> countLiveByContestIds(@Param("contestIds") Collection<Long> contestIds);
+
+    /* 회원의 출품 (취소 포함. 1인 1작품 uk_contest_entry_contest_member 도 취소된 행을 센다) */
+    Optional<ContestEntry> findByContestIdAndMemberId(Long contestId, Long memberId);
+
+    /* 투표 목록: 취소되지 않은 출품, 출품순 */
+    List<ContestEntry> findByContestIdAndCanceledAtIsNullOrderByContestEntryIdAsc(Long contestId);
 }
