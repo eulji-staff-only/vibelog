@@ -146,6 +146,15 @@ public class LessonReader {
                 .map(Activity::getLessonId);
     }
 
+    /*
+     * 제목에 q 가 들어 있는 공개 수업의 제목을 코스별로, 수업 순서대로. 코스가 공개인지는 부르는 쪽(course)이 거른다.
+     * 코스 목록 검색(API-CRS-02 P2, FR-CRS-003, course #189)이 쓴다
+     */
+    public Map<Long, List<String>> searchPublicLessonTitles(String q) {
+        return lessonRepository.findByIsPublicTrueAndTitleContainingOrderByCourseIdAscSortOrderAsc(q).stream()
+                .collect(Collectors.groupingBy(Lesson::getCourseId, Collectors.mapping(Lesson::getTitle, Collectors.toList())));
+    }
+
     private MemberEnrollmentSummary summaryOf(Enrollment enrollment) {
         List<Long> lessonIds = lessonRepository.findByCourseIdAndIsPublicTrueOrderBySortOrderAsc(enrollment.getCourseId()).stream()
                 .map(Lesson::getLessonId)

@@ -110,6 +110,58 @@ class CourseBrowseServiceTest {
     }
 
     @Test
+    void 카테고리로_거르고_없는_카테고리면_빈_목록이며_칩은_모든_카테고리() {
+        jdbcTemplate.update("INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9702, '테스트 빈 카테고리', 9702)");
+        jdbcTemplate.update("UPDATE course SET course_category_id = 9702 WHERE course_id = 9703");
+
+        CourseListView view = courseBrowseService.getCourseList(null, null, 9701L, null);
+        assertThat(allTitles(view)).contains("공개 입문 코스").doesNotContain("공개 통제 코스");
+        assertThat(view.categories()).extracting(c -> c.courseCategoryId()).contains(9701L, 9702L);
+
+        assertThat(courseBrowseService.getCourseList(null, null, 9799L, null).isEmpty()).isTrue();   // 없는 카테고리: 샘플 코스도 없다
+    }
+
+    @Test
+    void 검색은_코스_제목이나_공개_수업_제목에_들어_있으면_찾고_걸린_수업을_붙인다() {
+        // 코스 제목으로 (대소문자·앞뒤 공백 상관없음)
+        CourseListView byTitle = courseBrowseService.getCourseList(null, null, null, "  통제 ");
+        assertThat(allTitles(byTitle)).containsExactly("공개 통제 코스");
+        assertThat(byTitle.q()).isEqualTo("통제");
+
+        // 공개 수업 제목으로 → 그 코스 카드에 걸린 수업
+        CourseListView byLesson = courseBrowseService.getCourseList(null, null, null, "수업2");
+        assertThat(allTitles(byLesson)).containsExactly("공개 입문 코스");
+        assertThat(byLesson.groups().stream().flatMap(g -> g.courses().stream()).filter(card -> card.courseId() == 9701L)
+                .findFirst().orElseThrow().matchedLessonTitles()).containsExactly("공개 수업2");
+
+        // 비공개 수업 제목·비공개 코스 제목으로는 찾지 않는다
+        assertThat(allTitles(courseBrowseService.getCourseList(null, null, null, "비공개"))).isEmpty();
+
+        // 빈 검색어는 검색하지 않는다
+        assertThat(courseBrowseService.getCourseList(null, null, null, "   ").q()).isNull();
+    }
+
+    @Test
+    void 검색어가_있으면_추천_블록을_숨기고_카테고리가_맞지_않으면_추천도_숨긴다() {
+        long completed = member("browse-filter@vibelog.test");
+        jdbcTemplate.update("INSERT INTO diagnosis_result (member_id, recommended_track_id, status) VALUES (?, 9702, 'COMPLETED')", completed);
+        jdbcTemplate.update("INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9702, '테스트 다른 카테고리', 9702)");
+
+        assertThat(courseBrowseService.getCourseList(completed, null, null, "입문").recommended()).isNull();
+        assertThat(courseBrowseService.getCourseList(completed, null, 9701L, null).recommended().courses())
+                .extracting(CourseCard::title).containsExactly("공개 통제 코스");
+        assertThat(courseBrowseService.getCourseList(completed, null, 9702L, null).recommended()).isNull();   // 추천 코스가 그 카테고리에 없음
+        assertThat(courseBrowseService.getCourseList(completed, 9701L, null, null).recommended()).isNull();   // 다른 트랙으로 거름
+    }
+
+    private List<String> allTitles(CourseListView view) {
+        // DB 에 샘플 코스(#273)가 있을 수 있어 이 테스트가 넣은 코스(9701~9703)만 본다
+        return view.groups().stream().flatMap(g -> g.courses().stream())
+                .filter(card -> card.courseId() >= 9701L && card.courseId() <= 9703L)
+                .map(CourseCard::title).toList();
+    }
+
+    @Test
     void 코스_상세는_공개_수업만_순서대로_보여준다() {
         CourseDetailView view = courseBrowseService.getCourseDetail(null, 9701L);
 
