@@ -8,6 +8,7 @@
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <link rel="stylesheet" th:href="@{/css/lesson-admin.css}">
     <link rel="stylesheet" th:href="@{/css/exam-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/quiz-admin.css}">
     <!-- 개념 이미지 올리기(API-ADM-25)는 JSON POST 라 CSRF 토큰을 헤더로 보낸다 (README "JSON API 약속") -->
     <meta name="_csrf" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
@@ -18,7 +19,7 @@
 <!--
   A-06 수업 편집 (API-ADM-19·20, FR-LSN-011, #100 / 활동 추가·수정·사용 중지·순서 API-ADM-21~24, 개념
   이미지 올리기 API-ADM-25, #101 / 공개·비공개 API-ADM-32·33, FR-LSN-014, #118). 퀴즈 문항(API-ADM-26~28,
-  FR-LSN-012)은 quiz_question Entity가 아직 없어(quiz 영역 기반 작업 전) 목록 대신 안내 상자를 보여준다.
+  FR-LSN-012, #102)은 활동 탭에서 quiz 영역 조각 quiz/admin-quiz-questions 를 끼워 쓴다.
   모의고사 탭(문항 목록·추가·수정·사용 여부, API-ADM-29~31, #103)은 exam 영역 조각
   exam/admin-exam-questions 를 끼워 쓴다.
   공개 버튼은 빠진 항목(PL-LSN-003)이 있으면 비활성 + 이유 문구로 막는다. 비공개 버튼은 영향 학습자 수
@@ -125,7 +126,7 @@
                     <button type="submit" form="activity-order-form" class="vl-ui-btn is-navy is-s">순서 저장</button>
                 </div>
 
-                <div th:replace="~{common/ui :: notice('info', '퀴즈 문항', '퀴즈 문항 등록·관리 기능은 다음 업데이트에서 열립니다 (FR-LSN-012)')}"></div>
+                <section th:replace="~{quiz/admin-quiz-questions :: panel}"></section>
 
                 <div th:unless="${lesson.conceptTags().empty}">
                     <h3 class="al-h2">개념 태그</h3>
@@ -300,6 +301,9 @@
 
 <!-- 모의고사 문항 추가·수정 모달 (API-ADM-29·30, exam 영역 #103) -->
 <th:block th:replace="~{exam/admin-exam-questions :: modals}"></th:block>
+
+<!-- 퀴즈 문항 추가·수정 모달 (API-ADM-26·27, quiz 영역 #102) -->
+<th:block th:replace="~{quiz/admin-quiz-questions :: modals}"></th:block>
 
 <div th:replace="~{common/ui :: toastContainer}"></div>
 </body>
