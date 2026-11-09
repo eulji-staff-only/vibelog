@@ -13,4 +13,7 @@ public interface QuizChoiceRepository extends JpaRepository<QuizChoice, Long> {
 
     /* 한 문항의 보기 (문항 확인 API-LSN-05: 고른 보기가 이 문항 것인지, 정답이 무엇인지) */
     List<QuizChoice> findByQuizQuestionId(Long quizQuestionId);
+
+    /* 풀이 기록이 없는 문항을 고칠 때 보기 4개를 순서대로 (API-ADM-27) */
+    List<QuizChoice> findByQuizQuestionIdOrderBySortOrderAsc(Long quizQuestionId);
 }

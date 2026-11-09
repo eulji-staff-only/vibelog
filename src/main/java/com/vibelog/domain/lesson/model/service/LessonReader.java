@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /*
@@ -100,6 +101,13 @@ public class LessonReader {
                 .map(entry -> new CourseEnrollmentStat(entry.getKey(), entry.getValue().size(),
                         entry.getValue().stream().filter(Enrollment::isCompleted).count()))
                 .toList();
+    }
+
+    /* 퀴즈 활동이 속한 수업 ID. 퀴즈 활동이 아니거나 없는 활동이면 빈 값. 운영자 퀴즈 문항 등록(quiz #102, API-ADM-26)이 쓴다 */
+    public Optional<Long> findLessonIdOfQuizActivity(Long activityId) {
+        return activityRepository.findById(activityId)
+                .filter(Activity::isQuiz)
+                .map(Activity::getLessonId);
     }
 
     private MemberEnrollmentSummary summaryOf(Enrollment enrollment) {

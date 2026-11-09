@@ -111,7 +111,15 @@ public class LessonAdminService {
         String activeTab = "exam".equals(tab) ? "exam" : "activities";
         return new LessonEditView(lesson.getLessonId(), lesson.getCourseId(), courseTitle, lesson.getTitle(),
                 lesson.isPublic(), activeTab, activities, conceptTags, examReader.getQuestionsOf(lessonId),
-                checkPublishStatus(lessonId));
+                checkPublishStatus(lessonId), quizReader.getAdminQuestionsOf(quizActivityIds(activities)));
+    }
+
+    /* A-06 활동 탭 퀴즈 문항 목록에 쓸 퀴즈 활동 ID (quiz #102) */
+    private List<Long> quizActivityIds(List<AdminActivityItem> activities) {
+        return activities.stream()
+                .filter(activity -> activity.activityType() == ActivityType.QUIZ)
+                .map(AdminActivityItem::activityId)
+                .toList();
     }
 
     /* A-06 수업 정보 폼에 채울 값 (GET, 그리고 수정 실패로 같은 화면을 다시 보여줄 때는 쓰지 않는다) */
