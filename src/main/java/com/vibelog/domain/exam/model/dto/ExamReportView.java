@@ -9,10 +9,11 @@ import java.util.List;
  *        - 개념별 정답률은 정수 %(표시용, 반올림). 약한 부분(60% 미만, PL-LSN-008)은 반올림 전 값으로 판정한다
  *          (예: 25/42 = 59.5% 는 60% 로 보이지만 약한 부분이다).
  *        - nextLessonId 가 null 이면 마지막 수업이라 다음 행동은 포트폴리오다 (계약 ③ ReportNextStep).
+ *        - averageScore 는 같은 수업 응시자 평균 점수(1회차, 소수 첫째 자리, P2 FR-EXM-005). 응시자가 5명 미만이면 null 이라 숨긴다.
  */
 public record ExamReportView(Long lessonId, Long courseId, String lessonTitle, int attemptNo,
                              int correctCount, int totalCount, List<Concept> concepts, List<Wrong> wrongs,
-                             Long nextLessonId) {
+                             Long nextLessonId, Double averageScore) {
 
     public static final int WEAK_RATE = 60;   // PL-LSN-008
 

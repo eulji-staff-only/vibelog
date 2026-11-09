@@ -103,6 +103,31 @@ class ExamReportServiceTest {
     }
 
     @Test
+    void 응시자가_5명_미만이면_평균을_보내지_않는다() {
+        assertThat(examReportService.getReport(MEMBER, LESSON, 1).orElseThrow().averageScore()).isNull();
+    }
+
+    /*
+     * 1회차 점수: 9601(기존) 1점 + 학습자 9611~9615 2·3·3·2·2점 → 6명 13점 ÷ 6 = 2.1666… → 2.2.
+     * 운영자 9616·테스트 계정 9617(각 3점)과 9611 의 2회차(3점)는 넣지 않는다.
+     */
+    @Test
+    void 평균은_학습자의_1회차_점수만_소수_첫째_자리로_계산한다() {
+        jdbcTemplate.update("INSERT INTO member (member_id, email, nickname, role, is_test) VALUES "
+                + "(9611, 'avg-1@vibelog.test', '평균1', 'LEARNER', FALSE), (9612, 'avg-2@vibelog.test', '평균2', 'LEARNER', FALSE), "
+                + "(9613, 'avg-3@vibelog.test', '평균3', 'LEARNER', FALSE), (9614, 'avg-4@vibelog.test', '평균4', 'LEARNER', FALSE), "
+                + "(9615, 'avg-5@vibelog.test', '평균5', 'LEARNER', FALSE), (9616, 'avg-admin@vibelog.test', '평균운영자', 'ADMIN', FALSE), "
+                + "(9617, 'avg-test@vibelog.test', '평균테스트', 'LEARNER', TRUE)");
+        jdbcTemplate.update("INSERT INTO exam_attempt (exam_attempt_id, member_id, lesson_id, attempt_no, started_at, score, correct_rate, submitted_at) VALUES "
+                + "(9611, 9611, 9601, 1, NOW(), 2, 66.67, NOW()), (9612, 9612, 9601, 1, NOW(), 3, 100.00, NOW()), "
+                + "(9613, 9613, 9601, 1, NOW(), 3, 100.00, NOW()), (9614, 9614, 9601, 1, NOW(), 2, 66.67, NOW()), "
+                + "(9615, 9615, 9601, 1, NOW(), 2, 66.67, NOW()), (9616, 9616, 9601, 1, NOW(), 3, 100.00, NOW()), "
+                + "(9617, 9617, 9601, 1, NOW(), 3, 100.00, NOW()), (9618, 9611, 9601, 2, NOW(), 3, 100.00, NOW())");
+
+        assertThat(examReportService.getReport(MEMBER, LESSON, 1).orElseThrow().averageScore()).isEqualTo(2.2);
+    }
+
+    @Test
     void 제출_전_회차나_남의_응시는_리포트가_없다() {
         assertThat(examReportService.getReport(MEMBER, LESSON, 2)).isEmpty();
         assertThat(examReportService.getReport(9602L, LESSON, null)).isEmpty();
