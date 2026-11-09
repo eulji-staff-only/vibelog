@@ -21,6 +21,7 @@ public enum PortfolioErrorCode implements ErrorCode {
     PORTFOLIO_LOCKED(HttpStatus.FORBIDDEN, "마지막 수업의 오답 분석 리포트를 확인하면 열립니다."),
     ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 제출한 포트폴리오가 있습니다. 내 포트폴리오에서 수정해 주세요."),
     PRIVATE_PORTFOLIO(HttpStatus.FORBIDDEN, "비공개된 작품입니다."),
+    PORTFOLIO_NOT_SUBMITTED(HttpStatus.FORBIDDEN, "포트폴리오를 제출하면 같은 코스 작품을 볼 수 있습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다.");
 
     private final HttpStatus status;

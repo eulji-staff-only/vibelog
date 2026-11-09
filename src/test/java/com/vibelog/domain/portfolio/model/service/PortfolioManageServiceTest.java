@@ -1,6 +1,7 @@
 package com.vibelog.domain.portfolio.model.service;
 
 import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
+import com.vibelog.domain.portfolio.model.dto.CoursePortfolioCard;
 import com.vibelog.domain.portfolio.model.dto.MyPortfolioCard;
 import com.vibelog.domain.portfolio.model.dto.PortfolioDetailView;
 import com.vibelog.domain.portfolio.model.dto.PortfolioSubmitForm;
@@ -165,6 +166,49 @@ class PortfolioManageServiceTest {
         PortfolioSubmitForm form = portfolioManageService.getEditForm(ME, MINE);
         assertThat(form.getTitle()).isEqualTo("내 작품");
         assertThat(form.getIsPublic()).isFalse();
+    }
+
+    /*
+     * 같은 코스 작품 (API-PRT-10, PL-PRT-011, PL-RPT-006). 기본 데이터에 더해
+     * 8803 = 공개지만 영구 정지 회원, 8804 = 공개지만 삭제 표시, 8805 = 다른 코스(8802)의 공개 작품, 회원 8806 = 포트폴리오 없음.
+     */
+    private void givenCoursePortfolios() {
+        jdbcTemplate.update("INSERT INTO member (member_id, email, nickname) VALUES (8803, 'pf-c3@vibelog.test', '정지'), "
+                + "(8804, 'pf-c4@vibelog.test', '삭제'), (8805, 'pf-c5@vibelog.test', '다른코스'), (8806, 'pf-c6@vibelog.test', '안냄')");
+        jdbcTemplate.update("INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days) "
+                + "VALUES (8802, 8801, 8801, '다른 코스', '요약', '설명', '대상', '목표', 7)");
+        jdbcTemplate.update("INSERT INTO portfolio (portfolio_id, member_id, course_id, title, result_url, summary, retrospective, ai_tools, is_public, deleted_at) VALUES "
+                + "(8803, 8803, 8801, '정지 작품', 'https://a.io/x', '요약', '회고', '도구', TRUE, NULL), "
+                + "(8804, 8804, 8801, '삭제 작품', 'https://a.io/x', '요약', '회고', '도구', TRUE, NOW()), "
+                + "(8805, 8805, 8802, '다른 코스 작품', 'https://a.io/x', '요약', '회고', '도구', TRUE, NULL)");
+        jdbcTemplate.update("INSERT INTO member_suspension (member_id, admin_member_id, level, reason, starts_at) "
+                + "VALUES (8803, 8802, 'PERMANENT', '테스트', NOW())");
+    }
+
+    @Test
+    void 같은_코스_작품은_그_코스의_공개_작품만_작성자와_함께_보여_준다() {
+        givenCoursePortfolios();
+
+        assertThat(portfolioManageService.getCoursePortfolios(ME, 8801L, 1).portfolios().getContent())
+                .extracting(CoursePortfolioCard::portfolioId, CoursePortfolioCard::authorNickname)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(OTHERS, "작성자B"));
+    }
+
+    @Test
+    void 그_코스에_포트폴리오를_내지_않았거나_지웠으면_같은_코스_작품을_볼_수_없다() {
+        givenCoursePortfolios();
+        assertThatThrownBy(() -> portfolioManageService.getCoursePortfolios(8806L, 8801L, 1))
+                .hasFieldOrPropertyWithValue("errorCode", PortfolioErrorCode.PORTFOLIO_NOT_SUBMITTED);
+
+        portfolioManageService.delete(ME, MINE);
+        assertThatThrownBy(() -> portfolioManageService.getCoursePortfolios(ME, 8801L, 1))
+                .hasFieldOrPropertyWithValue("errorCode", PortfolioErrorCode.PORTFOLIO_NOT_SUBMITTED);
+    }
+
+    @Test
+    void 없는_코스면_찾을_수_없다() {
+        assertThatThrownBy(() -> portfolioManageService.getCoursePortfolios(ME, 8899L, 1))
+                .hasFieldOrPropertyWithValue("errorCode", PortfolioErrorCode.COURSE_NOT_FOUND);
     }
 
     private PortfolioSubmitForm form() {

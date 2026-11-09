@@ -30,7 +30,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 /*
  * [PortfolioPageController]
  * 역할 : 포트폴리오 영역의 화면을 연다. 과제 화면(API-PRT-01)·설정 파일 내려받기(API-PRT-03)·제출(API-PRT-04),
- *        내 포트폴리오(API-PRT-05)·수정(API-PRT-06)·삭제(API-PRT-07)·상세(API-PRT-09)를 받는다.
+ *        내 포트폴리오(API-PRT-05)·수정(API-PRT-06)·삭제(API-PRT-07)·상세(API-PRT-09)·같은 코스 작품(API-PRT-10, P2)을 받는다.
  * 책임 : - 로그인 회원은 여기서만 꺼내고 Service 에는 memberId 만 넘긴다 (README "로그인 약속").
  *        - 수강하지 않은 코스면 코스 소개(/courses/{courseId})로 보낸다 (명세 실패 칸).
  *        - 제출 입력 오류(검증·금칙어·파일)는 같은 폼 다시 + 칸별 메시지(_template.md 7-1 ④). 이미 제출함은 과제 화면 + toast,
@@ -166,6 +166,23 @@ public class PortfolioPageController {
     public String myPortfolios(@AuthenticationPrincipal LoginMember loginMember, Model model) {
         model.addAttribute("portfolios", portfolioManageService.getMyPortfolios(loginMember.getMemberId()));
         return "portfolio/my-portfolios";
+    }
+
+    /* U-35 같은 코스 작품 보기 (API-PRT-10). 포트폴리오를 내지 않았으면 과제 화면 + toast (③) */
+    @GetMapping("/courses/{courseId}/portfolios")
+    public String coursePortfolios(@PathVariable Long courseId, @RequestParam(defaultValue = "1") int page,
+                                   @AuthenticationPrincipal LoginMember loginMember,
+                                   Model model, RedirectAttributes redirectAttributes) {
+        try {
+            model.addAttribute("view", portfolioManageService.getCoursePortfolios(loginMember.getMemberId(), courseId, page));
+            return "portfolio/course-portfolios";
+        } catch (BusinessException e) {
+            if (e.getErrorCode() != PortfolioErrorCode.PORTFOLIO_NOT_SUBMITTED) {
+                throw e;
+            }
+            redirectAttributes.addFlashAttribute("toast", e.getMessage());
+            return "redirect:/courses/" + courseId + "/portfolio";
+        }
     }
 
     /* U-20 포트폴리오 상세 (API-PRT-09) */

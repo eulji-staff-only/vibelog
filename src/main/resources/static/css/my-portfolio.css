@@ -113,3 +113,9 @@
     .mp-modal-box { max-width: none; border-radius: var(--radius-large) var(--radius-large) 0 0; }
     .mp-modal-actions .mp-btn { width: 100%; }
 }
+
+/* U-35 같은 코스 작품 페이지 번호 (#197) */
+.mp-pages { display: flex; justify-content: center; gap: var(--space-2); margin-top: var(--space-6); }
+.mp-pages a { display: inline-flex; align-items: center; justify-content: center; min-width: var(--control-h); min-height: var(--control-h);
+    border-radius: var(--radius-pill); font-weight: 700; }
+.mp-pages a[aria-current="page"] { background: var(--navy-900); color: var(--on-navy); }
