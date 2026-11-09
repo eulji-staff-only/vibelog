@@ -60,7 +60,7 @@ public class LessonActivityAdminService {
                 .orElse(1);
         Activity activity = Activity.create(lessonId, request.getActivityType(), request.getTitle(),
                 request.getBody(), bodyFormatOf(request), request.getToolNoteUrl(), request.getEstimatedMinutes(),
-                null, nextOrder);
+                passRateOf(request), nextOrder);
         activity = activityRepository.save(activity);
         applyTags(activity.getActivityId(), request.getTagNames());
         return activity.getActivityId();
@@ -70,7 +70,7 @@ public class LessonActivityAdminService {
     @Transactional
     public Long editActivity(Long activityId, ActivityFormRequest request) {
         Activity activity = getActivity(activityId);
-        activity.edit(request.getActivityType(), request.getTitle(), request.getBody(), bodyFormatOf(request),
+        activity.edit(request.getTitle(), request.getBody(), bodyFormatOf(request),
                 request.getToolNoteUrl(), request.getEstimatedMinutes());
         applyTags(activityId, request.getTagNames());
         return activity.getLessonId();
@@ -130,6 +130,11 @@ public class LessonActivityAdminService {
 
     private BodyFormat bodyFormatOf(ActivityFormRequest request) {
         return request.getBody() == null || request.getBody().isBlank() ? null : BodyFormat.MARKDOWN;
+    }
+
+    /* 퀴즈는 통과 기준 50%로 시작한다 (PL-LSN-002). 개념은 pass_rate를 쓰지 않는다 */
+    private Integer passRateOf(ActivityFormRequest request) {
+        return request.getActivityType() == ActivityType.QUIZ ? 50 : null;
     }
 
     private void applyTags(Long activityId, List<String> tagNames) {

@@ -78,10 +78,14 @@ public class Activity extends BaseTimeEntity {
         return activityType == ActivityType.CONCEPT;
     }
 
-    /* 활동 수정 (API-ADM-22). 사용 중지 여부·순서는 따로 바꾼다 */
-    public void edit(ActivityType activityType, String title, String body, BodyFormat bodyFormat,
+    /*
+     * 활동 수정 (API-ADM-22). 사용 중지 여부·순서는 따로 바꾼다.
+     * activityType은 바꾸지 못한다 — 모의고사 열림 계약 ②(마지막 퀴즈 진도 완료)와 exam_question.concept_activity_id가
+     * 활동 종류를 보고 판단·참조하기 때문에, 만든 뒤 종류가 바뀌면 그 판단·참조가 깨진다. 종류를 바꾸려면 사용 중지
+     * 후 새로 추가한다 (Choyeonik 리뷰, PR #217).
+     */
+    public void edit(String title, String body, BodyFormat bodyFormat,
                       String toolNoteUrl, Integer estimatedMinutes) {
-        this.activityType = activityType;
         this.title = title;
         this.body = body;
         this.bodyFormat = bodyFormat;

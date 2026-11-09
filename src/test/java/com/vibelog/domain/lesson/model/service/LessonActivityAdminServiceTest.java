@@ -84,6 +84,15 @@ class LessonActivityAdminServiceTest {
     }
 
     @Test
+    void 퀴즈를_추가하면_통과_기준이_50퍼센트로_저장된다() {
+        Long quizId = lessonActivityAdminService.addActivity(LESSON, formOf(ActivityType.QUIZ, "퀴즈 4", null));
+        Long conceptId = lessonActivityAdminService.addActivity(LESSON, formOf(ActivityType.CONCEPT, "개념 3", "본문"));
+
+        assertThat(activityRepository.findById(quizId).orElseThrow().getPassRate()).isEqualTo(50);
+        assertThat(activityRepository.findById(conceptId).orElseThrow().getPassRate()).isNull();
+    }
+
+    @Test
     void 태그를_포함해_추가하면_활동_태그가_함께_저장된다() {
         ActivityFormRequest form = formOf(ActivityType.CONCEPT, "개념 3", "본문");
         form.setTagNames(List.of("변수", "새태그"));
@@ -113,6 +122,15 @@ class LessonActivityAdminServiceTest {
         assertThat(activity.getTitle()).isEqualTo("바뀐 제목");
         assertThat(activity.getBody()).isEqualTo("바뀐 본문");
         assertThat(activityTagRepository.findByActivityId(CONCEPT_1)).hasSize(1);
+    }
+
+    @Test
+    void 활동을_수정해도_활동_종류는_바뀌지_않는다() {
+        ActivityFormRequest form = formOf(ActivityType.QUIZ, "바뀐 제목", "바뀐 본문");
+
+        lessonActivityAdminService.editActivity(CONCEPT_1, form);
+
+        assertThat(activityRepository.findById(CONCEPT_1).orElseThrow().getActivityType()).isEqualTo(ActivityType.CONCEPT);
     }
 
     @Test
