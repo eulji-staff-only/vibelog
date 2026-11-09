@@ -21,4 +21,6 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     List<Portfolio> findAllByMemberIdAndDeletedAtIsNull(Long memberId);
 
     long countByMemberIdAndDeletedAtIsNull(Long memberId);
+
+    List<Portfolio> findAllByMemberIdAndIsPublicTrueAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(Long memberId);
 }

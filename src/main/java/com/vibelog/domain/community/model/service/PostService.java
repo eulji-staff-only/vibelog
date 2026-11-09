@@ -86,6 +86,7 @@ public class PostService {
         long commentCount = comments.stream().filter(comment -> !comment.isDeleted()).count();
         return PostDetail.of(post, nicknames.get(post.getMemberId()), imageUrls, commentCount,
                 CommentView.tree(comments, nicknames, loginMemberId, memberReader.findHiddenMemberIds(memberIds)), Objects.equals(post.getMemberId(), loginMemberId),
-                loginMemberId != null && favoriteRepository.existsByMemberIdAndPostId(loginMemberId, postId));
+                loginMemberId != null && favoriteRepository.existsByMemberIdAndPostId(loginMemberId, postId),
+                memberReader.isVisible(post.getMemberId()));
     }
 }
