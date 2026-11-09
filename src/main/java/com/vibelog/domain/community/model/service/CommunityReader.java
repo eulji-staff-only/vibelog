@@ -7,6 +7,8 @@ import com.vibelog.domain.community.model.dao.FollowRepository;
 import com.vibelog.domain.community.model.dao.PeerReviewRepository;
 import com.vibelog.domain.community.model.dao.PostCommentCount;
 import com.vibelog.domain.community.model.dao.PostRepository;
+import com.vibelog.domain.community.model.dao.ReviewCommentRepository;
+import com.vibelog.domain.community.model.dto.ReportTarget;
 import com.vibelog.domain.community.model.dto.ReviewView;
 import com.vibelog.domain.community.model.dto.MemberCommentItem;
 import com.vibelog.domain.community.model.dto.MemberPostItem;
@@ -16,6 +18,7 @@ import com.vibelog.domain.community.model.entity.Comment;
 import com.vibelog.domain.community.model.entity.Follow;
 import com.vibelog.domain.community.model.entity.PeerReview;
 import com.vibelog.domain.community.model.entity.Post;
+import com.vibelog.domain.community.model.entity.ReviewComment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -50,6 +53,7 @@ public class CommunityReader {
     private final RecommendService recommendService;
     private final PeerReviewService peerReviewService;
     private final PeerReviewRepository peerReviewRepository;
+    private final ReviewCommentRepository reviewCommentRepository;
 
     public Page<MemberPostItem> getPostsOf(Long memberId, int page) {
         return toItems(postRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
@@ -131,5 +135,34 @@ public class CommunityReader {
     /* U-19 카드: 열린 리뷰 요청이 있는 작품 */
     public Set<Long> findPortfolioIdsWithOpenRequest(Collection<Long> portfolioIds) {
         return peerReviewService.findPortfolioIdsWithOpenRequest(portfolioIds);
+    }
+
+    /*
+     * 신고 대상 확인 (message API-RPT-01, P3 #255). targetType 은 POST·COMMENT·REVIEW, 삭제된 것은 빠진다.
+     * 대상 ID → 작성자·미리보기(글 제목, 댓글·리뷰는 내용 앞 50자)·원문. 다른 종류나 빈 묶음이면 빈 결과
+     */
+    public Map<Long, ReportTarget> findReportTargets(String targetType, Collection<Long> targetIds) {
+        if (targetIds.isEmpty()) {
+            return Map.of();
+        }
+        return switch (targetType) {
+            case "POST" -> postRepository.findAllById(targetIds).stream().filter(post -> post.getDeletedAt() == null)
+                    .collect(Collectors.toMap(Post::getPostId, post -> new ReportTarget(post.getMemberId(), post.getTitle(), post.getBody())));
+            case "COMMENT" -> commentRepository.findAllById(targetIds).stream().filter(comment -> !comment.isDeleted())
+                    .collect(Collectors.toMap(Comment::getCommentId, comment -> ReportTarget.ofText(comment.getMemberId(), comment.getContent())));
+            case "REVIEW" -> reviewTargets(targetIds);
+            default -> Map.of();
+        };
+    }
+
+    /* 리뷰 원문 = 기준별 코멘트를 줄바꿈으로 이은 것 */
+    private Map<Long, ReportTarget> reviewTargets(Collection<Long> peerReviewIds) {
+        List<PeerReview> reviews = peerReviewRepository.findAllById(peerReviewIds).stream().filter(review -> !review.isDeleted()).toList();
+        Map<Long, String> contents = reviewCommentRepository.findByPeerReviewIdInOrderByReviewCommentIdAsc(
+                        reviews.stream().map(PeerReview::getPeerReviewId).toList()).stream()
+                .collect(Collectors.groupingBy(ReviewComment::getPeerReviewId,
+                        Collectors.mapping(ReviewComment::getContent, Collectors.joining("\n"))));
+        return reviews.stream().collect(Collectors.toMap(PeerReview::getPeerReviewId,
+                review -> ReportTarget.ofText(review.getReviewerMemberId(), contents.getOrDefault(review.getPeerReviewId(), ""))));
     }
 }

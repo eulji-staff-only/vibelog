@@ -4,6 +4,7 @@ import com.vibelog.domain.portfolio.model.dao.PortfolioAssignmentRepository;
 import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
 import com.vibelog.domain.portfolio.model.dto.PortfolioBrief;
 import com.vibelog.domain.portfolio.model.dto.PublicPortfolioCard;
+import com.vibelog.domain.portfolio.model.dto.ReportTarget;
 import com.vibelog.domain.portfolio.model.entity.Portfolio;
 import com.vibelog.domain.portfolio.model.entity.PortfolioAssignment;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +67,13 @@ public class PortfolioReader {
         List<Long> ids = portfolioRepository.findAllByMemberIdAndDeletedAtIsNull(memberId).stream()
                 .filter(Portfolio::isPublic).map(Portfolio::getPortfolioId).toList();
         return findBriefs(ids).values().stream().sorted(Comparator.comparing(PortfolioBrief::portfolioId).reversed()).toList();
+    }
+
+    /* 신고 대상 확인 (message API-RPT-01, P3 #255): 공개·삭제 표시 없는 작품만. ID → 작성자·제목·한 줄 요약. 빈 묶음이면 빈 결과 */
+    public Map<Long, ReportTarget> findReportTargets(Collection<Long> portfolioIds) {
+        return portfolioIds.isEmpty() ? Map.of() : portfolioRepository.findAllById(portfolioIds).stream()
+                .filter(p -> p.isPublic() && !p.isDeleted())
+                .collect(Collectors.toMap(Portfolio::getPortfolioId, p -> new ReportTarget(p.getMemberId(), p.getTitle(), p.getSummary())));
     }
 
     /* 회원들의 포트폴리오 ID, 삭제 표시한 것도 포함 (U-31 리뷰 요청 목록에서 영구 정지 회원 작품을 미리 뺀다, #215). 빈 묶음이면 빈 결과 */
