@@ -2,8 +2,9 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
 <!-- 수상작 목록 (순위순). 비공개·삭제된 수상작은 "비공개된 작품", 신고로 숨긴 수상작은 숨김 문구, 둘 다 링크 없음 (contest 명세 결정 14, #256) -->
-<th:block th:fragment="awards(awards)">
-    <div class="vl-ui-notice is-empty" th:if="${awards.empty}"><p>수상작이 없습니다</p></div>
+<th:block th:fragment="awards(awards, held)">
+    <!-- 시상 보류 중이면 0표처럼 수상작이 정말 없는 경우와 구분한다 (contest 명세 결정 17, #295) -->
+    <div class="vl-ui-notice is-empty" th:if="${awards.empty}"><p th:text="${held} ? '신고 검토로 결과 발표가 미뤄졌습니다' : '수상작이 없습니다'">수상작이 없습니다</p></div>
     <ol class="ct-awards" th:unless="${awards.empty}">
         <li class="ct-award" th:each="a : ${awards}">
             <span class="ct-award__rank" th:text="${a.rank() + '등'}">1등</span>

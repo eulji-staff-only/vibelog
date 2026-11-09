@@ -54,6 +54,7 @@ public class ContestResultService {
     private final PortfolioReader portfolioReader;
     private final MemberReader memberReader;
     private final MessageReader messageReader;
+    private final ContestAwardService contestAwardService;
 
     /* U-32 결과 보드: 지난 달 콘테스트 (이번 달 결과는 다음 달 1일에 나온다, 결정 12). 없거나 투표 중이면 빈 값 */
     public Optional<ContestResultView> findLastMonthResult() {
@@ -87,7 +88,12 @@ public class ContestResultService {
                     Long portfolioId = entries.get(a.getContestEntryId()).getPortfolioId();
                     return hidden.contains(portfolioId) ? MessageReader.HIDDEN_TEXT : titleOrHidden(portfolios.get(portfolioId));
                 }, Collectors.joining(", "))));
-        return contests.map(c -> new PastContestItem(c.getContestId(), c.getContestMonth(), c.getTopic(), firstPlace.get(c.getContestId())));
+        LocalDateTime now = LocalDateTime.now();
+        return contests.map(c -> {
+            String first = firstPlace.get(c.getContestId());
+            return new PastContestItem(c.getContestId(), c.getContestMonth(), c.getTopic(), first,
+                    first == null && contestAwardService.isHeld(c, now));
+        });
     }
 
     private ContestResultView toResult(Contest contest) {
@@ -107,7 +113,8 @@ public class ContestResultService {
             return new AwardItem(a.getAwardRank(), entry.getPortfolioId(), reportHidden ? null : visibleTitle(portfolio),
                     nicknames.getOrDefault(entry.getMemberId(), ""), votes.getOrDefault(a.getContestEntryId(), 0L), reportHidden);
         }).toList();
-        return new ContestResultView(contest.getContestId(), contest.getContestMonth(), contest.getTopic(), contest.getDescription(), items);
+        return new ContestResultView(contest.getContestId(), contest.getContestMonth(), contest.getTopic(), contest.getDescription(), items,
+                items.isEmpty() && contestAwardService.isHeld(contest, LocalDateTime.now()));
     }
 
     private Map<Long, ContestEntry> entriesOf(Collection<ContestAward> awards) {

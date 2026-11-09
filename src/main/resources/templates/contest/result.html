@@ -24,7 +24,7 @@
         </section>
         <section class="ct-section" aria-labelledby="awards-h">
             <h2 class="ct-h2" id="awards-h">수상작</h2>
-            <div th:replace="~{contest/awards :: awards(${result.awards()})}"></div>
+            <div th:replace="~{contest/awards :: awards(${result.awards()}, ${result.held()})}"></div>
         </section>
         <a class="ct-link" th:href="@{/contests}">← 지난 콘테스트 목록</a>
     </div>

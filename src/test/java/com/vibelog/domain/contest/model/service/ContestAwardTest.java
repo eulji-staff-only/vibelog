@@ -100,6 +100,66 @@ class ContestAwardTest {
     }
 
     @Test
+    void 수상권에_자동_숨김_출품작이_있으면_기한_전에는_미루고_결과_화면에_보류를_알린다() throws Exception {
+        long contestId = contest("2094-06", now.minusHours(1));
+        long a = member();
+        long b = member();
+        long reported = portfolio(a, "신고된 작품", true);
+        long aEntry = entry(contestId, a, reported, null);
+        long bEntry = entry(contestId, b, portfolio(b, "보통 작품", true), null);
+        votes(contestId, aEntry, 3);
+        votes(contestId, bEntry, 1);
+        report(reported, a, 3, "PENDING", null);
+        long viewer = member();
+
+        contestAwardService.announce();
+        entityManager.flush();
+
+        assertThat(awards(contestId)).isEmpty();
+        mockMvc.perform(get("/contests/{id}", contestId).with(as(viewer)))
+                .andExpect(content().string(allOf(containsString("신고 검토로 결과 발표가 미뤄졌습니다"), not(containsString("수상작이 없습니다")))));
+        mockMvc.perform(get("/contests").with(as(viewer))).andExpect(content().string(containsString("발표 보류")));
+
+        // 운영자가 기각하면 다음 배치에서 그대로 시상한다
+        jdbcTemplate.update("UPDATE report SET status = 'REJECTED', handled_at = NOW() WHERE target_type = 'PORTFOLIO' AND target_id = ?", reported);
+        entityManager.clear(); // 배치는 실행마다 새 트랜잭션이라 앞 실행에서 읽은 신고를 들고 있지 않는다
+        contestAwardService.announce();
+        entityManager.flush();
+
+        assertThat(awards(contestId)).containsExactly(List.of(aEntry, 1), List.of(bEntry, 2));
+    }
+
+    @Test
+    void 숨김_확정은_기한까지만_빼고_기한이_지나면_자동_숨김이어도_시상한다() {
+        // 투표가 4일 전에 끝나 기한(투표 끝 + 3일)이 하루 전에 지났다
+        LocalDateTime voteEnds = now.minusDays(4);
+        long contestId = contest("2094-07", voteEnds);
+        long a = member();
+        long b = member();
+        long c = member();
+        long d = member();
+        long hidden = portfolio(a, "기한 안에 숨긴 작품", true);
+        long auto = portfolio(b, "자동 숨김 작품", true);
+        long late = portfolio(d, "기한 뒤에 숨긴 작품", true);
+        long aEntry = entry(contestId, a, hidden, null);
+        long bEntry = entry(contestId, b, auto, null);
+        long cEntry = entry(contestId, c, portfolio(c, "보통 작품", true), null);
+        long dEntry = entry(contestId, d, late, null);
+        votes(contestId, aEntry, 5);
+        votes(contestId, dEntry, 4);
+        votes(contestId, bEntry, 3);
+        votes(contestId, cEntry, 1);
+        report(hidden, a, 1, "HIDDEN", voteEnds.plusDays(1));
+        report(auto, b, 3, "PENDING", null);
+        report(late, d, 1, "HIDDEN", voteEnds.plusDays(3).plusHours(1));
+
+        contestAwardService.announce();
+        entityManager.flush();
+
+        assertThat(awards(contestId)).containsExactly(List.of(dEntry, 1), List.of(bEntry, 2), List.of(cEntry, 3));
+    }
+
+    @Test
     void 투표가_끝난_지_오래돼도_수상_기록이_없으면_집계하고_투표_중이면_하지_않는다() {
         long old = contest("2094-02", now.minusDays(2));
         long voting = contestVoting("2094-03");
@@ -193,6 +253,22 @@ class ContestAwardTest {
     private void suspend(long memberId, long adminId, LocalDateTime startsAt) {
         jdbcTemplate.update("INSERT INTO member_suspension (member_id, admin_member_id, level, reason, starts_at) VALUES (?, ?, 'PERMANENT', '사유', ?)",
                 memberId, adminId, startsAt);
+    }
+
+    /* (출품작 ID, 순위) 순위순 */
+    private List<List<Object>> awards(long contestId) {
+        return jdbcTemplate.queryForList("SELECT contest_entry_id, award_rank FROM contest_award WHERE contest_id = ? ORDER BY award_rank, contest_entry_id",
+                contestId).stream()
+                .map(row -> List.<Object>of(((Number) row.get("contest_entry_id")).longValue(), ((Number) row.get("award_rank")).intValue()))
+                .toList();
+    }
+
+    /* 서로 다른 신고자 count 명이 그 작품을 status 로 신고 (처리된 신고면 handledAt) */
+    private void report(long portfolioId, long ownerId, int count, String status, LocalDateTime handledAt) {
+        for (int i = 0; i < count; i++) {
+            jdbcTemplate.update("INSERT INTO report (reporter_member_id, target_type, target_id, target_member_id, reason, status, handled_at)"
+                    + " VALUES (?, 'PORTFOLIO', ?, ?, 'SPAM', ?, ?)", member(), portfolioId, ownerId, status, handledAt);
+        }
     }
 
     private void award(long contestId, long entryId, int rank) {
