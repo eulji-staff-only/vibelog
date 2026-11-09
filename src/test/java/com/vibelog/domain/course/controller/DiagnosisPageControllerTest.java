@@ -107,7 +107,7 @@ class DiagnosisPageControllerTest {
         mockMvc.perform(get("/diagnosis").with(member()).flashAttr("toast", "진단 문항이 바뀌었습니다. 다시 진단해 주세요."))
                 .andExpect(status().isOk())
                 .andExpect(content().string(Matchers.containsString("진단 다시 하기")))
-                .andExpect(content().string(Matchers.containsString("지난 진단 결과와 추천 트랙은 그대로 남습니다.")))
+                .andExpect(content().string(Matchers.containsString("지난 진단 기록은 그대로 남습니다.")))
                 .andExpect(content().string(Matchers.containsString("진단 문항이 바뀌었습니다. 다시 진단해 주세요.")));
     }
 

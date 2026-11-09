@@ -69,7 +69,7 @@
         </form>
 
         <div class="dg-skip">
-            <span class="dg-muted" th:text="${retake} ? '건너뛰면 지난 진단 결과를 그대로 두고 코스 목록으로 이동합니다.' : '건너뛰면 전체 코스 목록으로 이동합니다.'">건너뛰면 전체 코스 목록으로 이동합니다.</span>
+            <span class="dg-muted" th:text="${retake} ? '건너뛰면 지난 진단 기록을 그대로 두고 코스 목록으로 이동합니다.' : '건너뛰면 전체 코스 목록으로 이동합니다.'">건너뛰면 전체 코스 목록으로 이동합니다.</span>
             <button type="button" class="vl-ui-btn is-text is-s" data-ui-modal-open="dg-skip-modal">진단 건너뛰기 →</button>
         </div>
 
@@ -81,7 +81,7 @@
 <!-- M-01 진단 건너뛰기 확인 (FR-DGN-003). "건너뛰기"를 누르면 아래 폼으로 건너뜀을 저장하고 코스 목록으로 간다 (API-DGN-03).
      다시 하기면 서버가 아무것도 저장하지 않으므로(API-DGN-03 P2) 안내 문구만 바꾼다 -->
 <div th:replace="~{common/ui :: confirmModal('dg-skip-modal', '진단을 건너뛸까요?',
-        ${retake} ? '지난 진단 결과와 추천 트랙은 그대로 남습니다.' : '건너뛰면 추천 트랙 없이 트랙·코스 목록으로 이동합니다.',
+        ${retake} ? '지난 진단 기록은 그대로 남습니다.' : '건너뛰면 추천 트랙 없이 트랙·코스 목록으로 이동합니다.',
         '건너뛰기', '계속 진단하기')}"></div>
 <form th:action="@{/diagnosis/skip}" method="post" hidden data-dg-skip-form></form>
 
