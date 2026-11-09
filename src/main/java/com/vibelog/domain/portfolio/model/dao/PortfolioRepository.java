@@ -29,9 +29,9 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
 
     long countByMemberIdAndDeletedAtIsNull(Long memberId);
 
-    /* U-35 같은 코스 작품 (API-PRT-10): 그 코스의 공개·삭제 표시 없는 작품, 영구 정지 회원 것 제외. 정렬은 Pageable 로 */
-    Page<Portfolio> findByCourseIdAndIsPublicTrueAndDeletedAtIsNullAndMemberIdNotIn(Long courseId, Collection<Long> hiddenMemberIds,
-                                                                                   Pageable pageable);
+    /* U-35 같은 코스 작품 (API-PRT-10): 그 코스의 공개·삭제 표시 없는 작품, 영구 정지 회원 것과 신고로 숨긴 작품 제외. 정렬은 Pageable 로 */
+    Page<Portfolio> findByCourseIdAndIsPublicTrueAndDeletedAtIsNullAndMemberIdNotInAndPortfolioIdNotIn(Long courseId,
+            Collection<Long> hiddenMemberIds, Collection<Long> hiddenPortfolioIds, Pageable pageable);
 
     /* U-19 내 포트폴리오 (삭제 표시 제외, 최근 제출 먼저) */
     List<Portfolio> findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(Long memberId);
