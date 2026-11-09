@@ -210,11 +210,13 @@ class MessageTest {
     @Test
     void 처리_대기_신고가_있는_쪽지는_일년이_지나도_남기고_처리되면_지운다() {
         long reported = messageOf(senderId, receiverId, null, "신고된 오래된 쪽지", LocalDateTime.now().minusYears(1).minusDays(1));
+        long unreported = messageOf(senderId, receiverId, null, "신고 없는 오래된 쪽지", LocalDateTime.now().minusYears(1).minusDays(1));
         jdbcTemplate.update("INSERT INTO report (reporter_member_id, target_type, target_id, target_member_id, reason, status)"
                 + " VALUES (?, 'MESSAGE', ?, ?, 'ABUSE', 'PENDING')", receiverId, reported, senderId);
 
         messageService.deleteOld();
         assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM message WHERE message_id = ?", Long.class, reported)).isOne();
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM message WHERE message_id = ?", Long.class, unreported)).isZero();
 
         jdbcTemplate.update("UPDATE report SET status = 'REJECTED', handled_at = NOW() WHERE target_type = 'MESSAGE' AND target_id = ?", reported);
         messageService.deleteOld();
