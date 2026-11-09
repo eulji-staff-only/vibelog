@@ -1,7 +1,11 @@
 package com.vibelog.domain.course.model.service;
 
+import com.vibelog.domain.course.model.dao.CourseCategoryRepository;
 import com.vibelog.domain.course.model.dao.CourseRepository;
+import com.vibelog.domain.course.model.dao.TrackRepository;
 import com.vibelog.domain.course.model.entity.Course;
+import com.vibelog.domain.course.model.entity.CourseCategory;
+import com.vibelog.domain.course.model.entity.Track;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +27,24 @@ import java.util.stream.Collectors;
 public class CourseReader {
 
     private final CourseRepository courseRepository;
+    private final TrackRepository trackRepository;
+    private final CourseCategoryRepository courseCategoryRepository;
 
     /* 코스 ID → 코스 이름. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 수강 코스(auth #119)가 쓴다 */
     public Map<Long, String> getCourseTitles(Collection<Long> courseIds) {
         return courseRepository.findAllById(courseIds).stream()
                 .collect(Collectors.toMap(Course::getCourseId, Course::getTitle));
+    }
+
+    /* 트랙 ID → 트랙 이름. 없는 ID 는 결과에 빠진다 */
+    public Map<Long, String> getTrackNames(Collection<Long> trackIds) {
+        return trackRepository.findAllById(trackIds).stream()
+                .collect(Collectors.toMap(Track::getTrackId, Track::getName));
+    }
+
+    /* 카테고리 ID → 카테고리 이름. 없는 ID 는 결과에 빠진다 */
+    public Map<Long, String> getCategoryNames(Collection<Long> categoryIds) {
+        return courseCategoryRepository.findAllById(categoryIds).stream()
+                .collect(Collectors.toMap(CourseCategory::getCourseCategoryId, CourseCategory::getName));
     }
 }
