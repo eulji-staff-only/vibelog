@@ -168,7 +168,7 @@ P1 구현 뒤 같은 규칙으로 표를 채운다. 테이블은 이미 있다(D
 | P2 | 평균 점수·리포트 다시 보기 | U-16 | → [exam.md](exam.md) API-EXM-05 (P2) |
 | P2 | FAQ (운영자 A-07 FAQ 탭 포함) | U-17, `/admin/courses/{courseId}/portfolio?tab=faq` | → [portfolio.md](portfolio.md) API-PRT-01 (P2)·API-PRT-11 |
 | P2 | 같은 코스 작품 보기 | `/courses/{courseId}/portfolios` | → [portfolio.md](portfolio.md) API-PRT-10 |
-| P2 | 개인 작품 추가 | `/my/portfolios/new?template=` | POST `/my/portfolios` (#168 결정 후 portfolio.md에 추가) |
+| P2 | 개인 작품 추가 | `/my/portfolios/new?template=` | → [portfolio.md](portfolio.md) API-PRT-12·13 |
 | P2 | 프로필 수정·닉네임 저장 | `/mypage?tab=info` | POST `/mypage/profile` |
 | P2 | 추천·랭킹·즐겨찾기·팔로우·공개 프로필 | `/community/ranking`, `/users/{memberId}` (회원) | POST `/api/posts/{postId}/recommend`, `/api/posts/{postId}/favorite`, `/api/users/{memberId}/follow` |
 | P2 | 콘테스트 (운영자 A-11 포함) | `/contests/current`, `/contests`, `/contests/{contestId}`, `/admin/contests` | → [contest.md](contest.md) API-CTS-01~08 |
