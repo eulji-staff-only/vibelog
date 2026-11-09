@@ -146,6 +146,12 @@
 | `SELF_VOTE` | 400 | 내 작품에는 투표할 수 없습니다. | ⑤ | PL-CTS-003 (P2) |
 | `DAILY_VOTE_LIMIT` | 429 | 투표는 하루 1번 할 수 있습니다. 내일 다시 투표해 주세요. | ⑤ | PL-CTS-003 (P2) |
 | `ALREADY_VOTED` | 409 | 이미 투표한 작품입니다. | ⑤ | PL-CTS-003 (P2) |
+| `HIDDEN_CONTENT` | 403 | 운영 정책에 따라 숨겨진 콘텐츠입니다. | ① E-02 | PL-ERR-006, PL-RPT-006 (P2), FR-RPT-003 (P3) |
+| `REPORT_TARGET_NOT_FOUND` | 404 | 신고할 콘텐츠를 찾을 수 없습니다. | ⑤ | API-RPT-01 (P3) |
+| `SELF_REPORT` | 400 | 내 콘텐츠는 신고할 수 없습니다. | ⑤ | API-RPT-01 (P3) |
+| `ALREADY_REPORTED` | 409 | 이미 신고한 콘텐츠입니다. | ⑤ | PL-RPT-003 (P3) |
+| `REPORT_NOT_FOUND` | 404 | 신고를 찾을 수 없습니다. | ③ → `/admin/reports` | API-RPT-02 (P3) |
+| `REPORT_ALREADY_HANDLED` | 409 | 이미 처리된 신고입니다. | ③ → `/admin/reports` | PL-RPT-004 (P3) |
 
 ## 8. P2 · P3 (목록만)
 
@@ -172,7 +178,8 @@ P1 구현 뒤 같은 규칙으로 표를 채운다. 테이블은 이미 있다(D
 | P2 | 공지 (운영자 A-10 포함) | `/notices`, `/notices/{noticeId}`, `/admin/notices` | → [message.md](message.md) API-NTF-04~08 |
 | P2 | 운영자: 이용 정지, 진단 설정, 공지·콘테스트 관리 | A-08~A-11 | `/admin/**` 같은 규칙 |
 | P2 | 운영자: 수업 미리보기, 확장 대시보드 | A-06, A-01 | → [admin.md](admin.md) API-ADM-39~40 (lesson.md와 함께 정함) |
-| P3 | 신고·신고 처리, 템플릿 관리 | M-11, A-12, A-13 | POST `/api/reports`, `/admin/reports/{reportId}/hide`·`/dismiss` |
+| P3 | 신고·신고 처리 (운영자 A-13 포함) | M-11, `/admin/reports` | → [message.md](message.md) API-RPT-01~04 |
+| P3 | 템플릿 관리 | A-12 | `/admin/templates` (#253에서 정함) |
 
 ## 9. 확정 문서와 맞춘 것
 
