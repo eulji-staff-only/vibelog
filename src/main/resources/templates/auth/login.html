@@ -32,6 +32,10 @@
             <strong>소셜 로그인을 마치지 못했습니다</strong>
             <p>이메일을 받을 수 없었거나 로그인을 취소했습니다. 다시 시도해 주세요.</p>
         </div>
+        <!-- 정지 안내를 닫았거나 새로고침해 flash 가 없을 때 -->
+        <div class="au-notice is-danger" th:if="${param.suspended} and ${suspension == null}">
+            <strong>이용이 정지된 계정입니다</strong>
+        </div>
         <div class="au-notice is-danger" th:if="${param.locked}">
             <strong>잠시 로그인할 수 없습니다</strong>
             <p>로그인에 5번 실패해 5분 동안 로그인할 수 없습니다. 5분 뒤에 다시 시도해 주세요.</p>
@@ -68,6 +72,22 @@
         <p class="au-links">아직 회원이 아닌가요? <a class="au-link" href="/signup">회원가입</a></p>
     </div>
 </main>
+
+<!-- M-07 이용 정지 안내 (FR-USR-010, PL-RPT-005). 비밀번호가 맞은 뒤에만 뜬다 -->
+<dialog class="au-dialog" id="suspended" aria-labelledby="suspended-h" th:if="${suspension}" open>
+    <div class="au-dialog__body">
+        <h2 class="au-h2" id="suspended-h">이용이 정지된 계정입니다</h2>
+        <dl class="au-info">
+            <dt>정지 단계</dt><dd th:text="${suspension.levelLabel()}">7일 정지</dd>
+            <dt>사유</dt><dd th:text="${suspension.reason()}">사유</dd>
+            <dt>기간</dt>
+            <dd th:text="${suspension.endsAt() == null} ? '영구 정지' : |${#temporals.format(suspension.endsAt(), 'yyyy.MM.dd HH:mm')}까지|">2026.11.15까지</dd>
+        </dl>
+    </div>
+    <div class="au-dialog__actions">
+        <form method="dialog"><button class="au-btn is-outline" value="close">닫기</button></form>
+    </div>
+</dialog>
 
 <div th:replace="~{common/layout :: footer}"></div>
 </body>

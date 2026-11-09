@@ -6,10 +6,12 @@
     <title th:text="${member.nickname()} + ' | 바이브로그 백오피스'">회원 상세 | 바이브로그 백오피스</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/auth-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/auth.css}">
+    <script th:src="@{/js/auth.js}" defer></script>
 </head>
 <body>
 <!-- A-08 회원 상세 (API-ADM-38, #119). 수강 코스·진행률, 퀴즈·모의고사 결과, 포트폴리오 수.
-     이용 정지(P2)·신고 이력(P3)은 없다. -->
+     이용 정지·해제(P2, API-USR-19·20, #178)는 아래 "이용 제재". 신고 이력(P3)은 없다. -->
 <div th:replace="~{common/layout :: header}"></div>
 
 <main class="am-main">
@@ -23,6 +25,31 @@
         <dt>가입일</dt><dd th:text="${#temporals.format(member.joinedAt(), 'yyyy.MM.dd')}">2026.11.01</dd>
         <dt>포트폴리오</dt><dd th:text="|${member.portfolioCount()}개|">0개</dd>
     </dl>
+
+    <p class="am-muted" role="status" th:if="${toast}" th:text="${toast}">알림</p>
+
+    <h2 class="am-h2">이용 제재</h2>
+    <p th:if="${member.sanction().current() != null}"
+       th:text="|${member.sanction().current().levelLabel()} 중 · ${member.sanction().current().endsAt() == null ? '해제할 때까지' : #temporals.format(member.sanction().current().endsAt(), 'yyyy.MM.dd HH:mm') + '까지'}|">7일 정지 중</p>
+    <p class="am-muted" th:if="${member.sanction().current() == null}">정지 중이 아닙니다</p>
+    <button class="am-btn" type="button" data-open-dialog="suspend" th:if="${member.sanction().suspendable()}">제재하기</button>
+    <form th:action="@{/admin/members/{id}/release(id=${member.memberId()})}" method="post" th:if="${member.sanction().current() != null}">
+        <button class="am-btn" type="submit">정지 해제</button>
+    </form>
+    <div class="am-scroll" th:unless="${member.sanction().history().empty}">
+        <table class="am-table">
+            <thead><tr><th>단계</th><th>사유</th><th>시작</th><th>끝</th><th>해제</th></tr></thead>
+            <tbody>
+            <tr th:each="r : ${member.sanction().history()}">
+                <td th:text="${r.levelLabel()}">경고</td>
+                <td th:text="${r.reason()}">사유</td>
+                <td th:text="${#temporals.format(r.startsAt(), 'yyyy.MM.dd HH:mm')}">2026.11.08</td>
+                <td th:text="${r.endsAt() == null} ? '-' : ${#temporals.format(r.endsAt(), 'yyyy.MM.dd HH:mm')}">-</td>
+                <td th:text="${r.releasedAt() == null} ? '-' : ${#temporals.format(r.releasedAt(), 'yyyy.MM.dd HH:mm')}">-</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 
     <h2 class="am-h2">수강 코스</h2>
     <p class="am-muted" th:if="${member.enrollments().empty}">수강한 코스가 없습니다</p>
@@ -72,6 +99,22 @@
         </table>
     </div>
 </main>
+
+<!-- 사유·기간 모달 (A-08 P2). 기본 선택은 지난 제재의 다음 단계 (경고 → 7일 → 30일 → 영구) -->
+<dialog class="au-dialog" id="suspend" aria-labelledby="suspend-h" th:if="${member.sanction().suspendable()}">
+    <form class="au-dialog__body" th:action="@{/admin/members/{id}/suspend(id=${member.memberId()})}" method="post">
+        <h2 class="au-h2" id="suspend-h">이용 제재</h2>
+        <label class="au-label" for="level">단계</label>
+        <select class="au-input" id="level" name="level">
+            <option th:each="l : ${levels}" th:value="${l.name()}" th:text="${l.label}"
+                    th:selected="${l == member.sanction().suggestedLevel()}">경고</option>
+        </select>
+        <label class="au-label" for="reason">사유</label>
+        <textarea class="au-input" id="reason" name="reason" rows="4" required></textarea>
+        <button class="au-btn is-danger" type="submit">저장</button>
+    </form>
+    <form method="dialog"><button class="au-btn is-outline" value="cancel">취소</button></form>
+</dialog>
 
 <div th:replace="~{common/layout :: footer}"></div>
 </body>

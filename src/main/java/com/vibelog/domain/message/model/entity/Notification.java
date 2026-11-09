@@ -55,4 +55,19 @@ public class Notification extends BaseTimeEntity {
                                       Long targetId, String content) {
         return new Notification(memberId, notificationType, targetType, targetId, content);
     }
+
+    public boolean isOwnedBy(Long memberId) {
+        return this.memberId.equals(memberId);
+    }
+
+    public boolean isRead() {
+        return readAt != null;
+    }
+
+    /* 처음 열 때만 읽은 시각을 남긴다 */
+    public void read() {
+        if (readAt == null) {
+            readAt = LocalDateTime.now();
+        }
+    }
 }
