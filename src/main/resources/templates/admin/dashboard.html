@@ -10,7 +10,10 @@
 <body>
 <!-- A-01 대시보드 (API-ADM-01, FR-ADM-001, FR-ADM-002, #120). 운영자 로그인 도착지.
      기간을 바꾸면(from, to) 가입자 수·트랙·코스별 수강 수·완료율이 다시 조회된다.
-     확장(API-ADM-40, FR-ADM-003, #194 1차): 진단 완료·건너뜀 비율, 포트폴리오·게시글·리뷰·쪽지·신고·콘테스트 참여 건수. -->
+     확장(API-ADM-40, FR-ADM-003, #194 1차): 진단 완료·건너뜀 비율, 포트폴리오·게시글·리뷰·쪽지·신고·콘테스트 참여 건수.
+     확장 2차: 추천 트랙과 실제 수강, 수업별 이탈률, 퀴즈 통과율·개념별 오답률, 모의고사 평균·약한 개념. -->
+
+
 <div class="vl-admin">
     <div th:replace="~{common/admin-layout :: sidebar('dashboard')}"></div>
 
@@ -64,6 +67,94 @@
                 <p class="vl-admin-dash__stat-label">콘테스트 참여</p>
                 <p class="vl-admin-dash__stat-value" th:text="|${dashboard.activity().contestEntryCount()}건|">0건</p>
             </div>
+        </section>
+
+        <h2 class="vl-admin-dash__subtitle">추천 트랙과 실제 수강</h2>
+
+        <section class="vl-admin-dash__track" id="dashboard-recommendation">
+            <p class="vl-ui-notice is-empty" th:if="${dashboard.analytics().trackRecommendations().empty}">집계된 데이터가 없습니다</p>
+            <table class="vl-admin-dash__table" th:unless="${dashboard.analytics().trackRecommendations().empty}">
+                <thead>
+                <tr><th>추천받은 트랙</th><th>추천받은 회원 수</th><th>그 트랙 코스를 수강 시작한 회원 수</th><th>비율</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${dashboard.analytics().trackRecommendations()}">
+                    <td th:text="${item.trackName()}">트랙 이름</td>
+                    <td th:text="|${item.recommendedCount()}명|">0명</td>
+                    <td th:text="|${item.enrolledCount()}명|">0명</td>
+                    <td th:text="|${item.enrolledRate()}%|">0%</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <h2 class="vl-admin-dash__subtitle">수업별 이탈률</h2>
+
+        <section class="vl-admin-dash__track" id="dashboard-dropoff">
+            <p class="vl-admin-dash__track-summary">기간에 열린 수업 중 아직 끝내지 못한 비율입니다 (진행 중인 학습자 포함).</p>
+            <p class="vl-ui-notice is-empty" th:if="${dashboard.analytics().lessonDropOffs().empty}">집계된 데이터가 없습니다</p>
+            <table class="vl-admin-dash__table" th:unless="${dashboard.analytics().lessonDropOffs().empty}">
+                <thead>
+                <tr><th>코스</th><th>수업</th><th>열린 수</th><th>못 끝낸 수</th><th>비율</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${dashboard.analytics().lessonDropOffs()}">
+                    <td th:text="${item.courseTitle()}">코스 이름</td>
+                    <td th:text="${item.lessonTitle()}">수업 이름</td>
+                    <td th:text="${item.eligibleCount()}">0</td>
+                    <td th:text="${item.dropOffCount()}">0</td>
+                    <td th:text="|${item.dropOffRate()}%|">0%</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <h2 class="vl-admin-dash__subtitle">퀴즈 통과율·개념별 오답률</h2>
+
+        <section class="vl-admin-dash__track" id="dashboard-quiz">
+            <p class="vl-admin-dash__track-summary">회원·퀴즈마다 최고 점수 기준입니다.</p>
+            <p class="vl-ui-notice is-empty" th:if="${dashboard.analytics().quizPass().attemptedCount() == 0}">집계된 데이터가 없습니다</p>
+            <p class="vl-admin-dash__stat-detail" th:unless="${dashboard.analytics().quizPass().attemptedCount() == 0}"
+               th:text="|퀴즈 통과율 ${dashboard.analytics().quizPass().passRate()}% (응시 ${dashboard.analytics().quizPass().attemptedCount()}건 중 통과 ${dashboard.analytics().quizPass().passedCount()}건)|">퀴즈 통과율 0% (응시 0건 중 통과 0건)</p>
+        </section>
+
+        <section class="vl-admin-dash__track" id="dashboard-concept">
+            <p class="vl-admin-dash__track-summary">정답률이 60% 미만인 개념은 약한 개념으로 표시합니다.</p>
+            <p class="vl-ui-notice is-empty" th:if="${dashboard.analytics().conceptWrongRates().empty}">집계된 데이터가 없습니다</p>
+            <table class="vl-admin-dash__table" th:unless="${dashboard.analytics().conceptWrongRates().empty}">
+                <thead>
+                <tr><th>개념</th><th>답한 수</th><th>틀린 수</th><th>오답률</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${dashboard.analytics().conceptWrongRates()}">
+                    <td th:text="${item.conceptName()}">개념 이름</td>
+                    <td th:text="${item.questionCount()}">0</td>
+                    <td th:text="${item.wrongCount()}">0</td>
+                    <td th:text="|${item.wrongRate()}%|">0%</td>
+                    <td><span class="vl-ui-badge is-danger" th:if="${item.weak()}">약한 개념</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <h2 class="vl-admin-dash__subtitle">모의고사 평균·약한 개념</h2>
+
+        <section class="vl-admin-dash__track" id="dashboard-exam">
+            <p class="vl-admin-dash__track-summary">학습자의 첫 응시 점수만 반영하고 운영자·테스트 계정은 뺍니다. 응시자가 5명 미만인 수업은 보여 주지 않습니다.</p>
+            <p class="vl-ui-notice is-empty" th:if="${dashboard.analytics().examLessons().empty}">집계된 데이터가 없습니다</p>
+            <table class="vl-admin-dash__table" th:unless="${dashboard.analytics().examLessons().empty}">
+                <thead>
+                <tr><th>코스</th><th>수업</th><th>평균 점수</th><th>약한 개념</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${dashboard.analytics().examLessons()}">
+                    <td th:text="${item.courseTitle()}">코스 이름</td>
+                    <td th:text="${item.lessonTitle()}">수업 이름</td>
+                    <td th:text="|${item.averageScore()}점|">0점</td>
+                    <td th:text="${item.weakConcepts().empty} ? '없음' : ${#strings.listJoin(item.weakConcepts(), ', ')}">없음</td>
+                </tr>
+                </tbody>
+            </table>
         </section>
 
         <h2 class="vl-admin-dash__subtitle">트랙·코스별 수강 수·완료율</h2>

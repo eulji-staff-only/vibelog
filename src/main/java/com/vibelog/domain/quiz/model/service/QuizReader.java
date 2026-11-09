@@ -1,17 +1,23 @@
 package com.vibelog.domain.quiz.model.service;
 
+import com.vibelog.domain.quiz.model.dao.QuizAnswerRepository;
 import com.vibelog.domain.quiz.model.dao.QuizAttemptRepository;
 import com.vibelog.domain.quiz.model.dao.QuizChoiceRepository;
 import com.vibelog.domain.quiz.model.dao.QuizQuestionRepository;
 import com.vibelog.domain.quiz.model.dto.AdminQuizQuestionItem;
+import com.vibelog.domain.quiz.model.dto.ConceptWrongStat;
 import com.vibelog.domain.quiz.model.dto.MemberQuizResult;
+import com.vibelog.domain.quiz.model.dto.QuizPassRate;
+import com.vibelog.domain.quiz.model.entity.QuizAttempt;
 import com.vibelog.domain.quiz.model.entity.QuizChoice;
 import com.vibelog.domain.quiz.model.entity.QuizQuestion;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,6 +37,7 @@ public class QuizReader {
     private final QuizAttemptRepository quizAttemptRepository;
     private final QuizQuestionRepository quizQuestionRepository;
     private final QuizChoiceRepository quizChoiceRepository;
+    private final QuizAnswerRepository quizAnswerRepository;
 
     /* 회원이 제출한 퀴즈 결과, 최근 제출 순. 운영자 회원 상세(API-ADM-38, auth #119)가 쓴다. 제출 전 풀이는 뺀다 */
     public List<MemberQuizResult> getSubmittedResultsOf(Long memberId) {
@@ -38,6 +45,36 @@ public class QuizReader {
                 .map(attempt -> new MemberQuizResult(attempt.getActivityId(), attempt.getCorrectRate(),
                         Boolean.TRUE.equals(attempt.getIsPassed()), attempt.getSubmittedAt()))
                 .toList();
+    }
+
+    /*
+     * 기간 내(quiz_attempt.submitted_at 기준) 제출한 풀이의 퀴즈 통과율. PL-LSN-007 에 따라 (회원, 퀴즈 활동)마다 그 기간 안
+     * 최고 점수(correct_rate) 풀이 한 건만 보고, 그 풀이가 통과(is_passed, 활동의 통과 기준 이상 PL-LSN-002)면 통과로 센다.
+     * 풀이가 없으면 (0, 0). from·to 가 null 이면 그 쪽 제한 없음. 운영자 확장 대시보드(admin #194, FR-ADM-003)가 쓴다
+     */
+    public QuizPassRate getPassRate(LocalDateTime from, LocalDateTime to) {
+        Map<List<Long>, QuizAttempt> bestByMemberAndActivity = new HashMap<>();
+        for (QuizAttempt attempt : quizAttemptRepository.findSubmittedBetween(from, to)) {
+            bestByMemberAndActivity.merge(List.of(attempt.getMemberId(), attempt.getActivityId()), attempt,
+                    (current, other) -> other.getCorrectRate().compareTo(current.getCorrectRate()) > 0 ? other : current);
+        }
+        int passed = (int) bestByMemberAndActivity.values().stream()
+                .filter(best -> Boolean.TRUE.equals(best.getIsPassed()))
+                .count();
+        return new QuizPassRate(bestByMemberAndActivity.size(), passed);
+    }
+
+    /*
+     * 개념 태그 ID → 기간 내(quiz_attempt.submitted_at 기준) 제출한 풀이에서 그 태그 문항에 답한 횟수와 틀린 횟수.
+     * 풀이를 여러 번 했으면 모두 센다(문항별 정오답 기록). 답이 없는 태그는 결과에 빠진다. from·to 가 null 이면 그 쪽 제한 없음.
+     * 약한 개념(PL-LSN-008) 판정은 부르는 쪽이 한다. 운영자 확장 대시보드(admin #194, FR-ADM-003)가 쓴다
+     */
+    public Map<Long, ConceptWrongStat> getWrongRateByConceptTag(LocalDateTime from, LocalDateTime to) {
+        Map<Long, ConceptWrongStat> stats = new HashMap<>();
+        for (Object[] row : quizAnswerRepository.countByConceptTagBetween(from, to)) {
+            stats.put((Long) row[0], new ConceptWrongStat(((Long) row[1]).intValue(), ((Number) row[2]).intValue()));
+        }
+        return stats;
     }
 
     /*

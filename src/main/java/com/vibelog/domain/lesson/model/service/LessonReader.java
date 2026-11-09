@@ -12,6 +12,7 @@ import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.lesson.model.dto.BookmarkedConceptSummary;
 import com.vibelog.domain.lesson.model.dto.CourseEnrollmentStat;
 import com.vibelog.domain.lesson.model.dto.CourseLessonRow;
+import com.vibelog.domain.lesson.model.dto.DropOffRate;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.dto.QuizActivityPlace;
 import com.vibelog.domain.lesson.model.entity.Activity;
@@ -33,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /*
@@ -170,6 +172,38 @@ public class LessonReader {
                 .map(entry -> new CourseEnrollmentStat(entry.getKey(), entry.getValue().size(),
                         entry.getValue().stream().filter(Enrollment::isCompleted).count()))
                 .toList();
+    }
+
+    /*
+     * 회원 ID → 그 회원이 수강을 시작한 코스 ID들 (완료·포기한 수강도 포함, 기간 제한 없음). 수강이 없는 회원은 결과에 빠진다.
+     * 운영자 확장 대시보드(admin #194, FR-ADM-003)의 "추천 트랙 vs 실제 수강"이 쓴다
+     */
+    public Map<Long, Set<Long>> findEnrolledCourseIds(Collection<Long> memberIds) {
+        if (memberIds.isEmpty()) {
+            return Map.of();
+        }
+        return enrollmentRepository.findByMemberIdIn(memberIds).stream()
+                .collect(Collectors.groupingBy(Enrollment::getMemberId,
+                        Collectors.mapping(Enrollment::getCourseId, Collectors.toSet())));
+    }
+
+    /*
+     * 수업 ID → 그 수업이 기간 안에 열린 수와 그중 완료하지 못한 수 (lesson_progress.unlocked_at 이 기간 안인 것만, 완료 못 함 = completed_at 없음).
+     * 진행 중인 학습자도 포함하므로 "아직 못 끝낸 비율"이다. from·to 가 null 이면 그 쪽 제한 없음. 열린 진도가 없는 수업은 결과에 빠진다.
+     * 운영자 확장 대시보드(admin #194, FR-ADM-003)의 수업별 이탈률이 쓴다
+     */
+    public Map<Long, DropOffRate> getDropOffRateByLesson(LocalDateTime from, LocalDateTime to) {
+        Map<Long, DropOffRate> rates = new HashMap<>();
+        for (Object[] row : lessonProgressRepository.countDropOffByLessonBetween(from, to)) {
+            rates.put((Long) row[0], new DropOffRate(((Long) row[1]).intValue(), ((Number) row[2]).intValue()));
+        }
+        return rates;
+    }
+
+    /* 수업 ID → 속한 코스 ID. 없는 ID 는 결과에 빠진다. 운영자 확장 대시보드(admin #194)가 수업 제목에 코스 이름을 붙일 때 쓴다 */
+    public Map<Long, Long> getCourseIdsByLesson(Collection<Long> lessonIds) {
+        return lessonRepository.findAllById(lessonIds).stream()
+                .collect(Collectors.toMap(Lesson::getLessonId, Lesson::getCourseId));
     }
 
     /* 코스의 모든 수업(비공개 포함), 순서대로. 운영자 코스 상세(A-05, API-ADM-14, course #96)의 수업 목록이 쓴다 */

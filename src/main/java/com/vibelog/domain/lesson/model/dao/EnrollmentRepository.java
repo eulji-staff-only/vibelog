@@ -24,6 +24,9 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     /* 회원의 수강 전체, 시작한 순서 (LessonReader.getEnrollmentsOf) */
     List<Enrollment> findByMemberIdOrderByStartedAtAsc(Long memberId);
 
+    /* 여러 회원의 수강 전체 (LessonReader.findEnrolledCourseIds, admin 확장 대시보드 추천 트랙 vs 실제 수강, FR-ADM-003) */
+    List<Enrollment> findByMemberIdIn(java.util.Collection<Long> memberIds);
+
     /* 수업 공개(API-ADM-33, PL-ENR-005, #118): 새로 공개된 수업의 진도를 기존 수강에 추가할 때 쓴다 */
     List<Enrollment> findByCourseId(Long courseId);
 
