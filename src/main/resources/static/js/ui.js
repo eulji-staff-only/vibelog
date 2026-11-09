@@ -55,9 +55,28 @@
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key !== 'Escape') return;
             const openModalEl = document.querySelector('[data-ui-modal]:not([hidden])');
-            if (openModalEl) closeModal(openModalEl);
+            if (!openModalEl) return;
+            if (e.key === 'Escape') {
+                closeModal(openModalEl);
+                return;
+            }
+            if (e.key !== 'Tab') return;
+            // aria-modal: 열려 있는 동안 Tab·Shift+Tab 은 모달 안에서만 돈다 (5-2 키보드 포커스).
+            // 처음 포커스는 제목(tabindex=-1)이라 제목에서 Shift+Tab 도 마지막 요소로 보낸다
+            const controls = [...openModalEl.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])')];
+            if (controls.length === 0) return;
+            const first = controls[0];
+            const last = controls[controls.length - 1];
+            const active = document.activeElement;
+            if (e.shiftKey && (active === first || !controls.includes(active))) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && (active === last || !openModalEl.contains(active))) {
+                e.preventDefault();
+                first.focus();
+            }
         });
     }
 
