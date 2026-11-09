@@ -89,3 +89,8 @@ textarea.ms-input { min-height: 160px; padding: var(--space-4); resize: vertical
     .ms-inbox { grid-template-columns: minmax(0, 1fr); }
     .ms-inbox__pane { padding: var(--space-5); }
 }
+
+/* M-11 신고 사유 선택 (#255). 다른 영역 화면에도 들어가므로 이 파일을 함께 넣는다 */
+.ms-report { display: flex; flex-direction: column; gap: var(--space-2); margin: 0 0 var(--space-4); padding: 0; border: 0; }
+.ms-report__reason { display: flex; align-items: center; gap: var(--space-2); min-height: 32px; }
+textarea.ms-input.is-short { min-height: 96px; }

@@ -7,6 +7,8 @@
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/message.css}">
     <script th:src="@{/js/message.js}" defer></script>
+    <script th:src="@{/js/ui.js}" defer></script>
+    <script th:src="@{/js/report.js}" defer></script>
 </head>
 <body>
 <!--
@@ -62,6 +64,11 @@
                     <a class="ms-link" th:href="@{/users/{id}(id=${opened.receiverMemberId()})}" th:text="${opened.receiverNickname()}">닉네임</a></p>
                 <p class="ms-muted"><time th:datetime="${opened.createdAt()}" th:text="${#temporals.format(opened.createdAt(), 'yyyy.MM.dd HH:mm')}">2026.11.09 10:00</time></p>
                 <p class="ms-article__body" th:text="${opened.content()}">쪽지 내용</p>
+                <!-- 받은 쪽지만 신고 (API-RPT-01 · M-11, 명세 결정 14) -->
+                <div class="ms-actions" th:if="${opened.received()}">
+                    <button class="ms-btn is-outline is-s" type="button" data-ui-modal-open="report-modal"
+                            data-report-type="MESSAGE" th:attr="data-report-id=${opened.messageId()}">신고</button>
+                </div>
 
                 <form class="ms-reply" method="post" th:if="${opened.received()}" th:object="${messageContentRequest}" novalidate
                       th:action="@{/messages/{id}/reply(id=${opened.messageId()})}">
@@ -104,6 +111,10 @@
         </div>
     </div>
 </main>
+
+<!-- M-11 신고 사유 선택 (#255) -->
+<div th:replace="~{message/report :: reportModal}"></div>
+<div th:replace="~{common/ui :: toastContainer}"></div>
 
 <div th:replace="~{common/layout :: footer}"></div>
 </body>
