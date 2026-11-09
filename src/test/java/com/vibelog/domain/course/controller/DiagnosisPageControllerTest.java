@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-/* 진단 설문·제출·건너뛰기·결과 화면 (U-07, M-01, U-08, #52·#99) */
+/* 진단 설문·제출·건너뛰기·결과 화면 (U-07, M-01, U-08, #52·#99 / 진단 다시 하기 #188) */
 @WebMvcTest(DiagnosisPageController.class)
 class DiagnosisPageControllerTest {
 
@@ -80,12 +80,35 @@ class DiagnosisPageControllerTest {
     @Test
     void 제출하면_추천_이유를_flash로_넘기고_결과로_간다() throws Exception {
         given(diagnosisService.submit(eq(7L), eq(List.of(11L, 21L))))
-                .willReturn(new DiagnosisService.SubmitResult(2L, List.of("범위가 자꾸 넓어져요")));
+                .willReturn(Optional.of(new DiagnosisService.SubmitResult(31L, 2L, List.of("범위가 자꾸 넓어져요"))));
 
         mockMvc.perform(post("/diagnosis").with(member()).with(csrf())
                         .param("diagnosisOptionIds", "11", "21"))
                 .andExpect(redirectedUrl("/diagnosis/result"))
-                .andExpect(flash().attribute("reasons", List.of("범위가 자꾸 넓어져요")));
+                .andExpect(flash().attribute("reasons", List.of("범위가 자꾸 넓어져요")))
+                .andExpect(flash().attribute("resultId", 31L));
+    }
+
+    @Test
+    void 답이_지금_문항과_맞지_않으면_설문으로_돌아가_안내한다() throws Exception {
+        given(diagnosisService.submit(eq(7L), any())).willReturn(Optional.empty());
+
+        mockMvc.perform(post("/diagnosis").with(member()).with(csrf()).param("diagnosisOptionIds", "11"))
+                .andExpect(redirectedUrl("/diagnosis"))
+                .andExpect(flash().attribute("toast", "진단 문항이 바뀌었습니다. 다시 진단해 주세요."));
+    }
+
+    @Test
+    void 진단_기록이_있으면_다시_하기_안내로_그리고_돌아온_안내를_보여준다() throws Exception {
+        given(diagnosisService.getSurvey()).willReturn(new DiagnosisSurveyView(List.of(
+                new DiagnosisSurveyView.Question(1L, "문항", List.of(new DiagnosisSurveyView.Option(11L, "보기"))))));
+        given(diagnosisService.hasRecord(7L)).willReturn(true);
+
+        mockMvc.perform(get("/diagnosis").with(member()).flashAttr("toast", "진단 문항이 바뀌었습니다. 다시 진단해 주세요."))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("진단 다시 하기")))
+                .andExpect(content().string(Matchers.containsString("지난 진단 결과와 추천 트랙은 그대로 남습니다.")))
+                .andExpect(content().string(Matchers.containsString("진단 문항이 바뀌었습니다. 다시 진단해 주세요.")));
     }
 
     @Test
@@ -98,7 +121,7 @@ class DiagnosisPageControllerTest {
 
     @Test
     void 결과가_없거나_건너뛰었으면_설문으로_보낸다() throws Exception {
-        given(diagnosisService.getResult(eq(7L), any())).willReturn(Optional.empty());
+        given(diagnosisService.getResult(eq(7L), any(), any())).willReturn(Optional.empty());
 
         mockMvc.perform(get("/diagnosis/result").with(member()))
                 .andExpect(redirectedUrl("/diagnosis"));
@@ -108,7 +131,7 @@ class DiagnosisPageControllerTest {
     void 결과_화면은_추천_트랙과_이유와_다른_트랙을_그린다() throws Exception {
         TrackIntroView recommended = new TrackIntroView(2L, "Controller", 2, "통제가 필요한 학습자", "트랙 설명",
                 List.of(new CourseCard(1L, 2L, "AI 작업 범위 통제하기", "한 줄", "Controller", "프롬프트", 14, 4)));
-        given(diagnosisService.getResult(eq(7L), any())).willReturn(Optional.of(new DiagnosisResultView(recommended,
+        given(diagnosisService.getResult(eq(7L), any(), any())).willReturn(Optional.of(new DiagnosisResultView(recommended,
                 List.of("범위가 자꾸 넓어져요"),
                 List.of(new DiagnosisResultView.OtherTrack(1L, "Starter", "입문 학습자", "입문 설명")))));
 
