@@ -88,8 +88,10 @@ public class ContestService {
         if (!memberReader.isEmailVerified(memberId)) {
             throw new BusinessException(CommonErrorCode.EMAIL_NOT_VERIFIED);
         }
+        // 투표 보드(entryCards)와 같은 기준: 비공개·삭제된 작품은 출품 취소 전이라도 표를 받지 않는다
         ContestEntry entry = contestEntryRepository.findById(contestEntryId)
                 .filter(e -> e.getContestId().equals(contestId) && !e.isCanceled())
+                .filter(e -> portfolioReader.findBrief(e.getPortfolioId()).filter(p -> p.isPublic() && !p.deleted()).isPresent())
                 .orElseThrow(() -> new BusinessException(ContestErrorCode.ENTRY_NOT_FOUND));
         if (entry.getMemberId().equals(memberId)) {
             throw new BusinessException(ContestErrorCode.SELF_VOTE);
