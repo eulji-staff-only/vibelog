@@ -42,6 +42,7 @@ class AdminDashboardServiceTest {
     @Mock CommunityReader communityReader;
     @Mock MessageReader messageReader;
     @Mock ContestReader contestReader;
+    @Mock AdminLearningAnalyticsService learningAnalyticsService;
     @InjectMocks AdminDashboardService service;
 
     private static final LocalDate FROM = LocalDate.of(2026, 1, 1);

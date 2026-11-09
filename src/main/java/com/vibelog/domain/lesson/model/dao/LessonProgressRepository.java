@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,15 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
     Optional<LessonProgress> findByEnrollmentIdAndLessonId(Long enrollmentId, Long lessonId);
 
     long countByEnrollmentIdAndLessonIdInAndCompletedAtIsNotNull(Long enrollmentId, Collection<Long> lessonIds);
+
+    /*
+     * 기간 내 열린(unlocked_at 있음, unlocked_at 기준) 수업 진도를 수업별로 센 것: [lessonId, 열린 수, 완료 못 한 수(completed_at 없음)].
+     * from·to 가 null 이면 그 쪽 제한 없음 (admin 확장 대시보드 수업별 이탈률, FR-ADM-003)
+     */
+    @Query("select lp.lessonId, count(lp), sum(case when lp.completedAt is null then 1 else 0 end) from LessonProgress lp "
+            + "where lp.unlockedAt is not null and (:from is null or lp.unlockedAt >= :from) and (:to is null or lp.unlockedAt <= :to) "
+            + "group by lp.lessonId")
+    List<Object[]> countDropOffByLessonBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     /* 내 학습(API-ENR-02) 수업별 상태 계산용 — 한 번의 쿼리로 가져온다 (N+1 방지) */
     List<LessonProgress> findByEnrollmentIdAndLessonIdIn(Long enrollmentId, Collection<Long> lessonIds);

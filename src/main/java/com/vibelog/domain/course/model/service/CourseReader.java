@@ -6,6 +6,7 @@ import com.vibelog.domain.course.model.dao.DiagnosisResultRepository;
 import com.vibelog.domain.course.model.dao.TrackRepository;
 import com.vibelog.domain.course.model.entity.Course;
 import com.vibelog.domain.course.model.entity.CourseCategory;
+import com.vibelog.domain.course.model.entity.DiagnosisResult;
 import com.vibelog.domain.course.model.entity.DiagnosisStatus;
 import com.vibelog.domain.course.model.entity.Track;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +72,19 @@ public class CourseReader {
     public Map<Long, String> getCategoryNames(Collection<Long> categoryIds) {
         return courseCategoryRepository.findAllById(categoryIds).stream()
                 .collect(Collectors.toMap(CourseCategory::getCourseCategoryId, CourseCategory::getName));
+    }
+
+    /*
+     * 회원 ID → 추천받은 트랙 ID. 기간 내(diagnosis_result.created_at 기준) 완료(COMPLETED)한 진단만 보고,
+     * 한 회원이 여러 번 했으면 가장 최근 한 건의 추천 트랙이다. from·to 가 null 이면 그 쪽 제한 없음.
+     * 운영자 확장 대시보드(admin #194, FR-ADM-003)의 "추천 트랙 vs 실제 선택 트랙"이 쓴다
+     */
+    public Map<Long, Long> findDiagnosisRecommendedTracks(LocalDateTime from, LocalDateTime to) {
+        Map<Long, Long> recommended = new LinkedHashMap<>();
+        for (DiagnosisResult result : diagnosisResultRepository.findCompletedBetween(from, to)) {   // 오래된 것부터라 뒤의 것이 덮어쓴다
+            recommended.put(result.getMemberId(), result.getRecommendedTrackId());
+        }
+        return recommended;
     }
 
     /*

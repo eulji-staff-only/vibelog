@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
 /*
  * [AdminDashboardService]
  * 역할 : 대시보드(A-01, API-ADM-01·40, FR-ADM-002·003)의 가입자 수, 트랙·코스별 수강 수·완료율, 진단 완료·건너뛰기 비율,
- *        활동 건수(포트폴리오·게시글·리뷰·쪽지·신고·콘테스트 참여)를 모은다.
+ *        활동 건수(포트폴리오·게시글·리뷰·쪽지·신고·콘테스트 참여)를 모은다. 2차 지표(추천 트랙·이탈률·퀴즈·모의고사)는
+ *        AdminLearningAnalyticsService 에 맡긴다.
  * 책임 : - 가입자 수는 MemberReader, 수강 집계는 LessonReader, 트랙·코스 이름과 진단 결과는 CourseReader,
  *          활동 건수는 Portfolio·Community·Message·ContestReader 에서 읽기만 한다
  *          (다른 영역의 Entity·Repository 는 import 하지 않는다. 직접 계산하지 않고 기간만 넘긴다).
@@ -50,6 +51,7 @@ public class AdminDashboardService {
     private final CommunityReader communityReader;
     private final MessageReader messageReader;
     private final ContestReader contestReader;
+    private final AdminLearningAnalyticsService learningAnalyticsService;
 
     public AdminDashboardResponse getDashboard(LocalDate from, LocalDate to) {
         validatePeriod(from, to);
@@ -61,7 +63,8 @@ public class AdminDashboardService {
         List<CourseEnrollmentStat> courseStats = lessonReader.getEnrollmentStatsByCourse(fromDateTime, toDateTime);
 
         return new AdminDashboardResponse(memberCount, toTrackItems(courseStats),
-                toDiagnosisStat(fromDateTime, toDateTime), toActivityCounts(fromDateTime, toDateTime));
+                toDiagnosisStat(fromDateTime, toDateTime), toActivityCounts(fromDateTime, toDateTime),
+                learningAnalyticsService.getAnalytics(fromDateTime, toDateTime));
     }
 
     private AdminDiagnosisStat toDiagnosisStat(LocalDateTime from, LocalDateTime to) {

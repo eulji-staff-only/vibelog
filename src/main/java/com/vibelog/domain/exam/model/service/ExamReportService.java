@@ -8,6 +8,7 @@ import com.vibelog.domain.exam.model.entity.ExamAnswer;
 import com.vibelog.domain.exam.model.entity.ExamAttempt;
 import com.vibelog.domain.exam.model.entity.ExamChoice;
 import com.vibelog.domain.exam.model.entity.ExamQuestion;
+import com.vibelog.domain.exam.model.policy.ExamStatPolicy;
 import com.vibelog.domain.auth.model.service.MemberReader;
 import com.vibelog.domain.lesson.model.policy.ExamLessonProgress;
 import com.vibelog.domain.lesson.model.policy.ReportNextStep;
@@ -50,8 +51,6 @@ public class ExamReportService {
     private final LessonReader lessonReader;
     private final MemberReader memberReader;
 
-    private static final int AVERAGE_MIN_COUNT = 5;   // PL-EXM-008 응시자가 5명 미만이면 평균을 보여주지 않는다
-
     public Optional<ExamReportView> getReport(Long memberId, Long lessonId, Integer attemptNo) {
         Optional<ExamAttempt> found = attemptNo == null
                 ? examAttemptRepository.findFirstByMemberIdAndLessonIdAndSubmittedAtIsNotNullOrderByAttemptNoDesc(memberId, lessonId)
@@ -90,11 +89,7 @@ public class ExamReportService {
                 .filter(attempt -> !excluded.contains(attempt.getMemberId()))
                 .map(ExamAttempt::getScore)
                 .toList();
-        if (scores.size() < AVERAGE_MIN_COUNT) {
-            return null;
-        }
-        double average = scores.stream().mapToInt(Integer::intValue).average().orElseThrow();
-        return Math.round(average * 10) / 10.0;
+        return ExamStatPolicy.average(scores);   // 5명 미만이면 null, 소수 첫째 자리 (PL-EXM-008, 운영자 대시보드와 같은 기준)
     }
 
     /* 문항 순서대로 처음 나온 개념부터. 정답률 = 맞힌 수 ÷ 그 개념 문항 수 × 100 (ExamReportView.Concept.of) */

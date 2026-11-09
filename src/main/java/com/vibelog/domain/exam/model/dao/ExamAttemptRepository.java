@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,11 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> 
 
     /* 리포트 평균 점수(API-EXM-05 P2): 그 수업의 회차별 제출 응시. 평균은 1회차만 쓴다 (PL-EXM-004) */
     List<ExamAttempt> findByLessonIdAndAttemptNoAndSubmittedAtIsNotNull(Long lessonId, int attemptNo);
+
+    /* 기간 내 제출한 1회차 응시 전체 (submitted_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (admin 확장 대시보드, FR-ADM-003) */
+    @Query("select a from ExamAttempt a where a.attemptNo = 1 and a.submittedAt is not null "
+            + "and (:from is null or a.submittedAt >= :from) and (:to is null or a.submittedAt <= :to)")
+    List<ExamAttempt> findFirstAttemptsSubmittedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     /* 리포트(API-EXM-05): 회차를 고른 경우. 같은 응시를 동시에 처음 열어도 연 일시·계약 ③을 한 번만 처리하려고 행을 잠근다 */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
