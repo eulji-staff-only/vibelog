@@ -14,9 +14,10 @@
 | API-LSN-03 | 퀴즈 화면 | GET | `/courses/{courseId}/lessons/{lessonId}/quizzes/{activityId}` | 조건(활동 열림) | path 3개 | U-14 틀 + 퀴즈 제목, 문항 수, 최고 점수(PL-LSN-007) | `ACTIVITY_LOCKED` → 수업 화면 + 잠김 안내 | FR-LSN-006 |
 | API-LSN-04 | 풀이 시작 | POST | `/api/quizzes/{activityId}/attempts` | 조건 | path `activityId` | JSON `quizAttemptId`, `questions[]`(`quizQuestionId`, `displayType`, `content`, `codeSnippet`, `choices[]`(`quizChoiceId`, `content`)). 정답은 넣지 않는다. 다시 풀면 문항·보기 순서를 섞는다 | `ACTIVITY_LOCKED` | FR-LSN-006, PL-LSN-004·005 |
 | API-LSN-05 | 문항 확인 | POST | `/api/quiz-attempts/{quizAttemptId}/answers` | 조건(본인 풀이) | path `quizAttemptId`, json `quizQuestionId`, `quizChoiceId` | `quiz_answer` 저장 → JSON `correct`, `correctQuizChoiceId`, `explanation` | `ALREADY_CHECKED`(답 고정), `ATTEMPT_SUBMITTED`, `NOT_OWNER` | FR-LSN-006, PL-LSN-006 |
-| API-LSN-06 | 제출·채점 | POST | `/api/quiz-attempts/{quizAttemptId}/submit` | 조건(본인 풀이) | path `quizAttemptId` | 채점(정답률 ≥ `activity.pass_rate`(기본 50)면 통과, `quiz_attempt.correct_rate`·`is_passed`·`submitted_at` 기록) → 통과면 퀴즈 완료·다음 개념 열림(마지막 퀴즈면 모의고사 열림) → JSON `correctRate`, `isPassed`, `tagStats[]`(`conceptTagName`, `wrongRate`, `weak`), `next`(`type`: CONCEPT·EXAM·NONE, `url`), `message`("다음 개념이 열렸습니다" 등) | `QUIZ_NOT_FINISHED`(확인 안 한 문항 있음), `ATTEMPT_SUBMITTED` | FR-LSN-006, 007, PL-LSN-002·003·008 |
+| API-LSN-06 | 제출·채점 | POST | `/api/quiz-attempts/{quizAttemptId}/submit` | 조건(본인 풀이) | path `quizAttemptId` | 채점(정답률 ≥ `activity.pass_rate`(기본 50)면 통과, `quiz_attempt.correct_rate`·`is_passed`·`submitted_at` 기록) → 통과면 퀴즈 완료·다음 개념 열림(마지막 퀴즈면 모의고사 열림) → JSON `correctRate`, `isPassed`, `tagStats[]`(`conceptTagName`, `wrongRate`, `weak`, `conceptActivityId`), `next`(`type`: CONCEPT·EXAM·NONE, `url`), `message`("다음 개념이 열렸습니다" 등) | `QUIZ_NOT_FINISHED`(확인 안 한 문항 있음), `ATTEMPT_SUBMITTED` | FR-LSN-006, 007, PL-LSN-002·003·008 |
 
 - 약한 개념 = 개념 태그별 정답률 60% 미만 (PL-LSN-008).
+- `tagStats[].conceptActivityId`: 그 개념 태그가 붙은 **같은 수업의 사용 중인 개념 활동** 중 순서가 가장 앞인 것, 없으면 `null` (#284, FR-LSN-007 "해당 개념 글로 연결"). 약한 개념의 "이 개념 다시 보기"는 `/courses/{courseId}/lessons/{lessonId}?activity={conceptActivityId}`로, `null`이면 수업 화면으로 보낸다. 틀린 문제 모아보기의 개념 링크(결정 4)와 같은 규칙이고, `LessonReader.getConceptActivityIdsByTag`로 찾는다.
 - 문항 표시 유형 값은 DB 설계서 4-3을 따른다 (`quiz_question.display_type`): `CODE_BLANK`, `CONCEPT`, `OUTPUT_PREDICT`, `TRICK`.
 
 ## 틀린 문제 모아보기 (P2)
@@ -62,3 +63,4 @@
 | 2 | 같은 문항을 여러 번 틀림 | 가장 최근 답 1줄만 | 같은 문항이 여러 번 나오면 목록이 길어지기만 한다 |
 | 3 | 한 쪽 개수 | 20개씩 (`page`) | 게시판 목록(U-21)과 같은 수 |
 | 4 | 개념으로 가기 | 문항의 개념 태그(`quiz_question.concept_tag_id`)가 붙은 같은 수업의 **사용 중인** 개념 활동(`activity_tag`)으로 간다. 여러 개면 순서가 가장 앞인 것, 없으면 수업 화면 | 화면 흐름 U-28 "문항 → U-13 해당 개념". 퀴즈의 위치(바로 앞 개념)로 정하면 운영자가 활동 순서를 바꿀 때(API-ADM-24) 다른 개념을 가리키게 된다. 태그로 찾으면 순서와 상관없고 테이블을 바꾸지 않아도 된다. #284(채점 결과 "이 개념 다시 보기")가 제안한 규칙과 같다 |
+| 5 | 채점 결과의 "이 개념 다시 보기" (#284) | 4와 같은 규칙으로 `tagStats[].conceptActivityId`를 채운다 | FR-LSN-007은 "해당 개념 글로 연결"인데 응답에 개념 글을 가리키는 값이 없어 수업 화면으로 보내고 있었다. 틀린 문제 모아보기와 같은 규칙이라 두 화면이 같은 개념으로 보낸다 |
