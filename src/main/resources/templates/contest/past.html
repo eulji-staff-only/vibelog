@@ -22,7 +22,7 @@
             <li th:each="c : ${contests}">
                 <a th:href="@{/contests/{id}(id=${c.contestId()})}">
                     <strong th:text="${c.contestMonth() + ' · ' + c.topic()}">2026-11 · 주제</strong>
-                    <span class="ct-muted" th:text="${c.firstPlace() != null} ? ${'1등 ' + c.firstPlace()} : '수상작 없음'">1등 작품 제목</span>
+                    <span class="ct-muted" th:text="${c.firstPlace() != null} ? ${'1등 ' + c.firstPlace()} : (${c.held()} ? '발표 보류' : '수상작 없음')">1등 작품 제목</span>
                 </a>
             </li>
         </ul>
