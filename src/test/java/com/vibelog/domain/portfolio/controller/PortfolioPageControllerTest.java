@@ -394,6 +394,115 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("data-draft-key=\"vibelog.portfolio-draft.1.3.edit\"")));
     }
 
+    /* ---------- #199 개인 작품 U-34 ---------- */
+
+    @Test
+    void 개인_작품_추가_화면은_고정_항목_5개와_공개_여부_양식을_그린다() throws Exception {
+        given(portfolioManageService.isEmailVerified(1L)).willReturn(true);
+
+        mockMvc.perform(get("/my/portfolios/new").param("template", "basic").with(login()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portfolio/personal"))
+                .andExpect(content().string(Matchers.containsString("action=\"/my/portfolios\"")))
+                .andExpect(content().string(Matchers.containsString(">설명 <em>*</em>")))
+                .andExpect(content().string(Matchers.containsString("등록하기")))
+                .andExpect(content().string(Matchers.containsString("data-draft-key=\"vibelog.portfolio-draft.1.personal\"")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("name=\"screenshot\""))))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("name=\"agentResult\""))));
+    }
+
+    @Test
+    void 이메일_미인증이면_개인_작품_양식_대신_인증_안내를_그린다() throws Exception {
+        mockMvc.perform(get("/my/portfolios/new").with(login()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("이메일 인증 후 개인 작품을 등록할 수 있습니다.")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("data-submit-form"))));
+    }
+
+    @Test
+    void 개인_작품_수정_상태는_저장된_값으로_채우고_수정_주소로_보낸다() throws Exception {
+        given(portfolioManageService.isEmailVerified(1L)).willReturn(true);
+        PortfolioSubmitForm saved = new PortfolioSubmitForm();
+        saved.setTitle("내 개인 작품");
+        saved.setIsPublic(true);
+        given(portfolioManageService.getPersonalEditForm(1L, 9L)).willReturn(saved);
+
+        mockMvc.perform(get("/my/portfolios/new").param("edit", "9").with(login()))
+                .andExpect(content().string(Matchers.containsString("value=\"내 개인 작품\"")))
+                .andExpect(content().string(Matchers.containsString("action=\"/portfolios/9/edit\"")))
+                .andExpect(content().string(Matchers.containsString("수정하기")))
+                .andExpect(content().string(Matchers.containsString("data-draft-key=\"vibelog.portfolio-draft.1.personal.9\"")));
+    }
+
+    @Test
+    void 개인_작품을_등록하면_내_포트폴리오로_보내고_안내한다() throws Exception {
+        mockMvc.perform(post("/my/portfolios").with(login()).with(csrf())
+                        .param("title", "개인 작품").param("resultUrl", "https://github.com/me/app").param("summary", "설명")
+                        .param("retrospective", RETRO).param("aiTools", "Claude Code").param("isPublic", "true"))
+                .andExpect(redirectedUrl("/my/portfolios"))
+                .andExpect(flash().attribute("toast", "개인 작품을 등록했습니다"))
+                .andExpect(flash().attribute("clearDraft", "vibelog.portfolio-draft.1.personal"));
+
+        verify(portfolioSubmitService).submitPersonal(eq(1L), any(PortfolioSubmitForm.class));
+    }
+
+    @Test
+    void 개인_작품_입력이_틀리면_같은_양식을_다시_그린다() throws Exception {
+        given(portfolioManageService.isEmailVerified(1L)).willReturn(true);
+
+        mockMvc.perform(post("/my/portfolios").with(login()).with(csrf())
+                        .param("title", "개인 작품").param("resultUrl", "주소 아님").param("summary", "설명")
+                        .param("retrospective", "짧음").param("aiTools", "Claude Code").param("isPublic", "true"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portfolio/personal"))
+                .andExpect(content().string(Matchers.containsString("올바른 URL을 입력하세요")))
+                .andExpect(content().string(Matchers.containsString("회고는 100자 이상 2,000자 이하로 입력해 주세요.")));
+
+        verify(portfolioSubmitService, never()).submitPersonal(any(), any());
+    }
+
+    @Test
+    void 개인_작품_수정_입력이_틀리면_U34_수정_상태를_다시_그린다() throws Exception {
+        given(portfolioManageService.getOwnedCourseId(1L, 7L)).willReturn(null);
+        given(portfolioManageService.isEmailVerified(1L)).willReturn(true);
+
+        mockMvc.perform(editRequest("너무 짧은 회고"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portfolio/personal"))
+                .andExpect(content().string(Matchers.containsString("action=\"/portfolios/7/edit\"")));
+    }
+
+    @Test
+    void 개인_작품을_수정하면_개인_작품_수정_키를_지운다() throws Exception {
+        given(portfolioManageService.getOwnedCourseId(1L, 7L)).willReturn(null);
+
+        mockMvc.perform(editRequest(RETRO))
+                .andExpect(redirectedUrl("/my/portfolios"))
+                .andExpect(flash().attribute("clearDraft", "vibelog.portfolio-draft.1.personal.7"));
+    }
+
+    @Test
+    void 내_포트폴리오에서_개인_작품은_U34로_수정하고_삭제_안내를_구분한다() throws Exception {
+        given(portfolioManageService.getMyPortfolios(1L)).willReturn(List.of(
+                new MyPortfolioCard(9L, null, null, "개인 작품", "설명", true, LocalDateTime.of(2026, 11, 9, 10, 0))));
+
+        mockMvc.perform(get("/my/portfolios").with(login()))
+                .andExpect(content().string(Matchers.containsString("개인 작품 추가")))
+                .andExpect(content().string(Matchers.containsString("/my/portfolios/new?edit=9")))
+                .andExpect(content().string(Matchers.containsString("data-course=\"false\"")))
+                .andExpect(content().string(Matchers.containsString("data-delete-warn")));
+    }
+
+    @Test
+    void 내_개인_작품_상세의_수정은_U34로_간다() throws Exception {
+        given(portfolioManageService.getDetail(1L, 9L)).willReturn(new PortfolioDetailView(9L, "개인 작품", "https://github.com/me/app",
+                "설명", "회고", "Claude Code", null, null, null, null, "나", LocalDateTime.of(2026, 11, 9, 10, 0), true, true, false));
+
+        mockMvc.perform(get("/portfolios/9").with(login()))
+                .andExpect(content().string(Matchers.containsString("/my/portfolios/new?edit=9")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("edit=true"))));
+    }
+
     @Test
     void 수정하면_내_포트폴리오로_보내고_안내한다() throws Exception {
         given(portfolioManageService.getOwnedCourseId(1L, 7L)).willReturn(3L);
