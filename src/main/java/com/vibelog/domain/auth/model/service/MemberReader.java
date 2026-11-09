@@ -3,13 +3,16 @@ package com.vibelog.domain.auth.model.service;
 import com.vibelog.domain.auth.model.dao.MemberRepository;
 import com.vibelog.domain.auth.model.dao.MemberSuspensionRepository;
 import com.vibelog.domain.auth.model.entity.Member;
+import com.vibelog.domain.auth.model.entity.MemberStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /*
@@ -50,10 +53,35 @@ public class MemberReader {
                 .orElse(false);
     }
 
+    /*
+     * 공개 프로필을 볼 수 있는 회원 ID만 골라 준다 (API-CMT-14, 작성자 링크). 지금은 탈퇴하지 않은 회원.
+     * 영구 정지 회원(PL-RPT-006)은 이용 정지(#178)에서 더한다.
+     */
+    public Set<Long> findVisibleIds(Collection<Long> memberIds) {
+        return memberRepository.findAllById(memberIds).stream()
+                .filter(member -> member.getStatus() == MemberStatus.ACTIVE)
+                .map(Member::getMemberId)
+                .collect(Collectors.toSet());
+    }
+
+    public boolean isVisible(Long memberId) {
+        return memberId != null && findVisibleIds(List.of(memberId)).contains(memberId);
+    }
+
     /* 회원 ID 1건 → 닉네임. 공통 헤더(#132)처럼 로그인 회원 1명의 닉네임만 필요할 때 쓴다. 없는 ID면 빈 문자열 */
     public String getNickname(Long memberId) {
         return memberRepository.findById(memberId)
                 .map(Member::getNickname)
                 .orElse("");
+    }
+
+    /* 탈퇴하지 않은 회원 전체 ID. 공지 등록 때 모든 회원에게 알림을 남긴다 (message API-NTF-07, #186) */
+    public List<Long> findActiveMemberIds() {
+        return memberRepository.findActiveMemberIds();
+    }
+
+    /* 기간 내 가입자 수 (member.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (운영자 대시보드 API-ADM-01, FR-ADM-002) */
+    public long countJoinedBetween(LocalDateTime from, LocalDateTime to) {
+        return memberRepository.countByCreatedAtBetween(from, to);
     }
 }

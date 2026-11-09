@@ -3,6 +3,7 @@ package com.vibelog.domain.portfolio.model.service;
 import com.vibelog.domain.portfolio.model.dao.PortfolioAssignmentRepository;
 import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
 import com.vibelog.domain.portfolio.model.dto.PortfolioBrief;
+import com.vibelog.domain.portfolio.model.dto.PublicPortfolioCard;
 import com.vibelog.domain.portfolio.model.entity.Portfolio;
 import com.vibelog.domain.portfolio.model.entity.PortfolioAssignment;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,14 @@ public class PortfolioReader {
     /* 회원의 포트폴리오 수 (삭제 표시 제외). 운영자 회원 상세(API-ADM-38, FR-USR-009) */
     public long countOf(Long memberId) {
         return portfolioRepository.countByMemberIdAndDeletedAtIsNull(memberId);
+    }
+
+    /* 회원의 공개 포트폴리오 (삭제 표시 제외) 최신순. 공개 프로필 (API-CMT-14, FR-CMT-009) */
+    public List<PublicPortfolioCard> findPublicOf(Long memberId) {
+        return portfolioRepository.findAllByMemberIdAndIsPublicTrueAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(memberId)
+                .stream()
+                .map(PublicPortfolioCard::from)
+                .toList();
     }
 
     /* 포트폴리오 요약 1건 (community 동료 리뷰, #182). 삭제 표시된 것도 돌려주고 deleted 로 알린다. 없으면 빈 값 */

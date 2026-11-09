@@ -20,8 +20,9 @@
     <div class="au-panel">
         <!-- 비밀번호 재설정 뒤 (API-USR-14) -->
         <div class="au-notice is-success" role="status" th:if="${toast}"><strong th:text="${toast}">알림</strong></div>
+        <!-- 회원 화면에서 보낸 경우 (SecurityConfig redirect). 처음 온 비회원·세션 만료 모두 같은 문구 (#163) -->
         <div class="au-notice" th:if="${param.redirect}">
-            <p>로그인 시간이 지나 로그아웃되었습니다. 다시 로그인하면 보던 화면으로 돌아갑니다</p>
+            <p>로그인이 필요한 화면입니다. 로그인하면 보던 화면으로 돌아갑니다</p>
         </div>
         <!-- 같은 이메일이 다른 방식으로 가입됨 (SOCIAL_EMAIL_CONFLICT·SOCIAL_ACCOUNT_EMAIL, PL-USR-005) -->
         <div class="au-notice is-danger" th:if="${param.socialConflict} or ${param.social}">

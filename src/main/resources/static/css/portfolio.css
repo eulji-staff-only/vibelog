@@ -4,7 +4,7 @@
  * 버튼·안내 상자 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
  */
 
-.pf-page { min-height: 100vh; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+/* 배경·글자색·글꼴은 common.css(body)가 정한다 (#133) */
 /* display 를 준 요소도 hidden 속성이면 숨긴다 (잠김 안내) */
 .pf-page [hidden] { display: none; }
 .pf-muted { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-muted); }
@@ -37,16 +37,14 @@
 /* 스텝 가이드 */
 .pf-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .pf-step { display: flex; align-items: flex-start; gap: var(--space-3); min-height: var(--control-h); padding: 14px var(--space-4);
-    box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--radius-md); font-size: 15px; line-height: 1.6; cursor: pointer; }
+    border: 1px solid var(--line); border-radius: var(--radius-md); font-size: 15px; line-height: 1.6; cursor: pointer; }
 .pf-step input { flex: 0 0 auto; width: 20px; height: 20px; margin: 2px 0 0; }
 .pf-step strong { display: block; }
 .pf-step:has(input:checked) { background: var(--tint); }
 
-/* 평가 에이전트 안내 (펼침 목록은 브라우저 기본 details 사용) */
-.pf-accordion { border-top: 1px solid var(--line-soft); }
-.pf-accordion details { border-bottom: 1px solid var(--line-soft); }
-.pf-accordion summary { min-height: 60px; display: flex; align-items: center; padding: 0 var(--space-1); font-size: 16px; font-weight: 700; cursor: pointer; }
-.pf-accordion details p { margin: 0; padding: 0 var(--space-1) var(--space-5); font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
+/* 운영자가 쓴 여러 줄 글(학습 목표·스텝·평가 에이전트 안내)은 줄바꿈을 그대로 보여 준다 */
+.pf-pre { white-space: pre-line; }
+.pf-guide { margin: 0; padding-top: var(--space-4); border-top: 1px solid var(--line-soft); font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
 
 /* 안내 상자 (공통 조각 #46 전까지) */
 .pf-notice { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) 20px;
@@ -56,7 +54,7 @@
 .pf-link:hover { color: var(--link-hover); }
 
 /* 버튼 (공통 조각 #46 전까지) */
-.pf-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: var(--control-h);
+.pf-btn { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-h);
     padding: 11px 18px; font: inherit; font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none;
     border: 1px solid transparent; border-radius: var(--radius-pill); cursor: pointer; white-space: nowrap; }
 .pf-btn-s { min-height: 40px; padding: 9px 16px; font-size: 14px; }
@@ -72,7 +70,7 @@
 .pf-field { display: flex; flex-direction: column; gap: var(--space-2); }
 .pf-label { font-size: 14px; font-weight: 700; }
 .pf-label em { font-style: normal; color: var(--danger); margin-left: 2px; }
-.pf-input { box-sizing: border-box; width: 100%; min-height: var(--control-h); padding: 12px var(--space-4); font: inherit; font-size: 15px;
+.pf-input { width: 100%; min-height: var(--control-h); padding: 12px var(--space-4); font: inherit; font-size: 15px;
     line-height: 1.5; color: var(--ink); background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: var(--radius-md); }
 .pf-input::placeholder { color: var(--ink-muted); }
 .pf-input[aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }

@@ -1,6 +1,7 @@
 package com.vibelog.domain.quiz.model.service;
 
 import com.vibelog.domain.quiz.model.dao.QuizAttemptRepository;
+import com.vibelog.domain.quiz.model.dao.QuizQuestionRepository;
 import com.vibelog.domain.quiz.model.dto.MemberQuizResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.List;
 public class QuizReader {
 
     private final QuizAttemptRepository quizAttemptRepository;
+    private final QuizQuestionRepository quizQuestionRepository;
 
     /* 회원이 제출한 퀴즈 결과, 최근 제출 순. 운영자 회원 상세(API-ADM-38, auth #119)가 쓴다. 제출 전 풀이는 뺀다 */
     public List<MemberQuizResult> getSubmittedResultsOf(Long memberId) {
@@ -28,5 +30,13 @@ public class QuizReader {
                 .map(attempt -> new MemberQuizResult(attempt.getActivityId(), attempt.getCorrectRate(),
                         Boolean.TRUE.equals(attempt.getIsPassed()), attempt.getSubmittedAt()))
                 .toList();
+    }
+
+    /*
+     * 퀴즈 활동별 사용 중인 문항 수. 수업 공개 가능 여부 판단(API-ADM-33, FR-LSN-014, PL-LSN-003, #118)이 쓴다.
+     * quiz_question Entity는 아직 등록·수정 기능(#102) 전이라 최소 컬럼만 매핑돼 있다.
+     */
+    public int countActiveQuestionsOf(Long activityId) {
+        return quizQuestionRepository.countByActivityIdAndIsActiveTrue(activityId);
     }
 }
