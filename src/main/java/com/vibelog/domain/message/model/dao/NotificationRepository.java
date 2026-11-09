@@ -1,6 +1,7 @@
 package com.vibelog.domain.message.model.dao;
 
 import com.vibelog.domain.message.model.entity.Notification;
+import com.vibelog.domain.message.model.entity.NotificationType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
@@ -16,6 +18,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     Slice<Notification> findByMemberIdOrderByCreatedAtDescNotificationIdDesc(Long memberId, Pageable pageable);
 
     long countByMemberIdAndReadAtIsNull(Long memberId);
+
+    /* M-10 배지 획득 축하: 안 읽은 그 종류 알림 중 가장 최근 것 */
+    Optional<Notification> findFirstByMemberIdAndNotificationTypeAndReadAtIsNullOrderByNotificationIdDesc(Long memberId, NotificationType type);
 
     /* API-NTF-03 모두 읽음 */
     @Modifying(clearAutomatically = true)

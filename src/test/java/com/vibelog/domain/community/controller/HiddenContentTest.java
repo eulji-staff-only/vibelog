@@ -1,5 +1,7 @@
 package com.vibelog.domain.community.controller;
 
+import com.vibelog.domain.community.model.dto.RankingItem;
+import com.vibelog.domain.community.model.service.RecommendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -20,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /*
- * 영구 정지 회원의 공개 콘텐츠 숨김 — 게시판 목록·상세·댓글 (PL-RPT-006, PL-ERR-006, #215).
+ * 영구 정지 회원의 공개 콘텐츠 숨김 — 게시판 목록·상세·댓글, 추천 랭킹 (PL-RPT-006, PL-ERR-006, #215).
  * 기간 정지와 해제된 영구 정지는 그대로 보인다. 넣은 데이터는 끝나면 롤백된다.
  */
 @SpringBootTest
@@ -32,6 +35,7 @@ class HiddenContentTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired JdbcTemplate jdbcTemplate;
+    @Autowired RecommendService recommendService;
 
     private long adminId;
     private long writerId;
@@ -80,6 +84,24 @@ class HiddenContentTest {
         mockMvc.perform(get("/community/{id}", postId))
                 .andExpect(content().string(allOf(containsString(HIDDEN_TEXT), containsString("보이는 댓글"),
                         not(containsString("숨겨야 할 댓글")))));
+    }
+
+    @Test
+    void 영구_정지_회원의_작품_공유_글은_추천_랭킹에서_빠진다() {
+        long hiddenPost = showcase(writerId);
+        long other = member("LEARNER");
+        long shownPost = showcase(other);
+        long recommender = member("LEARNER");
+        jdbcTemplate.update("INSERT INTO recommendation (member_id, post_id) VALUES (?, ?), (?, ?)", recommender, hiddenPost, recommender, shownPost);
+        suspend(writerId, "PERMANENT", null, null);
+
+        assertThat(recommendService.getWeeklyTop(100)).extracting(RankingItem::postId).contains(shownPost).doesNotContain(hiddenPost);
+    }
+
+    private long showcase(long memberId) {
+        jdbcTemplate.update("INSERT INTO post (member_id, category, title, body, work_url) VALUES (?, 'SHOWCASE', '작품', '본문', 'https://example.com')",
+                memberId);
+        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
     }
 
     private static String link(long postId) {
