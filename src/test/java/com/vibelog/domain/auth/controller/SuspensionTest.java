@@ -160,6 +160,15 @@ class SuspensionTest {
         mockMvc.perform(post("/admin/members/{id}/suspend", learnerId).with(as(ADMIN)).with(csrf())
                         .param("level", "DAYS_7").param("reason", " "))
                 .andExpect(flash().attribute("toast", "제재 단계와 사유를 입력해 주세요"));
+        mockMvc.perform(post("/admin/members/{id}/suspend", learnerId).with(as(ADMIN)).with(csrf())
+                        .param("reason", "단계 없음"))
+                .andExpect(flash().attribute("toast", "제재 단계와 사유를 입력해 주세요"));
+        mockMvc.perform(post("/admin/members/{id}/suspend", learnerId).with(as(ADMIN)).with(csrf())
+                        .param("level", "FOO").param("reason", "없는 단계"))
+                .andExpect(flash().attribute("toast", "제재 단계와 사유를 입력해 주세요"));
+        mockMvc.perform(post("/admin/members/{id}/suspend", learnerId).with(as(ADMIN)).with(csrf())
+                        .param("level", "DAYS_7").param("reason", "  "))
+                .andExpect(flash().attribute("toast", "제재 단계와 사유를 입력해 주세요"));
 
         suspend("DAYS_7", "먼저", LocalDateTime.now(), LocalDateTime.now().plusDays(7));
         mockMvc.perform(post("/admin/members/{id}/suspend", learnerId).with(as(ADMIN)).with(csrf())
