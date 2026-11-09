@@ -222,6 +222,25 @@ class ExamServiceTest {
     }
 
     @Test
+    void 답을_저장한_뒤_문항이_사용_중지되면_제출할_때_그_답은_지우고_채점한다() {
+        examService.start(MEMBER, LESSON);
+        Long attemptId = latest().getExamAttemptId();
+        examService.saveAnswer(MEMBER, attemptId, 9101L, 9111L);   // 정답
+        examService.saveAnswer(MEMBER, attemptId, 9102L, 9122L);   // 정답
+        jdbcTemplate.update("UPDATE exam_question SET is_active = FALSE WHERE exam_question_id = 9102");   // 운영자가 사용 중지
+        entityManager.flush();
+        entityManager.clear();
+
+        examService.submit(MEMBER, LESSON, attemptId, Map.of(9101L, 9111L, 9102L, 9122L));
+
+        assertThat(latest().getScore()).isEqualTo(1);
+        assertThat(latest().getCorrectRate()).isEqualByComparingTo("100.00");
+        assertThat(examAnswerRepository.findByExamAttempt(latest()))
+                .extracting(a -> a.getExamQuestion().getExamQuestionId(), ExamAnswer::getCorrect)
+                .containsExactly(tuple(9101L, true));
+    }
+
+    @Test
     void 아무것도_고르지_않고_제출하면_모든_문항이_오답으로_남는다() {
         examService.start(MEMBER, LESSON);
         Long attemptId = latest().getExamAttemptId();

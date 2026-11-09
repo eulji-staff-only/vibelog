@@ -97,7 +97,8 @@ public class ExamService {
     /*
      * API-EXM-04. 폼으로 온 마지막 답을 저장한 뒤 채점한다.
      * 사용 중인 문항 전체가 대상이고, 고르지 않은 문항은 오답이다 (M-02 안내).
-     * 응시 중에 운영자가 사용 중지한 문항(API-ADM-31)은 폼에 남아 있어도 건너뛴다 (채점 대상이 아님).
+     * 응시 중에 운영자가 사용 중지한 문항(API-ADM-31)은 채점 대상이 아니다. 폼에 남은 답은 건너뛰고,
+     * 그 전에 저장해 둔 답은 지워 제출한 응시에 채점되지 않은 답이 남지 않게 한다.
      * score = 맞힌 문항 수, correct_rate = 맞힌 수 ÷ 문항 수 × 100 (소수 둘째 자리 반올림).
      */
     public ExamSubmitResult submit(Long memberId, Long lessonId, Long examAttemptId, Map<Long, Long> lastAnswers) {
@@ -110,6 +111,11 @@ public class ExamService {
         }
         Map<Long, ExamQuestion> questions = questionsOf(lessonId);
         Map<Long, ExamAnswer> answers = answersOf(attempt);
+        List<ExamAnswer> stale = answers.values().stream()
+                .filter(answer -> !questions.containsKey(answer.getExamQuestion().getExamQuestionId()))
+                .toList();
+        examAnswerRepository.deleteAll(stale);
+        stale.forEach(answer -> answers.remove(answer.getExamQuestion().getExamQuestionId()));
         lastAnswers.entrySet().stream()
                 .filter(entry -> questions.containsKey(entry.getKey()))
                 .forEach(entry -> choose(attempt, questions, answers, entry.getKey(), entry.getValue()));
