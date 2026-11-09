@@ -99,7 +99,7 @@
 | `ALREADY_VERIFIED` | 409 | 이미 인증된 이메일입니다. | ⑤ | FR-USR-002 |
 | `TRACK_NOT_FOUND` / `COURSE_NOT_FOUND` / `LESSON_NOT_FOUND` / `ACTIVITY_NOT_FOUND` / `POST_NOT_FOUND` / `PORTFOLIO_NOT_FOUND` / `USER_NOT_FOUND` / `FILE_NOT_FOUND` | 404 | 찾을 수 없습니다. | ① E-01 | PL-ERR-006 |
 | `LESSON_LOCKED` | 403 | 이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다. | ③ → `/my/learning` | FR-ENR-003 |
-| `ACTIVITY_LOCKED` | 403 | 앞 퀴즈를 정답률 50% 이상으로 통과하면 열립니다. | ③ → 수업 화면 | FR-LSN-009 |
+| `ACTIVITY_LOCKED` | 403 | 앞 퀴즈를 통과하면 열립니다. | ③ → 수업 화면 | FR-LSN-009 |
 | `ENROLLMENT_NOT_FOUND` | 404 | 수강 중인 코스가 아닙니다. | ① E-01 | FR-ENR-005 (P2) |
 | `ALREADY_CHECKED` | 409 | 이미 확인한 문항입니다. | ⑤ | PL-LSN-006 |
 | `ATTEMPT_SUBMITTED` | 409 | 이미 제출했습니다. | ⑤ / ③ | DB `quiz_attempt`·`exam_attempt` |
@@ -261,3 +261,4 @@ DB 설계서와 정책이 서로 열어 둔 곳을 아래처럼 정했다. 남�
 - 2026-11-05 초안. 확정된 화면 흐름 설계서(2026-11-05)에 맞춤: 로그인 도착지, 회원가입 완료 상태, 토큰 없는 인증 화면, 비밀번호 변경 API 추가, 쪽지함 새 쪽지 추가, 포트폴리오 수정 위치, 비회원 접근 범위, 에러 코드 4개 추가(9-1)
 - 2026-11-05 완성. DB 설계서(2026-11-05)와 대조: 요청·응답 값 이름을 물리 이름(camelCase)으로, 퀴즈 통과 기준을 `activity.pass_rate`로, 처리 내용을 테이블 이름으로 바꿈, 상태 값·삭제 정책·탈퇴 처리 확인(9-2). 0-1 저장 후 응답 규칙을 폼 POST·입력 오류·JSON으로 나눠 적음. 파일 이름을 `API 설계(2026-11-05).md`로 바꿔 확정문서로 옮겼다
 - 2026-11-05 확정. 남은 미정을 닫음(10장): 스크린샷 1장(DB 기준, 정책 최대 3장 안), `notification.target_type` 값 7개, 0장은 결정판 추천안으로 확정
+- 2026-11-09 7장 `ACTIVITY_LOCKED` 문구에서 "정답률 50% 이상으로"를 뺌 → "앞 퀴즈를 통과하면 열립니다." 통과 기준이 활동마다(`activity.pass_rate`) 다를 수 있어서 (PL-LSN-002, #277)
