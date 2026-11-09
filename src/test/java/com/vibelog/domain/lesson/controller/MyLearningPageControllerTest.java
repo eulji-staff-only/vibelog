@@ -16,6 +16,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
@@ -91,5 +92,28 @@ class MyLearningPageControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(Matchers.containsString("테스트 코스")))
                 .andExpect(content().string(Matchers.containsString("33%")));
+    }
+
+    @Test
+    void 수강_중_코스에는_수강_포기_버튼과_확인_모달이_있고_완료_코스에는_없다() throws Exception {
+        LoginMember loginMember = mock(LoginMember.class);
+        given(loginMember.getMemberId()).willReturn(1L);
+        MyLearningCourseCard active = new MyLearningCourseCard(
+                7L, "테스트 트랙", "수강 중 코스", 10, "[수업 1] 학습하기",
+                List.of(), PortfolioStatus.LOCKED, List.of(), false, null);
+        MyLearningCourseCard completed = new MyLearningCourseCard(
+                8L, "테스트 트랙", "완료 코스", 100, "완료",
+                List.of(), PortfolioStatus.SUBMITTED, List.of(), true, LocalDateTime.of(2026, 11, 1, 0, 0));
+        given(myLearningService.getActiveCourses(1L)).willReturn(List.of(active));
+        given(myLearningService.getCompletedCourses(1L)).willReturn(List.of(completed));
+
+        mockMvc.perform(get("/my/learning")
+                        .with(authentication(new UsernamePasswordAuthenticationToken(loginMember, "N/A",
+                                List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("data-ui-modal-open=\"drop-modal-7\"")))
+                .andExpect(content().string(Matchers.containsString("id=\"drop-modal-7\"")))
+                .andExpect(content().string(Matchers.containsString("action=\"/courses/7/drop\"")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("drop-modal-8"))));
     }
 }

@@ -67,6 +67,18 @@ public class Enrollment extends BaseTimeEntity {
         completedAt = null;
     }
 
+    /* 수강을 포기하면 내 학습 목록에서 내린다. 진행 기록은 지우지 않는다 (API-ENR-04, PL-ENR-004). 처음 한 번만 기록한다 */
+    public void drop() {
+        if (droppedAt == null) {
+            droppedAt = LocalDateTime.now();
+        }
+    }
+
+    /* 포기한 코스를 다시 시작하면 포기 기록만 비우고 이전 진행 상태에서 이어서 한다 (API-ENR-01 P2, PL-ENR-004) */
+    public void restart() {
+        droppedAt = null;
+    }
+
     public boolean isPortfolioUnlocked() {
         return portfolioUnlockedAt != null;
     }

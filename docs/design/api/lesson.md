@@ -16,13 +16,13 @@
 | API-ENR-04 | 수강 포기 | POST | `/courses/{courseId}/drop` | 조건(수강 중, M-12 확인 후) | path `courseId` | `enrollment.dropped_at` 기록(처음) → `/my/learning` + toast "수강을 포기했습니다" (내 학습 목록에서 내려감) | `ENROLLMENT_NOT_FOUND`(수강 안 함·이미 포기·이미 완료) | FR-ENR-005, PL-ENR-004 |
 
 - 진행률 = 리포트까지 확인한 수업 수 ÷ 공개 수업 수. 저장하지 않고 응답할 때 계산한다 (PL-ENR-006).
-- **수강 포기 (P2):** `/my/learning`의 "수강 중" 탭에만 포기 버튼을 둔다(완료한 코스는 포기 대상이 아니다, `completed_at`이 없고 `dropped_at`도 없을 때만 포기할 수 있다). 포기해도 `lesson_progress`·`activity_progress`·`quiz_attempt`·`exam_attempt` 기록은 지우지 않는다(PL-ENR-004 "포기하면 내 학습에서 내린다"). 다시 수강 시작(API-ENR-01)을 누르면 이어서 한다.
+- **수강 포기 (P2):** `/my/learning`의 "수강 중" 탭에만 포기 버튼을 둔다(완료한 코스는 포기 대상이 아니다, `completed_at`이 없고 `dropped_at`도 없을 때만 포기할 수 있다). 포기해도 `lesson_progress`·`activity_progress`·`quiz_attempt`·`exam_attempt` 기록은 지우지 않는다(PL-ENR-004 "포기하면 내 학습에서 내린다"). 다시 수강 시작(API-ENR-01)을 누르면 이어서 한다. 포기한 수강은 수강 안 함으로 보므로 수업 화면(API-LSN-01)은 `/courses/{courseId}`로 돌려보낸다(계약 ⑪ `NONE`과 같다). 퀴즈·모의고사 화면의 처리는 정하지 않았다.
 
 ## 수업 · 개념
 
 | ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| API-LSN-01 | 수업 화면 | GET | `/courses/{courseId}/lessons/{lessonId}` | 조건(수업 열림) | path `courseId`, `lessonId`, query `activity`(선택, 없으면 진행 중 활동) | U-13 + 활동 목록(개념·퀴즈·모의고사, 각 완료·진행 중·잠김), 선택한 활동: 개념이면 제목·본문·본문 형식·개념 태그·도구 노트 링크 / 퀴즈면 안내와 최고 점수 / 모의고사면 안내. 잠긴 활동을 고르면 잠김 안내와 앞 활동 링크 | `LESSON_LOCKED` → `/my/learning` + toast "이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다", 수강 안 함 → `/courses/{courseId}` | FR-LSN-001, 002, 009 |
+| API-LSN-01 | 수업 화면 | GET | `/courses/{courseId}/lessons/{lessonId}` | 조건(수업 열림) | path `courseId`, `lessonId`, query `activity`(선택, 없으면 진행 중 활동) | U-13 + 활동 목록(개념·퀴즈·모의고사, 각 완료·진행 중·잠김), 선택한 활동: 개념이면 제목·본문·본문 형식·개념 태그·도구 노트 링크 / 퀴즈면 안내와 최고 점수 / 모의고사면 안내. 잠긴 활동을 고르면 잠김 안내와 앞 활동 링크 | `LESSON_LOCKED` → `/my/learning` + toast "이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다", 수강 안 함(포기한 수강 포함) → `/courses/{courseId}` | FR-LSN-001, 002, 009 |
 | API-LSN-02 | 개념 읽기 완료 | POST | `/courses/{courseId}/lessons/{lessonId}/activities/{activityId}/complete` | 조건(활동 열림) | path 3개 | 개념 완료 일시 기록(처음 한 번), 바로 뒤 퀴즈 열림 → `/courses/{courseId}/lessons/{lessonId}/quizzes/{뒤 퀴즈 activityId}` | `ACTIVITY_LOCKED` | FR-LSN-002 |
 | API-LSN-07 | 연관 개념 보기 | - | (API-LSN-01 응답에 추가) | 조건(수업 열림) | path 3개(API-LSN-01과 같음) | 선택한 활동이 개념이면 응답에 연관 개념 목록(`concept_relation.sort_order` 순, 각각 `relatedActivityId`, 제목, `courseId`, `lessonId`) 추가. U-13 개념 본문 끝에 표시, 누르면 그 개념의 `/courses/{courseId}/lessons/{lessonId}?activity={relatedActivityId}` (다른 코스 개념이면 그 코스 URL, 잠겨 있으면 API-LSN-01의 잠김 안내를 그대로 본다) | (API-LSN-01과 같음) | FR-LSN-003 |
 | API-LSN-08 | 개념 북마크 토글 | POST | `/api/concepts/{activityId}/bookmark` | 회원 | path `activityId` | `concept_bookmark` 있으면 지우고 없으면 만듦(`uk_concept_bookmark_member_activity`) → JSON `{"bookmarked": true\|false}` | `ACTIVITY_NOT_FOUND` | FR-LSN-004 |

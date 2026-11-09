@@ -180,7 +180,8 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
 
     /*
      * ⑪ NONE·ENROLLED·COMPLETED. 수강 포기(dropped_at)는 다시 시작하면 이어서 하므로(PL-ENR-004)
-     * "시작 전"과 같은 NONE 으로 본다
+     * "시작 전"과 같은 NONE 으로 본다. 포기한 동안 완료 시각이 기록돼도(포트폴리오 제출) 포기가 우선이다
+     * (다시 시작하면 그 완료 기록이 반영된다)
      */
     @Override
     public String getEnrollmentStatus(Long memberId, Long courseId) {
@@ -190,11 +191,11 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
     }
 
     private String toEnrollmentStatus(Enrollment enrollment) {
-        if (enrollment.isCompleted()) {
-            return "COMPLETED";
-        }
         if (enrollment.isDropped()) {
             return "NONE";
+        }
+        if (enrollment.isCompleted()) {
+            return "COMPLETED";
         }
         return "ENROLLED";
     }

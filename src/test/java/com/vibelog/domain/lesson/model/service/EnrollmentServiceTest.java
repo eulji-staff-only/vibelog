@@ -1,11 +1,13 @@
 package com.vibelog.domain.lesson.model.service;
 
+import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.entity.ActivityProgress;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.LessonProgress;
+import com.vibelog.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +15,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /*
  * API-ENR-01 수강 시작을 실제 DB(01·02 실행된 로컬 MySQL)로 확인한다.
@@ -86,6 +89,71 @@ class EnrollmentServiceTest {
         Long secondEnrollmentId = enrollmentRepository.findByMemberIdAndCourseId(LEARNER, COURSE)
                 .orElseThrow().getEnrollmentId();
         assertThat(secondEnrollmentId).isEqualTo(firstEnrollmentId);
+    }
+
+    @Test
+    void 수강을_포기하면_포기_일시가_기록되고_수강_중_목록에서_내려간다() {
+        enrollmentService.enroll(LEARNER, COURSE);
+
+        enrollmentService.drop(LEARNER, COURSE);
+
+        Enrollment enrollment = enrollmentRepository.findByMemberIdAndCourseId(LEARNER, COURSE).orElseThrow();
+        assertThat(enrollment.getDroppedAt()).isNotNull();
+        assertThat(enrollmentRepository.findByMemberIdAndCompletedAtIsNullAndDroppedAtIsNull(LEARNER))
+                .extracting(Enrollment::getCourseId).doesNotContain(COURSE);
+    }
+
+    @Test
+    void 포기해도_진행_기록은_지우지_않는다() {
+        enrollmentService.enroll(LEARNER, COURSE);
+        Enrollment enrollment = enrollmentRepository.findByMemberIdAndCourseId(LEARNER, COURSE).orElseThrow();
+
+        enrollmentService.drop(LEARNER, COURSE);
+
+        assertThat(lessonProgress(enrollment, LESSON_1).isUnlocked()).isTrue();
+        assertThat(activityProgressRepository.findByEnrollmentIdAndActivityId(enrollment.getEnrollmentId(), FIRST_ACTIVITY))
+                .isPresent();
+    }
+
+    @Test
+    void 수강_중이_아니면_포기할_수_없다_수강_안_함_이미_포기_이미_완료() {
+        assertThatThrownBy(() -> enrollmentService.drop(LEARNER, COURSE))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(LessonErrorCode.ENROLLMENT_NOT_FOUND);
+
+        enrollmentService.enroll(LEARNER, COURSE);
+        enrollmentService.drop(LEARNER, COURSE);
+        assertThatThrownBy(() -> enrollmentService.drop(LEARNER, COURSE))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(LessonErrorCode.ENROLLMENT_NOT_FOUND);
+
+        Enrollment completed = enrollmentRepository.findByMemberIdAndCourseId(LEARNER, COURSE).orElseThrow();
+        completed.restart();
+        completed.complete();
+        assertThatThrownBy(() -> enrollmentService.drop(LEARNER, COURSE))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(LessonErrorCode.ENROLLMENT_NOT_FOUND);
+    }
+
+    @Test
+    void 포기한_코스를_다시_시작하면_포기_기록만_비우고_이어서_한다() {
+        assertThat(enrollmentService.enroll(LEARNER, COURSE)).isFalse();
+        Enrollment before = enrollmentRepository.findByMemberIdAndCourseId(LEARNER, COURSE).orElseThrow();
+        enrollmentService.drop(LEARNER, COURSE);
+
+        boolean restarted = enrollmentService.enroll(LEARNER, COURSE);
+
+        assertThat(restarted).isTrue();
+        Enrollment after = enrollmentRepository.findByMemberIdAndCourseId(LEARNER, COURSE).orElseThrow();
+        assertThat(after.getEnrollmentId()).isEqualTo(before.getEnrollmentId());
+        assertThat(after.getDroppedAt()).isNull();
+        assertThat(after.getStartedAt()).isEqualTo(before.getStartedAt());
+        assertThat(lessonProgress(after, LESSON_1).isUnlocked()).isTrue();
+        assertThat(enrollmentRepository.findByMemberIdAndCompletedAtIsNullAndDroppedAtIsNull(LEARNER))
+                .extracting(Enrollment::getCourseId).contains(COURSE);
     }
 
     private LessonProgress lessonProgress(Enrollment enrollment, long lessonId) {
