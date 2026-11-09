@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
  *          둘 다 에러 화면이 아니라 "다른 화면 + 토스트"(③)라
  *          LessonPageResult 로 돌려주고 Controller 가 redirect 한다 (BusinessException 을 쓰지 않는다).
  *        - 활동 목록은 개념·퀴즈(activity 테이블) + 모의고사(계약 ②, 활동 테이블에 없는 가상 항목) 순서로 만든다.
+ *        - 개념 카드에는 연관 개념(API-LSN-07)·개념 태그 ID·내 북마크 여부(API-LSN-08)를 함께 담는다 (ConceptService).
  *        - 기본 선택 활동은 "진행 중"인 첫 활동, 없으면 모의고사. query activity 가 있으면 그 활동(또는 "exam")으로 바꾼다.
  */
 @Service
@@ -59,6 +60,7 @@ public class LessonPageService {
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final LessonQuizScoreChecker lessonQuizScoreChecker;
+    private final ConceptService conceptService;
 
     public LessonPageResult getPage(Long memberId, Long courseId, Long lessonId, String activityQuery) {
         Lesson lesson = getLesson(lessonId, courseId);
@@ -113,7 +115,8 @@ public class LessonPageService {
         }
 
         if (activity.isConcept()) {
-            List<String> tags = conceptTagsOf(activity.getActivityId());
+            List<Long> tagIds = conceptTagIdsOf(activity.getActivityId());
+            List<String> tags = conceptTagNamesOf(tagIds);
             Long quizActivityId = activityRepository
                     .findFirstByLessonIdAndIsActiveTrueAndSortOrderGreaterThanOrderBySortOrderAsc(
                             activity.getLessonId(), activity.getSortOrder())
@@ -122,7 +125,8 @@ public class LessonPageService {
             String renderedBody = renderBody(activity.getBody(), activity.getBodyFormat());
             return new LessonActivityCard(activity.getActivityId(), kind, activity.getTitle(), status, false,
                     renderedBody, activity.getBodyFormat(), tags, activity.getToolNoteUrl(), quizActivityId,
-                    null, null, null);
+                    null, null, null, tagIds, conceptService.isBookmarked(memberId, activity.getActivityId()),
+                    conceptService.findRelatedConcepts(activity.getActivityId()));
         }
 
         BigDecimal bestCorrectRate = lessonQuizScoreChecker.getBestCorrectRate(memberId, activity.getActivityId());
@@ -174,10 +178,13 @@ public class LessonPageService {
         return progress.isCompleted() ? ActivityStatus.COMPLETED : ActivityStatus.IN_PROGRESS;
     }
 
-    private List<String> conceptTagsOf(Long activityId) {
-        List<Long> conceptTagIds = activityTagRepository.findByActivityId(activityId).stream()
+    private List<Long> conceptTagIdsOf(Long activityId) {
+        return activityTagRepository.findByActivityId(activityId).stream()
                 .map(ActivityTag::getConceptTagId)
                 .toList();
+    }
+
+    private List<String> conceptTagNamesOf(List<Long> conceptTagIds) {
         if (conceptTagIds.isEmpty()) {
             return List.of();
         }
