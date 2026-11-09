@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>신고 처리 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/message.css}">
+</head>
+<body>
+<!--
+  A-13 신고 처리 (API-RPT-02~04, FR-RPT-004, #257). 위는 처리 대기 신고를 대상별로 묶은 목록(마지막 신고 순 20개씩),
+  "보기"를 누르면 ?reportId= 로 아래에 원문·작성자 이력·신고 목록과 숨김·기각 버튼이 열린다. 처리는 대상의 대기 신고 전부에 적용된다.
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('reports')}"></div>
+    <main class="vl-admin__content">
+        <h1 class="ms-admin-title">신고 처리</h1>
+        <p class="ms-toast" role="status" th:if="${toast}" th:text="${toast}">숨김 처리했습니다</p>
+
+        <p class="ms-muted" th:if="${reports.empty}">처리할 신고가 없습니다</p>
+        <div class="ms-scroll" th:unless="${reports.empty}">
+            <table class="ms-table">
+                <thead>
+                <tr><th>대상</th><th>미리보기</th><th>작성자</th><th>사유</th><th>신고자</th><th>누적</th><th>마지막 신고</th><th></th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="r : ${reports.content}">
+                    <td th:text="${r.targetTypeLabel()}">게시글</td>
+                    <td th:text="${r.preview()}">미리보기</td>
+                    <td th:text="${r.authorNickname()}">작성자</td>
+                    <td th:text="${r.reasons()}">스팸 2, 욕설/비방 1</td>
+                    <td th:text="${#strings.listJoin(r.reporterNicknames(), ', ')}">신고자</td>
+                    <td>
+                        <span th:text="|${r.count()}건|">3건</span>
+                        <strong class="ms-report__auto" th:if="${r.autoHidden()}">자동 숨김</strong>
+                    </td>
+                    <td th:text="${#temporals.format(r.lastReportedAt(), 'yyyy.MM.dd HH:mm')}">2026.11.09 10:00</td>
+                    <td><a class="ms-link" th:href="@{/admin/reports(reportId=${r.reportId()}, page=${reports.number + 1})}">보기</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="ms-pages" aria-label="페이지" th:if="${reports.totalPages > 1}"
+             th:with="current=${reports.number + 1},
+                      start=${T(java.lang.Math).max(1, current - 4)},
+                      end=${T(java.lang.Math).min(reports.totalPages, start + 9)}">
+            <a th:each="p : ${#numbers.sequence(start, end)}" th:href="@{/admin/reports(page=${p})}"
+               th:attr="aria-current=${p == current} ? 'page'" th:text="${p}">1</a>
+        </nav>
+
+        <!-- 연 신고: 원문(삭제·비공개여도 보인다, 쪽지는 신고된 그 쪽지만), 작성자 이력, 처리 대기 신고 -->
+        <section class="ms-form ms-report-detail" th:if="${detail != null}" aria-labelledby="report-detail-h">
+            <h2 id="report-detail-h" th:text="|${detail.targetTypeLabel()} 원문|">게시글 원문</h2>
+            <p class="ms-article__body" th:text="${detail.content()}">원문</p>
+            <p>작성자 <a class="ms-link" th:href="@{/admin/members/{id}(id=${detail.authorMemberId()})}" th:text="${detail.authorNickname()}">닉네임</a>
+                · 받은 신고 대기 <span th:text="${detail.authorHistory().pending()}">0</span>
+                · 숨김 <span th:text="${detail.authorHistory().hidden()}">0</span>
+                · 기각 <span th:text="${detail.authorHistory().rejected()}">0</span></p>
+
+            <p class="ms-muted" th:if="${detail.reports().empty}">처리 대기 중인 신고가 없습니다</p>
+            <div class="ms-scroll" th:unless="${detail.reports().empty}">
+                <table class="ms-table">
+                    <thead><tr><th>신고자</th><th>사유</th><th>기타 내용</th><th>시각</th></tr></thead>
+                    <tbody>
+                    <tr th:each="e : ${detail.reports()}">
+                        <td th:text="${e.reporterNickname()}">신고자</td>
+                        <td th:text="${e.reasonLabel()}">스팸</td>
+                        <td th:text="${e.reasonDetail() ?: '-'}">-</td>
+                        <td th:text="${#temporals.format(e.createdAt(), 'yyyy.MM.dd HH:mm')}">2026.11.09 10:00</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="ms-actions" th:if="${detail.pending()}">
+                <form method="post" th:action="@{/admin/reports/{id}/dismiss(id=${detail.reportId()})}">
+                    <button class="ms-btn is-outline" type="submit">기각</button>
+                </form>
+                <form method="post" th:action="@{/admin/reports/{id}/hide(id=${detail.reportId()})}">
+                    <button class="ms-btn" type="submit">숨김</button>
+                </form>
+            </div>
+            <p class="ms-muted" th:unless="${detail.pending()}">이미 처리된 신고입니다</p>
+        </section>
+    </main>
+</div>
+</body>
+</html>

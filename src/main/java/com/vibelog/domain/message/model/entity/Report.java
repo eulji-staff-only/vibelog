@@ -67,6 +67,26 @@ public class Report extends BaseTimeEntity {
         return new Report(reporterMemberId, targetType, targetId, targetMemberId, reason, reasonDetail);
     }
 
+    public boolean isPending() {
+        return status == ReportStatus.PENDING;
+    }
+
+    /* 운영자가 숨김으로 확정한다 (API-RPT-03, PL-RPT-004) */
+    public void hide(Long handlerMemberId) {
+        handle(ReportStatus.HIDDEN, handlerMemberId);
+    }
+
+    /* 운영자가 기각한다 (API-RPT-04). 기각하면 다시 보이고, 그 뒤 신고는 0건부터 센다 */
+    public void reject(Long handlerMemberId) {
+        handle(ReportStatus.REJECTED, handlerMemberId);
+    }
+
+    private void handle(ReportStatus status, Long handlerMemberId) {
+        this.status = status;
+        this.handlerMemberId = handlerMemberId;
+        this.handledAt = LocalDateTime.now();
+    }
+
     /* 운영자가 숨김으로 확정했고, 그 시각이 at 이전인가 (콘테스트 시상 기준 시각, PL-CTS-006) */
     public boolean isHiddenBy(LocalDateTime at) {
         return status == ReportStatus.HIDDEN && handledAt != null && !handledAt.isAfter(at);
