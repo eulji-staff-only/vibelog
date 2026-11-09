@@ -56,12 +56,13 @@ public class MemberReader {
     }
 
     /*
-     * 공개 프로필을 볼 수 있는 회원 ID만 골라 준다 (API-CMT-14, 작성자 링크). 지금은 탈퇴하지 않은 회원.
-     * 영구 정지 회원(PL-RPT-006)은 이용 정지(#178)에서 더한다.
+     * 공개 프로필을 볼 수 있는 회원 ID만 골라 준다 (API-CMT-14, 작성자 링크).
+     * 탈퇴하지 않았고 영구 정지 중이 아닌 회원 (PL-RPT-006, #215).
      */
     public Set<Long> findVisibleIds(Collection<Long> memberIds) {
+        Set<Long> hidden = findHiddenMemberIds(memberIds);
         return memberRepository.findAllById(memberIds).stream()
-                .filter(member -> member.getStatus() == MemberStatus.ACTIVE)
+                .filter(member -> member.getStatus() == MemberStatus.ACTIVE && !hidden.contains(member.getMemberId()))
                 .map(Member::getMemberId)
                 .collect(Collectors.toSet());
     }
