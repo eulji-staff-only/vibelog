@@ -28,9 +28,12 @@
             if (title) title.focus();
         };
 
+        // 서버가 처음부터 열어 둔 모달(예: 전송 실패로 돌아온 화면)은 누른 버튼이 없어서, 그 모달의 여는 버튼으로 되돌린다
         const closeModal = (modal) => {
             modal.hidden = true;
-            if (lastTrigger) lastTrigger.focus();
+            const trigger = lastTrigger || document.querySelector(`[data-ui-modal-open="${modal.id}"]`);
+            if (trigger) trigger.focus();
+            lastTrigger = null;
         };
 
         document.addEventListener('click', (e) => {
