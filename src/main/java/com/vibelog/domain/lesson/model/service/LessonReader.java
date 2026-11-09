@@ -4,6 +4,7 @@ import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
+import com.vibelog.domain.lesson.model.dto.CourseEnrollmentStat;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,12 @@ public class LessonReader {
                 .toList();
     }
 
+    /* 코스의 마지막 공개 수업 ID, 공개 수업이 없으면 null. 포트폴리오 잠김 안내의 "리포트 보러 가기"(portfolio #112)가 쓴다 */
+    public Long getLastLessonId(Long courseId) {
+        List<Lesson> lessons = lessonRepository.findByCourseIdAndIsPublicTrueOrderBySortOrderAsc(courseId);
+        return lessons.isEmpty() ? null : lessons.get(lessons.size() - 1).getLessonId();
+    }
+
     /* 수업 ID → 수업 제목. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 모의고사 결과(auth #119)가 쓴다 */
     public Map<Long, String> getLessonTitles(Collection<Long> lessonIds) {
         return lessonRepository.findAllById(lessonIds).stream()
@@ -54,6 +62,19 @@ public class LessonReader {
     public Map<Long, String> getActivityTitles(Collection<Long> activityIds) {
         return activityRepository.findAllById(activityIds).stream()
                 .collect(Collectors.toMap(Activity::getActivityId, Activity::getTitle));
+    }
+
+    /*
+     * 기간 내 수강 시작한 수강을 코스별로 묶은 집계 (운영자 대시보드 API-ADM-01, FR-ADM-002).
+     * from·to 가 null 이면 그 쪽 기간 제한이 없다 (쿼리 파라미터 없으면 전체 기간).
+     */
+    public List<CourseEnrollmentStat> getEnrollmentStatsByCourse(LocalDateTime from, LocalDateTime to) {
+        Map<Long, List<Enrollment>> byCourse = enrollmentRepository.findStartedBetween(from, to).stream()
+                .collect(Collectors.groupingBy(Enrollment::getCourseId));
+        return byCourse.entrySet().stream()
+                .map(entry -> new CourseEnrollmentStat(entry.getKey(), entry.getValue().size(),
+                        entry.getValue().stream().filter(Enrollment::isCompleted).count()))
+                .toList();
     }
 
     private MemberEnrollmentSummary summaryOf(Enrollment enrollment) {

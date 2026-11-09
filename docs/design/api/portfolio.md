@@ -1,6 +1,6 @@
 # portfolio API 명세 (포트폴리오)
 
-> 영역: portfolio / API ID: API-PRT-01~09
+> 영역: portfolio / API ID: API-PRT-01~11 (10~11은 P2)
 > 공통 규칙(응답 방식·URL·표 읽는 법)은 [_template.md](_template.md) 0장, 에러 코드는 7장입니다.
 > 화면은 [화면 흐름 설계서](../01-screen-flow.md), 테이블·상태 값은 [DB 설계서](../02-database.md), [테이블 정의서](../03-table-definition.md)를 봅니다.
 
@@ -18,6 +18,24 @@
 
 - 작성 중 내용 임시 저장(FR-PRT-010, P2)은 브라우저에 한다. 서버 API가 없다.
 - 포트폴리오 제출은 "작성"이라 이메일 인증이 필요하다(PL-USR-003). 미인증 학습자는 제출 영역에 인증 안내를 보여준다.
+
+## P2 — FAQ · 같은 코스 작품 보기 · 작성 중 내용 보존 · 콘테스트 출품 중 수정 막기 (#173)
+
+> P2 · 마일스톤 `4. P2 구현`. 테이블 `portfolio_faq`(과제별 FAQ), `portfolio.portfolio_type`(COURSE·PERSONAL).
+
+| ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| API-PRT-01 (P2) | 포트폴리오 과제 | GET | `/courses/{courseId}/portfolio` | 회원(수강 중) | (그대로) | U-17 4번 영역에 그 코스 과제의 FAQ(질문, 답) `sort_order` 순 추가. 과제가 열렸을 때만 보낸다(잠김이면 P1처럼 잠김 상태만). FAQ가 없으면 4번 영역을 그리지 않는다 | (그대로) | FR-PRT-008 |
+| API-PRT-06 (P2) | 포트폴리오 수정 | POST | `/portfolios/{portfolioId}/edit` | 인증(본인) | (그대로) | (그대로) | P1 실패에 `CONTEST_ENTERED`(④) 추가: 콘테스트에 출품한 작품이면 수정하지 않는다. 출품 여부는 contest 영역 계약으로 묻는다 (아래 메모) | PL-PRT-007, PL-CTS-002 |
+| API-PRT-10 | 같은 코스 작품 보기 | GET | `/courses/{courseId}/portfolios` | 회원(그 코스에 포트폴리오를 낸 사람) | path `courseId`, query `page`(1부터) | U-35 + 그 코스의 공개 포트폴리오 카드(제목, 한 줄 요약, 작성자, 제출일, 상세 링크 → `/portfolios/{portfolioId}`) 최근 제출순 20개씩. 삭제 표시한 것, 영구 정지 회원의 것(`MemberReader.findHiddenMemberIds`, PL-RPT-006)은 뺀다. 작성자 닉네임은 `MemberReader` | `PORTFOLIO_NOT_SUBMITTED`(삭제 표시 없는 내 포트폴리오가 그 코스에 없음) → ③ `/courses/{courseId}/portfolio` + toast, `COURSE_NOT_FOUND` | FR-PRT-009, PL-PRT-011 |
+| API-PRT-11 | 과제 FAQ 저장 (운영자) | POST | `/admin/courses/{courseId}/portfolio/faq` | 운영자 | path `courseId`, form `faqs[i].portfolioFaqId`(새 항목은 비움), `faqs[i].question`, `faqs[i].answer` (보낸 순서 = `sort_order`) | 그 과제의 FAQ를 보낸 목록으로 맞춘다: 있는 ID는 고치고, 새 항목은 추가하고, 목록에 없는 기존 FAQ는 지운다 → `/admin/courses/{courseId}/portfolio?tab=faq` | `COURSE_NOT_FOUND`(`CourseReader`), `INVALID_INPUT`(질문 1~300자·답 필수, 다른 과제의 `portfolioFaqId`, 과제를 아직 저장하지 않음) → A-07 FAQ 탭 다시 | FR-PRT-014 |
+
+- **A-07 FAQ 탭 (FR-PRT-014):** API-ADM-34(admin.md, 코드는 portfolio 영역 #104)의 `tab`에 `faq`를 더한다. `tab=faq`면 A-07 FAQ 탭 + 그 과제의 FAQ 목록(`portfolioFaqId`, 질문, 답) `sort_order` 순. `portfolioFaqId`는 API-PRT-11로 기존 FAQ를 고칠 때 다시 보낸다. 과제(API-ADM-35)를 저장하기 전에는 FAQ를 저장할 수 없다 (`portfolio_faq`가 과제 ID를 가짐).
+- FAQ는 운영자가 쓰는 안내 문구라 삭제 표시 없이 행을 지운다. 학습자 콘텐츠의 삭제 표시 규칙(PL-DAT-002)의 대상이 아니고, 테이블에도 `deleted_at`이 없다.
+- **같은 코스 작품 보기 (FR-PRT-009):** 들어오는 링크는 U-18 코스 완료의 "같은 코스 작품 보기"다 (lesson 화면). 내 포트폴리오도 공개면 목록에 나온다. 개인 작품(`portfolio_type` = PERSONAL)은 코스가 없어 나오지 않는다.
+- **작성 중 내용 보존 (FR-PRT-010):** 서버 API가 없다. U-17 제출 영역(새 제출·수정 상태)의 입력 값을 제출 버튼을 누를 때 브라우저 저장소에 회원·코스별로 7일 보관하고(PL-ERR-003·004), 제출 성공을 확인하면 지운다. 그래서 제출이 실패해도(서버 오류·네트워크 끊김) 작성 중 세션이 만료되어 로그인 화면으로 가도(PL-ERR-005) 내용이 남고, 다시 로그인해 U-17을 열면 채워 넣는다. 회원별로 나눠 같은 브라우저를 쓰는 다른 회원에게 채워지지 않게 하고, 보관하기 전에도 API 키 형식 문자열은 가린다(PL-PRT-008, 서버 저장과 같은 규칙). 스크린샷 파일은 보관하지 않는다.
+- **콘테스트 출품 중 수정 막기 (PL-PRT-007, PL-CTS-002):** portfolio가 contest에 "이 포트폴리오가 출품 중인가"를 묻는 계약이 필요하다. 계약 이름·메서드·"출품 중"의 기간은 contest 명세(#174)에서 정하고, 그 전에는 `CONTEST_ENTERED` 검사를 붙이지 않는다. 출품한 작품의 삭제(API-PRT-07)·비공개 전환(API-PRT-08)을 막을지도 #174에서 정한다.
+- **개인 작품 템플릿 (FR-PRT-011, U-34):** #168 결정 후 이 표에 추가한다 (_template.md 8장 후보 `POST /my/portfolios`).
 
 ## 영역 간 계약 (portfolio 영역이 받는 것)
 

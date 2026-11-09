@@ -5,6 +5,8 @@ import com.vibelog.domain.community.exception.CommunityErrorCode;
 import com.vibelog.domain.community.model.dao.CommentRepository;
 import com.vibelog.domain.community.model.dao.PostRepository;
 import com.vibelog.domain.community.model.entity.Comment;
+import com.vibelog.domain.community.model.entity.Post;
+import com.vibelog.domain.message.model.policy.NotificationSender;
 import com.vibelog.global.exception.BusinessException;
 import com.vibelog.global.exception.CommonErrorCode;
 import com.vibelog.global.policy.BannedWordPolicy;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  *        - 없거나 삭제된 글·댓글, 다른 글의 댓글·삭제된 댓글에 단 답글은 POST_NOT_FOUND (7장 표에 댓글용 이름이 없어 같은 404 를 쓴다).
  *        - 삭제는 deleted_at 만 채운다. 답글이 달린 댓글도 "삭제된 댓글입니다"로 자리가 남는다 (PL-CMT-006, PL-DAT-002).
  *        - 수정·삭제는 댓글이 달린 글 ID 를 돌려준다. 끝나면 그 글로 돌아가기 때문이다.
+ *        - 쓰면 알림 (계약 ⑬, #185): 댓글은 글쓴이에게 COMMENT, 답글은 댓글쓴이에게 REPLY. 나에게는 계약 쪽이 보내지 않는다.
  */
 @Service
 @RequiredArgsConstructor
@@ -30,17 +33,18 @@ public class CommentService {
     private final PostRepository postRepository;
     private final MemberReader memberReader;
     private final BannedWordPolicy bannedWordPolicy;
+    private final NotificationSender notificationSender;
 
     @Transactional
     public Long write(Long postId, Long memberId, String content, Long parentCommentId) {
-        if (postRepository.findByPostIdAndDeletedAtIsNull(postId).isEmpty()) {
-            throw new BusinessException(CommunityErrorCode.POST_NOT_FOUND);
-        }
+        Post post = postRepository.findByPostIdAndDeletedAtIsNull(postId)
+                .orElseThrow(() -> new BusinessException(CommunityErrorCode.POST_NOT_FOUND));
         if (!memberReader.isEmailVerified(memberId)) {
             throw new BusinessException(CommonErrorCode.EMAIL_NOT_VERIFIED);
         }
+        Comment parent = null;
         if (parentCommentId != null) {
-            Comment parent = commentRepository.findById(parentCommentId)
+            parent = commentRepository.findById(parentCommentId)
                     .filter(comment -> comment.getPostId().equals(postId) && !comment.isDeleted())
                     .orElseThrow(() -> new BusinessException(CommunityErrorCode.POST_NOT_FOUND));
             if (parent.isReply()) {
@@ -48,7 +52,13 @@ public class CommentService {
             }
         }
         bannedWordPolicy.check(content);
-        return commentRepository.save(Comment.create(postId, memberId, parentCommentId, content.strip())).getCommentId();
+        Long commentId = commentRepository.save(Comment.create(postId, memberId, parentCommentId, content.strip())).getCommentId();
+        if (parent == null) {
+            notificationSender.commented(memberId, post.getMemberId(), commentId, post.getTitle());
+        } else {
+            notificationSender.replied(memberId, parent.getMemberId(), commentId, post.getTitle());
+        }
+        return commentId;
     }
 
     @Transactional

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>대시보드 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<!-- A-01 대시보드 (API-ADM-01, FR-ADM-001, FR-ADM-002, #120). 운영자 로그인 도착지.
+     기간을 바꾸면(from, to) 가입자 수·트랙·코스별 수강 수·완료율이 다시 조회된다. -->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('dashboard')}"></div>
+
+    <main class="vl-admin__content">
+        <h1 class="vl-admin-dash__title">대시보드</h1>
+
+        <form class="vl-admin-dash__filter" action="/admin" method="get">
+            <label class="vl-admin-dash__filter-label" for="from">시작일</label>
+            <input class="vl-admin-dash__filter-input" type="date" id="from" name="from" th:value="${from}">
+            <label class="vl-admin-dash__filter-label" for="to">종료일</label>
+            <input class="vl-admin-dash__filter-input" type="date" id="to" name="to" th:value="${to}">
+            <button class="vl-ui-btn is-navy is-s" type="submit">조회</button>
+        </form>
+
+        <section class="vl-admin-dash__summary">
+            <div class="vl-ui-panel is-tight vl-admin-dash__stat">
+                <p class="vl-admin-dash__stat-label">가입자 수</p>
+                <p class="vl-admin-dash__stat-value" th:text="|${dashboard.memberCount()}명|">0명</p>
+            </div>
+        </section>
+
+        <h2 class="vl-admin-dash__subtitle">트랙·코스별 수강 수·완료율</h2>
+
+        <p class="vl-ui-notice is-empty" th:if="${dashboard.tracks().empty}">기간에 시작한 수강이 없습니다</p>
+
+        <section class="vl-admin-dash__track" th:each="track : ${dashboard.tracks()}">
+            <h3 class="vl-admin-dash__track-title" th:text="${track.trackName()}">트랙 이름</h3>
+            <p class="vl-admin-dash__track-summary"
+               th:text="|수강 ${track.enrollmentCount()}건 · 완료율 ${track.completionRate()}%|">수강 0건 · 완료율 0%</p>
+
+            <table class="vl-admin-dash__table">
+                <thead>
+                <tr><th>코스</th><th>수강 수</th><th>완료율</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="course : ${track.courses()}">
+                    <td th:text="${course.courseTitle()}">코스 이름</td>
+                    <td th:text="${course.enrollmentCount()}">0</td>
+                    <td th:text="|${course.completionRate()}%|">0%</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

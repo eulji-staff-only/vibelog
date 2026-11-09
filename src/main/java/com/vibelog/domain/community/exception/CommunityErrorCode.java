@@ -15,7 +15,8 @@ import org.springframework.http.HttpStatus;
 public enum CommunityErrorCode implements ErrorCode {
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다."),
     SHOWCASE_LINK_REQUIRED(HttpStatus.BAD_REQUEST, "작품 공유 글은 작품 링크가 필요합니다."),
-    REPLY_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST, "답글에는 답글을 달 수 없습니다.");
+    REPLY_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST, "답글에는 답글을 달 수 없습니다."),
+    HIDDEN_CONTENT(HttpStatus.FORBIDDEN, "운영 정책에 따라 숨겨진 콘텐츠입니다.");
 
     private final HttpStatus status;
     private final String message;

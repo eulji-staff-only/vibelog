@@ -1,0 +1,154 @@
+/*
+ * diagnosis.css
+ * 진단 설문(U-07) · 진단 결과(U-08) 화면 (#52).
+ * 색·글꼴·간격은 화면 흐름 설계서 6장 토큰(var(--…))만 쓴다. 값은 common.css 가 정한다.
+ * 버튼·배지·안내 상자·진행 막대·패널·확인 모달(M-01)은 공통 조각(.vl-ui-*)을 쓰고 여기서 다시 만들지 않는다.
+ */
+
+/* 상단 네이비 띠 + 제목 (6-3 페이지 틀) */
+.dg-band {
+    background: var(--navy-900);
+    color: var(--on-navy);
+    padding: var(--space-9) var(--space-5) calc(var(--band-tail) + var(--space-7));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    text-align: center;
+}
+.dg-eyebrow {
+    font-size: 14px;
+    font-weight: 700;
+    padding: var(--space-1\.5) 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--navy-700);
+    color: var(--glow);
+}
+.dg-title { margin: 0; font-size: 36px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.dg-lead { margin: 0; max-width: var(--hero-text-max); font-size: 17px; line-height: 1.7; color: var(--on-navy-muted); }
+
+/* 띠에 겹쳐 올라오는 흰 패널. 설문은 폼 폭 680px, 결과는 1000px */
+.dg-main { max-width: 680px; margin: 0 auto; padding: 0 var(--space-5) var(--space-10); }
+.dg-main.is-wide { max-width: 1000px; }
+.dg-panel { position: relative; margin-top: calc(var(--hero-overlap) * -1); display: flex; flex-direction: column; gap: var(--space-7); }
+.dg-panel.is-result { gap: var(--space-9); }
+.dg-panel [hidden] { display: none !important; }
+
+.dg-muted { margin: 0; font-size: 14px; color: var(--ink-muted); }
+.dg-body { margin: 0; font-size: 16px; line-height: 1.7; }
+.dg-h2 { margin: 0; font-size: 24px; line-height: 1.4; font-weight: 900; }
+.dg-link { color: var(--link); font-size: 14px; font-weight: 700; }
+.dg-link:hover { color: var(--link-hover); }
+
+/* ---- U-07 진단 설문 ---- */
+.dg-question { display: flex; flex-direction: column; gap: var(--space-3); }
+.dg-question__no { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.dg-q { margin: 0 0 var(--space-2); font-size: 24px; line-height: 1.4; font-weight: 900; }
+.dg-q:focus { outline: none; }   /* 문항이 바뀌면 화면 낭독기가 문항부터 읽도록 포커스만 옮긴다 */
+
+/* 보기 (ChoiceOption) */
+.dg-choices { display: flex; flex-direction: column; gap: var(--space-3); }
+.dg-choice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: 56px;
+    padding: var(--space-3) var(--space-5);
+    font: inherit;
+    font-size: 16px;
+    text-align: left;
+    color: var(--ink);
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    cursor: pointer;
+}
+.dg-choice:hover { border-color: var(--line-strong); }
+.dg-choice[aria-pressed="true"] { background: var(--tint); border-color: var(--link); font-weight: 700; }
+.dg-choice__no {
+    flex: 0 0 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-muted);
+}
+.dg-choice[aria-pressed="true"] .dg-choice__no { background: var(--navy-900); color: var(--on-navy); }
+
+.dg-nav { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+.dg-nav__next { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--space-3); }
+.dg-nav .vl-ui-btn-reason { margin: 0; }
+.dg-skip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--line-soft);
+}
+
+/* ---- U-08 진단 결과 ---- */
+.dg-rec { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-8); border-radius: var(--radius-lg); background: var(--tint); }
+.dg-badges { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+.dg-rec__title { margin: 0; font-size: 30px; line-height: 1.35; font-weight: 900; letter-spacing: -0.02em; }
+
+.dg-section { display: flex; flex-direction: column; gap: var(--space-4); }
+.dg-section__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--space-2) var(--space-4); }
+
+.dg-reasons { list-style: none; margin: 0; padding: 0; }
+.dg-reasons li { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-4) 0; border-bottom: 1px solid var(--line-soft); }
+.dg-reasons__no { flex: 0 0 28px; font-size: 20px; line-height: 1.4; font-weight: 900; color: var(--link); }
+.dg-reasons p { margin: 0; font-size: 15px; line-height: 1.65; }
+
+/* 코스 카드 · 다른 트랙: 데스크톱 여러 열 → 모바일 1열 (7장) */
+.dg-cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.dg-cards.is-others { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.dg-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-6);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    background: var(--surface-raised);
+}
+.dg-card:hover { border-color: var(--line-strong); }
+.dg-card__meta { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.dg-card__title { margin: 0; font-size: 20px; line-height: 1.4; font-weight: 900; }
+.dg-card__summary { margin: 0; flex: 1; font-size: 15px; color: var(--ink-muted); }
+.dg-card__info { margin: var(--space-2) 0 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: 13px; color: var(--ink-muted); }
+
+.dg-other { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-5); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-raised); }
+.dg-other__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.dg-other__title { margin: 0; font-size: 18px; font-weight: 900; }
+
+.dg-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); padding-top: var(--space-6); border-top: 1px solid var(--line-soft); }
+
+/* 태블릿 (7장: 카드 2열) */
+@media (max-width: 1023px) {
+    .dg-cards.is-others { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 모바일 (7장: 카드 1열, 좌우 여백 16px, 페이지 제목 26px, 버튼 폭 100%) */
+@media (max-width: 767px) {
+    .dg-band { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .dg-title { font-size: 26px; }
+    .dg-main { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .dg-panel { padding: var(--space-6) var(--space-5); }
+    .dg-panel.is-result { gap: var(--space-7); }
+    .dg-q { font-size: 20px; }
+    .dg-rec { padding: var(--space-6) var(--space-5); }
+    .dg-rec__title { font-size: 24px; }
+    .dg-cards, .dg-cards.is-others { grid-template-columns: 1fr; }
+    .dg-nav { flex-direction: column-reverse; align-items: stretch; }
+    .dg-nav__next { flex-direction: column; align-items: stretch; }
+    .dg-nav .vl-ui-btn-reason { text-align: center; }
+    .dg-panel .dg-nav .vl-ui-btn, .dg-actions .vl-ui-btn { width: 100%; }
+    .dg-actions { flex-direction: column-reverse; align-items: stretch; }
+}
