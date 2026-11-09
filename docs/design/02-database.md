@@ -144,8 +144,8 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 | 항목 | 전체 | P1 상세 | P2·P3 상세 |
 | --- | --- | --- | --- |
 | 테이블 | 51 | 31 | 20 |
-| FK | 79 | 44 | 35 |
-| member를 가리키는 FK | 26 | 9 | 17 |
+| FK | 80 | 44 | 36 |
+| member를 가리키는 FK | 27 | 9 | 18 |
 
 **주의**: SQL Preview의 **"Add Non Identifying Relationship Constraint"** 체크박스를 켜야 한다. 이 설계의 관계선은 전부 비식별이라, 꺼 두면 FK가 SQL에서 통째로 빠져 0개로 보인다.
 
@@ -408,7 +408,7 @@ P1 테이블 5개(member, email_verification, post, comment, quiz_attempt)는 P1
 - [ ] post, comment, portfolio, peer_review에만 `deleted_at`이 있는가? (`member`에는 없음)
 - [ ] `is_public`과 `is_active`를 5-2 표대로 썼는가?
 - [ ] FK가 모두 `ON DELETE RESTRICT`이고, 제약에 모두 이름이 붙어 있는가?
-- [ ] SQL Preview에서 51 / 79 / 26이 나오는가? (비식별 관계 체크박스 켜고)
+- [ ] SQL Preview에서 51 / 80 / 27이 나오는가? (비식별 관계 체크박스 켜고)
 
 ### 8-2. 변경 이력
 
@@ -418,4 +418,4 @@ P1 테이블 5개(member, email_verification, post, comment, quiz_attempt)는 P1
 | 2026-11-05 | 시작·확인 시각 컬럼 6개 유지로 확정. 포트폴리오 종류 컬럼을 `portfolio_type`으로 확정 |
 | 2026-11-05 | 확정안에 없는 컬럼 7개 제거. P1·P2·P3 정의서를 51개 한 문서로 합침 |
 | 2026-11-05 | 이 설계서로 ERD·정의서·이력 정책·인덱스·요구사항 대조를 한데 모음 |
-| 2026-11-09 | `report.target_member_id`(신고 대상 작성자, FK → member) 추가 (#270, P3 신고 명세 #262 결정 24) |
+| 2026-11-09 | `report.target_member_id`(신고 대상 작성자, FK → member) 추가 (#270, P3 신고 명세 #262 결정 24). FK 79→80, member를 가리키는 FK 26→27 |
