@@ -1,9 +1,9 @@
-# message API 명세 (쪽지 · 알림 · 공지) — P2
+# message API 명세 (쪽지 · 알림 · 공지 · 신고) — P2 · P3
 
-> 영역: message / API ID: API-MSG-01~05, API-NTF-01~08
+> 영역: message / API ID: API-MSG-01~05, API-NTF-01~08, API-RPT-01~04(P3)
 > 공통 규칙(응답 방식·URL·표 읽는 법)은 [_template.md](_template.md) 0장, 에러 코드는 7장입니다.
 > 화면은 [화면 흐름 설계서](../01-screen-flow.md) U-25~U-27, M-13, A-10, 1-5(헤더 알림·공지 배너)이고, 테이블은 `message`, `notification`, `notice`입니다 ([DB 설계서](../02-database.md) 12장).
-> P2 · 마일스톤 `4. P2 구현` · #169
+> P2 · 마일스톤 `4. P2 구현` · #169. 신고(P3, M-11·A-13, 테이블 `report`)는 마일스톤 `5. P3 구현` · #252
 
 ## 쪽지 (FR-MSG-001 · 002)
 
@@ -40,7 +40,7 @@
 | MESSAGE | MESSAGE | `/messages?box=received&messageId={messageId}` | - |
 | BADGE | CONTEST_AWARD | `/mypage?tab=badges` | - (`badges` 탭 이름은 #170 auth 명세와 맞춘다) |
 | NOTICE | NOTICE | `/notices/{noticeId}` | - |
-| HIDDEN (P3) | (신고 대상) | P3에서 정한다 | - |
+| HIDDEN (P3) | 신고 대상과 같음 (POST · PORTFOLIO · COMMENT · REVIEW · MESSAGE) | POST → `/community/{postId}`, COMMENT·REVIEW → 위 COMMENT·REVIEW 줄과 같음, PORTFOLIO → `/portfolios/{portfolioId}`, MESSAGE → `/messages?box=sent&messageId={messageId}` (작성자는 보낸 사람) | COMMENT·REVIEW는 위와 같이 `CommunityReader` |
 
 - 댓글·리뷰는 삭제해도 행이 남으므로(삭제 표시) `CommunityReader`는 삭제된 행에서도 상위 ID(`postId`·`portfolioId`)를 돌려준다. 행이 아예 없으면 E-01(`NOT_FOUND`)로 보낸다.
 - 대상이 지워졌으면 redirect한 화면이 자기 "없음" 처리를 한다 (예: `POST_NOT_FOUND` → E-01). 알림 쪽에서 미리 확인하지 않는다.
@@ -61,6 +61,39 @@
 - **배너는 동시에 1개 (PL-NTF-003):** 배너 기간이 다른 배너 공지(`is_banner_shown` = true)와 겹치면 저장을 막는다 (`BANNER_PERIOD_OVERLAP`). 수정할 때는 자기 자신을 빼고 본다.
 - 공지 삭제는 요구사항·화면에 없어 만들지 않는다 (`notice`에 `deleted_at`도 없다).
 - 공지 관리는 운영자 화면이지만 message 영역이 구현하므로 이 파일에 둔다 (ID는 업무 코드 NTF, D-04).
+
+## 신고 (P3 · FR-RPT-001 · 002 · 003 · 004)
+
+README 영역 담당 표대로 신고는 message 영역이 구현한다. 신고 처리(A-13)는 운영자 화면이지만 공지 관리처럼 이 파일에 둔다 (ID는 업무 코드 RPT).
+
+| ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| API-RPT-01 | 신고하기 | POST | `/api/reports` | 인증 | JSON `{"targetType", "targetId", "reason", "reasonDetail"}` (M-11) | `report` 저장(`status` = PENDING, `target_member_id` = 대상 작성자) → 204. 화면은 M-11을 닫고 toast "신고가 접수되었습니다" | `INVALID_INPUT`(`targetType`·`reason` 값, `reason`이 ETC면 `reasonDetail` 1~500자), `EMAIL_NOT_VERIFIED`, `REPORT_TARGET_NOT_FOUND`, `SELF_REPORT`, `ALREADY_REPORTED` | FR-RPT-001, PL-RPT-001, PL-RPT-003 |
+| API-RPT-02 | 신고 처리 화면 | GET | `/admin/reports` | 운영자 | query `page`, `reportId`(선택: 오른쪽에 열 신고) | A-13 + 처리 대기(PENDING) 신고를 **대상별로 묶은** 목록(대상 종류, 미리보기, 작성자 닉네임, 사유별 건수, 신고자 닉네임, 누적 수, 자동 숨김 여부, 마지막 신고 시각) 마지막 신고 순 20개씩, 페이지 정보 / `reportId`가 있으면 그 대상의 원문 전체, 작성자 이력, 신고 목록(신고자, 사유, 기타 내용, 시각)과 숨김·기각 버튼 | `REPORT_NOT_FOUND` | FR-RPT-004 |
+| API-RPT-03 | 숨김 | POST | `/admin/reports/{reportId}/hide` | 운영자 | path `reportId` | 그 대상의 PENDING 신고 전부 `status` = HIDDEN, `handler_member_id`(로그인 운영자)·`handled_at` 기록 → 작성자에게 HIDDEN 알림 → `/admin/reports` + toast "숨김 처리했습니다" | `REPORT_NOT_FOUND`, `REPORT_ALREADY_HANDLED` | FR-RPT-004, PL-RPT-004 |
+| API-RPT-04 | 기각 | POST | `/admin/reports/{reportId}/dismiss` | 운영자 | path `reportId` | 그 대상의 PENDING 신고 전부 `status` = REJECTED, 처리자·시각 기록 → `/admin/reports` + toast "기각했습니다" (알림 없음) | API-RPT-03과 같음 | FR-RPT-004, PL-RPT-004 |
+
+- **신고할 수 있는 대상 (`targetType`):** POST, PORTFOLIO, COMMENT, REVIEW, MESSAGE (`report.target_type`, PL-RPT-001). 신고하는 사람이 지금 볼 수 있는 것만 받는다: 삭제되지 않은 게시글·댓글·리뷰, 공개 포트폴리오, 내가 **받은** 쪽지. 운영자가 이미 숨긴 대상도 받지 않는다. 조건에 안 맞으면 모두 `REPORT_TARGET_NOT_FOUND`다(있는지 없는지 알리지 않는다). 내 콘텐츠는 `SELF_REPORT`.
+- **사유 (`reason`):** SPAM 스팸, ABUSE 욕설/비방, PLAGIARISM 도용, PRIVACY 개인정보 노출, ETC 기타 (PL-RPT-003). 같은 대상은 1인 1회다 (`uk_report_reporter_target`, 이미 있으면 `ALREADY_REPORTED`).
+- **신고 버튼 (M-11을 연다):** U-22 게시글·댓글, U-20 포트폴리오·리뷰, U-27 받은 쪽지. 회원에게만 보이고, 내 콘텐츠에는 보이지 않는다.
+- **숨김 여부 (FR-RPT-002):** 컬럼 없이 `report`에서 계산한다 (DB 설계서 "신고 숨김 여부"는 컬럼을 두지 않음). 대상에 HIDDEN 신고가 있거나, PENDING 신고가 3건 이상이면 숨김이다. 1인 1회라 PENDING 3건은 서로 다른 3명이다 (PL-RPT-002). 기각하면 PENDING이 REJECTED로 바뀌어 다시 보이고, 그 뒤의 새 신고는 0건부터 다시 센다 (`idx_report_target_type_target_id`).
+- **숨김 표시 (FR-RPT-003):** 영구 정지 숨김([auth.md](auth.md), PL-RPT-006)과 같게 한다. 공개 목록(게시글 목록·랭킹·공개 프로필·공개 포트폴리오 목록)에서는 빼고, 상세는 "운영 정책에 따라 숨겨진 콘텐츠입니다"(`HIDDEN_CONTENT`, PL-ERR-006)를 보여준다. 댓글·리뷰·쪽지는 자리를 두고 내용 대신 같은 문구를 보여준다. 작성자 본인의 목록(내 포트폴리오 등)에서는 빼지 않는다. 각 영역은 아래 `MessageReader.findHiddenTargetIds`로 거른다.
+- **처리 단위:** 운영자는 대상 하나씩 처리한다. `reportId`는 그 대상의 신고 중 하나이고, 숨김·기각은 그 대상의 PENDING 신고 전부에 적용한다. 그 신고가 이미 처리됐으면 `REPORT_ALREADY_HANDLED` (PL-RPT-004).
+- **원문 열람:** 운영자는 A-13에서 원문을 본다. 쪽지는 신고된 쪽지만 볼 수 있다 (FR-RPT-004). A-13 목록은 처리 대기만 보여주고, 처리 결과는 작성자 이력과 A-08 신고 이력으로 본다.
+- **작성자 이력:** 작성자가 받은 신고의 처리 결과(대기·숨김·기각 건수, `target_member_id` 기준)와 A-08 회원 상세(`/admin/members/{memberId}`, 제재 이력) 링크.
+- **HIDDEN 알림:** 운영자가 숨길 때만 보낸다(자동 숨김 때는 보내지 않는다). 문구 "운영 정책에 따라 내 {종류} 「{미리보기}」이(가) 숨겨졌습니다. 사유: {사유}". 사유는 그 대상이 가장 많이 받은 사유이고, 같으면 먼저 받은 사유다. 255자를 넘으면 미리보기를 줄인다(…).
+- 숨김을 푸는 기능은 요구사항·화면에 없어 만들지 않는다.
+
+> **DB 변경 필요 (DB 팀 요청):** `report.target_member_id`(BIGINT NOT NULL, 대상 작성자, FK `member` RESTRICT, 인덱스 `target_member_id`)를 추가한다. 신고할 때 대상 작성자를 함께 저장해야 작성자 이력(A-13)·신고 이력(A-08)을 `report`만으로 구할 수 있다. 이 PR은 `sql/`을 고치지 않는다.
+
+**신고 대상 읽기 (다른 영역 Reader에 추가, 08 규칙 1-4):**
+
+| Reader | 메서드 | 쓰는 곳 |
+| --- | --- | --- |
+| `CommunityReader` | `Map<Long, ReportTarget> findReportTargets(String targetType, Collection<Long> targetIds)` — POST·COMMENT·REVIEW, 삭제된 것은 빠진다 | 신고 대상 확인(API-RPT-01), A-13 미리보기·원문(API-RPT-02), HIDDEN 알림 문구 |
+| `PortfolioReader` | `Map<Long, ReportTarget> findReportTargets(Collection<Long> portfolioIds)` — 공개 포트폴리오만 | 〃 |
+
+`ReportTarget(Long authorMemberId, String preview, String content)`는 각 Reader 영역의 `model/dto`에 둔다. `preview`는 게시글·포트폴리오면 제목, 댓글·리뷰면 내용 앞 50자다. 쪽지는 message 영역 안에서 읽는다. 닉네임은 `MemberReader.getNicknames`를 쓴다.
 
 ## 헤더에 보여줄 값 (공통 모델)
 
@@ -93,6 +126,8 @@
 | 메서드 | 쓰는 곳 |
 | --- | --- |
 | `List<NoticeSummary> findRecentNotices(int limit)` — 제목, 게시일, `noticeId` 최신순 | 메인 화면 최근 공지 (API-USR-01, #203) |
+| `Set<Long> findHiddenTargetIds(String targetType, Collection<Long> targetIds)` — 신고로 숨겨진 대상 ID (위 "숨김 여부" 기준) (P3) | community(게시글·댓글·리뷰)·portfolio 목록·상세 (FR-RPT-003, #256) |
+| `ReportHistory getReportHistory(Long memberId)` — 이 회원의 콘텐츠가 받은 신고 건수 `ReportHistory(int pending, int hidden, int rejected)`, `target_member_id` 기준 (P3) | A-08 회원 상세 신고 이력 (API-ADM-38, FR-USR-009, #257) |
 
 ## 이 명세에서 정한 것 (리뷰에서 확인)
 
@@ -112,5 +147,23 @@
 | 10 | 배너 1개 | 기간이 겹치면 저장을 막음 | PL-NTF-003 "동시에 1개" |
 | 11 | 공지 수정 | 만든다 (삭제는 안 만듦) | NFR-SCL-001 "백오피스에서 추가·수정" |
 | 12 | 헤더 값 | `@ControllerAdvice`로 모든 화면에 넣음 | 헤더가 모든 화면에 있다 |
+
+**신고 (P3, #252):**
+
+| # | 항목 | 결정 | 이유 |
+| --- | --- | --- | --- |
+| 13 | 신고 접근 | 이메일 인증 회원(`인증`) | 서로 다른 3명이면 자동 숨김이라, 가짜 계정으로 숨기기 어렵게 한다 |
+| 14 | 신고 버튼 위치 | U-22 게시글·댓글, U-20 포트폴리오·리뷰, U-27 받은 쪽지 | 화면 설계는 M-11을 U-20·U-22에서만 열지만, PL-RPT-001 대상 5개를 다 받으려면 쪽지함에도 필요하다 |
+| 15 | 신고할 수 있는 대상 | 지금 볼 수 있는 것만(공개 포트폴리오, 내가 받은 쪽지, 삭제·운영자 숨김이 아닌 것). 아니면 모두 `REPORT_TARGET_NOT_FOUND` | 볼 수 없는 콘텐츠가 있는지 알려 주지 않는다 |
+| 16 | "기타" 내용 | 1~500자 | 댓글(500자)과 같은 길이 |
+| 17 | 숨김 여부 | 컬럼 없이 계산: HIDDEN 신고가 있거나 PENDING 3건 이상 | DB 설계서가 숨김 여부 컬럼을 두지 않았다 |
+| 18 | 숨김 확인 방법 | 계약이 아니라 `MessageReader.findHiddenTargetIds` | 영구 정지 숨김(`MemberReader.findHiddenMemberIds`, #215)과 같은 방식. 읽기만 해서 08 규칙상 Reader다 (#252·#254 본문의 "숨김 확인 계약"을 이렇게 정함) |
+| 19 | 숨김 표시 범위 | 공개 목록에서 빼고 상세·댓글·리뷰·쪽지는 안내 문구. 작성자 본인 목록은 그대로 | 영구 정지 숨김과 같게. 작성자는 HIDDEN 알림으로 사유를 안다 |
+| 20 | 처리 단위 | 대상 하나(그 대상의 PENDING 신고 전부) | A-13 목록이 "누적 수"를 보여 주므로 대상별로 묶는다 |
+| 21 | 기각 뒤 | 다시 보이고, 새 신고는 0건부터 | 기각은 "숨길 이유 없음"이라 지난 신고를 다시 세지 않는다 |
+| 22 | HIDDEN 알림 | 운영자 숨김 때만, 사유는 가장 많이 받은 신고 사유 | PL-RPT-004 "숨기면 작성자에게 사유를 알린다". A-13에 사유 입력 칸이 없다 |
+| 23 | A-13 목록 | 처리 대기만 (처리 결과는 작성자 이력·A-08) | 화면 설계가 "숨김 / 기각 → 목록"뿐이고 처리 이력 탭이 없다 |
+| 24 | 작성자 이력·신고 이력 | `report.target_member_id`를 추가해 대상 작성자를 함께 저장 | 없으면 이력을 구할 때마다 모든 영역에서 그 회원의 콘텐츠 ID를 다시 모아야 한다. DB 설계서도 신고 이력을 `report`로 본다(FR-USR-009) |
+| 25 | 숨김 해제 | 만들지 않음 | 요구사항·화면에 없다 |
 
 > 배치 삭제(쪽지 1년, 알림 90일)는 `@Scheduled`를 쓴다. `@EnableScheduling`은 `global/config`(형상관리)에 둔다.
