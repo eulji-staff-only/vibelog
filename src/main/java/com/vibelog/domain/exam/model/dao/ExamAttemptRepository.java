@@ -30,4 +30,10 @@ public interface ExamAttemptRepository extends JpaRepository<ExamAttempt, Long> 
 
     /* 그 수업의 가장 최근 회차. 제출 안 한 응시가 있다면 늘 이것이다 (앞 회차를 제출해야 새 회차를 만든다) */
     Optional<ExamAttempt> findFirstByMemberIdAndLessonIdOrderByAttemptNoDesc(Long memberId, Long lessonId);
+
+    /* 리포트(API-EXM-05): 회차를 고른 경우 */
+    Optional<ExamAttempt> findByMemberIdAndLessonIdAndAttemptNo(Long memberId, Long lessonId, int attemptNo);
+
+    /* 리포트(API-EXM-05): 회차가 없으면 최근 제출한 응시 */
+    Optional<ExamAttempt> findFirstByMemberIdAndLessonIdAndSubmittedAtIsNotNullOrderByAttemptNoDesc(Long memberId, Long lessonId);
 }

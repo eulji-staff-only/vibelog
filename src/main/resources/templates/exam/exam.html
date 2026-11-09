@@ -23,6 +23,7 @@
     </section>
 
     <main class="exam-main">
+        <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
         <div class="exam-panel">
 
             <!-- 고를 때마다 답을 저장한다 (API-EXM-03). 제출은 아래 M-02 폼 (API-EXM-04) -->
