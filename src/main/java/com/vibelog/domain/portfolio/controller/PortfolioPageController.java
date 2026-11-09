@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 /*
  * [PortfolioPageController]
- * 역할 : 포트폴리오 과제 화면(API-PRT-01)과 설정 파일 내려받기(API-PRT-03)를 받는다.
+ * 역할 : 포트폴리오 영역의 화면(GET)을 연다. 과제 화면(API-PRT-01)과 설정 파일 내려받기(API-PRT-03)는 데이터를 붙였다.
  * 책임 : - 로그인 회원은 여기서만 꺼내고 Service 에는 memberId 만 넘긴다 (README "로그인 약속").
  *        - 수강하지 않은 코스면 코스 소개(/courses/{courseId})로 보낸다 (명세 실패 칸).
- *        - 제출(API-PRT-04)·수정 상태(edit=true)는 #113·#114 에서 붙인다.
+ *        - U-19 내 포트폴리오·U-20 상세는 아직 화면 이름만 돌려준다 (화면 선행 작업 #58). 데이터·제출·수정은 #113·#114 에서 붙인다.
  */
 @Controller
 @RequiredArgsConstructor
@@ -51,5 +51,17 @@ public class PortfolioPageController {
         String fileName = "agent-file." + StringUtils.getFilenameExtension(fileUrl);
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(fileName).build().toString());
         return "forward:" + fileUrl;
+    }
+
+    /* U-19 내 포트폴리오 */
+    @GetMapping("/my/portfolios")
+    public String myPortfolios() {
+        return "portfolio/my-portfolios";
+    }
+
+    /* U-20 포트폴리오 상세 */
+    @GetMapping("/portfolios/{portfolioId}")
+    public String detail() {
+        return "portfolio/detail";
     }
 }
