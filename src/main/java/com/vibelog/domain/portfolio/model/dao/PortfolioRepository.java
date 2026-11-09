@@ -26,6 +26,9 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
 
     long countByMemberIdAndDeletedAtIsNull(Long memberId);
 
+    /* U-19 내 포트폴리오 (삭제 표시 제외, 최근 제출 먼저) */
+    List<Portfolio> findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(Long memberId);
+
     List<Portfolio> findAllByMemberIdAndIsPublicTrueAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(Long memberId);
 
     /* 리뷰 요청(community #182)을 같은 회원끼리 차례로 처리하려고 그 회원의 포트폴리오 행을 쓰기 잠금으로 읽는다 */
