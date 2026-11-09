@@ -246,6 +246,7 @@
 
     /* ---- API-LSN-04 풀이 시작 (처음·다시 풀기) ---- */
     async function start() {
+        if (busy) return;   // "퀴즈 다시 풀기"를 빠르게 두 번 눌러도 풀이를 한 번만 시작한다
         busy = true;
         loading.hidden = false;
         list.replaceChildren();
