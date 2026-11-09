@@ -39,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
         saving = saving.then(() => save(step, checked));
     }));
 
-    // 제출 양식: 이미 제출했거나 이메일 미인증이면 양식이 없다
+    // 제출 양식 (API-PRT-04): 이미 제출했거나 이메일 미인증이면 양식이 없다
+    const form = root.querySelector('[data-submit-form]');
     const url = root.querySelector('[data-url]');
     if (!url) return;
     const urlMsg = root.querySelector('[data-url-msg]');
@@ -48,7 +49,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const retroMsg = root.querySelector('[data-retro-msg]');
     const required = [...root.querySelectorAll('[data-required]')];
     const visButtons = [...root.querySelectorAll('[data-vis]')];
+    const visInput = root.querySelector('[data-vis-input]');
     const submit = root.querySelector('[data-submit]');
+    const keyFields = [...root.querySelectorAll('[data-key-check]')];
+    const keyWarning = root.querySelector('[data-key-warning]');
+    const shot = root.querySelector('[data-shot]');
+    const shotError = root.querySelector('[data-shot-error]');
+    const SHOT_MAX = 5 * 1024 * 1024;   // PL-PRT-005·PL-DAT-004. 서버(FileStorage)도 다시 검사한다
+    const shotOk = () => !shot.files.length || shot.files[0].size <= SHOT_MAX;
+    // 서버(ApiKeyMasker)와 같은 형식 (PL-PRT-008)
+    const apiKey = /(^|[^A-Za-z0-9])(sk-|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/;
+    let ready = false;
 
     const isUrl = (value) => /^https?:\/\/[^\s]+\.[^\s]+$/.test(value.trim());
     const retroOk = () => retro.value.length >= 100 && retro.value.length <= 2000;
@@ -70,23 +81,43 @@ document.addEventListener('DOMContentLoaded', () => {
         retro.setAttribute('aria-invalid', String(retroBad));
         retroMsg.classList.toggle('is-error', retroBad);
 
-        const ready = isUrl(url.value)
+        // API 키 형식 경고 (PL-PRT-008): 저장할 때 서버가 가린다
+        keyWarning.hidden = !keyFields.some((f) => apiKey.test(f.value));
+
+        // 스크린샷 크기: 너무 크면 서버 업로드 제한에 걸려 입력한 내용이 사라지므로 보내기 전에 막는다
+        shotError.hidden = shotOk();
+
+        ready = shotOk() && isUrl(url.value)
             && required.every((f) => f.value.trim().length > 0 && f.value.length <= Number(f.dataset.max || Infinity))
             && retroOk()
             && visButtons.some((b) => b.getAttribute('aria-pressed') === 'true');
         submit.setAttribute('aria-disabled', String(!ready));
     };
 
-    [url, retro, ...required].forEach((field) => field.addEventListener('input', () => {
+    [url, retro, ...required, ...keyFields].forEach((field) => field.addEventListener('input', () => {
         showCount(field);
         render();
     }));
 
-    // 공개 여부 (PL-PRT-006): 기본값 없이 하나만 고른다
+    // 공개 여부 (PL-PRT-006): 기본값 없이 하나만 고른다. 고른 값을 숨은 칸 isPublic 에 넣는다
     visButtons.forEach((button) => button.addEventListener('click', () => {
         visButtons.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+        visInput.value = button.dataset.visValue;
         render();
     }));
 
+    // 준비가 안 됐으면 보내지 않고, 보낼 때는 버튼을 잠가 중복 제출을 막는다 (PL-ERR-003)
+    shot.addEventListener('change', render);
+
+    form.addEventListener('submit', (e) => {
+        if (!ready || submit.disabled) {
+            e.preventDefault();
+            return;
+        }
+        submit.disabled = true;
+    });
+
+    // 입력 오류로 다시 그린 폼은 보낸 값이 채워져 있어 글자 수부터 맞춘다
+    [url, retro, ...required].forEach(showCount);
     render();
 });
