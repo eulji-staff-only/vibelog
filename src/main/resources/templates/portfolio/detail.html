@@ -114,6 +114,9 @@
                 <a class="mp-btn mp-btn-text" th:href="@{/community}">커뮤니티로 돌아가기</a>
                 <a class="mp-btn mp-btn-outline" th:if="${portfolio.mine() and portfolio.courseId() != null}"
                    th:href="@{/courses/{id}/portfolio(id=${portfolio.courseId()},edit=true)}">수정</a>
+                <!-- 개인 작품 수정 → U-34 수정 상태 (#199) -->
+                <a class="mp-btn mp-btn-outline" th:if="${portfolio.mine() and portfolio.courseId() == null}"
+                   th:href="@{/my/portfolios/new(edit=${portfolio.portfolioId()})}">수정</a>
             </div>
         </div>
     </div>

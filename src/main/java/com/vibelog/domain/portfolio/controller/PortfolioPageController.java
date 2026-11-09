@@ -46,6 +46,8 @@ import java.util.List;
  *        - 작성 중 내용 보존(P2 FR-PRT-010)은 브라우저가 한다. 여기서는 회원·코스별 저장 키를 화면에 넘긴다.
  *          새 제출(draftKey)과 수정(editDraftKey)은 키를 나눈다. "이미 제출함" 화면은 새 제출 키만 지우고,
  *          수정이 끝나면 수정 키를 flash(clearDraft)로 넘겨 내 포트폴리오 화면이 지우게 한다.
+ *        - 개인 작품(#199): U-34 /my/portfolios/new 에서 등록(API-PRT-13)하고, ?edit={portfolioId} 면 수정 상태로 연다.
+ *          수정은 코스 포트폴리오와 같은 API-PRT-06 으로 보내고, 입력 오류면 U-34 수정 상태를 다시 그린다.
  *        - 동료 리뷰(#281): U-20 받은 리뷰·리뷰 요청/마감 버튼, U-19 "리뷰 요청 중" 표시는 community 영역 CommunityReader 값을 붙인다.
  *          요청·마감·도움됨 처리는 community 영역 API 가 한다 (community.md "U-19·U-20 은 portfolio 화면").
  */
@@ -54,6 +56,7 @@ import java.util.List;
 public class PortfolioPageController {
 
     private static final String VIEW = "portfolio/portfolio";
+    private static final String PERSONAL_VIEW = "portfolio/personal";
 
     private final PortfolioService portfolioService;
     private final PortfolioSubmitService portfolioSubmitService;
@@ -102,6 +105,36 @@ public class PortfolioPageController {
         }
     }
 
+    /* U-34 개인 작품 추가·수정 화면 (API-PRT-12). template 은 항목이 고정이라 지금은 쓰지 않는다 (P3 #253) */
+    @GetMapping("/my/portfolios/new")
+    public String personal(@RequestParam(required = false) Long edit,
+                           @AuthenticationPrincipal LoginMember loginMember,
+                           Model model) {
+        Long memberId = loginMember.getMemberId();
+        model.addAttribute("portfolioSubmitForm", edit == null ? new PortfolioSubmitForm()
+                : portfolioManageService.getPersonalEditForm(memberId, edit));
+        return personalView(memberId, edit, model);
+    }
+
+    /* API-PRT-13 개인 작품 등록 → 내 포트폴리오 + toast */
+    @PostMapping("/my/portfolios")
+    public String submitPersonal(@Valid @ModelAttribute PortfolioSubmitForm portfolioSubmitForm, BindingResult bindingResult,
+                                 @AuthenticationPrincipal LoginMember loginMember,
+                                 Model model, RedirectAttributes redirectAttributes) {
+        Long memberId = loginMember.getMemberId();
+        if (!bindingResult.hasErrors()) {
+            try {
+                portfolioSubmitService.submitPersonal(memberId, portfolioSubmitForm);
+                redirectAttributes.addFlashAttribute("toast", "개인 작품을 등록했습니다");
+                redirectAttributes.addFlashAttribute("clearDraft", personalDraftKey(memberId, null));
+                return "redirect:/my/portfolios";
+            } catch (BusinessException e) {
+                rejectOrThrow(e, bindingResult);
+            }
+        }
+        return personalView(memberId, null, model);
+    }
+
     /* API-PRT-06 수정 → 내 포트폴리오 + toast */
     @PostMapping("/portfolios/{portfolioId}/edit")
     public String edit(@PathVariable Long portfolioId,
@@ -113,16 +146,21 @@ public class PortfolioPageController {
         if (!bindingResult.hasErrors()) {
             try {
                 portfolioSubmitService.edit(memberId, portfolioId, portfolioSubmitForm, screenshot);
+                Long courseId = portfolioManageService.getOwnedCourseId(memberId, portfolioId);
                 redirectAttributes.addFlashAttribute("toast", "포트폴리오를 수정했습니다");
-                redirectAttributes.addFlashAttribute("clearDraft",
-                        editDraftKey(memberId, portfolioManageService.getOwnedCourseId(memberId, portfolioId)));
+                redirectAttributes.addFlashAttribute("clearDraft", courseId == null
+                        ? personalDraftKey(memberId, portfolioId) : editDraftKey(memberId, courseId));
                 return "redirect:/my/portfolios";
             } catch (BusinessException e) {
                 rejectOrThrow(e, bindingResult);
             }
         }
+        Long courseId = portfolioManageService.getOwnedCourseId(memberId, portfolioId);
+        if (courseId == null) {
+            return personalView(memberId, portfolioId, model);   // 개인 작품은 U-34 수정 상태로 다시
+        }
         model.addAttribute("editPortfolioId", portfolioId);
-        return pageView(portfolioManageService.getOwnedCourseId(memberId, portfolioId), memberId, model);
+        return pageView(courseId, memberId, model);
     }
 
     /* API-PRT-07 삭제 (M-04 확인 후) → 내 포트폴리오 + toast */
@@ -160,6 +198,19 @@ public class PortfolioPageController {
     /* 수정(edit=true) 중인 내용은 새 제출과 따로 둔다. 새 제출 키를 지울 때 수정 중이던 내용까지 지워지지 않게 */
     private static String editDraftKey(Long memberId, Long courseId) {
         return draftKey(memberId, courseId) + ".edit";
+    }
+
+    /* 개인 작품(U-34)은 코스가 없어 새 등록과 수정(작품별)으로 키를 나눈다 */
+    private static String personalDraftKey(Long memberId, Long portfolioId) {
+        return "vibelog.portfolio-draft." + memberId + ".personal" + (portfolioId == null ? "" : "." + portfolioId);
+    }
+
+    /* U-34. editPortfolioId 가 있으면 수정 상태 (보내는 곳 API-PRT-06) */
+    private String personalView(Long memberId, Long editPortfolioId, Model model) {
+        model.addAttribute("editPortfolioId", editPortfolioId);
+        model.addAttribute("emailVerified", portfolioManageService.isEmailVerified(memberId));
+        model.addAttribute("draftKey", personalDraftKey(memberId, editPortfolioId));
+        return PERSONAL_VIEW;
     }
 
     /* 수강하지 않은 코스면 코스 소개로 */
