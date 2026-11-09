@@ -121,9 +121,12 @@ public class PeerReviewService {
         Map<Long, String> nicknames = memberReader.getNicknames(
                 portfolios.values().stream().map(PortfolioBrief::memberId).collect(Collectors.toSet()));
         Map<Long, Long> reviewCounts = countReviews(requests.map(ReviewRequest::getReviewRequestId).toList());
-        // ponytail: 계약 ⑭ 전에 비공개·삭제된 작품은 이 쪽에서 빼서 한 쪽이 20개보다 적을 수 있다. ⑭가 붙으면 생기지 않는다
+        // 영구 정지 회원의 작품 요청은 뺀다 (PL-RPT-006, #215)
+        Set<Long> hidden = memberReader.findHiddenMemberIds(portfolios.values().stream().map(PortfolioBrief::memberId).collect(Collectors.toSet()));
+        // ponytail: 계약 ⑭ 전에 비공개·삭제된 작품·영구 정지 회원 작품은 이 쪽에서 빼서 한 쪽이 20개보다 적을 수 있다
         List<ReviewRequestCard> cards = requests.stream()
                 .filter(request -> visible(portfolios.get(request.getPortfolioId())))
+                .filter(request -> !hidden.contains(portfolios.get(request.getPortfolioId()).memberId()))
                 .map(request -> {
                     PortfolioBrief p = portfolios.get(request.getPortfolioId());
                     return new ReviewRequestCard(request.getReviewRequestId(), p.portfolioId(), p.title(), p.summary(),
@@ -267,10 +270,17 @@ public class PeerReviewService {
                 ReviewComment::getPeerReviewId, Collectors.mapping(c -> new ReviewView.Comment(
                         c.getReviewCriterionId() == null ? null : criterionNames.get(c.getReviewCriterionId()), c.getContent()),
                         Collectors.toList())));
-        Map<Long, String> nicknames = memberReader.getNicknames(reviews.stream().map(PeerReview::getReviewerMemberId).collect(Collectors.toSet()));
-        return reviews.stream().map(review -> new ReviewView(review.getPeerReviewId(), review.getReviewerMemberId(),
-                nicknames.get(review.getReviewerMemberId()), review.getCreatedAt(), review.getHelpfulAt() != null,
-                review.isWrittenBy(viewerMemberId), commentsByReview.getOrDefault(review.getPeerReviewId(), List.of()))).toList();
+        Set<Long> reviewerIds = reviews.stream().map(PeerReview::getReviewerMemberId).collect(Collectors.toSet());
+        Map<Long, String> nicknames = memberReader.getNicknames(reviewerIds);
+        // 영구 정지 회원의 리뷰는 자리만 남기고 작성자·내용을 숨긴다 (PL-RPT-006, #215). 화면은 hidden 이면 PL-ERR-006 문구
+        Set<Long> hidden = memberReader.findHiddenMemberIds(reviewerIds);
+        return reviews.stream().map(review -> {
+            boolean isHidden = hidden.contains(review.getReviewerMemberId());
+            return new ReviewView(review.getPeerReviewId(), review.getReviewerMemberId(),
+                    isHidden ? null : nicknames.get(review.getReviewerMemberId()), review.getCreatedAt(), review.getHelpfulAt() != null,
+                    review.isWrittenBy(viewerMemberId), isHidden ? List.of() : commentsByReview.getOrDefault(review.getPeerReviewId(), List.of()),
+                    isHidden);
+        }).toList();
     }
 
     /* CommunityReader: U-20 리뷰 마감 버튼 */
