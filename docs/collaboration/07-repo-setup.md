@@ -119,9 +119,9 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 | Restrict deletions | ✅ |
 | Block force pushes | ✅ |
 | Require a pull request before merging | ✅ |
-| └ Required approvals | **1** |
+| └ Required approvals | **0** (P1 PR의 승인은 `area-review` 검사가 요구한다, #287) |
 | └ Dismiss stale pull request approvals when new commits are pushed | 선택 (켜면 더 안전하지만, 리뷰 반영할 때마다 재승인이 필요) |
-| └ Require review from Code Owners | ✅ (`.github/CODEOWNERS` — PM·형상관리 중 1명) |
+| └ Require review from Code Owners | ❌ (기본 리뷰어 자동 지정을 쓰지 않는다, #287) |
 | └ Require conversation resolution before merging | ✅ |
 | └ Allowed merge methods | **Squash**, **Merge** (Merge는 hotfix 반영용) |
 | Require status checks to pass | ✅ → **Add checks** 에서 `build`, `area-review` 선택 (`.github/workflows/build.yml`, `area-review.yml`) |
