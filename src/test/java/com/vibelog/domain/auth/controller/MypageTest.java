@@ -237,6 +237,17 @@ class MypageTest {
 
         mockMvc.perform(get("/mypage").param("tab", "bookmarks").with(as(SOCIAL_EMAIL)))
                 .andExpect(content().string(containsString("북마크한 개념이 없습니다")));
+
+        // 20개씩: 19개를 더 담으면 21개라 2쪽에는 가장 먼저 담은 1개만 남는다
+        for (int i = 1; i <= 19; i++) {
+            jdbcTemplate.update("INSERT INTO activity (activity_id, lesson_id, activity_type, title, body, body_format, estimated_minutes, pass_rate, sort_order)"
+                    + " VALUES (?, 9601, 'CONCEPT', ?, '본문', 'MARKDOWN', 10, NULL, ?)", 9602 + i, "추가 개념 " + i, 2 + i);
+            jdbcTemplate.update("INSERT INTO concept_bookmark (member_id, activity_id, created_at) VALUES (?, ?, NOW() - INTERVAL 2 DAY - INTERVAL ? MINUTE)",
+                    memberId, 9602 + i, i);
+        }
+        mockMvc.perform(get("/mypage").param("tab", "bookmarks").param("page", "2").with(as(EMAIL)))
+                .andExpect(content().string(allOf(containsString("추가 개념 19"), not(containsString("추가 개념 18")),
+                        not(containsString("먼저 담은 개념")), containsString("2 / 2"), containsString("tab=bookmarks&amp;page=1"))));
     }
 
     private RequestPostProcessor as(String email) {

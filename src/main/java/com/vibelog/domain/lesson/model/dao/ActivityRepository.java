@@ -16,7 +16,7 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
     /*
      * 회원이 북마크한 개념, 북마크한 순서 최신순 (concept_bookmark, FR-LSN-004). 마이페이지 목록은 읽기만 해서 행 값만 읽는다.
-     * 북마크 Entity·토글(API-LSN-08)은 #192 에서 만든다.
+     * 북마크 Entity·토글(API-LSN-08)은 #192 에서 만든다. 정렬은 쿼리에 고정돼 있어 Pageable 에 Sort 를 넣지 않는다.
      */
     @Query(value = "SELECT activity_id AS activityId, created_at AS bookmarkedAt FROM concept_bookmark WHERE member_id = :memberId"
             + " ORDER BY created_at DESC, concept_bookmark_id DESC",
