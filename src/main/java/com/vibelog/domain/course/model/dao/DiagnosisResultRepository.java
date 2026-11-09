@@ -12,4 +12,7 @@ public interface DiagnosisResultRepository extends JpaRepository<DiagnosisResult
 
     /* 회원의 가장 최근 진단 결과 (코스 목록 추천 트랙, API-CRS-02). 진단 다시 하기(P2)로 여러 행이 생길 수 있다 */
     Optional<DiagnosisResult> findFirstByMemberIdOrderByDiagnosisResultIdDesc(Long memberId);
+
+    /* 이 트랙을 추천받은 진단 결과가 있는지 (트랙 삭제 막기, fk_diagnosis_result_recommended_track_id, #95) */
+    boolean existsByRecommendedTrackId(Long recommendedTrackId);
 }

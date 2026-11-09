@@ -1,5 +1,6 @@
 package com.vibelog.domain.portfolio.model.dto;
 
+import com.vibelog.domain.portfolio.model.entity.Portfolio;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -15,6 +16,7 @@ import lombok.Setter;
  *        - 공개 여부는 기본값이 없어 고르지 않으면 오류다 (PL-PRT-006).
  *        - 명세에 없는 길이(결과물 링크·AI 도구)는 sql/01-schema.sql 컬럼 크기 (result_url 500, ai_tools 200).
  *        - 틀리면 U-17 의 같은 폼을 입력 값 그대로 다시 그리려고 setter 가 있는 클래스로 둔다 (Entity 가 아님).
+ *        - 수정(API-PRT-06)도 같은 폼이다. U-17 수정 상태는 from(저장된 포트폴리오)으로 채운다.
  */
 @Getter
 @Setter
@@ -46,4 +48,17 @@ public class PortfolioSubmitForm {
     private Boolean isPublic;
 
     private String agentResult;
+
+    /* U-17 수정 상태(edit=true)를 저장된 값으로 채운다 */
+    public static PortfolioSubmitForm from(Portfolio portfolio) {
+        PortfolioSubmitForm form = new PortfolioSubmitForm();
+        form.title = portfolio.getTitle();
+        form.resultUrl = portfolio.getResultUrl();
+        form.summary = portfolio.getSummary();
+        form.retrospective = portfolio.getRetrospective();
+        form.aiTools = portfolio.getAiTools();
+        form.isPublic = portfolio.isPublic();
+        form.agentResult = portfolio.getAgentResult();
+        return form;
+    }
 }

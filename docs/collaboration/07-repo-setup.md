@@ -119,9 +119,9 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 | Restrict deletions | ✅ |
 | Block force pushes | ✅ |
 | Require a pull request before merging | ✅ |
-| └ Required approvals | **1** |
+| └ Required approvals | **0** (P1 PR의 승인은 `area-review` 검사가 요구한다, #287) |
 | └ Dismiss stale pull request approvals when new commits are pushed | 선택 (켜면 더 안전하지만, 리뷰 반영할 때마다 재승인이 필요) |
-| └ Require review from Code Owners | ✅ (`.github/CODEOWNERS` — PM·형상관리 중 1명) |
+| └ Require review from Code Owners | ❌ (기본 리뷰어 자동 지정을 쓰지 않는다, #287) |
 | └ Require conversation resolution before merging | ✅ |
 | └ Allowed merge methods | **Squash**, **Merge** (Merge는 hotfix 반영용) |
 | Require status checks to pass | ✅ → **Add checks** 에서 `build`, `area-review` 선택 (`.github/workflows/build.yml`, `area-review.yml`) |
@@ -134,9 +134,9 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 |---|---|
 | Ruleset Name | `protect-main` |
 | Target branches | `main` |
-| Required approvals | **1** (코드 오너 = PM·형상관리 중 1명) |
+| Required approvals | **1** (누가 승인해야 하는지는 `area-review` 검사가 PM·형상관리 중 1명으로 강제, #287) |
 | Allowed merge methods | **Merge**, **Squash** (Squash는 hotfix용) |
-| Require status checks | `build`만 (`area-review`는 넣지 않음 — develop→main 릴리스 PR은 모든 영역을 바꾸므로) |
+| Require status checks | `build`, `area-review` (#287부터. 릴리스 PR은 영역 담당을 보지 않고 PM·형상관리 중 1명 승인만 본다) |
 
 > ⚠️ **비공개(Private) 저장소 + 무료 플랜**에서는 규칙이 실제로 강제되지 않을 수 있습니다.
 > 공개 저장소로 운영하거나, 학생이라면 [GitHub Education](https://education.github.com/) 혜택을 확인해 보세요.

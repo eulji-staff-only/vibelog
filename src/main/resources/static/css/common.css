@@ -700,6 +700,7 @@ img {
   gap: var(--space-4);
   padding: var(--space-9);
   box-sizing: border-box;
+  color: var(--ink);
   background: var(--surface-raised);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-panel);

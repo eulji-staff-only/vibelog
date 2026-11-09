@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -126,6 +128,19 @@ class NotificationTest {
 
         mockMvc.perform(get("/community").with(as(me)))
                 .andExpect(content().string(containsString("알림, 안 읽은 알림 2개")));
+    }
+
+    @Test
+    void 안_읽은_배지_알림이_있으면_축하_모달을_띄우고_확인하면_사라진다() throws Exception {
+        long badge = notify(myId, "BADGE", "CONTEST_AWARD", 1, "배지를 받았습니다: 2094년 1월 1등", LocalDateTime.now());
+
+        mockMvc.perform(get("/community").with(as(me)))
+                .andExpect(content().string(allOf(containsString("배지 획득을 축하합니다"), containsString("배지를 받았습니다: 2094년 1월 1등"),
+                        containsString("/notifications/" + badge))));
+        open(badge).andExpect(redirectedUrl("/mypage?tab=badges"));
+        entityManager.flush();
+        mockMvc.perform(get("/community").with(as(me)))
+                .andExpect(content().string(not(containsString("배지 획득을 축하합니다"))));
     }
 
     @Test

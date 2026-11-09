@@ -160,7 +160,7 @@ git push                                   # 두 번째부터는 이것만
 
 아래 조건이 **모두** 충족되면 **PR 작성자인 내가** 머지합니다.
 
-- [ ] PM·형상관리 중 1명 Approve (다른 영역 파일을 바꿨으면 그 영역 담당 Approve → `area-review` ✅)
+- [ ] `area-review` ✅ — P1 PR이면 PM·형상관리 중 1명 Approve (다른 영역 파일을 바꿨으면 그 영역 담당 Approve도). P1이 아닌 PR은 승인 없이 ✅ (#287)
 - [ ] `build` ✅
 - [ ] `[필수]` 코멘트가 모두 해결됨 (Resolve conversation)
 - [ ] "This branch has no conflicts with the base branch" 표시 (충돌 없음)

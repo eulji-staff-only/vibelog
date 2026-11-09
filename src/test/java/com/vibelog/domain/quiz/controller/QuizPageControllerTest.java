@@ -65,7 +65,7 @@ class QuizPageControllerTest {
 
         mockMvc.perform(get("/courses/1/lessons/2/quizzes/3").with(member()))
                 .andExpect(redirectedUrl("/courses/1/lessons/2"))
-                .andExpect(flash().attribute("toast", "앞 퀴즈를 정답률 50% 이상으로 통과하면 열립니다."));
+                .andExpect(flash().attribute("toast", "앞 퀴즈를 통과하면 열립니다."));
     }
 
     @Test
