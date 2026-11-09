@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Lock;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +31,10 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     List<Portfolio> findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(Long memberId);
 
     List<Portfolio> findAllByMemberIdAndIsPublicTrueAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(Long memberId);
+
+    /* 회원들의 포트폴리오 ID, 삭제 표시한 것도 포함 (community 리뷰 요청 목록에서 영구 정지 회원 작품을 미리 뺀다, #215) */
+    @Query("select p.portfolioId from Portfolio p where p.memberId in :memberIds")
+    List<Long> findIdsByMemberIdIn(@Param("memberIds") Collection<Long> memberIds);
 
     /* 리뷰 요청(community #182)을 같은 회원끼리 차례로 처리하려고 그 회원의 포트폴리오 행을 쓰기 잠금으로 읽는다 */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
