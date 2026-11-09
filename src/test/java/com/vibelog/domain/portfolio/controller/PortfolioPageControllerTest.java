@@ -3,6 +3,8 @@ package com.vibelog.domain.portfolio.controller;
 import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dto.GuideStepCheckResult;
+import com.vibelog.domain.community.model.dto.ReviewView;
+import com.vibelog.domain.community.model.service.CommunityReader;
 import com.vibelog.domain.portfolio.model.dto.CoursePortfolioCard;
 import com.vibelog.domain.portfolio.model.dto.CoursePortfoliosView;
 import com.vibelog.domain.portfolio.model.dto.MyPortfolioCard;
@@ -27,7 +29,9 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -70,6 +74,9 @@ class PortfolioPageControllerTest {
 
     @MockitoBean
     PortfolioManageService portfolioManageService;
+
+    @MockitoBean
+    CommunityReader communityReader;
 
     private RequestPostProcessor login() {
         LoginMember loginMember = mock(LoginMember.class);
@@ -229,6 +236,86 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("제출한 포트폴리오가 없습니다.")));
     }
 
+    private PortfolioDetailView detailView(boolean isPublic, boolean mine) {
+        return new PortfolioDetailView(7L, "할 일 앱", "https://github.com/me/todo", "요약", "회고", "Claude Code", null, null,
+                3L, "바이브 코스", "작성자", LocalDateTime.of(2026, 11, 9, 10, 0), isPublic, mine);
+    }
+
+    private ReviewView review(boolean helpful, boolean mine) {
+        return new ReviewView(11L, 2L, "리뷰어", LocalDateTime.of(2026, 11, 9, 11, 0), helpful, mine,
+                List.of(new ReviewView.Comment("요청 범위", "범위가 분명해요"), new ReviewView.Comment(null, "전체 의견")), false);
+    }
+
+    @Test
+    void 영구_정지_회원의_리뷰는_숨김_안내만_그린다() throws Exception {
+        given(portfolioManageService.getDetail(1L, 7L)).willReturn(detailView(true, true));
+        given(communityReader.findReviewsOfPortfolio(7L, 1L)).willReturn(List.of(
+                new ReviewView(11L, 2L, null, LocalDateTime.of(2026, 11, 9, 11, 0), false, false, List.of(), true)));
+
+        mockMvc.perform(get("/portfolios/7").with(login()))
+                .andExpect(content().string(Matchers.containsString("운영 정책에 따라 숨겨진 콘텐츠입니다")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("data-helpful-url"))));
+    }
+
+    @Test
+    void 내_포트폴리오_카드에_리뷰_요청_중을_표시한다() throws Exception {
+        given(portfolioManageService.getMyPortfolios(1L)).willReturn(List.of(
+                new MyPortfolioCard(7L, 3L, "바이브 코스", "할 일 앱", "요약", true, LocalDateTime.of(2026, 11, 9, 10, 0))));
+        given(communityReader.findPortfolioIdsWithOpenRequest(List.of(7L))).willReturn(Set.of(7L));
+
+        mockMvc.perform(get("/my/portfolios").with(login()))
+                .andExpect(content().string(Matchers.containsString("리뷰 요청 중")));
+    }
+
+    @Test
+    void 내_공개_작품에_열린_요청이_없으면_리뷰_요청_버튼과_확인_모달을_그린다() throws Exception {
+        given(portfolioManageService.getDetail(1L, 7L)).willReturn(detailView(true, true));
+
+        mockMvc.perform(get("/portfolios/7").with(login()))
+                .andExpect(content().string(Matchers.containsString("data-ui-modal-open=\"review-request-modal\"")))
+                .andExpect(content().string(Matchers.containsString("리뷰를 요청할까요?")))
+                .andExpect(content().string(Matchers.containsString("action=\"/portfolios/7/review-requests\"")))
+                .andExpect(content().string(Matchers.containsString("아직 받은 리뷰가 없습니다.")));
+    }
+
+    @Test
+    void 열린_요청이_있으면_리뷰_마감_버튼을_그린다() throws Exception {
+        given(portfolioManageService.getDetail(1L, 7L)).willReturn(detailView(true, true));
+        given(communityReader.findOpenReviewRequestId(7L)).willReturn(Optional.of(5L));
+
+        mockMvc.perform(get("/portfolios/7").with(login()))
+                .andExpect(content().string(Matchers.containsString("action=\"/review-requests/5/close\"")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("리뷰를 요청할까요?"))));
+    }
+
+    @Test
+    void 내_작품의_받은_리뷰에는_도움됨_버튼이_있다() throws Exception {
+        given(portfolioManageService.getDetail(1L, 7L)).willReturn(detailView(true, true));
+        given(communityReader.findReviewsOfPortfolio(7L, 1L)).willReturn(List.of(review(true, false)));
+
+        mockMvc.perform(get("/portfolios/7").with(login()))
+                .andExpect(content().string(Matchers.containsString("받은 리뷰 1개")))
+                .andExpect(content().string(Matchers.containsString("요청 범위")))
+                .andExpect(content().string(Matchers.containsString("범위가 분명해요")))
+                .andExpect(content().string(Matchers.containsString("data-helpful-url=\"/api/reviews/11/helpful\"")))
+                .andExpect(content().string(Matchers.containsString("aria-pressed=\"true\"")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("내 리뷰 수정"))));
+    }
+
+    @Test
+    void 남의_작품에서는_도움됨_버튼_대신_표시만_있고_내_리뷰면_수정_링크가_있다() throws Exception {
+        given(portfolioManageService.getDetail(1L, 7L)).willReturn(detailView(true, false));
+        given(communityReader.findReviewsOfPortfolio(7L, 1L)).willReturn(List.of(review(true, true)));
+        given(communityReader.findReviewRequestIdsOfReviews(List.of(11L))).willReturn(Map.of(11L, 3L));
+
+        mockMvc.perform(get("/portfolios/7").with(login()))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("data-helpful-url"))))
+                .andExpect(content().string(Matchers.containsString("is-success\">도움됨")))
+                .andExpect(content().string(Matchers.containsString("/reviews?reviewRequestId=3")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("리뷰를 요청할까요?"))))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("리뷰 마감"))));
+    }
+
     @Test
     void 내_비공개_상세는_안내와_수정을_그린다() throws Exception {
         given(portfolioManageService.getDetail(1L, 7L)).willReturn(new PortfolioDetailView(7L, "할 일 앱",
@@ -239,6 +326,7 @@ class PortfolioPageControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("portfolio/detail"))
                 .andExpect(content().string(Matchers.containsString("비공개로 제출한 포트폴리오입니다.")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("review-request-modal"))))
                 .andExpect(content().string(Matchers.containsString("/courses/3/portfolio?edit=true")))
                 .andExpect(content().string(Matchers.not(Matchers.containsString("에이전트 점검 결과"))));
     }

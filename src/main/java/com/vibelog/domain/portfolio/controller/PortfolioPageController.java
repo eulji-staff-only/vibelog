@@ -1,6 +1,10 @@
 package com.vibelog.domain.portfolio.controller;
 
 import com.vibelog.domain.auth.model.dto.LoginMember;
+import com.vibelog.domain.community.model.dto.ReviewView;
+import com.vibelog.domain.community.model.service.CommunityReader;
+import com.vibelog.domain.portfolio.model.dto.MyPortfolioCard;
+import com.vibelog.domain.portfolio.model.dto.PortfolioDetailView;
 import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
 import com.vibelog.domain.portfolio.model.dto.PortfolioPageView;
 import com.vibelog.domain.portfolio.model.dto.PortfolioSubmitForm;
@@ -27,6 +31,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 /*
  * [PortfolioPageController]
  * 역할 : 포트폴리오 영역의 화면을 연다. 과제 화면(API-PRT-01)·설정 파일 내려받기(API-PRT-03)·제출(API-PRT-04),
@@ -37,6 +43,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  *          잠김·미인증처럼 폼으로 고칠 수 없는 것은 오류 화면으로 보낸다 (CommunityPageController 와 같은 방식).
  *        - 수정은 U-17 수정 상태(edit=true)에서 보낸다. 입력 오류면 U-17 수정 상태 폼을 다시 그린다 (제출과 같은 방식).
  *          수정·삭제가 끝나면 내 포트폴리오 + toast. 남의 비공개 상세(PRIVATE_PORTFOLIO)·NOT_OWNER 는 오류 화면(E-02)이다.
+ *        - 동료 리뷰(#281): U-20 받은 리뷰·리뷰 요청/마감 버튼, U-19 "리뷰 요청 중" 표시는 community 영역 CommunityReader 값을 붙인다.
+ *          요청·마감·도움됨 처리는 community 영역 API 가 한다 (community.md "U-19·U-20 은 portfolio 화면").
  */
 @Controller
 @RequiredArgsConstructor
@@ -47,6 +55,7 @@ public class PortfolioPageController {
     private final PortfolioService portfolioService;
     private final PortfolioSubmitService portfolioSubmitService;
     private final PortfolioManageService portfolioManageService;
+    private final CommunityReader communityReader;
 
     /* U-17 포트폴리오 (과제 → 평가 에이전트 자가 점검 → 제출). edit=true 면 제출한 내 포트폴리오 값으로 채운 수정 상태 */
     @GetMapping("/courses/{courseId}/portfolio")
@@ -164,7 +173,10 @@ public class PortfolioPageController {
     /* U-19 내 포트폴리오 (API-PRT-05) */
     @GetMapping("/my/portfolios")
     public String myPortfolios(@AuthenticationPrincipal LoginMember loginMember, Model model) {
-        model.addAttribute("portfolios", portfolioManageService.getMyPortfolios(loginMember.getMemberId()));
+        List<MyPortfolioCard> portfolios = portfolioManageService.getMyPortfolios(loginMember.getMemberId());
+        model.addAttribute("portfolios", portfolios);
+        model.addAttribute("reviewOpenIds", communityReader.findPortfolioIdsWithOpenRequest(
+                portfolios.stream().map(MyPortfolioCard::portfolioId).toList()));
         return "portfolio/my-portfolios";
     }
 
@@ -190,7 +202,17 @@ public class PortfolioPageController {
     public String detail(@PathVariable Long portfolioId,
                          @AuthenticationPrincipal LoginMember loginMember,
                          Model model) {
-        model.addAttribute("portfolio", portfolioManageService.getDetail(loginMember.getMemberId(), portfolioId));
+        Long memberId = loginMember.getMemberId();
+        PortfolioDetailView portfolio = portfolioManageService.getDetail(memberId, portfolioId);
+        List<ReviewView> reviews = communityReader.findReviewsOfPortfolio(portfolioId, memberId);
+        model.addAttribute("portfolio", portfolio);
+        model.addAttribute("reviews", reviews);
+        // 내가 쓴 리뷰의 수정 링크(/reviews?reviewRequestId=)에 쓸 요청 ID
+        model.addAttribute("myReviewRequestIds", communityReader.findReviewRequestIdsOfReviews(
+                reviews.stream().filter(ReviewView::mine).map(ReviewView::peerReviewId).toList()));
+        if (portfolio.mine()) {
+            model.addAttribute("openReviewRequestId", communityReader.findOpenReviewRequestId(portfolioId).orElse(null));
+        }
         return "portfolio/detail";
     }
 }

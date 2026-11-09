@@ -13,7 +13,7 @@
     <script th:src="@{/js/community.js}" defer></script>
 </head>
 <body class="cm-page">
-<!-- U-29 공개 프로필 (API-CMT-14, #181). 배지는 #202 에서 더한다. 쪽지 보내기는 M-13 모달(#184). -->
+<!-- U-29 공개 프로필 (API-CMT-14, #181). 배지는 콘테스트 수상 기록(#202). 쪽지 보내기는 M-13 모달(#184). -->
 <div th:replace="~{common/layout :: header}"></div>
 
 <section class="cm-band">
@@ -35,6 +35,12 @@
                 <button class="cm-btn is-outline" type="button" data-ui-modal-open="message-modal">쪽지 보내기</button>
             </div>
         </div>
+
+        <h2 class="cm-h">배지</h2>
+        <ul class="cm-badges" th:unless="${profile.badges().empty}">
+            <li class="cm-badge" th:each="badge : ${profile.badges()}" th:text="${badge.name()}">2026년 11월 1등</li>
+        </ul>
+        <p class="cm-muted" th:if="${profile.badges().empty}">받은 배지가 없습니다</p>
 
         <h2 class="cm-h">공개 포트폴리오</h2>
         <ul class="cm-list" th:unless="${profile.portfolios().empty}">
