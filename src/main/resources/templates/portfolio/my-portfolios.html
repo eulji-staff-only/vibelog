@@ -25,6 +25,8 @@
 <main class="mp-main">
     <div class="mp-panel">
         <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
+        <!-- 수정이 끝났으니 U-17 에 보관해 둔 작성 내용을 지운다 (FR-PRT-010) -->
+        <span hidden th:if="${clearDraft}" th:attr="data-draft-clear=${clearDraft}"></span>
         <div class="mp-head">
             <h2 class="mp-h2">제출한 포트폴리오</h2>
             <span class="mp-muted" th:text="|${#lists.size(portfolios)}개|">2개</span>

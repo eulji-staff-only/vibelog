@@ -37,6 +37,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  *          잠김·미인증처럼 폼으로 고칠 수 없는 것은 오류 화면으로 보낸다 (CommunityPageController 와 같은 방식).
  *        - 수정은 U-17 수정 상태(edit=true)에서 보낸다. 입력 오류면 U-17 수정 상태 폼을 다시 그린다 (제출과 같은 방식).
  *          수정·삭제가 끝나면 내 포트폴리오 + toast. 남의 비공개 상세(PRIVATE_PORTFOLIO)·NOT_OWNER 는 오류 화면(E-02)이다.
+ *        - 작성 중 내용 보존(P2 FR-PRT-010)은 브라우저가 한다. 여기서는 회원·코스별 저장 키(draftKey)를 화면에 넘기고,
+ *          수정이 끝나면 그 키를 flash(clearDraft)로 넘겨 내 포트폴리오 화면이 지우게 한다.
  */
 @Controller
 @RequiredArgsConstructor
@@ -102,6 +104,8 @@ public class PortfolioPageController {
             try {
                 portfolioSubmitService.edit(memberId, portfolioId, portfolioSubmitForm, screenshot);
                 redirectAttributes.addFlashAttribute("toast", "포트폴리오를 수정했습니다");
+                redirectAttributes.addFlashAttribute("clearDraft",
+                        draftKey(memberId, portfolioManageService.getOwnedCourseId(memberId, portfolioId)));
                 return "redirect:/my/portfolios";
             } catch (BusinessException e) {
                 rejectOrThrow(e, bindingResult);
@@ -137,8 +141,14 @@ public class PortfolioPageController {
         bindingResult.reject(e.getErrorCode().toString(), e.getMessage());
     }
 
+    /* 작성 중 내용을 브라우저에 보관할 키. 같은 브라우저를 쓰는 다른 회원에게 채워지지 않게 회원·코스별로 나눈다 (portfolio.md P2) */
+    private static String draftKey(Long memberId, Long courseId) {
+        return "vibelog.portfolio-draft." + memberId + "." + courseId;
+    }
+
     /* 수강하지 않은 코스면 코스 소개로 */
     private String pageView(Long courseId, Long memberId, Model model) {
+        model.addAttribute("draftKey", draftKey(memberId, courseId));
         return portfolioService.getPage(memberId, courseId)
                 .map(page -> {
                     model.addAttribute("page", page);
