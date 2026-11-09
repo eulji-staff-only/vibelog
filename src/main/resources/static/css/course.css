@@ -1,0 +1,186 @@
+/*
+ * course.css
+ * 트랙 소개(U-09) · 코스 목록(U-10) · 코스 상세(U-11) 화면 (#53).
+ * 색·글꼴·간격은 화면 흐름 설계서 6장 토큰(var(--…))만 쓴다. 값은 common.css 가 정한다.
+ * 버튼·배지·안내 상자·패널은 공통 조각(common/ui.html, .vl-ui-*)을 쓰고 여기서 다시 만들지 않는다.
+ */
+
+/* 상단 네이비 띠 + 제목 (6-3 페이지 틀) */
+.crs-band {
+    background: var(--navy-900);
+    color: var(--on-navy);
+    padding: var(--space-9) var(--space-5) calc(var(--band-tail) + var(--space-7));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    text-align: center;
+}
+.crs-back { align-self: center; font-size: 14px; color: var(--on-navy-muted); }
+.crs-back:hover { color: var(--on-navy); }
+.crs-band__meta { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.crs-eyebrow {
+    font-size: 14px;
+    font-weight: 700;
+    padding: var(--space-1\.5) 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--navy-700);
+    color: var(--glow);
+}
+a.crs-eyebrow:hover { border-color: var(--glow); }
+.crs-eyebrow.is-plain { color: var(--on-navy-muted); }
+.crs-title { margin: 0; font-size: 38px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.crs-lead { margin: 0; max-width: var(--hero-text-max); font-size: 17px; line-height: 1.7; color: var(--on-navy-muted); }
+
+/* 띠에 88px 겹쳐 올라오는 흰 패널 */
+.crs-main { max-width: var(--content-max); margin: 0 auto; padding: 0 var(--space-5) var(--space-10); }
+.crs-panel {
+    position: relative;
+    margin-top: calc(var(--hero-overlap) * -1);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-9);
+}
+
+.crs-section { display: flex; flex-direction: column; gap: var(--space-4); }
+.crs-section + .crs-section { padding-top: var(--space-9); border-top: 1px solid var(--line-soft); }
+.crs-section__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--space-3); }
+.crs-h2 { margin: 0; font-size: 24px; line-height: 1.4; font-weight: 900; }
+.crs-body { margin: 0; font-size: 15px; line-height: 1.65; }
+.crs-link { color: var(--link); font-weight: 700; font-size: 14px; }
+.crs-link:hover { color: var(--link-hover); }
+
+/* 트랙 소개: 대상·단계 */
+.crs-facts { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.crs-fact { padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--surface); }
+.crs-fact dt { font-size: 13px; color: var(--ink-muted); }
+.crs-fact dd { margin: var(--space-1) 0 0; font-size: 15px; font-weight: 700; }
+
+/* 코스 카드 (CourseCard): 데스크톱 3열 → 태블릿 2열 → 모바일 1열 (7장) */
+.crs-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-5);
+}
+.crs-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-6);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    background: var(--surface-raised);
+}
+.crs-card:hover { border-color: var(--line-strong); }
+.crs-card__meta { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.crs-card__title { margin: 0; font-size: 20px; line-height: 1.4; font-weight: 900; }
+.crs-card__summary { margin: 0; flex: 1; font-size: 15px; color: var(--ink-muted); }
+.crs-card__info { margin: var(--space-2) 0 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: 13px; color: var(--ink-muted); }
+
+/* 코스 목록: 트랙·카테고리 칩 (CategoryChips) */
+.crs-filters { display: flex; flex-direction: column; gap: var(--space-3); }
+.crs-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.crs-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--control-h);
+    padding: 0 var(--space-5);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--surface-raised);
+    font-size: 14px;
+    font-weight: 700;
+}
+.crs-chip:hover { border-color: var(--line-strong); }
+.crs-chip[aria-current="page"] { background: var(--navy-900); border-color: var(--navy-900); color: var(--on-navy); }
+.crs-chips.is-sub .crs-chip { min-height: 36px; padding: 0 var(--space-4); font-size: 13px; }
+.crs-chips.is-sub .crs-chip[aria-current="page"] { background: var(--tint); border-color: var(--tint); color: var(--ink); }
+.crs-filters__bottom { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+.crs-count { margin: 0; font-size: 14px; color: var(--ink-muted); }
+.crs-count strong { color: var(--ink); }
+.crs-reset { font-size: 14px; color: var(--link); }
+.crs-reset:hover { color: var(--link-hover); }
+
+/* 추천 영역 (진단 완료 회원) */
+.crs-recommend {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border-radius: var(--radius-card);
+    background: var(--tint);
+}
+.crs-recommend .crs-h2 { margin-top: var(--space-2); }
+
+.crs-empty { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+.crs-empty[hidden] { display: none; }
+
+/* 코스 상세: 요약 + 수강 시작 */
+.crs-summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-6); }
+.crs-stats { margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.crs-stat { min-width: 120px; padding: var(--space-3) var(--space-5); border-radius: var(--radius-md); background: var(--surface); }
+.crs-stat dt { font-size: 13px; color: var(--ink-muted); }
+.crs-stat dd { margin: 0; font-size: 17px; font-weight: 700; }
+.crs-enroll { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); }
+.crs-enroll__hint { margin: 0; font-size: 13px; color: var(--ink-muted); }
+
+/* 수업 목록 아코디언 (Accordion) */
+.crs-accordion { display: flex; flex-direction: column; gap: var(--space-2); }
+.crs-lesson { border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface-raised); }
+.crs-lesson:hover { border-color: var(--line-strong); }
+.crs-lesson__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: var(--control-h);
+    padding: var(--space-4) var(--space-5);
+    cursor: pointer;
+    list-style: none;
+}
+.crs-lesson__head::-webkit-details-marker { display: none; }
+.crs-lesson__head::after { content: "+"; margin-left: auto; font-size: 20px; font-weight: 700; color: var(--ink-muted); }
+.crs-lesson[open] .crs-lesson__head::after { content: "−"; }
+.crs-lesson__no { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.crs-lesson__title { font-size: 17px; font-weight: 700; }
+.crs-lesson__time { flex: 0 0 auto; font-size: 13px; color: var(--ink-muted); }
+.crs-lesson__body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: 0 var(--space-5) var(--space-5);
+    font-size: 15px;
+}
+.crs-lesson__body p { margin: 0; }
+.crs-lesson__body strong { margin-right: var(--space-2); font-size: 13px; color: var(--ink-muted); }
+
+.crs-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); padding-top: var(--space-5); border-top: 1px solid var(--line-soft); }
+
+/* 태블릿 (7장: 코스 카드 2열) */
+@media (max-width: 1023px) {
+    .crs-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 모바일 (7장: 카드 1열, 좌우 여백 16px, 페이지 제목 26px, 버튼 폭 100%) */
+@media (max-width: 767px) {
+    .crs-band { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .crs-title { font-size: 26px; }
+    .crs-main { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .crs-panel { padding: var(--space-6) var(--space-5); gap: var(--space-7); }
+    .crs-section + .crs-section { padding-top: var(--space-7); }
+    .crs-cards { grid-template-columns: 1fr; }
+    .crs-facts { grid-template-columns: 1fr; }
+    .crs-section__head { align-items: flex-start; flex-direction: column; }
+    .crs-summary, .crs-enroll { align-items: stretch; width: 100%; }
+    .crs-stats { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+    .crs-stat { min-width: 0; }
+    .crs-stat:first-child { grid-column: 1 / -1; }   /* 학습 대상은 글이 길어 한 줄을 다 쓴다 */
+    .crs-enroll .vl-ui-badge { align-self: flex-start; }
+    .crs-lesson__title { flex: 1 1 auto; min-width: 0; font-size: 15px; }
+    .crs-panel .vl-ui-btn { width: 100%; }
+    .crs-actions { flex-direction: column; }
+}
