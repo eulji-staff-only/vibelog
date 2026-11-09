@@ -13,6 +13,14 @@
     const root = document.querySelector('[data-diagnosis]');
     if (!root) return;
 
+    // M-01 "건너뛰기" (공통 confirmModal 의 확인 버튼) → 건너뜀 저장 폼(POST /diagnosis/skip)을 보낸다.
+    // 문항이 없어도 건너뛰기는 돼야 하므로, 아래 "문항 없음" 조기 종료보다 먼저 등록한다
+    const skipConfirm = document.querySelector('#dg-skip-modal .vl-ui-btn.is-navy');
+    const skipForm = document.querySelector('[data-dg-skip-form]');
+    if (skipConfirm && skipForm) {
+        skipConfirm.addEventListener('click', () => skipForm.submit());
+    }
+
     const questions = Array.from(root.querySelectorAll('[data-dg-question]'));
     const prevBtn = root.querySelector('[data-dg-prev]');
     const nextBtn = root.querySelector('[data-dg-next]');
@@ -76,13 +84,6 @@
     root.querySelector('[data-dg-form]').addEventListener('submit', (e) => {
         if (Object.keys(picked).length !== total) e.preventDefault();
     });
-
-    // M-01 "건너뛰기" (공통 confirmModal 의 확인 버튼) → 건너뜀 저장 폼(POST /diagnosis/skip)을 보낸다
-    const skipConfirm = document.querySelector('#dg-skip-modal .vl-ui-btn.is-navy');
-    const skipForm = document.querySelector('[data-dg-skip-form]');
-    if (skipConfirm && skipForm) {
-        skipConfirm.addEventListener('click', () => skipForm.submit());
-    }
 
     render(false);
 })();
