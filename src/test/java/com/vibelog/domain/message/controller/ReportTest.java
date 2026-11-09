@@ -117,13 +117,21 @@ class ReportTest {
     }
 
     @Test
-    void 영구_정지_회원의_글과_볼_수_없는_작품의_리뷰는_신고할_수_없다() throws Exception {
+    void 영구_정지_회원의_글과_댓글_볼_수_없는_작품의_리뷰는_신고할_수_없다() throws Exception {
         long postId = writePost(author, false);
+        long deletedPost = writePost(author, true);
         long privatePortfolio = portfolio(reporter, false);
         long requestId = insert("INSERT INTO review_request (portfolio_id, requested_at) VALUES (?, NOW())", privatePortfolio);
         long reviewOnMine = insert("INSERT INTO peer_review (review_request_id, reviewer_member_id) VALUES (?, ?)", requestId, idOf(author));
         insert("INSERT INTO review_comment (peer_review_id, content) VALUES (?, '리뷰 내용')", reviewOnMine);
         String stranger = member(true);
+        String commenter = member(true);
+        long commentOnPost = insert("INSERT INTO comment (post_id, member_id, content) VALUES (?, ?, '댓글')", postId, idOf(commenter));
+        long commentOnDeleted = insert("INSERT INTO comment (post_id, member_id, content) VALUES (?, ?, '댓글')", deletedPost, idOf(commenter));
+
+        // 지운 글의 댓글은 볼 수 없다
+        report(stranger, "COMMENT", commentOnDeleted, "SPAM", null).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("REPORT_TARGET_NOT_FOUND"));
 
         // 비공개 작품의 리뷰: 남은 막고, 작품 주인은 받은 리뷰를 신고할 수 있다
         report(stranger, "REVIEW", reviewOnMine, "SPAM", null).andExpect(status().isNotFound())
@@ -133,6 +141,9 @@ class ReportTest {
         insert("INSERT INTO member_suspension (member_id, admin_member_id, level, reason, starts_at) VALUES (?, ?, 'PERMANENT', '테스트', NOW() - INTERVAL 1 DAY)",
                 idOf(author), idOf(member(true)));
         report(stranger, "POST", postId, "SPAM", null).andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("REPORT_TARGET_NOT_FOUND"));
+        // 글쓴이가 영구 정지면 그 글의 다른 회원 댓글도 볼 수 없다
+        report(stranger, "COMMENT", commentOnPost, "SPAM", null).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("REPORT_TARGET_NOT_FOUND"));
     }
 
