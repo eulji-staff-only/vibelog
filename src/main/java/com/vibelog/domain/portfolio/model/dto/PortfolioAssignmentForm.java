@@ -32,6 +32,7 @@ public class PortfolioAssignmentForm {
     @Valid
     private List<Step> steps = new ArrayList<>();
 
+    /* [Step] 역할 : 스텝 한 줄의 입력 값. 책임 : 새 스텝은 guideStepId 를 비우고, 내용(content)은 비울 수 없다. */
     @Getter
     @Setter
     @NoArgsConstructor
