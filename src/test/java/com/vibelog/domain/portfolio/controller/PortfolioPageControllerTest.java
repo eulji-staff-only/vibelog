@@ -496,7 +496,7 @@ class PortfolioPageControllerTest {
     @Test
     void 내_개인_작품_상세의_수정은_U34로_간다() throws Exception {
         given(portfolioManageService.getDetail(1L, 9L)).willReturn(new PortfolioDetailView(9L, "개인 작품", "https://github.com/me/app",
-                "설명", "회고", "Claude Code", null, null, null, null, "나", LocalDateTime.of(2026, 11, 9, 10, 0), true, true));
+                "설명", "회고", "Claude Code", null, null, null, null, "나", LocalDateTime.of(2026, 11, 9, 10, 0), true, true, false));
 
         mockMvc.perform(get("/portfolios/9").with(login()))
                 .andExpect(content().string(Matchers.containsString("/my/portfolios/new?edit=9")))
