@@ -20,4 +20,9 @@ public interface MemberSuspensionRepository extends JpaRepository<MemberSuspensi
     @Query("select distinct s.memberId from MemberSuspension s where s.memberId in :memberIds"
             + " and s.level = com.vibelog.domain.auth.model.entity.SuspensionLevel.PERMANENT and s.releasedAt is null")
     Set<Long> findPermanentlySuspendedIn(@Param("memberIds") Collection<Long> memberIds);
+
+    /* 영구 정지 중인 회원 전체 (목록 조회에서 한 번에 빼려고) */
+    @Query("select distinct s.memberId from MemberSuspension s"
+            + " where s.level = com.vibelog.domain.auth.model.entity.SuspensionLevel.PERMANENT and s.releasedAt is null")
+    Set<Long> findAllPermanentlySuspended();
 }

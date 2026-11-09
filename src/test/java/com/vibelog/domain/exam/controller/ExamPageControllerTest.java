@@ -74,7 +74,9 @@ class ExamPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("aria-pressed=\"true\" data-choice-id=\"32\"")))
                 .andExpect(content().string(Matchers.containsString("/api/exam-attempts/11/answers")))
                 .andExpect(content().string(Matchers.containsString("/lessons/7/exam/submit")))
-                .andExpect(content().string(Matchers.containsString("모의고사를 제출할까요?")));
+                .andExpect(content().string(Matchers.containsString("모의고사를 제출할까요?")))
+                .andExpect(content().string(Matchers.containsString("vl-header")))
+                .andExpect(content().string(Matchers.containsString("vl-footer")));
     }
 
     @Test

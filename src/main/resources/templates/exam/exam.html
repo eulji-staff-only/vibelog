@@ -4,14 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>모의고사 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
     <link rel="stylesheet" th:href="@{/css/exam.css}" href="/css/exam.css">
     <script th:src="@{/js/exam.js}" src="/js/exam.js" defer></script>
     <meta name="_csrf" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
 </head>
 <body>
+<div th:replace="~{common/layout :: header}"></div>
 <!-- U-15 모의고사 응시. 화면 선행 작업(#55): 문구는 샘플이고, 데이터·저장·제출은 ③ 단계(API-EXM-01~04)에서 붙인다.
-     공통 헤더·푸터(#13)와 버튼·안내 상자·모달 조각(#46)이 머지되면 그것으로 바꾼다. -->
+     공통 헤더·푸터는 #133에서 적용했다. 버튼·안내 상자·모달 조각(#46)은 ③ 단계에서 바꾼다. -->
 <div class="exam-page">
 
     <section class="exam-band">
@@ -111,5 +113,6 @@
         </form>
     </div>
 </div>
+<div th:replace="~{common/layout :: footer}"></div>
 </body>
 </html>

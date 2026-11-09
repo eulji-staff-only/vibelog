@@ -21,6 +21,8 @@ public enum LessonErrorCode implements ErrorCode {
     ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 중인 코스를 찾을 수 없습니다."),
     LESSON_PROGRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "수업 진도를 찾을 수 없습니다."),
     COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다."),
+    /* 운영자 수업 순서(API-ADM-18, #100): 폼 칸 검증이 아니라 보낸 수업 순서 목록 자체가 그 코스의 수업과 안 맞을 때 */
+    INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력 값을 확인해주세요."),
     /*
      * 명세(_template.md 7장)상 방식이 "③ 다른 화면으로 이동 + 토스트"라서 GlobalExceptionHandler(① 에러 화면)로
      * 던지지 않는다. 메시지만 이 enum 에서 가져오고, 실제 판단·리다이렉트는 LessonPageService·LessonActivityService가 한다.

@@ -12,4 +12,7 @@ import java.util.List;
 public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long> {
     /* 응시 화면·채점에 쓰는 사용 중인 문항, 순서대로 */
     List<ExamQuestion> findByLessonIdAndActiveTrueOrderBySortOrderAsc(Long lessonId);
+
+    /* 운영자 수업 편집 화면(API-ADM-19, #100)의 모의고사 문항 목록 */
+    List<ExamQuestion> findByLessonIdOrderBySortOrderAsc(Long lessonId);
 }

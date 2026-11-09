@@ -43,4 +43,18 @@ public class PortfolioAssignment extends BaseTimeEntity {
         assignment.agentFileUrl = agentFileUrl;
         return assignment;
     }
+
+    /* 과제 주제·학습 목표를 바꾼다 (API-ADM-35) */
+    public void editAssignment(String topic, String goal) {
+        this.topic = topic;
+        this.goal = goal;
+    }
+
+    /* 평가 에이전트 안내를 바꾼다. 새 설정 파일이 없으면(null) 올려 둔 파일을 그대로 둔다 (API-ADM-36) */
+    public void editAgent(String agentGuide, String newAgentFileUrl) {
+        this.agentGuide = agentGuide;
+        if (newAgentFileUrl != null) {
+            this.agentFileUrl = newAgentFileUrl;
+        }
+    }
 }
