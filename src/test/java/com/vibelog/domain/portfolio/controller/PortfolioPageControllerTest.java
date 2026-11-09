@@ -422,6 +422,30 @@ class PortfolioPageControllerTest {
     }
 
     @Test
+    void 출품_중인_작품을_수정하면_수정_상태_폼에_안내를_보여_준다() throws Exception {
+        given(portfolioManageService.getOwnedCourseId(1L, 7L)).willReturn(3L);
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(7L, true)));
+        willThrow(new BusinessException(PortfolioErrorCode.CONTEST_ENTERED))
+                .given(portfolioSubmitService).edit(eq(1L), eq(7L), any(), any());
+
+        mockMvc.perform(editRequest(RETRO))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portfolio/portfolio"))
+                .andExpect(content().string(Matchers.containsString("콘테스트에 출품한 작품은 수정할 수 없습니다.")))
+                .andExpect(content().string(Matchers.containsString("action=\"/portfolios/7/edit\"")));
+    }
+
+    @Test
+    void 영구_정지_회원의_포트폴리오_상세는_숨김_안내_오류_화면으로_보낸다() throws Exception {
+        given(portfolioManageService.getDetail(1L, 7L)).willThrow(new BusinessException(PortfolioErrorCode.HIDDEN_CONTENT));
+
+        mockMvc.perform(get("/portfolios/7").with(login()))
+                .andExpect(status().isForbidden())
+                .andExpect(view().name("error/error"))
+                .andExpect(content().string(Matchers.containsString("운영 정책에 따라 숨겨진 콘텐츠입니다.")));
+    }
+
+    @Test
     void 남의_포트폴리오_수정은_오류_화면으로_보낸다() throws Exception {
         willThrow(new BusinessException(CommonErrorCode.NOT_OWNER))
                 .given(portfolioSubmitService).edit(eq(1L), eq(7L), any(), any());

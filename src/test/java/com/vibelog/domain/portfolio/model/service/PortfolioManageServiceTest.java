@@ -51,6 +51,7 @@ class PortfolioManageServiceTest {
 
     @Autowired PortfolioManageService portfolioManageService;
     @Autowired PortfolioSubmitService portfolioSubmitService;
+    @Autowired PortfolioContractService portfolioContractService;
     @Autowired JdbcTemplate jdbcTemplate;
     @Autowired EntityManager entityManager;
 
@@ -209,6 +210,80 @@ class PortfolioManageServiceTest {
     void 없는_코스면_찾을_수_없다() {
         assertThatThrownBy(() -> portfolioManageService.getCoursePortfolios(ME, 8899L, 1))
                 .hasFieldOrPropertyWithValue("errorCode", PortfolioErrorCode.COURSE_NOT_FOUND);
+    }
+
+    /* ---------- #314 영구 정지 작성자 숨김 (PL-RPT-006) ---------- */
+
+    private void suspendOther(String level, String releasedAt) {
+        jdbcTemplate.update("INSERT INTO member_suspension (member_id, admin_member_id, level, reason, starts_at, ends_at, released_at) "
+                + "VALUES (8802, 8801, ?, '테스트', NOW(), " + ("PERMANENT".equals(level) ? "NULL" : "DATE_ADD(NOW(), INTERVAL 7 DAY)")
+                + ", " + releasedAt + ")", level);
+    }
+
+    @Test
+    void 작성자가_영구_정지면_다른_회원에게_상세를_숨기고_본인에게는_보인다() {
+        suspendOther("PERMANENT", "NULL");
+
+        assertThatThrownBy(() -> portfolioManageService.getDetail(ME, OTHERS))
+                .hasFieldOrPropertyWithValue("errorCode", PortfolioErrorCode.HIDDEN_CONTENT);
+        assertThat(portfolioManageService.getDetail(OTHER, OTHERS).mine()).isTrue();
+    }
+
+    @Test
+    void 영구_정지를_해제했거나_기간_정지면_상세가_그대로_보인다() {
+        suspendOther("PERMANENT", "NOW()");
+        suspendOther("DAYS_7", "NULL");
+
+        assertThat(portfolioManageService.getDetail(ME, OTHERS).title()).isEqualTo("남의 작품");
+    }
+
+    /* ---------- #314 콘테스트 계약 ⑮⑯ (PL-PRT-007, PL-CTS-006) ---------- */
+
+    /* 포트폴리오 8802 가 투표 중인 콘테스트에 출품되어 있다 (투표는 내일 끝남) */
+    private void enterContest() {
+        jdbcTemplate.update("INSERT INTO contest (contest_id, contest_month, topic, description, entry_starts_at, entry_ends_at, vote_starts_at, vote_ends_at) "
+                + "VALUES (8801, '2999-01', '주제', '설명', DATE_SUB(NOW(), INTERVAL 3 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), "
+                + "DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 1 DAY))");
+        jdbcTemplate.update("INSERT INTO contest_entry (contest_entry_id, contest_id, member_id, portfolio_id) VALUES (8801, 8801, 8802, 8802)");
+    }
+
+    private boolean entryCanceled() {
+        entityManager.flush();
+        return jdbcTemplate.queryForObject("SELECT canceled_at IS NOT NULL FROM contest_entry WHERE contest_entry_id = 8801", Boolean.class);
+    }
+
+    @Test
+    void 출품_중인_작품은_수정할_수_없다() {
+        enterContest();
+
+        assertThatThrownBy(() -> portfolioSubmitService.edit(OTHER, OTHERS, form(), null))
+                .hasFieldOrPropertyWithValue("errorCode", PortfolioErrorCode.CONTEST_ENTERED);
+        assertThat(row(OTHERS).get("title")).isEqualTo("남의 작품");
+    }
+
+    @Test
+    void 출품작을_비공개로_바꾸면_출품을_취소하고_공개로_바꾸면_그대로다() {
+        enterContest();
+        portfolioManageService.changeVisibility(OTHER, OTHERS, true);
+        assertThat(entryCanceled()).isFalse();
+
+        portfolioManageService.changeVisibility(OTHER, OTHERS, false);
+        assertThat(entryCanceled()).isTrue();
+    }
+
+    @Test
+    void 출품작을_삭제하면_출품을_취소한다() {
+        enterContest();
+        portfolioManageService.delete(OTHER, OTHERS);
+        assertThat(entryCanceled()).isTrue();
+    }
+
+    @Test
+    void 회원_탈퇴로_포트폴리오를_모두_지우면_출품도_취소한다() {
+        enterContest();
+        portfolioContractService.deleteAllOf(OTHER);
+        assertThat(row(OTHERS).get("deleted_at")).isNotNull();
+        assertThat(entryCanceled()).isTrue();
     }
 
     private PortfolioSubmitForm form() {

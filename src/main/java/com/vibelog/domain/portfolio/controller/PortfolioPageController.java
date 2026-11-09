@@ -136,7 +136,7 @@ public class PortfolioPageController {
     }
 
     /*
-     * 폼으로 고칠 수 있는 오류(금칙어·파일·에이전트 점검 결과 길이)는 같은 폼의 메시지로 바꾼다.
+     * 폼으로 고칠 수 있는 오류(금칙어·파일·에이전트 점검 결과 길이)와 출품 중 수정 불가(CONTEST_ENTERED, ④)는 같은 폼의 메시지로 바꾼다.
      * 잠김·미인증·NOT_OWNER 처럼 폼으로 고칠 수 없는 것은 그대로 던져 오류 화면으로 보낸다
      */
     private void rejectOrThrow(BusinessException e, BindingResult bindingResult) {
@@ -145,7 +145,8 @@ public class PortfolioPageController {
             bindingResult.rejectValue("agentResult", e.getErrorCode().toString(), "에이전트 점검 결과가 너무 깁니다. 줄여서 적어 주세요.");
             return;
         }
-        if (e.getErrorCode() != CommonErrorCode.BANNED_WORD && e.getErrorCode() != CommonErrorCode.INVALID_FILE) {
+        if (e.getErrorCode() != CommonErrorCode.BANNED_WORD && e.getErrorCode() != CommonErrorCode.INVALID_FILE
+                && e.getErrorCode() != PortfolioErrorCode.CONTEST_ENTERED) {
             throw e;
         }
         bindingResult.reject(e.getErrorCode().toString(), e.getMessage());

@@ -1,5 +1,6 @@
 package com.vibelog.domain.portfolio.model.service;
 
+import com.vibelog.domain.contest.model.policy.ContestEntryCanceler;
 import com.vibelog.domain.portfolio.model.dao.PortfolioAssignmentRepository;
 import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
 import com.vibelog.domain.portfolio.model.entity.Portfolio;
@@ -23,6 +24,7 @@ public class PortfolioContractService implements LessonPortfolioChecker, CourseA
 
     private final PortfolioRepository portfolioRepository;
     private final PortfolioAssignmentRepository portfolioAssignmentRepository;
+    private final ContestEntryCanceler contestEntryCanceler;
 
     /* ⑧ 삭제 표시된 포트폴리오만 있으면 "제출 안 함" */
     @Override
@@ -36,11 +38,13 @@ public class PortfolioContractService implements LessonPortfolioChecker, CourseA
         return portfolioAssignmentRepository.existsByCourseId(courseId);
     }
 
-    /* ⑩ 변경 감지로 저장되므로 save 를 다시 부르지 않는다 */
+    /* ⑩ 변경 감지로 저장되므로 save 를 다시 부르지 않는다. 작품마다 contest 계약 ⑯ 으로 출품도 취소한다 (contest.md ⑯, #314) */
     @Override
     @Transactional
     public void deleteAllOf(Long memberId) {
-        portfolioRepository.findAllByMemberIdAndDeletedAtIsNull(memberId)
-                .forEach(Portfolio::markDeleted);
+        portfolioRepository.findAllByMemberIdAndDeletedAtIsNull(memberId).forEach(portfolio -> {
+            portfolio.markDeleted();
+            contestEntryCanceler.cancelEntryOf(portfolio.getPortfolioId());
+        });
     }
 }
