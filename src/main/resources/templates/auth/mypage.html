@@ -27,6 +27,7 @@
             <a href="/mypage?tab=posts" th:attr="aria-current=${tab == 'posts'} ? 'page'">작성한 글</a>
             <a href="/mypage?tab=comments" th:attr="aria-current=${tab == 'comments'} ? 'page'">작성한 댓글</a>
             <a href="/mypage?tab=favorites" th:attr="aria-current=${tab == 'favorites'} ? 'page'">즐겨찾기</a>
+            <a href="/mypage?tab=following" th:attr="aria-current=${tab == 'following'} ? 'page'">팔로우</a>
         </nav>
 
         <!-- 내 정보 -->
@@ -125,6 +126,24 @@
                 <a th:if="${favorites.hasPrevious()}" th:href="@{/mypage(tab='favorites', page=${favorites.number})}">← 이전</a>
                 <span th:text="|${favorites.number + 1} / ${favorites.totalPages}|">1 / 2</span>
                 <a th:if="${favorites.hasNext()}" th:href="@{/mypage(tab='favorites', page=${favorites.number + 2})}">다음 →</a>
+            </nav>
+        </section>
+
+        <!-- 내가 팔로우한 회원 (P2, FR-CMT-008). 누르면 공개 프로필 -->
+        <section class="au-section" th:if="${tab == 'following'}" aria-label="팔로우">
+            <ul class="au-list" th:unless="${following.empty}">
+                <li th:each="member : ${following}">
+                    <a th:href="@{/users/{id}(id=${member.memberId()})}"><strong th:text="${member.nickname()}">닉네임</strong></a>
+                </li>
+            </ul>
+            <div class="au-empty" th:if="${following.empty}">
+                <p class="au-text">팔로우한 회원이 없습니다</p>
+                <a class="au-btn is-outline is-fit" href="/community">커뮤니티 둘러보기</a>
+            </div>
+            <nav class="au-pager" aria-label="페이지" th:if="${following.totalPages > 1}">
+                <a th:if="${following.hasPrevious()}" th:href="@{/mypage(tab='following', page=${following.number})}">← 이전</a>
+                <span th:text="|${following.number + 1} / ${following.totalPages}|">1 / 2</span>
+                <a th:if="${following.hasNext()}" th:href="@{/mypage(tab='following', page=${following.number + 2})}">다음 →</a>
             </nav>
         </section>
 

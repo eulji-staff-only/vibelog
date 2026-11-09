@@ -34,7 +34,11 @@
                 </div>
             </div>
             <h2 class="cm-post__title" th:text="${post.title()}">제목</h2>
-            <p class="cm-muted" th:text="|${post.nickname()} · ${#temporals.format(post.createdAt(), 'yyyy.MM.dd HH:mm')}|">작성자 · 작성일</p>
+            <p class="cm-muted">
+                <a class="cm-link" th:if="${post.authorProfileId() != null}" th:href="@{/users/{id}(id=${post.authorProfileId()})}"
+                   th:text="${post.nickname()}">작성자</a><span th:unless="${post.authorProfileId() != null}" th:text="${post.nickname()}">작성자</span>
+                · <span th:text="${#temporals.format(post.createdAt(), 'yyyy.MM.dd HH:mm')}">작성일</span>
+            </p>
             <!-- 즐겨찾기 (회원만, API-CMT-13). 페이지 이동 없이 글자만 바꾼다 -->
             <button class="cm-btn is-outline is-s" type="button" th:if="${loggedIn}" data-favorite
                     th:attr="data-url=@{/api/posts/{id}/favorite(id=${post.postId()})},aria-pressed=${post.favorited()}"

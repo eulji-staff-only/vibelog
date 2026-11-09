@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
  * [ExamAnswer]
  * 역할 : 응시 1회 안에서 문항별로 고른 답 (exam_answer). 응시·문항 한 쌍에 한 행 (uk_exam_answer_attempt_question).
  * 책임 : 고른 보기가 없으면(선택 취소·미선택) exam_choice_id 가 비어 있다. 정답 여부는 채점 때 채운다.
- *        답 저장·채점 메서드는 #110 에서 추가한다.
+ *        답은 응시 중 몇 번이든 바꿀 수 있고(PL-EXM-006), 제출할 때 채점한다.
  */
 @Getter
 @Entity
@@ -44,4 +44,23 @@ public class ExamAnswer extends BaseTimeEntity {
 
     @Column(name = "is_correct")
     private Boolean correct;
+
+    /* 고른 보기는 비어 있을 수 있다 (선택 취소·미선택) */
+    public static ExamAnswer create(ExamAttempt examAttempt, ExamQuestion examQuestion, ExamChoice examChoice) {
+        ExamAnswer answer = new ExamAnswer();
+        answer.examAttempt = examAttempt;
+        answer.examQuestion = examQuestion;
+        answer.examChoice = examChoice;
+        return answer;
+    }
+
+    public void choose(ExamChoice examChoice) {
+        this.examChoice = examChoice;
+    }
+
+    /* 고른 보기가 정답이면 맞음. 고르지 않았으면 틀림 */
+    public boolean grade() {
+        this.correct = examChoice != null && examChoice.isCorrect();
+        return correct;
+    }
 }
