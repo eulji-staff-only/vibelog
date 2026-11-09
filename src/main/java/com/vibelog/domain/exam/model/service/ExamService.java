@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
  * 책임 : - 모의고사가 열렸는지는 lesson 영역의 계약 ②(ExamLessonProgress.isExamOpen)로 묻는다.
  *        - 수업 제목·코스 ID 는 LessonReader 로 받는다 (다른 영역 Entity 를 쓰지 않는다).
  *        - 제한 시간·통과 점수는 없다 (PL-EXM-005, PL-EXM-001). 채점은 규칙 기반이다 (PL-CST-001).
+ *        - 수강 포기한 수강은 답 저장·제출하지 않는다 (EXAM_LOCKED, #306).
  *        - 회원 ID 는 Controller 가 로그인 회원에서 꺼내 넘긴다.
  */
 @Service
@@ -89,6 +90,7 @@ public class ExamService {
         if (attempt.isSubmitted()) {
             throw new BusinessException(ExamErrorCode.ATTEMPT_SUBMITTED);
         }
+        requireExamOpen(memberId, attempt.getLessonId());
         Map<Long, ExamQuestion> questions = questionsOf(attempt.getLessonId());
         Map<Long, ExamAnswer> answers = answersOf(attempt);
         choose(attempt, questions, answers, examQuestionId, examChoiceId);
@@ -109,6 +111,7 @@ public class ExamService {
         if (attempt.isSubmitted()) {
             return new ExamSubmitResult(attempt.getAttemptNo(), true);
         }
+        requireExamOpen(memberId, lessonId);
         Map<Long, ExamQuestion> questions = questionsOf(lessonId);
         Map<Long, ExamAnswer> answers = answersOf(attempt);
         List<ExamAnswer> stale = answers.values().stream()
@@ -138,6 +141,13 @@ public class ExamService {
         }
         return BigDecimal.valueOf(correctCount * 100L)
                 .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
+    }
+
+    /* 수강을 포기해 모의고사가 닫혔으면 저장·제출하지 않는다 (#306) */
+    private void requireExamOpen(Long memberId, Long lessonId) {
+        if (!examLessonProgress.isExamOpen(memberId, lessonId)) {
+            throw new BusinessException(ExamErrorCode.EXAM_LOCKED);
+        }
     }
 
     /* 없는 응시도 남의 응시와 같이 막는다 (있는지 없는지 알려 주지 않는다) */

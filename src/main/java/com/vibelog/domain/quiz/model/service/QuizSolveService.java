@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
  * [QuizSolveService]
  * 역할 : 퀴즈 화면·풀이 시작·문항 확인·제출 채점 (API-LSN-03~06, FR-LSN-006).
  * 책임 : - 활동이 열려 있는지와 통과 기준은 lesson 영역 계약 ① getQuizActivity 로 묻는다. 닫혀 있으면 ACTIVITY_LOCKED.
+ *        - 수강 포기한 수강은 풀이 시작·문항 확인·제출 모두 저장하지 않는다 (ACTIVITY_LOCKED, #306).
  *        - 풀이 시작 응답에는 정답을 넣지 않는다. 다시 풀면 문항·보기 순서를 섞는다 (PL-LSN-004·005).
  *        - "확인"한 문항은 그 풀이 안에서 바꿀 수 없다 → ALREADY_CHECKED (PL-LSN-006). 남의 풀이는 NOT_OWNER.
  *        - 모든 문항을 확인해야 제출된다 → QUIZ_NOT_FINISHED. 채점 규칙은 QuizGradingPolicy (PL-LSN-002).
@@ -215,6 +216,7 @@ public class QuizSolveService {
         if (attempt.isSubmitted()) {
             throw new BusinessException(QuizErrorCode.ATTEMPT_SUBMITTED);
         }
+        openActivity(memberId, attempt.getActivityId());
         return attempt;
     }
 }
