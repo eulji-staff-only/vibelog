@@ -15,6 +15,12 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
     List<Lesson> findByCourseIdAndIsPublicTrueOrderBySortOrderAsc(Long courseId);
 
+    /* 운영자 수업 관리(API-ADM-18·19, #100): 공개·비공개 모두 포함한 그 코스의 전체 수업 */
+    List<Lesson> findByCourseIdOrderBySortOrderAsc(Long courseId);
+
+    /* 새 수업의 다음 순서 계산(API-ADM-17, #100) */
+    Optional<Lesson> findTopByCourseIdOrderBySortOrderDesc(Long courseId);
+
     Optional<Lesson> findFirstByCourseIdAndIsPublicTrueAndSortOrderGreaterThanOrderBySortOrderAsc(
             Long courseId, int sortOrder);
 
