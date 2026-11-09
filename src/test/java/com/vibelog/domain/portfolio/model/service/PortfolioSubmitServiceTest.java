@@ -119,6 +119,15 @@ class PortfolioSubmitServiceTest {
     }
 
     @Test
+    void 에이전트_점검_결과가_저장_칸보다_길면_INVALID_INPUT() {
+        PortfolioSubmitForm form = form(RETRO);
+        form.setAgentResult("가".repeat(21_846));   // 한글 3바이트 × 21,846 = 65,538바이트 > TEXT 65,535
+
+        assertThatThrownBy(() -> portfolioSubmitService.submit(MEMBER, COURSE, form, null))
+                .extracting("errorCode").isEqualTo(PortfolioErrorCode.INVALID_INPUT);
+    }
+
+    @Test
     void 금칙어가_들어_있으면_BANNED_WORD() {
         assertThatThrownBy(() -> portfolioSubmitService.submit(MEMBER, COURSE, form(RETRO + "금칙어테스트"), null))
                 .extracting("errorCode").isEqualTo(CommonErrorCode.BANNED_WORD);

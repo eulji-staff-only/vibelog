@@ -71,6 +71,11 @@ public class PortfolioPageController {
                 redirectAttributes.addFlashAttribute("toast", e.getMessage());
                 return "redirect:/courses/" + courseId + "/portfolio";
             }
+            if (e.getErrorCode() == PortfolioErrorCode.INVALID_INPUT) {
+                // 제출에서 INVALID_INPUT 은 에이전트 점검 결과가 저장 칸보다 길 때뿐이다
+                bindingResult.rejectValue("agentResult", e.getErrorCode().toString(), "에이전트 점검 결과가 너무 깁니다. 줄여서 적어 주세요.");
+                return pageView(courseId, memberId, model);
+            }
             if (e.getErrorCode() != CommonErrorCode.BANNED_WORD && e.getErrorCode() != CommonErrorCode.INVALID_FILE) {
                 throw e;   // 잠김·미인증 등 폼으로 고칠 수 없는 것
             }

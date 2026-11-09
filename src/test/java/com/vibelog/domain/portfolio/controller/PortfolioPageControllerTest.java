@@ -229,6 +229,17 @@ class PortfolioPageControllerTest {
     }
 
     @Test
+    void 에이전트_점검_결과가_너무_길면_그_칸에_메시지를_보여_준다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+        willThrow(new BusinessException(PortfolioErrorCode.INVALID_INPUT))
+                .given(portfolioSubmitService).submit(eq(1L), eq(3L), any(), any());
+
+        mockMvc.perform(submitRequest(RETRO, "true"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("에이전트 점검 결과가 너무 깁니다.")));
+    }
+
+    @Test
     void 이미_제출했으면_과제_화면으로_보내고_안내한다() throws Exception {
         willThrow(new BusinessException(PortfolioErrorCode.ALREADY_SUBMITTED))
                 .given(portfolioSubmitService).submit(eq(1L), eq(3L), any(), any());

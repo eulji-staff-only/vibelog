@@ -150,14 +150,16 @@
                         <div class="pf-field">
                             <label class="pf-label" for="pf-agent-result">에이전트 점검 결과 (선택)</label>
                             <textarea class="pf-input pf-textarea" id="pf-agent-result" placeholder="평가 에이전트를 실행한 결과를 직접 적어 주세요" data-key-check th:field="*{agentResult}"></textarea>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('agentResult')}" th:errors="*{agentResult}">점검 결과 오류</span>
                         </div>
                         <div class="pf-field">
                             <span class="pf-label">스크린샷 (선택)</span>
                             <div class="pf-upload">
                                 <label class="pf-btn pf-btn-outline pf-btn-s" for="pf-screenshot">이미지 추가</label>
-                                <input class="pf-sr" id="pf-screenshot" type="file" name="screenshot" accept="image/jpeg,image/png,image/webp">
+                                <input class="pf-sr" id="pf-screenshot" type="file" name="screenshot" accept="image/jpeg,image/png,image/webp" data-shot>
                                 <span class="pf-msg">JPG·PNG·WebP · 1장 · 5MB</span>
                             </div>
+                            <span class="pf-msg is-error" role="alert" data-shot-error hidden>스크린샷은 5MB까지 올릴 수 있습니다. 더 작은 이미지를 골라 주세요.</span>
                         </div>
                         <p class="pf-msg is-error" role="alert" data-key-warning hidden>API 키 형식의 문자열이 있습니다. 저장할 때 자동으로 가립니다 (예: sk-****).</p>
                     </div>

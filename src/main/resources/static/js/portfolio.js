@@ -53,6 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const submit = root.querySelector('[data-submit]');
     const keyFields = [...root.querySelectorAll('[data-key-check]')];
     const keyWarning = root.querySelector('[data-key-warning]');
+    const shot = root.querySelector('[data-shot]');
+    const shotError = root.querySelector('[data-shot-error]');
+    const SHOT_MAX = 5 * 1024 * 1024;   // PL-PRT-005·PL-DAT-004. 서버(FileStorage)도 다시 검사한다
+    const shotOk = () => !shot.files.length || shot.files[0].size <= SHOT_MAX;
     // 서버(ApiKeyMasker)와 같은 형식 (PL-PRT-008)
     const apiKey = /(^|[^A-Za-z0-9])(sk-|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/;
     let ready = false;
@@ -80,7 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // API 키 형식 경고 (PL-PRT-008): 저장할 때 서버가 가린다
         keyWarning.hidden = !keyFields.some((f) => apiKey.test(f.value));
 
-        ready = isUrl(url.value)
+        // 스크린샷 크기: 너무 크면 서버 업로드 제한에 걸려 입력한 내용이 사라지므로 보내기 전에 막는다
+        shotError.hidden = shotOk();
+
+        ready = shotOk() && isUrl(url.value)
             && required.every((f) => f.value.trim().length > 0 && f.value.length <= Number(f.dataset.max || Infinity))
             && retroOk()
             && visButtons.some((b) => b.getAttribute('aria-pressed') === 'true');
@@ -100,6 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
 
     // 준비가 안 됐으면 보내지 않고, 보낼 때는 버튼을 잠가 중복 제출을 막는다 (PL-ERR-003)
+    shot.addEventListener('change', render);
+
     form.addEventListener('submit', (e) => {
         if (!ready || submit.disabled) {
             e.preventDefault();

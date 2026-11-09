@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import static com.vibelog.domain.portfolio.model.policy.ApiKeyMasker.mask;
@@ -28,6 +29,8 @@ import static com.vibelog.domain.portfolio.model.policy.ApiKeyMasker.mask;
  *          덮어쓴다 (_template.md 9-2, DB 설계서 5-4).
  *        - 코스 완료 기록(계약 ⑦)은 같은 트랜잭션이라, 저장이 실패하면 완료도 남지 않는다.
  *        - API 키는 글 칸(제목·요약·회고·AI 도구·에이전트 점검 결과)에서 가린다. 결과물 링크는 URL 이라 가리지 않는다.
+ *        - 에이전트 점검 결과는 명세에 길이가 없어 저장 칸 크기(agent_result TEXT, 65,535바이트)를 가린 뒤의 값으로 검사한다.
+ *          넘으면 INVALID_INPUT (Controller 가 그 칸의 메시지로 바꾼다).
  */
 @Service
 @RequiredArgsConstructor
@@ -39,6 +42,8 @@ public class PortfolioSubmitService {
     private final MemberReader memberReader;
     private final BannedWordPolicy bannedWordPolicy;
     private final FileStorage fileStorage;
+
+    private static final int AGENT_RESULT_MAX_BYTES = 65_535;   // sql/01-schema.sql portfolio.agent_result TEXT
 
     @Transactional
     public void submit(Long memberId, Long courseId, PortfolioSubmitForm form, MultipartFile screenshot) {
@@ -55,9 +60,12 @@ public class PortfolioSubmitService {
         bannedWordPolicy.check(form.getTitle(), form.getSummary(), form.getRetrospective(), form.getAiTools(),
                 form.getAgentResult());
 
-        String screenshotUrl = screenshot == null || screenshot.isEmpty() ? null : fileStorage.saveImage(screenshot);
         String agentResult = form.getAgentResult() == null || form.getAgentResult().isBlank()
                 ? null : mask(form.getAgentResult());
+        if (agentResult != null && agentResult.getBytes(StandardCharsets.UTF_8).length > AGENT_RESULT_MAX_BYTES) {
+            throw new BusinessException(PortfolioErrorCode.INVALID_INPUT);
+        }
+        String screenshotUrl = screenshot == null || screenshot.isEmpty() ? null : fileStorage.saveImage(screenshot);
         if (existing.isPresent()) {
             existing.get().resubmit(mask(form.getTitle()), form.getResultUrl(), mask(form.getSummary()),
                     mask(form.getRetrospective()), mask(form.getAiTools()), form.getIsPublic(), agentResult, screenshotUrl);
