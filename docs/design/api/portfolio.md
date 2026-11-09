@@ -1,6 +1,6 @@
 # portfolio API 명세 (포트폴리오)
 
-> 영역: portfolio / API ID: API-PRT-01~13 (10~13은 P2)
+> 영역: portfolio / API ID: API-PRT-01~15 (10~13은 P2, 14~15는 P3)
 > 공통 규칙(응답 방식·URL·표 읽는 법)은 [_template.md](_template.md) 0장, 에러 코드는 7장입니다.
 > 화면은 [화면 흐름 설계서](../01-screen-flow.md), 테이블·상태 값은 [DB 설계서](../02-database.md), [테이블 정의서](../03-table-definition.md)를 봅니다.
 
@@ -45,6 +45,21 @@
   - **수정 (FR-PRT-006, PL-PRT-007):** 새 화면 없이 U-34를 수정 상태로 연다. U-19·U-20의 개인 작품 "수정"은 `/my/portfolios/new?edit={portfolioId}`(코스 포트폴리오는 그대로 U-17 `?edit=true`). 보내는 곳은 기존 수정 API-PRT-06 `POST /portfolios/{portfolioId}/edit`이고, 개인 작품은 위 6개 값만 받는다(에이전트 점검 결과·스크린샷 없음). 입력 오류(`INVALID_INPUT`·`BANNED_WORD`)·출품 중(`CONTEST_ENTERED`)이면 U-34 수정 상태 폼을 다시 그린다. 최신본으로 덮고 수정 일시를 남기며, 콘테스트 출품 중에는 막는 규칙은 코스 포트폴리오와 같다.
   - **작성 중 내용 보존 (FR-PRT-010, PL-ERR-003~005):** U-34도 U-17과 같은 방식으로 입력할 때마다와 등록·수정 버튼을 누를 때 입력 값을 브라우저에 7일 보관하고 다시 열면 채운다. 키는 회원별로 나누고 새 등록과 수정(작품별)을 나눈다. 보관 전에 API 키 형식은 가리고(PL-PRT-008), 등록·수정에 성공하면 내 포트폴리오(U-19)에서 지운다.
   - 공개한 개인 작품은 콘테스트에 출품할 수 있다 (PL-CTS-002).
+
+## P3 — 템플릿 관리 (#253)
+
+> P3 · 마일스톤 `5. P3 구현`. 테이블 `portfolio_template_item`(개인 작품 템플릿 항목 5개). #168 결정 A로 항목은 5개로 고정하고, 운영자는 이름·안내 문구·순서만 바꾼다.
+
+| ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| API-PRT-14 | 템플릿 관리 화면 (운영자) | GET | `/admin/templates` | 운영자 | - | A-12 + 개인 작품 템플릿 항목 5개(`itemKey`, 이름 `label`, 안내 문구 `guide`) `sort_order` 순 | - | FR-PRT-015 |
+| API-PRT-15 | 템플릿 저장 (운영자) | POST | `/admin/templates` | 운영자 | form `items[i].itemKey`, `items[i].label`, `items[i].guide` (보낸 순서 = `sort_order`) | 항목 5개의 이름·안내 문구·순서를 고친다 → `/admin/templates` + toast "템플릿을 저장했습니다" | `INVALID_INPUT`(이름 1~50자, 안내 문구 200자까지, 5개 항목 키가 한 번씩 모두 있어야 함) → A-12 같은 폼 다시 | FR-PRT-015 |
+| API-PRT-12 (P3) | 개인 작품 추가·수정 화면 | GET | `/my/portfolios/new` | 회원 | (그대로) | U-34의 항목 이름·안내 문구·순서를 `portfolio_template_item`에서 읽어 그린다. 저장 칸과 입력 검사(길이·URL 형식 등)는 P2 그대로다 | (그대로) | FR-PRT-011, FR-PRT-015 |
+
+- **템플릿 관리 (FR-PRT-015, A-12):** 운영자는 항목을 더하거나 지울 수 없고, 이름·안내 문구·순서만 바꾼다. 항목이 늘면 저장할 `portfolio` 칸도 늘어야 해서 테이블 변경이 필요하다 (그때는 새로 상의).
+- 이름을 바꿔도 저장 칸은 `item_key`로 정해진다 (예: DESCRIPTION 이름을 "한 줄 소개"로 바꿔도 `summary`에 저장). 그래서 이미 등록된 개인 작품과 U-19·U-20 표시는 바뀌지 않는다.
+- 항목은 시드(`sql/02-seed.sql`)로 5개가 미리 들어 있다. 행이 없으면 U-34는 P2 문구(제목·링크·설명·사용한 AI 도구·회고)로 그린다.
+- 템플릿은 하나뿐이라 U-34의 `template` 쿼리는 P3에서도 쓰지 않는다.
 
 ## 영역 간 계약 (portfolio 영역이 받는 것)
 

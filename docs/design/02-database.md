@@ -4,14 +4,14 @@
 
 ## 1. 개요
 
-바이브로그의 데이터 구조는 MySQL 8.0 기준 **51개 테이블**로 확정했다. 엔티티 확정안(2026-11-04)을 DB 설계 규칙 v2의 물리 이름 규칙으로 옮긴 결과이며, P1 31개는 조연익, P2·P3·비기능 20개는 서연이 맡는다.
+바이브로그의 데이터 구조는 MySQL 8.0 기준 **52개 테이블**이다. 엔티티 확정안(2026-11-04)의 51개를 DB 설계 규칙 v2의 물리 이름 규칙으로 옮기고, P3 템플릿 관리용 `portfolio_template_item`(#253)을 더했다. P1 31개와 `portfolio_template_item`은 조연익, P2·P3·비기능 20개는 서연이 맡는다.
 
 | 항목 | 내용 |
 | --- | --- |
-| 대상 | 51개 테이블 (P1 31 · P2 18 · P3 1 · 비기능 1) |
+| 대상 | 52개 테이블 (P1 31 · P2 18 · P3 2 · 비기능 1) |
 | DBMS | MySQL 8.0, InnoDB, utf8mb4 |
 | 이름 규칙 | snake_case 단수, `User` → `member`, PK는 `테이블명_id`, FK는 참조 PK 이름 그대로 |
-| 담당 | P1 31개 조연익 · P2·P3·비기능 20개 서연 |
+| 담당 | P1 31개·`portfolio_template_item` 조연익 · P2·P3·비기능 20개 서연 |
 | FK 방향 | P2·P3 → P1 한 방향. P1 테이블은 P2·P3를 가리키지 않는다 |
 
 ### 근거 문서
@@ -20,7 +20,7 @@
 | --- | --- |
 | 엔티티 확정안 (2026-11-04, 51개) | 엔티티·컬럼·관계의 논리 정의 |
 | 바이브로그 DB 설계 규칙 v2 | 물리 이름 규칙, PK·FK, 공통 컬럼, 변환표 (2장) |
-| 바이브로그 테이블 정의서 (51개) | 컬럼 타입·NULL·기본값·제약 (4장) |
+| 바이브로그 테이블 정의서 (52개) | 컬럼 타입·NULL·기본값·제약 (4장) |
 | 정책 정의서 (PL-DAT-002·003, PL-USR-009·010) | 삭제 방식과 탈퇴 처리 (5장) |
 | 요구사항 명세서 (2026-11-04) | P1 기능 요구사항 50개 대조 (7장) |
 
@@ -93,7 +93,7 @@
 
 ### 2-5. 공통 컬럼
 
-51개 테이블 모두 맨 끝에 같은 정의로 넣는다.
+52개 테이블 모두 맨 끝에 같은 정의로 넣는다.
 
 ```sql
 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -106,15 +106,17 @@ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTA
 
 ## 3. ERD
 
-ERD는 세 개로 나눴다. 전체 ERD는 51개의 관계를 한눈에 보는 용도고, PK·FK·인덱스 위치는 상세 ERD 두 개에서 본다.
+ERD는 세 개로 나눴다. 전체 ERD는 52개의 관계를 한눈에 보는 용도고, PK·FK·인덱스 위치는 상세 ERD 두 개에서 본다.
 
 | ERD | 범위 | 담당 | 링크 |
 | --- | --- | --- | --- |
-| 전체 ERD | P1·P2·P3 51개, PK·FK만 | 서연 | [vivelog 전체](https://www.erdcloud.com/d/Y3hPWpXaKfMat3RrQ) |
+| 전체 ERD | P1·P2·P3 52개, PK·FK만 | 서연 | [vivelog 전체](https://www.erdcloud.com/d/Y3hPWpXaKfMat3RrQ) |
 | P1 상세 ERD | P1 31개, 전체 컬럼 | 조연익 | [vivelog P1 (11.05)](https://www.erdcloud.com/d/sFf9RygGxhS5ovQFN) |
-| P2·P3 상세 ERD | P2·P3 20개, 전체 컬럼 | 서연 | [vivelog P2·P3](https://www.erdcloud.com/d/mbjMFniEXxigmSMH9) |
+| P2·P3 상세 ERD | P2·P3 21개, 전체 컬럼 | 서연 | [vivelog P2·P3](https://www.erdcloud.com/d/mbjMFniEXxigmSMH9) |
 
-전체 ERD는 파란색 P1(31개), 주황색 P2·P3(20개)로 칠해 구현 순서가 보이게 했다.
+전체 ERD는 파란색 P1(31개), 주황색 P2·P3(21개)로 칠해 구현 순서가 보이게 했다.
+
+`portfolio_template_item`(P3, #253)은 FK가 없는 독립 테이블이라 관계선은 없다. ERD에는 P2·P3 상세 ERD에 더해야 한다 (아래 3-3 숫자는 더한 뒤 기준).
 
 ### 3-1. 논리 ERD와 물리 ERD
 
@@ -143,7 +145,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 
 | 항목 | 전체 | P1 상세 | P2·P3 상세 |
 | --- | --- | --- | --- |
-| 테이블 | 51 | 31 | 20 |
+| 테이블 | 52 | 31 | 21 |
 | FK | 80 | 44 | 36 |
 | member를 가리키는 FK | 27 | 9 | 18 |
 
@@ -157,7 +159,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 
 ## 4. 테이블 정의서
 
-51개 테이블의 컬럼명·데이터 타입·NULL 여부·키·기본값·설명·제약은 **[「바이브로그 테이블 정의서 (51개)」](03-table-definition.md)**에 있다. 이 장은 그 문서의 구성과 공통 규칙만 정리한다.
+52개 테이블의 컬럼명·데이터 타입·NULL 여부·키·기본값·설명·제약은 **[「바이브로그 테이블 정의서 (52개)」](03-table-definition.md)**에 있다. 이 장은 그 문서의 구성과 공통 규칙만 정리한다.
 
 ### 4-1. 구성
 
@@ -175,7 +177,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 | 10 | 콘테스트 | contest, contest_entry, contest_vote, contest_award | P2 |
 | 11 | 동료 리뷰 | review_criterion, review_request, peer_review, review_comment | P2 |
 | 12 | 소통 · 운영 | message, notification, notice | P2 |
-| 13 | P3 · 비기능 | report, banned_word | P3 · 비기능 |
+| 13 | P3 · 비기능 | report, banned_word, portfolio_template_item | P3 · 비기능 |
 | 14~18 | 상태값 정의, 확정안과의 관계, 남은 확인 사항, 대조 숫자, 변경 이력 |  |  |
 
 문서끼리 내용이 다르면 **명세서 → 정책 정의서 → 확정안** 순서로 따랐다.
@@ -187,7 +189,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 - FK 삭제 옵션은 모두 `ON DELETE RESTRICT`. 삭제는 5장 정책대로 앱에서 처리
 - 키 표기는 PK, FK(→ 가리키는 테이블), UK(단일 컬럼 유일). 여러 컬럼 UNIQUE와 CHECK는 표 아래 제약에 이름과 함께 적음
 
-### 4-3. 상태·종류 컬럼 (16개)
+### 4-3. 상태·종류 컬럼 (17개)
 
 | 테이블.컬럼 | 기본값 | 값 |
 | --- | --- | --- |
@@ -207,6 +209,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 | report.target_type | 없음 | POST / PORTFOLIO / COMMENT / REVIEW / MESSAGE |
 | report.reason | 없음 | SPAM / ABUSE / PLAGIARISM / PRIVACY / ETC |
 | report.status | 'PENDING' | PENDING / HIDDEN / REJECTED |
+| portfolio_template_item.item_key | 없음 | TITLE / LINK / DESCRIPTION / AI_TOOLS / RETROSPECTIVE |
 
 `CODE_BLANK`와 `OUTPUT_PREDICT`는 `quiz_question.code_snippet`이 필수고, `SHOWCASE`는 `post.work_url`이 필수이며, `COURSE`는 `portfolio.course_id`가 필수다. 세 가지 모두 앱에서 검사한다. `report.reason`이 `ETC`면 `reason_detail`이 필요하다.
 
@@ -220,7 +223,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 
 ## 5. 데이터 이력 관리 정책
 
-51개 테이블이 모두 여섯 가지 삭제 방식 중 하나에 들어간다. 근거는 정책 정의서 PL-DAT-002·003, PL-USR-009·010이다.
+52개 테이블이 모두 여섯 가지 삭제 방식 중 하나에 들어간다. 근거는 정책 정의서 PL-DAT-002·003, PL-USR-009·010이다.
 
 ### 5-1. 삭제 방식
 
@@ -231,9 +234,9 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 | **Hard Delete** (실제 삭제) | 행을 지운다. 켜고 끄는 기록이거나 탈퇴로 필요 없어진 것 | social_account(탈퇴 시), guide_step_check(체크 해제), recommendation·favorite·follow(취소), concept_bookmark(북마크 해제) | 6 |
 | **비활성화** | 지우지 않고 `is_active = FALSE`로 끄는다. 풀이·응시 기록이 이 콘텐츠를 가리키기 때문 | diagnosis_question, activity, quiz_question, exam_question, guide_step, review_criterion | 6 |
 | **기간 만료 삭제** | 보관 기간이 지나면 배치로 행을 지운다 | notification(90일), message(1년) | 1 |
-| **삭제하지 않음** | 학습·평가·처리 기록이거나 기획 문서에 삭제 기능이 없는 테이블 | 5-2 참고 | 33 |
+| **삭제하지 않음** | 학습·평가·처리 기록이거나 기획 문서에 삭제 기능이 없는 테이블 | 5-2 참고 | 34 |
 
-### 5-2. 삭제하지 않는 테이블 (33개)
+### 5-2. 삭제하지 않는 테이블 (34개)
 
 | 묶음 | 테이블 |
 | --- | --- |
@@ -242,7 +245,7 @@ ERDCloud에서 **Export → SQL Preview**로 확인한다.
 | 콘텐츠 | track, course_category, course, lesson, concept_tag, activity_tag, concept_relation |
 | 문항 | quiz_choice, exam_choice |
 | 학습 기록 | enrollment, lesson_progress, activity_progress, quiz_attempt, quiz_answer, exam_attempt, exam_answer |
-| 포트폴리오 | portfolio_assignment, portfolio_faq |
+| 포트폴리오 | portfolio_assignment, portfolio_faq, portfolio_template_item(항목 5개 고정, 이름·안내 문구·순서만 고침) |
 | 커뮤니티 | post_image |
 | 콘테스트 | contest, contest_entry, contest_vote, contest_award |
 | 리뷰 | review_request, review_comment |
@@ -295,7 +298,7 @@ email이 비워지므로 같은 이메일로 다시 가입할 수 있다(MySQL�
 
 | 종류 | 설명 |
 | --- | --- |
-| PK | 51개 테이블의 `테이블명_id` |
+| PK | 52개 테이블의 `테이블명_id` |
 | UNIQUE | 테이블 정의서에 적은 UNIQUE 제약 전부 |
 | FK | MySQL InnoDB는 FK 컬럼에 인덱스가 없으면 자동으로 만든다 |
 
@@ -404,11 +407,11 @@ P1 테이블 5개(member, email_verification, post, comment, quiz_attempt)는 P1
 - [ ] FK 이름이 변환표와 같은가? (`user_id`, `question_id` 등이 남아 있지 않은가)
 - [ ] 예/아니오는 `is_`, 시각은 `_at`, 날짜는 `_date`인가?
 - [ ] 상태·종류 컬럼이 VARCHAR(20) + CHECK이고 값이 대문자인가?
-- [ ] 51개 모두 맨 끝에 `created_at`, `updated_at`이 있는가?
+- [ ] 52개 모두 맨 끝에 `created_at`, `updated_at`이 있는가?
 - [ ] post, comment, portfolio, peer_review에만 `deleted_at`이 있는가? (`member`에는 없음)
 - [ ] `is_public`과 `is_active`를 5-2 표대로 썼는가?
 - [ ] FK가 모두 `ON DELETE RESTRICT`이고, 제약에 모두 이름이 붙어 있는가?
-- [ ] SQL Preview에서 51 / 80 / 27이 나오는가? (비식별 관계 체크박스 켜고)
+- [ ] SQL Preview에서 52 / 80 / 27이 나오는가? (비식별 관계 체크박스 켜고)
 
 ### 8-2. 변경 이력
 
@@ -419,3 +422,4 @@ P1 테이블 5개(member, email_verification, post, comment, quiz_attempt)는 P1
 | 2026-11-05 | 확정안에 없는 컬럼 7개 제거. P1·P2·P3 정의서를 51개 한 문서로 합침 |
 | 2026-11-05 | 이 설계서로 ERD·정의서·이력 정책·인덱스·요구사항 대조를 한데 모음 |
 | 2026-11-09 | `report.target_member_id`(신고 대상 작성자, FK → member) 추가 (#270, P3 신고 명세 #262 결정 24). FK 79→80, member를 가리키는 FK 26→27 |
+| 2026-11-09 | P3 템플릿 관리용 `portfolio_template_item`(개인 작품 템플릿 항목 5개, FK 없음) 추가 (#253, FR-PRT-015, #168 결정 A). 테이블 51→52(P2·P3 20→21), 상태·종류 컬럼 16→17, 삭제하지 않는 테이블 33→34 |

@@ -1,4 +1,4 @@
-# 바이브로그 테이블 정의서 (51개)
+# 바이브로그 테이블 정의서 (52개)
 
 2026-11-05 · P1 조연익(연익) · P2·P3 서연
 
@@ -6,7 +6,7 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| 범위 | 엔티티 확정안(2026-11-04)의 51개 테이블 전부. P1 31개 + P2 18개 + P3 1개 + 비기능 1개 |
+| 범위 | 엔티티 확정안(2026-11-04)의 51개 테이블 전부 + P3 `portfolio_template_item`(#253). P1 31개 + P2 18개 + P3 2개 + 비기능 1개 = 52개 |
 | 컬럼 내용 | 「엔티티 확정안(2026-11-04)」 4장 + 「최신 기획 반영 DBA 공유용(2026-11-04)」 4·5장 |
 | 숫자 제한·상태 조건 | 「정책 정의서(2026-11-04)」 |
 | 우선순위·화면 데이터 | 「요구사항 명세서(2026-11-04)」 |
@@ -42,7 +42,7 @@
 | 10 | 콘테스트 | contest, contest_entry, contest_vote, contest_award | P2 |
 | 11 | 동료 리뷰 | review_criterion, review_request, peer_review, review_comment | P2 |
 | 12 | 소통 · 운영 | message, notification, notice | P2 |
-| 13 | P3 · 비기능 | report, banned_word | P3 · 비기능 |
+| 13 | P3 · 비기능 | report, banned_word, portfolio_template_item | P3 · 비기능 |
 | 14 | 상태값 정의 | | |
 | 15 | 확정안과의 관계 | | |
 | 16 | 남은 확인 사항 | | |
@@ -878,9 +878,25 @@
 | created_at | DATETIME | N |  | 현재 시각 | 등록일 |
 | updated_at | DATETIME | N |  | 현재 시각, 수정 시 갱신 | 수정일 |
 
+### portfolio_template_item (개인 작품 템플릿 항목, P3)
+
+개인 작품(U-34)의 항목 5개를 운영자가 A-12에서 이름·안내 문구·순서만 바꾼다 (FR-PRT-015, #168 결정 A). 항목은 늘거나 줄지 않고, 값은 `item_key`에 맞는 `portfolio` 칸에 저장한다.
+
+| 컬럼명 | 타입 | NULL | 키 | 기본값 | 설명 |
+| --- | --- | --- | --- | --- | --- |
+| portfolio_template_item_id | BIGINT | N | PK | 자동 증가 | 항목 번호 |
+| item_key | VARCHAR(20) | N | UK |  | 항목 종류 (상태값 정의 참고). 저장 칸: TITLE → `portfolio.title`, LINK → `result_url`, DESCRIPTION → `summary`, AI_TOOLS → `ai_tools`, RETROSPECTIVE → `retrospective` |
+| label | VARCHAR(50) | N |  |  | U-34에 보이는 항목 이름 |
+| guide | VARCHAR(200) | Y |  |  | 입력 칸 안내 문구 |
+| sort_order | INT | N |  |  | U-34에 보이는 순서 |
+| created_at | DATETIME | N |  | 현재 시각 | 등록일 |
+| updated_at | DATETIME | N |  | 현재 시각, 수정 시 갱신 | 수정일 |
+
+제약: `ck_portfolio_template_item_item_key` CHECK(item_key IN ('TITLE', 'LINK', 'DESCRIPTION', 'AI_TOOLS', 'RETROSPECTIVE'))
+
 ## 14. 상태값 정의
 
-51개 테이블의 상태·구분 컬럼이에요. 모두 `VARCHAR(20)` + `CHECK`로 통일했고, 제약 이름은 `ck_테이블_컬럼`이에요. 값은 DBA 공유용 6장의 목록과 같아요.
+52개 테이블의 상태·구분 컬럼이에요. 모두 `VARCHAR(20)` + `CHECK`로 통일했고, 제약 이름은 `ck_테이블_컬럼`이에요. 값은 DBA 공유용 6장의 목록과 같아요.
 
 | 테이블.컬럼 | 기본값 | 값 | 뜻 | 근거 |
 | --- | --- | --- | --- | --- |
@@ -939,6 +955,11 @@
 | report.status | 'PENDING' | PENDING | 처리 대기 | DBA 공유용 6장 |
 |  |  | HIDDEN | 숨김 처리 |  |
 |  |  | REJECTED | 기각 |  |
+| portfolio_template_item.item_key | 없음 | TITLE | 제목 → `portfolio.title` | #253 |
+|  |  | LINK | 링크 → `portfolio.result_url` |  |
+|  |  | DESCRIPTION | 설명 → `portfolio.summary` |  |
+|  |  | AI_TOOLS | 사용한 AI 도구 → `portfolio.ai_tools` |  |
+|  |  | RETROSPECTIVE | 회고 → `portfolio.retrospective` |  |
 
 상태가 바뀌는 규칙
 
@@ -978,7 +999,7 @@ ERDCloud에서 Export → SQL Preview로 아래 숫자가 나오면 ERD와 이 �
 
 | 항목 | 개수 |
 | --- | --- |
-| 테이블 | 51 (P1 31 + P2·P3·비기능 20) |
+| 테이블 | 52 (P1 31 + P2·P3·비기능 21) |
 | FK | 80 (P1 안 44 + P2·P3에서 나가는 36) |
 | member를 가리키는 FK | 27 (P1 9 + P2·P3 18) |
 | `deleted_at`이 있는 테이블 | 4 (post, comment, portfolio, peer_review) |
@@ -990,3 +1011,4 @@ ERDCloud에서 Export → SQL Preview로 아래 숫자가 나오면 ERD와 이 �
 | 2026-11-05 | 확정안에 없는 컬럼 6개(profile_image_url, bio, thumbnail_url, course.sort_order, correct_count, view_count)를 뺌. 확정안 컬럼만 남김 |
 | 2026-11-05 | P1 정의서 v2와 P2·P3 정의서를 51개 한 문서로 합침. P1의 `portfolio.kind`를 규칙 v2대로 `portfolio_type`으로 바꾸고 CHECK 이름을 `ck_portfolio_type`, `ck_portfolio_type_course`로 바꿈. 상태값 정의에 P2·P3 컬럼 5개 추가 |
 | 2026-11-09 | `report`에 `target_member_id`(BIGINT NOT NULL, FK → member RESTRICT) 추가 (#270). 17장 FK 79→80, member를 가리키는 FK 26→27 |
+| 2026-11-09 | P3 `portfolio_template_item`(개인 작품 템플릿 항목, FK 없음, `uk_portfolio_template_item_item_key`, `ck_portfolio_template_item_item_key`) 추가 (#253). 17장 테이블 51→52 |

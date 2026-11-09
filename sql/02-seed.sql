@@ -240,3 +240,11 @@ INSERT INTO review_criterion (review_criterion_id, portfolio_assignment_id, name
     (1, 1, '요청 범위', '요청에 고칠 곳(파일·함수)과 건드리지 않을 곳이 모두 적혀 있는가', 1, TRUE),
     (2, 1, '요청하지 않은 변경', '요청하지 않은 파일·코드가 바뀌지 않았는가 (diff로 확인)', 2, TRUE),
     (3, 1, '되돌리기', '의도와 다른 변경을 찾아 되돌렸는가', 3, TRUE);
+
+-- 개인 작품 템플릿 항목 5개 (FR-PRT-011·015, #253). 이름·안내 문구는 U-34 화면(#199)과 같다. 운영자가 A-12에서 바꾼다
+INSERT INTO portfolio_template_item (portfolio_template_item_id, item_key, label, guide, sort_order) VALUES
+    (1, 'TITLE', '제목', '작품 제목', 1),
+    (2, 'LINK', '링크', 'https://github.com/…', 2),
+    (3, 'DESCRIPTION', '설명', '이 작품을 한 줄로 소개해 주세요', 3),
+    (4, 'AI_TOOLS', '사용한 AI 도구', '예: Claude Code, Cursor', 4),
+    (5, 'RETROSPECTIVE', '회고', '이 작품을 만들며 배운 점과 아쉬운 점', 5);

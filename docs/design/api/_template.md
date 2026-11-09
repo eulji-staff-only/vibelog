@@ -179,7 +179,7 @@ P1 구현 뒤 같은 규칙으로 표를 채운다. 테이블은 이미 있다(D
 | P2 | 운영자: 이용 정지, 진단 설정, 공지·콘테스트 관리 | A-08~A-11 | `/admin/**` 같은 규칙 |
 | P2 | 운영자: 수업 미리보기, 확장 대시보드 | A-06, A-01 | → [admin.md](admin.md) API-ADM-39~40 (lesson.md와 함께 정함) |
 | P3 | 신고·신고 처리 (운영자 A-13 포함) | M-11, `/admin/reports` | → [message.md](message.md) API-RPT-01~04 |
-| P3 | 템플릿 관리 | A-12 | `/admin/templates` (#253에서 정함) |
+| P3 | 템플릿 관리 | A-12 | → [portfolio.md](portfolio.md) API-PRT-14·15 |
 
 ## 9. 확정 문서와 맞춘 것
 
