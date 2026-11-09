@@ -11,15 +11,18 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -45,6 +48,50 @@ class LessonEnrollmentControllerTest {
                                 List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))))))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/my/learning"));
+    }
+
+    @Test
+    void 처음_시작하면_토스트_없이_내_학습으로_보낸다() throws Exception {
+        given(enrollmentService.enroll(1L, 1L)).willReturn(false);
+
+        mockMvc.perform(post("/courses/{courseId}/enroll", 1L).with(csrf()).with(learner()))
+                .andExpect(redirectedUrl("/my/learning"))
+                .andExpect(flash().attributeCount(0));
+    }
+
+    @Test
+    void 포기한_코스를_다시_시작하면_이어서_학습한다는_토스트를_보여_준다() throws Exception {
+        given(enrollmentService.enroll(1L, 1L)).willReturn(true);
+
+        mockMvc.perform(post("/courses/{courseId}/enroll", 1L).with(csrf()).with(learner()))
+                .andExpect(redirectedUrl("/my/learning"))
+                .andExpect(flash().attribute("toast", "이어서 학습합니다"));
+    }
+
+    @Test
+    void 수강을_포기하면_내_학습으로_토스트와_함께_보낸다() throws Exception {
+        mockMvc.perform(post("/courses/{courseId}/drop", 1L).with(csrf()).with(learner()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/my/learning"))
+                .andExpect(flash().attribute("toast", "수강을 포기했습니다"));
+
+        verify(enrollmentService).drop(1L, 1L);
+    }
+
+    @Test
+    void 수강_중이_아니면_포기할_때_ENROLLMENT_NOT_FOUND_오류_화면이다() throws Exception {
+        willThrow(new BusinessException(LessonErrorCode.ENROLLMENT_NOT_FOUND))
+                .given(enrollmentService).drop(1L, 999L);
+
+        mockMvc.perform(post("/courses/{courseId}/drop", 999L).with(csrf()).with(learner()))
+                .andExpect(status().isNotFound());
+    }
+
+    private RequestPostProcessor learner() {
+        LoginMember loginMember = mock(LoginMember.class);
+        given(loginMember.getMemberId()).willReturn(1L);
+        return authentication(new UsernamePasswordAuthenticationToken(loginMember, "N/A",
+                List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))));
     }
 
     @Test
