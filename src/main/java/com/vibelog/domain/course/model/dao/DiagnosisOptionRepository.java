@@ -13,4 +13,7 @@ public interface DiagnosisOptionRepository extends JpaRepository<DiagnosisOption
 
     /* 이 트랙에 점수를 주는 보기가 있는지 (트랙 삭제 막기, fk_diagnosis_option_track_id, #95) */
     boolean existsByTrackId(Long trackId);
+
+    /* 한 문항의 보기, 순서대로 (문항 수정 API-ADM-43, #187) */
+    List<DiagnosisOption> findByDiagnosisQuestionIdOrderBySortOrderAsc(Long diagnosisQuestionId);
 }

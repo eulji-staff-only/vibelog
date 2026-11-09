@@ -75,3 +75,15 @@
 .ca-form__actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-3); }
 .ca-assignment { display: flex; align-items: center; gap: var(--space-3); margin: 0; }
 .ca-assignment .ca-muted { margin: 0; }
+
+/* ---- A-09 진단 설정 (#187) ---- */
+.dg-modal { max-width: 720px; }
+.dg-options { border: 0; margin: 0; padding: 0; }
+.dg-options legend { font-size: 13px; font-weight: 700; margin-bottom: var(--space-2); }
+.dg-option { display: grid; grid-template-columns: minmax(0, 1fr) 140px 90px; gap: var(--space-2); margin-bottom: var(--space-2); }
+.ca-input.is-score { width: 100%; }
+.dg-preview { margin-bottom: var(--space-4); }
+@media (max-width: 600px) {
+    .dg-option { grid-template-columns: 1fr 1fr; }
+    .dg-option .ca-input[type="text"] { grid-column: 1 / -1; }
+}

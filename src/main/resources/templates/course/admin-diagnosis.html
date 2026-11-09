@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>진단 설정 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/course-admin.css}">
+    <script th:src="@{/js/ui.js}" defer></script>
+</head>
+<body>
+<!--
+  A-09 진단 설정 (API-ADM-41~45, FR-DGN-004, #187). 문항·보기·보기별 트랙 점수를 관리하고, 테스트 응답으로 추천 결과를 미리 본다.
+  - 문항 추가는 ?create, 수정은 ?questionId= 로 모달을 연 채로 그린다. 입력 오류는 모달을 연 채로 칸 메시지(④).
+  - 보기는 빈 줄을 뺀 줄만 저장한다. 보기 내용이 바뀌면 새 보기로 저장된다 (admin.md API-ADM-43).
+  - 문항은 지우지 않고 사용·중지만 한다. 테스트 응답은 저장하지 않는다.
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('diagnosis')}"></div>
+    <main class="vl-admin__content">
+        <div class="ca-head">
+            <h1 class="ca-title">진단 설정</h1>
+            <a class="vl-ui-btn is-navy" th:href="@{/admin/diagnosis(create='')}">문항 추가</a>
+        </div>
+        <div class="vl-ui-notice is-info ca-toast" role="status" th:if="${toast}"><p th:text="${toast}">안내</p></div>
+        <p class="ca-muted">설문에는 사용 중인 문항만 순서대로 나옵니다. 고른 보기의 점수를 트랙별로 더해 합계가 가장 높은 트랙을 추천합니다 (같으면 트랙 순서가 앞인 트랙).</p>
+
+        <th:block th:if="${diagnosis.questions().empty}">
+            <div th:replace="~{common/ui :: notice('empty', '', '아직 진단 문항이 없습니다. 문항 추가로 시작하세요.')}"></div>
+        </th:block>
+
+        <section class="ca-section" th:each="question : ${diagnosis.questions()}"
+                 th:attr="aria-labelledby='dg-q-' + ${question.diagnosisQuestionId()}">
+            <div class="ca-section__head">
+                <h2 class="ca-section__title" th:id="'dg-q-' + ${question.diagnosisQuestionId()}">
+                    <span class="ca-muted" th:text="${question.sortOrder()} + '.'">1.</span>
+                    <span th:text="${question.content()}">문항</span>
+                </h2>
+                <div class="ca-actions">
+                    <span th:replace="~{common/ui :: badge(${question.active()} ? 'success' : 'neutral', ${question.active()} ? '사용' : '중지')}"></span>
+                    <a class="vl-ui-btn is-outline is-s" th:href="@{/admin/diagnosis(questionId=${question.diagnosisQuestionId()})}">수정</a>
+                    <form method="post" th:action="@{/admin/diagnosis/questions/{id}/active(id=${question.diagnosisQuestionId()})}">
+                        <input type="hidden" name="active" th:value="${!question.active()}">
+                        <button type="submit" class="vl-ui-btn is-text is-s" th:text="${question.active()} ? '사용 중지' : '다시 사용'">사용 중지</button>
+                    </form>
+                </div>
+            </div>
+            <table class="ca-table">
+                <thead><tr><th>보기</th><th>트랙</th><th>점수</th></tr></thead>
+                <tbody>
+                <tr th:each="option : ${question.options()}">
+                    <td th:text="${option.content()}">보기</td>
+                    <td th:text="${option.trackName()}">Starter</td>
+                    <td th:text="${option.score()}">1</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 테스트 응답 (API-ADM-45): 사용 중인 문항마다 보기 하나를 골라 추천 결과를 미리 본다. 저장하지 않는다 -->
+        <section class="ca-section" id="dg-test" aria-labelledby="dg-test-h" th:unless="${diagnosis.activeQuestions().empty}">
+            <h2 class="ca-section__title" id="dg-test-h">테스트 응답</h2>
+            <div class="vl-ui-notice is-success dg-preview" role="status" th:if="${preview}">
+                <p class="vl-ui-notice__title" th:text="'추천 트랙: ' + ${preview.recommendedTrackName()}">추천 트랙: Starter</p>
+                <p><th:block th:each="score, stat : ${preview.scores()}"><span th:text="${score.trackName()} + ' ' + ${score.score()} + '점'">Starter 1점</span><th:block th:unless="${stat.last}"> · </th:block></th:block></p>
+            </div>
+            <form class="ca-form" method="post" th:action="@{/admin/diagnosis/test}">
+                <!-- 문항마다 고르기 칸 하나. 모두 같은 이름(diagnosisOptionIds)이라 고른 보기 ID 가 문항 수만큼 함께 간다 -->
+                <div class="ca-field" th:each="question : ${diagnosis.activeQuestions()}">
+                    <label th:for="'dg-test-' + ${question.diagnosisQuestionId()}" th:text="${question.content()}">문항</label>
+                    <select class="ca-input" name="diagnosisOptionIds" th:id="'dg-test-' + ${question.diagnosisQuestionId()}" required>
+                        <option value="">보기를 고르세요</option>
+                        <option th:each="option : ${question.options()}" th:value="${option.diagnosisOptionId()}"
+                                th:text="${option.content()} + ' (' + ${option.trackName()} + ' ' + ${option.score()} + '점)'">보기</option>
+                    </select>
+                </div>
+                <div class="ca-form__actions">
+                    <button type="submit" class="vl-ui-btn is-navy">추천 결과 보기</button>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+
+<!-- 문항 추가·수정 모달 (API-ADM-42·43). 오류가 있으면 열린 채로 그린다 -->
+<div class="vl-ui-modal" id="dg-question-modal" data-ui-modal="dg-question-modal" role="dialog" aria-modal="true"
+     aria-labelledby="dg-question-modal-title" th:hidden="${!modalOpen}">
+    <div class="vl-ui-modal__box dg-modal">
+        <h2 class="vl-ui-modal__title" id="dg-question-modal-title" tabindex="-1"
+            th:text="${editingId == null} ? '문항 추가' : '문항 수정'">문항 추가</h2>
+        <form class="ca-form" method="post" novalidate th:object="${questionForm}"
+              th:action="${editingId == null} ? @{/admin/diagnosis/questions} : @{/admin/diagnosis/questions/{id}/edit(id=${editingId})}">
+            <div class="ca-field">
+                <label for="content">문항</label>
+                <textarea class="ca-input" id="content" rows="2" maxlength="500" th:field="*{content}"
+                          th:attrappend="aria-invalid=${#fields.hasErrors('content')} ? 'true'" aria-describedby="content-error"></textarea>
+                <p class="ca-error" id="content-error" th:if="${#fields.hasErrors('content')}" th:errors="*{content}">문항 오류</p>
+            </div>
+            <div class="ca-field">
+                <label for="sortOrder">순서</label>
+                <input class="ca-input is-short" id="sortOrder" type="number" min="1" th:field="*{sortOrder}"
+                       th:attrappend="aria-invalid=${#fields.hasErrors('sortOrder')} ? 'true'" aria-describedby="sortOrder-error">
+                <p class="ca-error" id="sortOrder-error" th:if="${#fields.hasErrors('sortOrder')}" th:errors="*{sortOrder}">순서 오류</p>
+            </div>
+            <fieldset class="ca-field dg-options" aria-describedby="options-error">
+                <legend>보기 <span class="ca-hint">(2개 이상. 빈 줄은 저장하지 않습니다. 보기 내용을 바꾸면 새 보기로 저장됩니다)</span></legend>
+                <div class="dg-option" th:each="option, stat : *{options}">
+                    <input type="hidden" th:field="*{options[__${stat.index}__].diagnosisOptionId}">
+                    <input class="ca-input" type="text" maxlength="255" th:field="*{options[__${stat.index}__].content}"
+                           th:attr="aria-label=${stat.count} + '번 보기 내용'">
+                    <select class="ca-input" th:field="*{options[__${stat.index}__].trackId}" th:attr="aria-label=${stat.count} + '번 보기 트랙'">
+                        <option value="">트랙</option>
+                        <option th:each="track : ${diagnosis.tracks()}" th:value="${track.id()}" th:text="${track.name()}">Starter</option>
+                    </select>
+                    <input class="ca-input is-score" type="number" min="1" th:field="*{options[__${stat.index}__].score}"
+                           placeholder="점수" th:attr="aria-label=${stat.count} + '번 보기 점수'">
+                </div>
+                <p class="ca-error" id="options-error" role="alert" th:if="${optionsError}" th:text="${optionsError}">보기 오류</p>
+            </fieldset>
+            <div class="vl-ui-modal__actions">
+                <a class="vl-ui-btn is-outline" th:href="@{/admin/diagnosis}">취소</a>
+                <button type="submit" class="vl-ui-btn is-navy" th:text="${editingId == null} ? '추가' : '저장'">추가</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

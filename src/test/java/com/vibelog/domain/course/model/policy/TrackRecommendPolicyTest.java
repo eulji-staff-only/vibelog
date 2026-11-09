@@ -44,6 +44,15 @@ class TrackRecommendPolicyTest {
     }
 
     @Test
+    void 큰_점수를_여러_개_골라도_합계가_넘치지_않는다() {
+        // int 로 더하면 Controller 합계가 음수로 넘쳐 1점인 Starter 가 추천된다 (admin.md 진단 설정 결정 1, #187)
+        List<DiagnosisOption> chosen = List.of(option(20L, Integer.MAX_VALUE), option(20L, Integer.MAX_VALUE), option(10L, 1));
+
+        assertThat(policy.recommend(chosen, tracks)).isEqualTo(20L);
+        assertThat(policy.sumByTrack(chosen).get(20L)).isEqualTo(2L * Integer.MAX_VALUE);
+    }
+
+    @Test
     void 고른_보기가_없으면_추천하지_않는다() {
         assertThat(policy.recommend(List.of(), tracks)).isNull();
     }
