@@ -31,4 +31,20 @@ public class QuizChoice extends BaseTimeEntity {
     private boolean isCorrect;
 
     private int sortOrder;
+
+    /* 운영자 문항 추가·새 문항 저장 (API-ADM-26·27). sortOrder 는 1~4 (ck_quiz_choice_sort) */
+    public static QuizChoice create(Long quizQuestionId, String content, boolean correct, int sortOrder) {
+        QuizChoice choice = new QuizChoice();
+        choice.quizQuestionId = quizQuestionId;
+        choice.content = content;
+        choice.isCorrect = correct;
+        choice.sortOrder = sortOrder;
+        return choice;
+    }
+
+    /* 풀이 기록이 없는 문항을 고칠 때 (API-ADM-27) */
+    public void edit(String content, boolean correct) {
+        this.content = content;
+        this.isCorrect = correct;
+    }
 }

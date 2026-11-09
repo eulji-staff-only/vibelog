@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -58,6 +59,13 @@ public class PortfolioReader {
         return portfolios.stream().collect(Collectors.toMap(Portfolio::getPortfolioId, p -> new PortfolioBrief(p.getPortfolioId(),
                 p.getMemberId(), p.getTitle(), p.getSummary(), p.getCourseId(),
                 p.getCourseId() == null ? null : assignmentIds.get(p.getCourseId()), p.isPublic(), p.isDeleted()), (a, b) -> a));
+    }
+
+    /* 회원의 공개 포트폴리오 요약, 최근 것부터 (contest 출품할 작품 고르기, #201) */
+    public List<PortfolioBrief> findPublicBriefsOf(Long memberId) {
+        List<Long> ids = portfolioRepository.findAllByMemberIdAndDeletedAtIsNull(memberId).stream()
+                .filter(Portfolio::isPublic).map(Portfolio::getPortfolioId).toList();
+        return findBriefs(ids).values().stream().sorted(Comparator.comparing(PortfolioBrief::portfolioId).reversed()).toList();
     }
 
     /* 회원들의 포트폴리오 ID, 삭제 표시한 것도 포함 (U-31 리뷰 요청 목록에서 영구 정지 회원 작품을 미리 뺀다, #215). 빈 묶음이면 빈 결과 */
