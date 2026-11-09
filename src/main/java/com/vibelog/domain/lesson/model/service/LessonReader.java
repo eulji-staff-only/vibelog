@@ -3,6 +3,7 @@ package com.vibelog.domain.lesson.model.service;
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityTagRepository;
+import com.vibelog.domain.lesson.model.dao.ConceptBookmarkRepository;
 import com.vibelog.domain.lesson.model.dao.ConceptTagRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
@@ -15,6 +16,7 @@ import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.dto.QuizActivityPlace;
 import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.ActivityTag;
+import com.vibelog.domain.lesson.model.entity.ConceptBookmark;
 import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
@@ -51,6 +53,7 @@ public class LessonReader {
     private final ConceptTagRepository conceptTagRepository;
     private final ActivityTagRepository activityTagRepository;
     private final CourseReader courseReader;
+    private final ConceptBookmarkRepository conceptBookmarkRepository;
 
     /* 마이페이지 북마크 탭 한 쪽 개수 (auth API-USR-15 P2) */
     static final int BOOKMARK_PAGE_SIZE = 20;
@@ -60,9 +63,9 @@ public class LessonReader {
      * 개념 이름·수업·코스 이름을 붙여 수업 화면 링크(/courses/{courseId}/lessons/{lessonId}?activity={activityId})를 만들 수 있게 한다.
      */
     public Page<BookmarkedConceptSummary> findBookmarkedConcepts(Long memberId, int page) {
-        Page<ActivityRepository.BookmarkRow> rows = activityRepository.findBookmarksOf(memberId,
+        Page<ConceptBookmark> rows = conceptBookmarkRepository.findByMemberIdOrderByCreatedAtDescConceptBookmarkIdDesc(memberId,
                 PageRequest.of(Math.max(page, 1) - 1, BOOKMARK_PAGE_SIZE));
-        Map<Long, Activity> activities = activityRepository.findAllById(rows.map(ActivityRepository.BookmarkRow::getActivityId).toList())
+        Map<Long, Activity> activities = activityRepository.findAllById(rows.map(ConceptBookmark::getActivityId).toList())
                 .stream().collect(Collectors.toMap(Activity::getActivityId, a -> a));
         Map<Long, Lesson> lessons = lessonRepository.findAllById(activities.values().stream().map(Activity::getLessonId).toList())
                 .stream().collect(Collectors.toMap(Lesson::getLessonId, l -> l));
@@ -71,7 +74,7 @@ public class LessonReader {
             Activity activity = activities.get(row.getActivityId());
             Lesson lesson = lessons.get(activity.getLessonId());
             return new BookmarkedConceptSummary(lesson.getCourseId(), lesson.getLessonId(), activity.getActivityId(), activity.getTitle(),
-                    courseTitles.get(lesson.getCourseId()), lesson.getTitle(), row.getBookmarkedAt());
+                    courseTitles.get(lesson.getCourseId()), lesson.getTitle(), row.getCreatedAt());
         });
     }
 

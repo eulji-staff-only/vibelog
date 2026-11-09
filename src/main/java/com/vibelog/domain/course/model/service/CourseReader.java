@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /*
@@ -34,6 +35,14 @@ public class CourseReader {
     public Map<Long, String> getCourseTitles(Collection<Long> courseIds) {
         return courseRepository.findAllById(courseIds).stream()
                 .collect(Collectors.toMap(Course::getCourseId, Course::getTitle));
+    }
+
+    /* 주어진 코스 중 공개 코스의 ID. 없는 ID·비공개 코스는 빠진다. 개념 태그 검색·연관 개념(lesson #192, API-LSN-07·09)이 쓴다 */
+    public Set<Long> getPublicCourseIds(Collection<Long> courseIds) {
+        return courseRepository.findAllById(courseIds).stream()
+                .filter(Course::isPublic)
+                .map(Course::getCourseId)
+                .collect(Collectors.toSet());
     }
 
     /* 코스 존재 여부(공개 여부는 보지 않음). 운영자 수업 만들기(API-ADM-17, #100)가 COURSE_NOT_FOUND 판단에 쓴다 */
