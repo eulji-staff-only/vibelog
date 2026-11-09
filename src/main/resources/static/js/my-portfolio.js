@@ -3,6 +3,11 @@
  * 공개 전환은 새로고침 없이 배지·버튼을 바꾸고 토스트를 띄운다. 삭제는 모달의 폼으로 POST 한다(API-PRT-07).
  */
 document.addEventListener('DOMContentLoaded', () => {
+    // 수정이 끝나 U-17 에 보관해 둔 작성 내용을 지운다 (FR-PRT-010). 저장소를 못 쓰는 브라우저면 넘어간다
+    document.querySelectorAll('[data-draft-clear]').forEach((el) => {
+        try { localStorage.removeItem(el.dataset.draftClear); } catch (e) { /* 저장소 사용 불가 */ }
+    });
+
     const list = document.querySelector('[data-mp-list]');
     const modal = document.querySelector('[data-delete-modal]');
     if (!list || !modal) return;

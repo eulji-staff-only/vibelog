@@ -141,7 +141,19 @@ class PortfolioPageControllerTest {
 
         mockMvc.perform(get("/courses/3/portfolio").with(login()))
                 .andExpect(content().string(Matchers.containsString("/portfolios/21")))
-                .andExpect(content().string(Matchers.not(Matchers.containsString("data-pf-form"))));
+                .andExpect(content().string(Matchers.not(Matchers.containsString("data-pf-form"))))
+                // 제출이 끝났으니 보관해 둔 작성 내용을 지운다 (FR-PRT-010)
+                .andExpect(content().string(Matchers.containsString("data-draft-clear=\"vibelog.portfolio-draft.1.3\"")));
+    }
+
+    @Test
+    void 제출_양식에_회원_코스별_임시_저장_키를_넘긴다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+
+        mockMvc.perform(get("/courses/3/portfolio").with(login()))
+                .andExpect(content().string(Matchers.containsString("data-draft-key=\"vibelog.portfolio-draft.1.3\"")))
+                .andExpect(content().string(Matchers.containsString("data-draft-notice hidden")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("data-draft-clear"))));
     }
 
     @Test
@@ -200,6 +212,12 @@ class PortfolioPageControllerTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"checked\": true}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("PORTFOLIO_LOCKED"));
+    }
+
+    @Test
+    void 수정을_마치고_오면_작성_내용_보관을_지우는_표시를_그린다() throws Exception {
+        mockMvc.perform(get("/my/portfolios").with(login()).flashAttr("clearDraft", "vibelog.portfolio-draft.1.3.edit"))
+                .andExpect(content().string(Matchers.containsString("data-draft-clear=\"vibelog.portfolio-draft.1.3.edit\"")));
     }
 
     @Test
@@ -371,14 +389,20 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("value=\"저장된 제목\"")))
                 .andExpect(content().string(Matchers.containsString("action=\"/portfolios/7/edit\"")))
                 .andExpect(content().string(Matchers.containsString("수정하기")))
-                .andExpect(content().string(Matchers.containsString("aria-pressed=\"true\">비공개")));
+                .andExpect(content().string(Matchers.containsString("aria-pressed=\"true\">비공개")))
+                // 수정 중인 내용은 새 제출과 다른 키에 보관한다 (새 제출 키를 지울 때 함께 지워지지 않게)
+                .andExpect(content().string(Matchers.containsString("data-draft-key=\"vibelog.portfolio-draft.1.3.edit\"")));
     }
 
     @Test
     void 수정하면_내_포트폴리오로_보내고_안내한다() throws Exception {
+        given(portfolioManageService.getOwnedCourseId(1L, 7L)).willReturn(3L);
+
         mockMvc.perform(editRequest(RETRO))
                 .andExpect(redirectedUrl("/my/portfolios"))
-                .andExpect(flash().attribute("toast", "포트폴리오를 수정했습니다"));
+                .andExpect(flash().attribute("toast", "포트폴리오를 수정했습니다"))
+                // 수정이 끝났으니 내 포트폴리오 화면이 그 코스의 작성 내용 보관을 지운다 (FR-PRT-010)
+                .andExpect(flash().attribute("clearDraft", "vibelog.portfolio-draft.1.3.edit"));
 
         verify(portfolioSubmitService).edit(eq(1L), eq(7L), any(PortfolioSubmitForm.class), isNull());
     }

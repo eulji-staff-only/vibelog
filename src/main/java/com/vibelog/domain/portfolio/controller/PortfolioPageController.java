@@ -43,6 +43,9 @@ import java.util.List;
  *          잠김·미인증처럼 폼으로 고칠 수 없는 것은 오류 화면으로 보낸다 (CommunityPageController 와 같은 방식).
  *        - 수정은 U-17 수정 상태(edit=true)에서 보낸다. 입력 오류면 U-17 수정 상태 폼을 다시 그린다 (제출과 같은 방식).
  *          수정·삭제가 끝나면 내 포트폴리오 + toast. 남의 비공개 상세(PRIVATE_PORTFOLIO)·NOT_OWNER 는 오류 화면(E-02)이다.
+ *        - 작성 중 내용 보존(P2 FR-PRT-010)은 브라우저가 한다. 여기서는 회원·코스별 저장 키를 화면에 넘긴다.
+ *          새 제출(draftKey)과 수정(editDraftKey)은 키를 나눈다. "이미 제출함" 화면은 새 제출 키만 지우고,
+ *          수정이 끝나면 수정 키를 flash(clearDraft)로 넘겨 내 포트폴리오 화면이 지우게 한다.
  *        - 동료 리뷰(#281): U-20 받은 리뷰·리뷰 요청/마감 버튼, U-19 "리뷰 요청 중" 표시는 community 영역 CommunityReader 값을 붙인다.
  *          요청·마감·도움됨 처리는 community 영역 API 가 한다 (community.md "U-19·U-20 은 portfolio 화면").
  */
@@ -111,6 +114,8 @@ public class PortfolioPageController {
             try {
                 portfolioSubmitService.edit(memberId, portfolioId, portfolioSubmitForm, screenshot);
                 redirectAttributes.addFlashAttribute("toast", "포트폴리오를 수정했습니다");
+                redirectAttributes.addFlashAttribute("clearDraft",
+                        editDraftKey(memberId, portfolioManageService.getOwnedCourseId(memberId, portfolioId)));
                 return "redirect:/my/portfolios";
             } catch (BusinessException e) {
                 rejectOrThrow(e, bindingResult);
@@ -146,8 +151,20 @@ public class PortfolioPageController {
         bindingResult.reject(e.getErrorCode().toString(), e.getMessage());
     }
 
+    /* 작성 중 내용을 브라우저에 보관할 키. 같은 브라우저를 쓰는 다른 회원에게 채워지지 않게 회원·코스별로 나눈다 (portfolio.md P2) */
+    private static String draftKey(Long memberId, Long courseId) {
+        return "vibelog.portfolio-draft." + memberId + "." + courseId;
+    }
+
+    /* 수정(edit=true) 중인 내용은 새 제출과 따로 둔다. 새 제출 키를 지울 때 수정 중이던 내용까지 지워지지 않게 */
+    private static String editDraftKey(Long memberId, Long courseId) {
+        return draftKey(memberId, courseId) + ".edit";
+    }
+
     /* 수강하지 않은 코스면 코스 소개로 */
     private String pageView(Long courseId, Long memberId, Model model) {
+        model.addAttribute("draftKey", draftKey(memberId, courseId));
+        model.addAttribute("editDraftKey", editDraftKey(memberId, courseId));
         return portfolioService.getPage(memberId, courseId)
                 .map(page -> {
                     model.addAttribute("page", page);
