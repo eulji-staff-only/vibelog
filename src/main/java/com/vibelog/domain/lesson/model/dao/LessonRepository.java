@@ -27,4 +27,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     @Query("select new com.vibelog.domain.lesson.model.dao.CourseLessonCount(l.courseId, count(l)) "
             + "from Lesson l where l.courseId in :courseIds and l.isPublic = true group by l.courseId")
     List<CourseLessonCount> countPublicLessonsByCourseIds(@Param("courseIds") Collection<Long> courseIds);
+
+    /* 제목에 검색어가 들어 있는 공개 수업 (부분 일치, 코스 목록 검색 API-CRS-02 P2, course #189) */
+    List<Lesson> findByIsPublicTrueAndTitleContainingOrderByCourseIdAscSortOrderAsc(String title);
 }

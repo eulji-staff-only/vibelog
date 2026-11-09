@@ -31,13 +31,15 @@ public class CoursePageController {
         return "course/track";
     }
 
-    /* U-10 코스 목록 (API-CRS-02) */
+    /* U-10 코스 목록 (API-CRS-02). 카테고리·검색은 P2 (#189, 헤더 검색창도 ?q= 로 온다) */
     @GetMapping("/courses")
     public String courses(@RequestParam(required = false) Long track,
+                          @RequestParam(required = false) Long category,
+                          @RequestParam(required = false) String q,
                           @AuthenticationPrincipal LoginMember loginMember,
                           Model model) {
         Long memberId = loginMember == null ? null : loginMember.getMemberId();
-        model.addAttribute("courseList", courseBrowseService.getCourseList(memberId, track));
+        model.addAttribute("courseList", courseBrowseService.getCourseList(memberId, track, category, q));
         return "course/list";
     }
 

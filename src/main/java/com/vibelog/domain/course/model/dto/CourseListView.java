@@ -3,15 +3,25 @@ package com.vibelog.domain.course.model.dto;
 import java.util.List;
 
 /*
- * 코스 목록 화면(U-10, API-CRS-02) 데이터.
- * - recommended: 진단을 마친 회원(COMPLETED)의 추천 트랙과 그 코스. 비회원·진단 건너뛴 회원은 null.
- * - groups: 트랙별로 묶은 공개 코스 (track 필터가 있으면 그 트랙만). 공개 코스가 없는 트랙은 넣지 않는다.
- * - totalCount: groups 안 코스 수 (결과 수). 0이면 화면이 "조건에 맞는 코스가 없습니다" 안내 상자를 보여준다.
+ * 코스 목록(U-10, API-CRS-02) 화면 데이터. recommended 는 진단을 마친 회원만 (없으면 null).
+ * P2(#189): 카테고리 칩(categories)·선택한 카테고리·검색어(q, 앞뒤 공백 제거, 없으면 null)
  */
 public record CourseListView(List<TrackChip> tracks, Long selectedTrackId, TrackCourseGroup recommended,
-                             List<TrackCourseGroup> groups, int totalCount) {
+                             List<TrackCourseGroup> groups, int totalCount,
+                             List<CategoryChip> categories, Long selectedCategoryId, String q) {
+
+    /* 카테고리·검색이 없는 기존 호출용 */
+    public CourseListView(List<TrackChip> tracks, Long selectedTrackId, TrackCourseGroup recommended,
+                          List<TrackCourseGroup> groups, int totalCount) {
+        this(tracks, selectedTrackId, recommended, groups, totalCount, List.of(), null, null);
+    }
 
     public boolean isEmpty() {
         return totalCount == 0;
+    }
+
+    /* 트랙·카테고리·검색 중 하나라도 걸려 있는가 ("조건 초기화" 표시) */
+    public boolean isFiltered() {
+        return selectedTrackId != null || selectedCategoryId != null || q != null;
     }
 }

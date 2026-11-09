@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import com.vibelog.domain.course.exception.CourseErrorCode;
+import com.vibelog.domain.course.model.dto.CategoryChip;
 import com.vibelog.domain.course.model.dto.CourseCard;
 import com.vibelog.domain.course.model.dto.CourseDetailView;
 import com.vibelog.domain.course.model.dto.CourseListView;
@@ -67,7 +68,7 @@ class CoursePageControllerTest {
     @Test
     void 코스_목록_화면을_추천_트랙과_함께_연다() throws Exception {
         TrackCourseGroup group = new TrackCourseGroup(2L, "Controller", List.of(CARD));
-        given(courseBrowseService.getCourseList(any(), eq(2L)))
+        given(courseBrowseService.getCourseList(any(), eq(2L), any(), any()))
                 .willReturn(new CourseListView(List.of(new TrackChip(2L, "Controller")), 2L, group, List.of(group), 1));
 
         mockMvc.perform(get("/courses").param("track", "2"))
@@ -80,8 +81,26 @@ class CoursePageControllerTest {
     }
 
     @Test
+    void 검색어와_카테고리를_넘기고_걸린_수업과_카테고리_칩을_그린다() throws Exception {
+        CourseCard matched = new CourseCard(1L, 2L, "AI 작업 범위 통제하기", "한 줄 소개", "Controller", "프롬프트", 14, 4,
+                List.of("수정 범위 지정하기"));
+        TrackCourseGroup group = new TrackCourseGroup(2L, "Controller", List.of(matched));
+        given(courseBrowseService.getCourseList(any(), eq(null), eq(3L), eq("범위")))
+                .willReturn(new CourseListView(List.of(new TrackChip(2L, "Controller")), null, null, List.of(group), 1,
+                        List.of(new CategoryChip(3L, "프롬프트")), 3L, "범위"));
+
+        mockMvc.perform(get("/courses").param("category", "3").param("q", "범위"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("“범위”")))
+                .andExpect(content().string(Matchers.containsString("수업: 수정 범위 지정하기")))
+                .andExpect(content().string(Matchers.containsString("aria-label=\"카테고리\"")))
+                .andExpect(content().string(Matchers.containsString("name=\"q\"")))
+                .andExpect(content().string(Matchers.containsString("조건 초기화")));
+    }
+
+    @Test
     void 결과가_없으면_안내_상자를_보여_준다() throws Exception {
-        given(courseBrowseService.getCourseList(any(), any()))
+        given(courseBrowseService.getCourseList(any(), any(), any(), any()))
                 .willReturn(new CourseListView(List.of(), null, null, List.of(), 0));
 
         mockMvc.perform(get("/courses"))
