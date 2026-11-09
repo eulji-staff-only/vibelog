@@ -2,9 +2,9 @@
   common/admin-layout.html
   운영자 화면(백오피스, A-01~A-08)이 같이 쓰는 왼쪽 메뉴 fragment (#13 common/layout.html 과 같은 방식).
   사용법: th:replace="~{common/admin-layout :: sidebar('dashboard')}"
-  active 로 지금 보고 있는 메뉴를 강조한다(1-5 "지금 보고 있는 메뉴는 강조 표시"): dashboard | tracks | categories | courses | members
+  active 로 지금 보고 있는 메뉴를 강조한다(1-5 "지금 보고 있는 메뉴는 강조 표시"): dashboard | tracks | categories | courses | members | notices
   메뉴 구성·URL은 화면 흐름 설계서 "백오피스 왼쪽 메뉴"(177행), 1-3 화면 목록(A-01~A-08) 그대로다.
-  설정(P2) 메뉴(진단·공지·콘테스트·템플릿·신고)는 이슈 #81 범위에서 제외한다.
+  설정(P2) 메뉴는 화면이 생길 때 하나씩 더한다 (공지 A-10 #186). 진단·콘테스트·템플릿·신고는 아직 없다.
   운영자만 들어오게 막는 것은 SecurityConfig(#12, /admin/** hasRole('ADMIN'))가 이미 하므로 여기서 검사하지 않는다.
 -->
 <!doctype html>
@@ -35,6 +35,11 @@
         <a class="vl-admin__link" href="/admin/members"
            th:classappend="${active == 'members'} ? 'is-active' : ''"
            th:attr="aria-current=${active == 'members'} ? 'page' : null">회원 목록</a>
+
+        <p class="vl-admin__group">설정</p>
+        <a class="vl-admin__link" href="/admin/notices"
+           th:classappend="${active == 'notices'} ? 'is-active' : ''"
+           th:attr="aria-current=${active == 'notices'} ? 'page' : null">공지</a>
     </nav>
 
     <a class="vl-admin__exit" href="/">← 학습자 화면으로</a>

@@ -139,7 +139,7 @@ public class LessonPageService {
                 .orElse(false);
         if (open) {
             return new LessonActivityCard(null, LessonActivityCard.EXAM, "모의고사", ActivityStatus.IN_PROGRESS, false,
-                    null, null, null, null, null, null, "/lessons/" + lessonId + "/exam", null);
+                    null, null, null, null, null, null, "/lessons/" + lessonId + "/exam/attempts", null);
         }
         Long previousActivityId = activityRepository
                 .findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(lessonId, ActivityType.QUIZ)
