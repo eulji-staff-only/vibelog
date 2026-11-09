@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${lesson.title()} + ' 편집 | 바이브로그 백오피스'">수업 편집 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/lesson-admin.css}">
+    <script th:src="@{/js/ui.js}" defer></script>
+</head>
+<body>
+<!--
+  A-06 수업 편집 (API-ADM-19·20, FR-LSN-011, #100). 활동 추가·수정·순서(API-ADM-21~25, #101)와
+  퀴즈 문항(API-ADM-26~28, FR-LSN-012)·모의고사 문항(API-ADM-29~31, FR-EXM-007) 등록·수정은 이 이슈 범위
+  밖이라 읽기만 하고, 추가 버튼은 비활성 + 이유 문구로 자리만 잡아둔다 (common/ui :: btnReason).
+  퀴즈 문항은 quiz_question Entity가 아직 없어(quiz 영역 기반 작업 전) 목록 대신 안내 상자를 보여준다.
+  왼쪽 메뉴(common/admin-layout, #81)는 아직 develop에 없어 #166과 같은 내용으로 이 PR에 임시로 같이 둔다.
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('courses')}"></div>
+
+    <main class="vl-admin__content">
+        <nav class="al-breadcrumb">
+            <a th:href="@{/admin/courses/{id}(id=${lesson.courseId()})}" th:text="${lesson.courseTitle()}">코스</a>
+            <span aria-hidden="true">/</span>
+            <span th:text="${lesson.title()}">수업 제목</span>
+        </nav>
+
+        <h1 class="al-title" th:text="${lesson.title()}">수업 제목</h1>
+        <p class="al-sub">
+            <span th:replace="~{common/ui :: badge(${lesson.publicLesson()} ? 'success' : 'neutral', ${lesson.publicLesson()} ? '공개' : '비공개')}"></span>
+        </p>
+
+        <!-- 수업 정보 (API-ADM-20). 틀리면 같은 화면에 칸별 메시지로 다시 보여준다 -->
+        <section class="vl-ui-panel al-form-panel">
+            <h2 class="al-h2">수업 정보</h2>
+            <form class="al-form" th:object="${lessonForm}" method="post" novalidate
+                  th:action="@{/admin/lessons/{id}/edit(id=${lesson.lessonId()})}">
+                <div class="al-field">
+                    <label for="lesson-title">제목</label>
+                    <input id="lesson-title" type="text" maxlength="100" th:field="*{title}">
+                    <p class="al-error" role="alert" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">제목 오류</p>
+                </div>
+                <div class="al-field">
+                    <label for="lesson-intro">소개</label>
+                    <textarea id="lesson-intro" th:field="*{intro}"></textarea>
+                    <p class="al-error" role="alert" th:if="${#fields.hasErrors('intro')}" th:errors="*{intro}">소개 오류</p>
+                </div>
+                <div class="al-field">
+                    <label for="lesson-goal">학습 목표</label>
+                    <textarea id="lesson-goal" th:field="*{goal}"></textarea>
+                    <p class="al-error" role="alert" th:if="${#fields.hasErrors('goal')}" th:errors="*{goal}">목표 오류</p>
+                </div>
+                <div class="al-field">
+                    <label for="lesson-contents">본문</label>
+                    <textarea id="lesson-contents" style="min-height: 200px" th:field="*{contents}"></textarea>
+                    <p class="al-error" role="alert" th:if="${#fields.hasErrors('contents')}" th:errors="*{contents}">본문 오류</p>
+                </div>
+                <div class="al-field al-field-inline">
+                    <label for="lesson-estimated-minutes">예상 소요 시간(분)</label>
+                    <input id="lesson-estimated-minutes" type="number" min="1" th:field="*{estimatedMinutes}">
+                    <p class="al-error" role="alert" th:if="${#fields.hasErrors('estimatedMinutes')}" th:errors="*{estimatedMinutes}">소요 시간 오류</p>
+                </div>
+                <div>
+                    <button th:replace="~{common/ui :: btnSubmit('저장', 'navy', '')}"></button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 활동 / 모의고사 탭 (화면 틀만, 데이터는 읽기만 한다) -->
+        <div class="vl-ui-tabs" role="tablist" data-ui-tabs>
+            <button th:replace="~{common/ui :: tabButton('al-activities-panel', '활동', ${lesson.tab() == 'activities'})}"></button>
+            <button th:replace="~{common/ui :: tabButton('al-exam-panel', '모의고사', ${lesson.tab() == 'exam'})}"></button>
+        </div>
+
+        <div id="al-activities-panel" class="vl-ui-tabpanel" role="tabpanel" aria-labelledby="al-activities-panel-tab"
+             th:hidden="${lesson.tab() != 'activities'}">
+            <section class="vl-ui-panel">
+                <div class="al-panel-head">
+                    <h2 class="al-h2">활동 목록</h2>
+                    <button th:replace="~{common/ui :: btnButton('활동 추가', 'outline', 's')}" aria-disabled="true"></button>
+                </div>
+                <p th:replace="~{common/ui :: btnReason('활동 추가·수정·순서 변경은 다음 업데이트에서 열립니다 (#101)')}"></p>
+
+                <p class="al-empty" th:if="${lesson.activities().empty}">아직 등록된 활동이 없습니다</p>
+                <ol class="al-activity-list" th:unless="${lesson.activities().empty}">
+                    <li class="al-activity-row" th:each="activity : ${lesson.activities()}">
+                        <span class="al-activity-no" th:text="${activity.sortOrder()}">1</span>
+                        <span class="al-activity-kind" th:text="${activity.activityType().name() == 'CONCEPT'} ? '개념' : '퀴즈'">개념</span>
+                        <span class="al-activity-title" th:text="${activity.title()}">활동 제목</span>
+                        <span th:replace="~{common/ui :: badge(${activity.active()} ? 'success' : 'neutral', ${activity.active()} ? '사용' : '중지')}"></span>
+                    </li>
+                </ol>
+
+                <div th:replace="~{common/ui :: notice('info', '퀴즈 문항', '퀴즈 문항 등록·관리 기능은 다음 업데이트에서 열립니다 (FR-LSN-012)')}"></div>
+
+                <div th:unless="${lesson.conceptTags().empty}">
+                    <h3 class="al-h2">개념 태그</h3>
+                    <div class="al-tag-list">
+                        <span class="al-tag" th:each="tag : ${lesson.conceptTags()}" th:text="${tag.name()}">태그</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="al-exam-panel" class="vl-ui-tabpanel" role="tabpanel" aria-labelledby="al-exam-panel-tab"
+             th:hidden="${lesson.tab() != 'exam'}">
+            <section class="vl-ui-panel">
+                <div class="al-panel-head">
+                    <h2 class="al-h2">모의고사 문항</h2>
+                    <button th:replace="~{common/ui :: btnButton('문항 추가', 'outline', 's')}" aria-disabled="true"></button>
+                </div>
+                <p th:replace="~{common/ui :: btnReason('모의고사 문항 등록·수정은 다음 업데이트에서 열립니다 (FR-EXM-007)')}"></p>
+
+                <p class="al-empty" th:if="${lesson.examQuestions().empty}">아직 등록된 모의고사 문항이 없습니다</p>
+                <ol class="al-exam-list" th:unless="${lesson.examQuestions().empty}">
+                    <li class="al-exam-row" th:each="question : ${lesson.examQuestions()}">
+                        <span class="al-activity-no" th:text="${question.sortOrder()}">1</span>
+                        <span class="al-exam-content" th:text="${question.content()}">문항 내용</span>
+                        <span th:replace="~{common/ui :: badge(${question.active()} ? 'success' : 'neutral', ${question.active()} ? '사용' : '중지')}"></span>
+                    </li>
+                </ol>
+            </section>
+        </div>
+    </main>
+</div>
+</body>
+</html>
