@@ -2,12 +2,14 @@ package com.vibelog.domain.lesson.model.service;
 
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
+import com.vibelog.domain.lesson.model.dao.ConceptTagRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
 import com.vibelog.domain.lesson.model.dto.CourseEnrollmentStat;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.entity.Activity;
+import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
 import com.vibelog.global.exception.BusinessException;
@@ -36,6 +38,7 @@ public class LessonReader {
     private final ActivityRepository activityRepository;
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final ConceptTagRepository conceptTagRepository;
 
     /*
      * 회원의 수강 목록과 진행률. 운영자 회원 상세(API-ADM-38, auth #119)가 쓴다.
@@ -71,6 +74,12 @@ public class LessonReader {
         return lessonRepository.findById(lessonId)
                 .map(Lesson::getCourseId)
                 .orElseThrow(() -> new BusinessException(LessonErrorCode.LESSON_NOT_FOUND));
+    }
+
+    /* 개념 태그 ID → 태그 이름. 없는 ID 는 결과에 빠진다. 퀴즈 채점의 개념 태그별 오답 비율(quiz #109, FR-LSN-007)이 쓴다 */
+    public Map<Long, String> getConceptTagNames(Collection<Long> conceptTagIds) {
+        return conceptTagRepository.findAllById(conceptTagIds).stream()
+                .collect(Collectors.toMap(ConceptTag::getConceptTagId, ConceptTag::getName));
     }
 
     /*

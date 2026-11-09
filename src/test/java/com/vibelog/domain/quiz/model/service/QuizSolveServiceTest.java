@@ -53,10 +53,10 @@ class QuizSolveServiceTest {
                 + "(9901, 9901, '수업', '소개', '목표', '본문', 30, 1, TRUE)");
         jdbcTemplate.update("INSERT INTO activity (activity_id, lesson_id, activity_type, title, body, body_format, estimated_minutes, pass_rate, sort_order) VALUES "
                 + "(9901, 9901, 'QUIZ', 'JSP 기초 퀴즈', NULL, NULL, 10, 50, 1), (9902, 9901, 'CONCEPT', '다음 개념', '본문', 'MARKDOWN', 10, NULL, 2)");
-        jdbcTemplate.update("INSERT INTO concept_tag (concept_tag_id, name) VALUES (9901, 'JSP')");
+        jdbcTemplate.update("INSERT INTO concept_tag (concept_tag_id, name) VALUES (9901, 'JSP 동작 방식'), (9902, 'JSP 표현식')");
         jdbcTemplate.update("INSERT INTO quiz_question (quiz_question_id, activity_id, concept_tag_id, display_type, content, code_snippet, explanation, sort_order, is_active) VALUES "
                 + "(99011, 9901, 9901, 'CONCEPT', '문항1', NULL, '해설1', 1, TRUE), "
-                + "(99012, 9901, 9901, 'OUTPUT_PREDICT', '문항2', '<%= 1 + 1 %>', '해설2', 2, TRUE), "
+                + "(99012, 9901, 9902, 'OUTPUT_PREDICT', '문항2', '<%= 1 + 1 %>', '해설2', 2, TRUE), "
                 + "(99013, 9901, 9901, 'CONCEPT', '사용 중지 문항', NULL, '해설3', 3, FALSE)");
         jdbcTemplate.update("INSERT INTO quiz_choice (quiz_choice_id, quiz_question_id, content, is_correct, sort_order) VALUES "
                 + "(990111, 99011, '정답1', TRUE, 1), (990112, 99011, '오답1', FALSE, 2), "
@@ -161,6 +161,22 @@ class QuizSolveServiceTest {
         assertError(() -> quizSolveService.submit(memberA, attemptId), QuizErrorCode.ATTEMPT_SUBMITTED);
         assertThat(quizSolveService.getPage(memberA, 9901L).map(QuizPageView::bestCorrectRate))
                 .hasValueSatisfying(best -> assertThat(best).isEqualByComparingTo("50.00"));
+    }
+
+    @Test
+    void 채점_결과에_개념_태그별_오답_비율과_약한_개념이_문항_순서대로_나온다() {
+        Long attemptId = quizSolveService.start(memberA, 9901L).quizAttemptId();
+        quizSolveService.check(memberA, attemptId, 99011L, 990111L);   // 'JSP 동작 방식' 정답
+        quizSolveService.check(memberA, attemptId, 99012L, 990122L);   // 'JSP 표현식' 오답
+
+        QuizSubmitResponse result = quizSolveService.submit(memberA, attemptId);
+
+        assertThat(result.tagStats()).extracting(QuizSubmitResponse.TagStat::conceptTagName)
+                .containsExactly("JSP 동작 방식", "JSP 표현식");
+        assertThat(result.tagStats().get(0).wrongRate()).isZero();
+        assertThat(result.tagStats().get(0).weak()).isFalse();
+        assertThat(result.tagStats().get(1).wrongRate()).isEqualTo(100);
+        assertThat(result.tagStats().get(1).weak()).isTrue();   // 정답률 0% < 60% (PL-LSN-008)
     }
 
     @Test
