@@ -70,6 +70,21 @@ class LessonPageControllerTest {
     }
 
     @Test
+    void 잠긴_활동으로_돌아오면_수업_화면에_안내_토스트를_그린다() throws Exception {
+        LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
+        LessonPageData data = new LessonPageData(1L, 1L, "수업 1", "목표", List.of(quiz));
+        given(lessonPageService.getPage(1L, 1L, 1L, null)).willReturn(LessonPageResult.ok(data));
+
+        mockMvc.perform(get("/courses/1/lessons/1")
+                        .with(authentication(loginAs(1L)))
+                        .flashAttr("toast", LessonErrorCode.ACTIVITY_LOCKED.getMessage()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "role=\"status\">" + LessonErrorCode.ACTIVITY_LOCKED.getMessage())));
+    }
+
+    @Test
     void 수강_안_한_코스면_코스_상세로_보낸다() throws Exception {
         given(lessonPageService.getPage(1L, 1L, 1L, null)).willReturn(LessonPageResult.notEnrolled());
 

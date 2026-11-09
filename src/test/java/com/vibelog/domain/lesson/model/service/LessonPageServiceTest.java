@@ -149,7 +149,7 @@ class LessonPageServiceTest {
 
         LessonActivityCard exam = examCard(data);
         assertThat(exam.status()).isEqualTo(ActivityStatus.IN_PROGRESS);
-        assertThat(exam.examUrl()).isEqualTo("/lessons/" + LESSON + "/exam");
+        assertThat(exam.examUrl()).isEqualTo("/lessons/" + LESSON + "/exam/attempts");
         assertThat(exam.selected()).isTrue();
     }
 

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${notice.title() + ' | 바이브로그'}">공지사항 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/message.css}">
+</head>
+<body>
+<!-- U-26 공지 상세 (API-NTF-05, #186). 제목, 게시일, 본문, ← 공지사항 (U-25) -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="ms-band">
+    <h1 class="ms-title">공지사항</h1>
+</section>
+
+<main class="ms-main">
+    <article class="ms-panel ms-article">
+        <a class="ms-link" href="/notices">← 공지사항</a>
+        <h2 class="ms-article__title" th:text="${notice.title()}">공지 제목</h2>
+        <p class="ms-muted"><time th:datetime="${notice.createdAt()}" th:text="${#temporals.format(notice.createdAt(), 'yyyy.MM.dd HH:mm')}">2026.11.09 10:00</time></p>
+        <p class="ms-article__body" th:text="${notice.body()}">본문</p>
+    </article>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

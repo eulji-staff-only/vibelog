@@ -4,7 +4,7 @@
  * 버튼·안내 상자·모달 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
  */
 
-.exam-page { min-height: 100vh; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+/* 배경·글자색·글꼴은 common.css(body)가 정한다 (#133) */
 /* display 를 준 요소도 hidden 속성이면 숨긴다 (문항 전환·잠김 안내) */
 .exam-page [hidden] { display: none; }
 
@@ -37,7 +37,7 @@
 .exam-question-text { margin: 0; font-size: 22px; line-height: 1.5; font-weight: 900; }
 .exam-choices { display: flex; flex-direction: column; gap: 10px; }
 .exam-choice { display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: 52px; padding: 13px 18px;
-    box-sizing: border-box; text-align: left; font: inherit; font-size: 16px; line-height: 1.5; color: var(--ink);
+    text-align: left; font: inherit; font-size: 16px; line-height: 1.5; color: var(--ink);
     background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: var(--radius-md); cursor: pointer; }
 .exam-choice:hover { border-color: var(--ink-muted); }
 .exam-choice-key { flex: 0 0 28px; height: 28px; border-radius: 50%; background: var(--tint); font-size: 14px; font-weight: 700;
@@ -48,7 +48,7 @@
 /* 버튼 (공통 조각 #46 전까지) */
 .exam-move, .exam-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); }
 .exam-actions { padding-top: var(--space-5); border-top: 1px solid var(--line-soft); }
-.exam-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: var(--control-h);
+.exam-btn { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-h);
     padding: 11px 18px; font: inherit; font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none;
     border: 1px solid transparent; border-radius: var(--radius-pill); cursor: pointer; white-space: nowrap; }
 .exam-btn-navy { background: var(--navy-900); color: var(--on-navy); }
@@ -85,10 +85,10 @@
 
 /* M-02 제출 확인 모달 (공통 조각 #46 전까지) */
 .exam-modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
-    padding: var(--space-6); box-sizing: border-box; background: rgba(15, 27, 61, 0.55); }
+    padding: var(--space-6); background: rgba(15, 27, 61, 0.55); }
 .exam-modal[hidden] { display: none; }
 .exam-modal-box { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: var(--space-4); padding: 32px;
-    box-sizing: border-box; background: var(--surface-raised); border-radius: var(--radius-xl); box-shadow: var(--shadow-panel); }
+    background: var(--surface-raised); border-radius: var(--radius-xl); box-shadow: var(--shadow-panel); }
 .exam-modal-title { margin: 0; font-size: 22px; line-height: 1.4; font-weight: 900; }
 .exam-modal-body { display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
 .exam-modal-count { display: flex; align-items: baseline; gap: var(--space-2); font-size: 14px; font-weight: 700; }

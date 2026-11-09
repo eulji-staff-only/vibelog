@@ -112,12 +112,15 @@ class ContestEnterVoteTest {
         String b = member(true);
         long canceled = entry(voting, b, portfolio(b, "취소된 작품", true), now.minusHours(1));
         long otherContest = entry(entryOpen, a, portfolio(a, "다른 콘테스트 작품", true), null);
+        String c = member(true);
+        long privateEntry = entry(voting, c, portfolio(c, "비공개로 바꾼 작품", false), null);
         String voter = member(true);
 
         vote(voting, member(false), live).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("EMAIL_NOT_VERIFIED"));
         vote(entryOpen, voter, otherContest).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("VOTE_CLOSED"));
         vote(voting, voter, canceled).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("ENTRY_NOT_FOUND"));
         vote(voting, voter, otherContest).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("ENTRY_NOT_FOUND"));
+        vote(voting, voter, privateEntry).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("ENTRY_NOT_FOUND"));
         vote(-1L, voter, live).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("CONTEST_NOT_FOUND"));
     }
 
@@ -136,8 +139,14 @@ class ContestEnterVoteTest {
 
         mockMvc.perform(get("/contests/current").with(as(me)))
                 .andExpect(content().string(allOf(containsString("내가 낸 작품"), containsString("내 작품"),
-                        containsString("투표한 작품"), containsString("투표함"), containsString("오늘 투표를 마쳤습니다"),
+                        containsString("투표한 작품"), containsString("투표함"),
                         not(containsString("출품 취소된 작품")), not(containsString("비공개로 바꾼 작품")))));
+        // "오늘 투표를 마쳤습니다"는 늘 HTML 에 있고 hidden 으로만 숨기므로, hidden 이 붙었는지로 확인한다
+        mockMvc.perform(get("/contests/current").with(as(me)))
+                .andExpect(content().string(containsString("data-voted-today>오늘 투표를 마쳤습니다")));
+        mockMvc.perform(get("/contests/current").with(as(third)))
+                .andExpect(content().string(allOf(containsString("data-voted-today hidden"),
+                        not(containsString("data-voted-today>오늘 투표를 마쳤습니다")))));
     }
 
     private ResultActions enter(long contestId, String email, long portfolioId) throws Exception {

@@ -131,7 +131,7 @@ git push -u origin hotfix/40-signup-crash
 | 직접 push | ❌ 금지 | ❌ 금지 |
 | 강제 push (`--force`) | ❌ 금지 | ❌ 금지 |
 | 브랜치 삭제 | ❌ 금지 | ❌ 금지 |
-| 머지 전 필요한 승인 | PM·형상관리 중 1명 (+ 다른 영역을 바꿨으면 그 영역 담당) | PM·형상관리 중 1명 |
+| 머지 전 필요한 승인 | P1 PR만 PM·형상관리 중 1명 (+ 다른 영역을 바꿨으면 그 영역 담당). 그 밖의 PR은 없음 (#287) | PM·형상관리 중 1명 |
 | 대화(코멘트) 모두 해결 | 필수 | 필수 |
 | 머지 방식 | Squash merge (hotfix 반영만 Merge commit) | Merge commit |
 

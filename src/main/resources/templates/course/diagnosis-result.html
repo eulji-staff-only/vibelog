@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>진단 결과 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/diagnosis.css}" href="/css/diagnosis.css">
+</head>
+<body>
+<!-- U-08 진단 결과 (FR-DGN-002, API-DGN-04, #99). DiagnosisPageController 가 담아 주는 result(DiagnosisResultView)로 그린다.
+     추천 이유는 제출 직후에만 있다(flash, PL-DGN-001). 나중에 다시 열면 트랙 설명만 보여준다. -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="dg-band">
+    <span class="dg-eyebrow">진단 결과</span>
+    <h1 class="dg-title">나에게 맞는 트랙을 찾았어요</h1>
+    <p class="dg-lead">진단 응답을 바탕으로 추천 트랙 1개와 그 이유를 보여 드립니다.</p>
+</section>
+
+<main class="dg-main is-wide" th:with="rec=${result.recommended()}">
+    <div class="vl-ui-panel dg-panel is-result">
+
+        <section class="dg-rec" aria-labelledby="dg-rec-h">
+            <div class="dg-badges">
+                <span th:replace="~{common/ui :: badge('strong', '추천 트랙')}">추천 트랙</span>
+                <span th:replace="~{common/ui :: badge('neutral', ${rec.stage() + '단계'})}">단계</span>
+            </div>
+            <h2 class="dg-rec__title" id="dg-rec-h" th:text="${rec.name()}">추천 트랙</h2>
+            <p class="dg-body" th:text="${rec.target()}">대상 학습자</p>
+            <p class="dg-body" th:text="${rec.description()}">트랙 설명</p>
+        </section>
+
+        <section class="dg-section" aria-labelledby="dg-why-h" th:unless="${result.reasons().empty}">
+            <h2 class="dg-h2" id="dg-why-h">추천 이유</h2>
+            <p class="dg-muted">진단에서 고른 답 중 이 트랙과 연결된 것입니다.</p>
+            <ol class="dg-reasons">
+                <li th:each="reason, stat : ${result.reasons()}">
+                    <span class="dg-reasons__no" th:text="${stat.count}">1</span><p th:text="${reason}">고른 보기</p>
+                </li>
+            </ol>
+        </section>
+
+        <section class="dg-section" aria-labelledby="dg-courses-h">
+            <div class="dg-section__head">
+                <h2 class="dg-h2" id="dg-courses-h">이 트랙의 코스</h2>
+            </div>
+            <ul class="dg-cards" th:unless="${rec.courses().empty}">
+                <li th:each="card : ${rec.courses()}">
+                    <a class="dg-card" th:href="@{/courses/{id}(id=${card.courseId()})}">
+                        <span class="dg-card__meta" th:text="${card.trackName()} + ' · ' + ${card.categoryName()}">트랙 · 카테고리</span>
+                        <h3 class="dg-card__title" th:text="${card.title()}">코스 이름</h3>
+                        <p class="dg-card__summary" th:text="${card.summary()}">한 줄 소개</p>
+                        <p class="dg-card__info">
+                            <span th:text="'플랜 ' + ${card.planDays()} + '일'">플랜 0일</span>
+                            <span th:text="'수업 ' + ${card.lessonCount()} + '개'">수업 0개</span>
+                        </p>
+                    </a>
+                </li>
+            </ul>
+            <th:block th:if="${rec.courses().empty}">
+                <div th:replace="~{common/ui :: notice('empty', '', '이 트랙에 아직 공개된 코스가 없습니다')}"></div>
+            </th:block>
+        </section>
+
+        <section class="dg-section" aria-labelledby="dg-others-h" th:unless="${result.otherTracks().empty}">
+            <h2 class="dg-h2" id="dg-others-h">다른 트랙</h2>
+            <ul class="dg-cards is-others">
+                <li class="dg-other" th:each="other : ${result.otherTracks()}">
+                    <div class="dg-other__head">
+                        <h3 class="dg-other__title" th:text="${other.name()}">트랙</h3>
+                        <span th:replace="~{common/ui :: badge('neutral', ${other.target()})}">대상 학습자</span>
+                    </div>
+                    <p class="dg-muted" th:text="${other.description()}">트랙 설명</p>
+                    <a class="dg-link" th:href="@{/tracks/{id}(id=${other.trackId()})}">트랙 소개 →</a>
+                </li>
+            </ul>
+        </section>
+
+        <div class="dg-actions">
+            <a th:replace="~{common/ui :: btnLink('/courses', '다른 트랙 둘러보기', 'outline', '')}">다른 트랙 둘러보기</a>
+            <a th:replace="~{common/ui :: btnLink(@{/tracks/{id}(id=${rec.trackId()})}, '이 트랙 보기 →', 'navy', '')}">이 트랙 보기</a>
+        </div>
+
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

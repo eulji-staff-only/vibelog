@@ -6,6 +6,11 @@
   767px 이하에서는 메뉴를 접고 햄버거 버튼으로 펼친다 (설계서 7장, #153). 펼치기는 static/js/header.js 가 한다.
   닉네임은 이 fragment 를 쓰는 화면의 Controller가 모델에 담은 "loginNickname" 을 쓰고,
   없으면(아직 연결 안 한 화면) 기본 문구로 보여준다.
+  공지 배너(1-5, #186): 기간 안의 배너 공지 1개 "noticeBanner" 를 MessageHeaderAdvice 가 넣는다. 누르면 U-26 (비회원은 로그인으로).
+  알림(1-5, #185): 안 읽은 수 "unreadNotificationCount" 는 message 영역 MessageHeaderAdvice 가 모든 화면에 넣는다.
+  드롭다운 목록·모두 읽음은 header.js 가 /api/notifications 를 부른다 (CSRF 토큰은 data 속성으로 넘긴다).
+  배지 획득 축하(M-10, #202): 안 읽은 BADGE 알림 "badgeCelebration" 이 있으면 모달을 띄운다. "확인"은 그 알림 열기
+  (읽음 + 마이페이지 배지 탭)라서, 읽기 전까지는 화면마다 다시 뜬다 (contest 명세 결정 10).
 -->
 <!doctype html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
@@ -13,6 +18,9 @@
 <body>
 
 <header th:fragment="header" class="vl-header" data-header>
+    <a class="vl-banner" th:if="${noticeBanner != null}" th:href="@{/notices/{id}(id=${noticeBanner.noticeId()})}">
+        <span class="vl-banner__label">공지</span><span class="vl-banner__title" th:text="${noticeBanner.title()}">공지 제목</span>
+    </a>
     <div class="vl-content vl-header__inner">
         <a class="vl-header__logo" href="/">바이브로그</a>
         <!-- 모바일에서만 보인다 -->
@@ -45,10 +53,39 @@
             <form th:action="@{/logout}" method="post">
                 <button type="submit" class="is-text vl-header__logout-btn">로그아웃</button>
             </form>
+            <div class="vl-notify" data-notify th:attr="data-csrf-token=${_csrf?.token},data-csrf-header=${_csrf?.headerName}">
+                <button type="button" class="vl-notify__btn" aria-expanded="false" aria-controls="vl-notify-panel" data-notify-toggle
+                        th:aria-label="${unreadNotificationCount != null and unreadNotificationCount > 0} ? |알림, 안 읽은 알림 ${unreadNotificationCount}개| : '알림'">
+                    <svg class="vl-notify__icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                        <path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/>
+                    </svg>
+                    <span class="vl-notify__count" aria-hidden="true" data-notify-count
+                          th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+                          th:text="${unreadNotificationCount > 99} ? '99+' : ${unreadNotificationCount}">3</span>
+                </button>
+                <div class="vl-notify__panel" id="vl-notify-panel" hidden data-notify-panel>
+                    <div class="vl-notify__head">
+                        <strong>알림</strong>
+                        <button type="button" class="vl-notify__read-all" data-notify-read-all>모두 읽음</button>
+                    </div>
+                    <ul class="vl-notify__list" data-notify-list></ul>
+                    <p class="vl-notify__empty" hidden data-notify-empty>알림이 없습니다</p>
+                    <button type="button" class="vl-notify__more" hidden data-notify-more>더 보기</button>
+                </div>
+            </div>
         </div>
         </div>
     </div>
     <script th:src="@{/js/header.js}" defer></script>
+    <div class="vl-ui-modal" role="dialog" aria-modal="true" aria-labelledby="vl-badge-title" th:if="${badgeCelebration != null}" data-badge-modal>
+        <div class="vl-ui-modal__box">
+            <h2 class="vl-ui-modal__title" id="vl-badge-title" tabindex="-1">배지 획득을 축하합니다</h2>
+            <p class="vl-ui-modal__body" th:text="${badgeCelebration.content()}">배지를 받았습니다: 2026년 11월 1등</p>
+            <div class="vl-ui-modal__actions">
+                <a class="vl-ui-btn is-navy" th:href="@{/notifications/{id}(id=${badgeCelebration.notificationId()})}">확인</a>
+            </div>
+        </div>
+    </div>
 </header>
 
 <footer th:fragment="footer" class="vl-footer">

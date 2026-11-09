@@ -4,7 +4,7 @@
  * 버튼·배지·안내 상자 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
  */
 
-.report-page { min-height: 100vh; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+/* 배경·글자색·글꼴은 common.css(body)가 정한다 (#133) */
 .report-page [hidden] { display: none; }
 
 /* 상단 네이비 띠 + 제목 */
@@ -74,8 +74,8 @@
 .report-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3);
     padding-top: var(--space-5); border-top: 1px solid var(--line-soft); }
 .report-actions-sub { display: flex; flex-wrap: wrap; gap: var(--space-3); }
-.report-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: var(--control-h);
-    padding: 11px 18px; font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none;
+.report-btn { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-h);
+    padding: 11px 18px; font-size: 15px; font-weight: 700; line-height: 1.4; font-family: inherit; text-decoration: none; cursor: pointer;
     border: 1px solid transparent; border-radius: var(--radius-pill); white-space: nowrap; }
 .report-btn-navy { background: var(--navy-900); color: var(--on-navy); }
 .report-btn-navy:hover { background: var(--navy-800); }

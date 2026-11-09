@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>포트폴리오 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/my-portfolio.css}" href="/css/my-portfolio.css">
+</head>
+<body>
+<!-- U-20 포트폴리오 상세 (API-PRT-09, #114). 공개 작품은 회원 누구나, 비공개는 본인만 본다.
+     남의 비공개는 Service 가 PRIVATE_PORTFOLIO 를 던져 오류 화면(E-02) "비공개된 작품입니다"로 간다. -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="mp-band mp-band-left">
+    <a class="mp-back" th:href="@{/my/portfolios}" th:if="${portfolio.mine()}">← 내 포트폴리오</a>
+    <h1 class="mp-title" th:text="${portfolio.title()}">[포트폴리오 제목]</h1>
+    <span class="mp-eyebrow">포트폴리오</span>
+    <p class="mp-lead" th:text="|${portfolio.authorNickname()} · ${#temporals.format(portfolio.submittedAt(), 'yyyy.MM.dd')}|">[작성자] · [제출일]</p>
+</section>
+
+<main class="mp-main">
+    <div class="mp-panel">
+        <div class="mp-detail">
+            <!-- 내 작품이고 비공개일 때 -->
+            <div class="mp-notice" th:if="${portfolio.mine() and !portfolio.isPublic()}">
+                <strong>비공개로 제출한 포트폴리오입니다.</strong>
+                <p>나만 볼 수 있습니다. 내 포트폴리오에서 공개로 전환할 수 있습니다.</p>
+            </div>
+
+            <dl class="mp-facts">
+                <dt>결과물 링크</dt>
+                <dd><a class="mp-link" th:href="${portfolio.resultUrl()}" th:text="${portfolio.resultUrl()}" target="_blank" rel="noopener noreferrer">[결과물 링크]</a></dd>
+                <th:block th:if="${portfolio.courseId() != null}">
+                    <dt>코스</dt>
+                    <dd><a class="mp-link" th:href="@{/courses/{id}(id=${portfolio.courseId()})}" th:text="${portfolio.courseTitle()}">[코스 이름]</a></dd>
+                </th:block>
+                <dt>사용한 AI 도구·모델</dt>
+                <dd th:text="${portfolio.aiTools()}">[도구 · 모델]</dd>
+                <dt>작성자</dt>
+                <dd th:text="${portfolio.authorNickname()}">[작성자]</dd>
+            </dl>
+
+            <section class="mp-section mp-section-first" aria-labelledby="mp-summary-h">
+                <h2 class="mp-h3" id="mp-summary-h">한 줄 요약</h2>
+                <p class="mp-text" th:text="${portfolio.summary()}">[한 줄 요약]</p>
+            </section>
+            <section class="mp-section" aria-labelledby="mp-retro-h">
+                <h2 class="mp-h3" id="mp-retro-h">회고</h2>
+                <p class="mp-text" th:text="${portfolio.retrospective()}">[회고 본문]</p>
+            </section>
+            <section class="mp-section" aria-labelledby="mp-agent-h" th:if="${portfolio.agentResult() != null}">
+                <h2 class="mp-h3" id="mp-agent-h">에이전트 점검 결과</h2>
+                <p class="mp-text" th:text="${portfolio.agentResult()}">[점검 결과]</p>
+            </section>
+            <section class="mp-section" aria-labelledby="mp-shot-h" th:if="${portfolio.screenshotUrl() != null}">
+                <h2 class="mp-h3" id="mp-shot-h">스크린샷</h2>
+                <div class="mp-shot"><img th:src="${portfolio.screenshotUrl()}" th:alt="|${portfolio.title()} 스크린샷|" alt="스크린샷"></div>
+            </section>
+
+            <div class="mp-detail-actions">
+                <a class="mp-btn mp-btn-text" th:href="@{/community}">커뮤니티로 돌아가기</a>
+                <a class="mp-btn mp-btn-outline" th:if="${portfolio.mine() and portfolio.courseId() != null}"
+                   th:href="@{/courses/{id}/portfolio(id=${portfolio.courseId()},edit=true)}">수정</a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

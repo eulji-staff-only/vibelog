@@ -73,6 +73,50 @@ public class Portfolio extends BaseTimeEntity {
         return portfolio;
     }
 
+    /*
+     * 삭제 표시한 코스 작품을 같은 코스로 다시 제출하면 이 행을 되살려 덮어쓴다 (DB 설계서 5-4, uk_portfolio_member_course 유지).
+     * 입력 검증·API 키 가리기는 Service 에서 끝낸 값을 받는다
+     */
+    public void resubmit(String title, String resultUrl, String summary, String retrospective, String aiTools,
+                         boolean isPublic, String agentResult, String screenshotUrl) {
+        this.title = title;
+        this.resultUrl = resultUrl;
+        this.summary = summary;
+        this.retrospective = retrospective;
+        this.aiTools = aiTools;
+        this.isPublic = isPublic;
+        this.agentResult = agentResult;
+        this.screenshotUrl = screenshotUrl;
+        this.deletedAt = null;
+    }
+
+    /*
+     * 수정 (API-PRT-06, PL-PRT-007): 최신본으로 덮는다. 수정 일시는 BaseTimeEntity 의 updated_at 이 남긴다.
+     * 스크린샷은 새로 올렸을 때만 바꾼다 (null 이면 이전 것을 그대로 둔다). 입력 검증·API 키 가리기는 Service 에서 끝낸 값을 받는다
+     */
+    public void edit(String title, String resultUrl, String summary, String retrospective, String aiTools,
+                     boolean isPublic, String agentResult, String screenshotUrl) {
+        this.title = title;
+        this.resultUrl = resultUrl;
+        this.summary = summary;
+        this.retrospective = retrospective;
+        this.aiTools = aiTools;
+        this.isPublic = isPublic;
+        this.agentResult = agentResult;
+        if (screenshotUrl != null) {
+            this.screenshotUrl = screenshotUrl;
+        }
+    }
+
+    /* 공개 전환 (API-PRT-08, PL-PRT-006) */
+    public void changeVisibility(boolean isPublic) {
+        this.isPublic = isPublic;
+    }
+
+    public boolean isOwnedBy(Long memberId) {
+        return this.memberId.equals(memberId);
+    }
+
     /* 삭제 표시. 이미 삭제 표시된 것은 처음 시각을 그대로 둔다 */
     public void markDeleted() {
         if (deletedAt == null) {

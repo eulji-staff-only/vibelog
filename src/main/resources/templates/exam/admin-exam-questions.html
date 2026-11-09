@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  A-06 수업 편집의 모의고사 탭 조각 (API-ADM-29~31, FR-EXM-007, #103). lesson/admin-lesson.html 이 끼워 쓴다.
+  - 문항 목록은 A-06 데이터(lesson.examQuestions(), ExamReader.getQuestionsOf)를 그대로 쓰고, 연관 개념 고르기는
+    같은 수업의 개념 활동(lesson.activities() 중 CONCEPT)으로 채운다 (PL-EXM-002).
+  - 입력이 틀리면 ExamAdminController 가 flash 로 넘긴 examQuestionForm·examQuestionErrors·examQuestionTarget 으로
+    그 모달을 열린 채로 다시 그린다 (같은 폼 다시 + 칸별 메시지, _template.md 7-1 ④).
+  - 보기는 4개 고정이다 (팀 결정).
+-->
+
+<!-- 모의고사 탭 본문 -->
+<section class="vl-ui-panel" th:fragment="panel">
+    <div class="al-panel-head">
+        <h2 class="al-h2">모의고사 문항</h2>
+        <button type="button" class="vl-ui-btn is-outline is-s" data-ui-modal-open="exam-question-add-modal">문항 추가</button>
+    </div>
+    <p class="al-hint">문항마다 이 수업의 개념 하나를 연관 개념으로 골라야 저장됩니다. 사용 중지한 문항은 다음 응시부터 나오지 않습니다. 이미 응시한 문항을 고치면 지난 기록을 지키려고 예전 문항은 중지되고 새 문항으로 저장됩니다.</p>
+
+    <p class="al-empty" th:if="${lesson.examQuestions().empty}">아직 등록된 모의고사 문항이 없습니다</p>
+    <ol class="al-exam-list" th:unless="${lesson.examQuestions().empty}">
+        <li class="al-exam-row" th:each="question : ${lesson.examQuestions()}">
+            <span class="al-activity-no" th:text="${question.sortOrder()}">1</span>
+            <span class="al-exam-content" th:text="${question.content()}">문항 내용</span>
+            <span th:replace="~{common/ui :: badge(${question.active()} ? 'success' : 'neutral', ${question.active()} ? '사용' : '중지')}"></span>
+            <div class="al-activity-actions">
+                <button type="button" class="vl-ui-btn is-outline is-s"
+                        th:attr="data-ui-modal-open='exam-question-edit-modal-' + ${question.examQuestionId()}">수정</button>
+                <form method="post" th:action="@{/admin/exam-questions/{id}/active(id=${question.examQuestionId()})}">
+                    <input type="hidden" name="active" th:value="${!question.active()}">
+                    <button type="submit" class="vl-ui-btn is-outline is-s" th:text="${question.active()} ? '사용 중지' : '다시 사용'">사용 중지</button>
+                </form>
+            </div>
+        </li>
+    </ol>
+</section>
+
+<!-- 문항 추가·수정 모달 (A-06 맨 아래에 끼운다) -->
+<th:block th:fragment="modals">
+    <div th:replace="~{exam/admin-exam-questions :: questionModal('exam-question-add-modal', '문항 추가', @{/admin/lessons/{id}/exam-questions(id=${lesson.lessonId()})}, null, ${examQuestionTarget == 'new'})}"></div>
+    <th:block th:each="question : ${lesson.examQuestions()}">
+        <div th:replace="~{exam/admin-exam-questions :: questionModal(${'exam-question-edit-modal-' + question.examQuestionId()}, '문항 수정',
+                @{/admin/exam-questions/{id}/edit(id=${question.examQuestionId()})}, ${question},
+                ${examQuestionTarget == #strings.toString(question.examQuestionId())})}"></div>
+    </th:block>
+</th:block>
+
+<!--
+  question: 수정할 문항(AdminExamQuestionItem), 추가면 null. open: 입력 오류로 돌아온 그 모달이면 true.
+  open 이면 보낸 값(f)·칸별 메시지(errs)로, 아니면 저장된 문항 값으로 채운다.
+-->
+<div class="vl-ui-modal" th:fragment="questionModal(modalId, heading, action, question, open)"
+     th:id="${modalId}" th:hidden="${!open}" role="dialog" aria-modal="true"
+     th:attr="data-ui-modal=${modalId}, aria-labelledby=${modalId + '-title'}"
+     th:with="f=${open ? examQuestionForm : null}, errs=${open ? examQuestionErrors : null}">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" tabindex="-1" th:autofocus="${open}" th:id="${modalId + '-title'}" th:text="${heading}">문항 추가</h2>
+        <form class="al-form" method="post" novalidate th:action="${action}">
+            <div class="al-field">
+                <label th:for="${modalId + '-concept'}">연관 개념</label>
+                <select th:id="${modalId + '-concept'}" name="conceptActivityId"
+                        th:with="selected=${f != null ? f.conceptActivityId : question?.conceptActivityId()}">
+                    <option value="">개념을 고르세요</option>
+                    <option th:each="activity : ${lesson.activities()}" th:if="${activity.activityType().name() == 'CONCEPT'}"
+                            th:value="${activity.activityId()}" th:selected="${activity.activityId() == selected}"
+                            th:text="${activity.title() + (activity.active() ? '' : ' (사용 중지)')}">개념</option>
+                </select>
+                <p class="al-error" role="alert" th:if="${errs != null and errs['conceptActivityId'] != null}"
+                   th:text="${errs['conceptActivityId']}">연관 개념 오류</p>
+            </div>
+            <div class="al-field">
+                <label th:for="${modalId + '-content'}">문항</label>
+                <textarea th:id="${modalId + '-content'}" name="content"
+                          th:text="${f != null ? f.content : question?.content()}"></textarea>
+                <p class="al-error" role="alert" th:if="${errs != null and errs['content'] != null}"
+                   th:text="${errs['content']}">문항 오류</p>
+            </div>
+            <fieldset class="al-field">
+                <legend>보기 (정답 하나를 고르세요)</legend>
+                <div class="ea-choice" th:each="i : ${#numbers.sequence(0, 3)}">
+                    <input type="radio" name="correctIndex" th:value="${i}" th:attr="aria-label=|${i + 1}번 보기를 정답으로|"
+                           th:checked="${f != null ? f.correctIndex == i
+                                        : (question != null and i < question.choices().size() and question.choices()[i].correct())}">
+                    <input type="text" name="choices" maxlength="500" th:attr="aria-label=|${i + 1}번 보기|"
+                           th:value="${f != null ? f.choiceAt(i)
+                                      : (question != null and i < question.choices().size() ? question.choices()[i].content() : '')}">
+                </div>
+                <p class="al-error" role="alert" th:if="${errs != null and errs['choices'] != null}"
+                   th:text="${errs['choices']}">보기 오류</p>
+                <p class="al-error" role="alert" th:if="${errs != null and errs['correctIndex'] != null}"
+                   th:text="${errs['correctIndex']}">정답 오류</p>
+            </fieldset>
+            <div class="al-field">
+                <label th:for="${modalId + '-explanation'}">해설</label>
+                <textarea th:id="${modalId + '-explanation'}" name="explanation"
+                          th:text="${f != null ? f.explanation : question?.explanation()}"></textarea>
+                <p class="al-error" role="alert" th:if="${errs != null and errs['explanation'] != null}"
+                   th:text="${errs['explanation']}">해설 오류</p>
+            </div>
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">저장</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

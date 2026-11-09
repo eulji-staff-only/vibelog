@@ -51,7 +51,10 @@ public class PostService {
     /* page 는 화면 그대로 1부터 센다. q 는 제목에 들어 있는 글을 찾는다 */
     public Page<PostListItem> getPosts(PostCategory category, String q, int page) {
         String keyword = (q == null || q.isBlank()) ? null : q.strip();
-        Page<Post> posts = postRepository.search(category, keyword, PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
+        Set<Long> hidden = memberReader.findAllHiddenMemberIds();
+        // 영구 정지 회원의 글은 목록에서 뺀다 (PL-RPT-006, #215). 없으면 IN () 이 되지 않게 0 을 넣는다 (회원 ID 는 1부터)
+        Page<Post> posts = postRepository.search(category, keyword, hidden.isEmpty() ? Set.of(0L) : hidden,
+                PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
         if (posts.isEmpty()) {
             return posts.map(post -> null);
         }
@@ -67,6 +70,9 @@ public class PostService {
     public PostDetail getPost(Long postId, Long loginMemberId) {
         Post post = postRepository.findByPostIdAndDeletedAtIsNull(postId)
                 .orElseThrow(() -> new BusinessException(CommunityErrorCode.POST_NOT_FOUND));
+        if (!memberReader.findHiddenMemberIds(Set.of(post.getMemberId())).isEmpty()) {
+            throw new BusinessException(CommunityErrorCode.HIDDEN_CONTENT);
+        }
         List<String> imageUrls = postImageRepository.findByPostIdOrderBySortOrder(postId).stream()
                 .map(PostImage::getImageUrl)
                 .toList();
@@ -79,7 +85,8 @@ public class PostService {
 
         long commentCount = comments.stream().filter(comment -> !comment.isDeleted()).count();
         return PostDetail.of(post, nicknames.get(post.getMemberId()), imageUrls, commentCount,
-                CommentView.tree(comments, nicknames, loginMemberId), Objects.equals(post.getMemberId(), loginMemberId),
-                loginMemberId != null && favoriteRepository.existsByMemberIdAndPostId(loginMemberId, postId));
+                CommentView.tree(comments, nicknames, loginMemberId, memberReader.findHiddenMemberIds(memberIds)), Objects.equals(post.getMemberId(), loginMemberId),
+                loginMemberId != null && favoriteRepository.existsByMemberIdAndPostId(loginMemberId, postId),
+                memberReader.isVisible(post.getMemberId()));
     }
 }

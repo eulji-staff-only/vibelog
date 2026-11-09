@@ -1,17 +1,23 @@
 package com.vibelog.domain.lesson.model.service;
 
+import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
+import com.vibelog.domain.lesson.model.dao.ConceptTagRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
+import com.vibelog.domain.lesson.model.dto.CourseEnrollmentStat;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.entity.Activity;
+import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
+import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +38,7 @@ public class LessonReader {
     private final ActivityRepository activityRepository;
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final ConceptTagRepository conceptTagRepository;
 
     /*
      * 회원의 수강 목록과 진행률. 운영자 회원 상세(API-ADM-38, auth #119)가 쓴다.
@@ -44,16 +51,55 @@ public class LessonReader {
                 .toList();
     }
 
+    /* 코스의 마지막 공개 수업 ID, 공개 수업이 없으면 null. 포트폴리오 잠김 안내의 "리포트 보러 가기"(portfolio #112)가 쓴다 */
+    public Long getLastLessonId(Long courseId) {
+        List<Lesson> lessons = lessonRepository.findByCourseIdAndIsPublicTrueOrderBySortOrderAsc(courseId);
+        return lessons.isEmpty() ? null : lessons.get(lessons.size() - 1).getLessonId();
+    }
+
     /* 수업 ID → 수업 제목. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 모의고사 결과(auth #119)가 쓴다 */
     public Map<Long, String> getLessonTitles(Collection<Long> lessonIds) {
         return lessonRepository.findAllById(lessonIds).stream()
                 .collect(Collectors.toMap(Lesson::getLessonId, Lesson::getTitle));
     }
 
+    /* 그 수업의 개념 활동인가 (사용 중지 여부는 보지 않는다). 모의고사 문항의 연관 개념 검사(exam #103, PL-EXM-002)가 쓴다 */
+    public boolean isConceptOf(Long lessonId, Long activityId) {
+        return activityRepository.findById(activityId)
+                .filter(activity -> activity.getLessonId().equals(lessonId) && activity.isConcept())
+                .isPresent();
+    }
+
     /* 활동 ID → 활동 제목. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 퀴즈 결과(auth #119)가 쓴다 */
     public Map<Long, String> getActivityTitles(Collection<Long> activityIds) {
         return activityRepository.findAllById(activityIds).stream()
                 .collect(Collectors.toMap(Activity::getActivityId, Activity::getTitle));
+    }
+
+    /* 수업이 속한 코스 ID. 없는 수업이면 LESSON_NOT_FOUND. 모의고사 화면의 수업 화면 링크(exam #110)가 쓴다 */
+    public Long getCourseId(Long lessonId) {
+        return lessonRepository.findById(lessonId)
+                .map(Lesson::getCourseId)
+                .orElseThrow(() -> new BusinessException(LessonErrorCode.LESSON_NOT_FOUND));
+    }
+
+    /* 개념 태그 ID → 태그 이름. 없는 ID 는 결과에 빠진다. 퀴즈 채점의 개념 태그별 오답 비율(quiz #109, FR-LSN-007)이 쓴다 */
+    public Map<Long, String> getConceptTagNames(Collection<Long> conceptTagIds) {
+        return conceptTagRepository.findAllById(conceptTagIds).stream()
+                .collect(Collectors.toMap(ConceptTag::getConceptTagId, ConceptTag::getName));
+    }
+
+    /*
+     * 기간 내 수강 시작한 수강을 코스별로 묶은 집계 (운영자 대시보드 API-ADM-01, FR-ADM-002).
+     * from·to 가 null 이면 그 쪽 기간 제한이 없다 (쿼리 파라미터 없으면 전체 기간).
+     */
+    public List<CourseEnrollmentStat> getEnrollmentStatsByCourse(LocalDateTime from, LocalDateTime to) {
+        Map<Long, List<Enrollment>> byCourse = enrollmentRepository.findStartedBetween(from, to).stream()
+                .collect(Collectors.groupingBy(Enrollment::getCourseId));
+        return byCourse.entrySet().stream()
+                .map(entry -> new CourseEnrollmentStat(entry.getKey(), entry.getValue().size(),
+                        entry.getValue().stream().filter(Enrollment::isCompleted).count()))
+                .toList();
     }
 
     private MemberEnrollmentSummary summaryOf(Enrollment enrollment) {

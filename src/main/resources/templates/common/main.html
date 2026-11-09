@@ -1,8 +1,9 @@
 <!--
   common/main.html (U-01 메인 `/`)
-  역할: 메인(랜딩) 화면. 코스 · 공지 · 추천 작품 · 콘테스트는 아직 해당 영역 기능이 구현되지
-        않아 화면 흐름 설계서의 "보여줄 데이터" 구성대로 샘플 문구로 채운다 (실제 데이터 연결은
-        각 영역 기능 이슈에서 처리). 트랙 이름은 06 요구사항 112행 그대로 쓴다.
+  역할: 메인(랜딩) 화면. 코스는 아직 해당 영역 기능이 구현되지 않아 화면 흐름 설계서의 "보여줄 데이터"
+        구성대로 샘플 문구로 채운다 (실제 데이터 연결은 각 영역 기능 이슈에서 처리). 트랙 이름은 06 요구사항 112행 그대로 쓴다.
+        이번 주 추천 작품(weeklyTop)과 최근 공지는 MainController 가 각 영역 Reader 로 넣는다 (#203).
+        이달의 콘테스트는 contest 영역(#200~#202)이 생기면 붙인다 (그 전에는 빈 값, API-USR-01).
   참고: 헤더는 common/layout.html 의 header fragment(sec:authorize, #132)를 그대로 쓴다.
         "내 트랙 진단하기"는 비회원 → /signup(U-02), 회원 → /diagnosis(U-07) (설계서 U-01 "누르면").
 -->
@@ -90,23 +91,25 @@
 
         <div id="panel-community" class="vl-panel" role="tabpanel" hidden>
             <h2>이번 주 추천 작품</h2>
-            <ol class="vl-list">
-                <li><a href="/community">나만의 할 일 관리 앱 — 홍길동 (추천 12)</a></li>
-                <li><a href="/community">Spring으로 만든 방명록 — 김바이브 (추천 9)</a></li>
-                <li><a href="/community">첫 포트폴리오 사이트 — 이코딩 (추천 7)</a></li>
+            <ol class="vl-list" th:unless="${weeklyTop.empty}">
+                <li th:each="w : ${weeklyTop}"><a th:href="@{/community/{id}(id=${w.postId()})}"
+                       th:text="|${w.title()} — ${w.nickname()} (추천 ${w.recommendCount()})|">나만의 할 일 관리 앱 — 홍길동 (추천 12)</a></li>
             </ol>
-            <p><a href="/community">커뮤니티 더 보기 →</a></p>
+            <p th:if="${weeklyTop.empty}">이번 주에 추천받은 작품이 아직 없습니다</p>
+            <p><a href="/community/ranking">추천 랭킹 더 보기 →</a></p>
         </div>
 
         <div id="panel-notice" class="vl-panel" role="tabpanel" hidden>
             <h2>공지사항</h2>
-            <ul class="vl-list">
-                <li><a href="/notices/1">바이브로그 오픈 안내</a> <span class="vl-card__meta">2026-11-01</span></li>
+            <ul class="vl-list" th:unless="${recentNotices.empty}">
+                <li th:each="n : ${recentNotices}"><a th:href="@{/notices/{id}(id=${n.noticeId()})}" th:text="${n.title()}">바이브로그 오픈 안내</a>
+                    <span class="vl-card__meta" th:text="${#temporals.format(n.createdAt(), 'yyyy-MM-dd')}">2026-11-01</span></li>
             </ul>
+            <p th:if="${recentNotices.empty}">등록된 공지사항이 없습니다</p>
             <p><a href="/notices">공지 더보기 →</a></p>
 
             <h2>이달의 콘테스트</h2>
-            <p>주제: 내가 만든 첫 서비스 소개하기 · 마감 2026-11-30</p>
+            <!-- 주제·마감은 contest 영역(#200~#202)이 생기면 붙인다 (그 전엔 빈 값, API-USR-01) -->
             <p><a href="/contests/current">결과물 제출하기 →</a></p>
         </div>
     </section>
