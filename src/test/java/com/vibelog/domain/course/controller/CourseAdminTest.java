@@ -117,6 +117,39 @@ class CourseAdminTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void 공개_조건이_없으면_공개_버튼을_막고_보내도_상세로_돌아가_안내한다() throws Exception {
+        mockMvc.perform(get("/admin/courses/9981"))
+                .andExpect(content().string(Matchers.containsString("공개된 수업과 포트폴리오 과제가 있어야 공개할 수 있습니다.")))
+                .andExpect(content().string(Matchers.containsString("disabled=\"disabled\"")));
+
+        mockMvc.perform(post("/admin/courses/9981/visibility").with(csrf()).param("isPublic", "true"))
+                .andExpect(redirectedUrl("/admin/courses/9981"))
+                .andExpect(flash().attribute("toast", "공개된 수업과 포트폴리오 과제가 있어야 공개할 수 있습니다."));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void 공개_조건을_갖추면_공개되고_비공개도_된다() throws Exception {
+        jdbcTemplate.update("UPDATE lesson SET is_public = TRUE WHERE lesson_id = 9981");
+        jdbcTemplate.update("INSERT INTO portfolio_assignment (course_id, topic, goal, agent_guide) VALUES (9981, '주제', '목표', '안내')");
+
+        mockMvc.perform(post("/admin/courses/9981/visibility").with(csrf()).param("isPublic", "true"))
+                .andExpect(redirectedUrl("/admin/courses/9981"))
+                .andExpect(flash().attribute("toast", "코스를 공개했습니다"));
+        mockMvc.perform(post("/admin/courses/9981/visibility").with(csrf()).param("isPublic", "false"))
+                .andExpect(redirectedUrl("/admin/courses/9981"))
+                .andExpect(flash().attribute("toast", "코스를 비공개했습니다"));
+    }
+
+    @Test
+    @WithMockUser(roles = "LEARNER")
+    void 학습자는_코스를_공개할_수_없다() throws Exception {
+        mockMvc.perform(post("/admin/courses/9981/visibility").with(csrf()).param("isPublic", "true"))
+                .andExpect(redirectedUrl("/"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void 코스를_고치면_상세로_돌아간다() throws Exception {
         mockMvc.perform(post("/admin/courses/9981/edit").with(csrf())
                         .param("trackId", "9981").param("courseCategoryId", "9981").param("title", "코화 고친 코스")

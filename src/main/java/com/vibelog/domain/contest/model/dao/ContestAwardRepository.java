@@ -19,4 +19,10 @@ public interface ContestAwardRepository extends JpaRepository<ContestAward, Long
     /* 발표가 끝난 콘테스트 (A-11 발표 여부) */
     @Query("select distinct a.contestId from ContestAward a where a.contestId in :contestIds")
     List<Long> findAnnouncedIn(@Param("contestIds") Collection<Long> contestIds);
+
+    /* 수상작, 순위순 (같은 순위는 먼저 출품한 것부터) */
+    List<ContestAward> findByContestIdOrderByAwardRankAscContestEntryIdAsc(Long contestId);
+
+    /* U-33 목록의 1등 작품 */
+    List<ContestAward> findByContestIdInAndAwardRankOrderByContestEntryIdAsc(Collection<Long> contestIds, int awardRank);
 }

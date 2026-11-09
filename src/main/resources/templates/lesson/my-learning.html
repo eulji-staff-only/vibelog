@@ -14,6 +14,7 @@
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/my-learning.css}">
     <script th:src="@{/js/my-learning.js}" defer></script>
+    <script th:src="@{/js/ui.js}" defer></script>
 </head>
 <body>
 
@@ -49,7 +50,12 @@
                                     <span class="ml-course-track" th:text="'[' + ${course.trackName()} + ']'">[트랙]</span>
                                     <h2 class="ml-course-name" th:text="${course.courseName()}">코스 이름</h2>
                                 </div>
-                                <a class="ml-btn ml-btn-navy" th:href="@{/courses/{courseId}(courseId=${course.courseId()})}">학습하기</a>
+                                <div class="ml-course-actions">
+                                    <a class="ml-btn ml-btn-navy" th:href="@{/courses/{courseId}(courseId=${course.courseId()})}">학습하기</a>
+                                    <!-- 수강 포기 (FR-ENR-005, P2): 수강 중 탭에만 둔다. 누르면 M-12 확인 모달이 열린다 -->
+                                    <button type="button" class="ml-btn ml-btn-outline"
+                                            th:attr="data-ui-modal-open='drop-modal-' + ${course.courseId()}">수강 포기</button>
+                                </div>
                             </header>
 
                             <div class="ml-progress">
@@ -106,6 +112,22 @@
                                 </div>
                             </details>
                         </article>
+
+                        <!-- M-12 수강 포기 확인 (API-ENR-04). 공통 확인 모달 꼴(vl-ui-modal)이고, 확인 버튼을 POST 폼으로 연결했다 -->
+                        <div class="vl-ui-modal" hidden role="dialog" aria-modal="true"
+                             th:with="modalId='drop-modal-' + ${course.courseId()}"
+                             th:id="${modalId}"
+                             th:attr="data-ui-modal=${modalId},aria-labelledby=${modalId + '-title'}">
+                            <form class="vl-ui-modal__box" method="post"
+                                  th:action="@{/courses/{courseId}/drop(courseId=${course.courseId()})}">
+                                <h2 class="vl-ui-modal__title" th:id="${modalId + '-title'}" tabindex="-1">수강을 포기할까요?</h2>
+                                <p class="vl-ui-modal__body">내 학습 목록에서 내려갑니다. 진행 기록은 남고, 같은 코스를 다시 시작하면 이어서 학습할 수 있습니다.</p>
+                                <div class="vl-ui-modal__actions">
+                                    <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                                    <button type="submit" class="vl-ui-btn is-navy">포기하기</button>
+                                </div>
+                            </form>
+                        </div>
                     </li>
                 </ul>
 

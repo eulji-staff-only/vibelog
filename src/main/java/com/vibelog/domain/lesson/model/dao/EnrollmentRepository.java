@@ -19,7 +19,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     List<Enrollment> findByMemberIdAndCompletedAtIsNullAndDroppedAtIsNull(Long memberId);
 
     /* 내 학습(API-ENR-02) "완료" 탭 */
-    List<Enrollment> findByMemberIdAndCompletedAtIsNotNull(Long memberId);
+    List<Enrollment> findByMemberIdAndCompletedAtIsNotNullAndDroppedAtIsNull(Long memberId);
 
     /* 회원의 수강 전체, 시작한 순서 (LessonReader.getEnrollmentsOf) */
     List<Enrollment> findByMemberIdOrderByStartedAtAsc(Long memberId);

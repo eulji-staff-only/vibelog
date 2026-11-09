@@ -12,6 +12,7 @@ import com.vibelog.domain.course.model.entity.Course;
 import com.vibelog.domain.course.model.entity.CourseCategory;
 import com.vibelog.domain.course.model.entity.Track;
 import com.vibelog.domain.lesson.model.dto.CourseEnrollmentStat;
+import com.vibelog.domain.lesson.model.policy.CourseLessonInfo;
 import com.vibelog.domain.lesson.model.service.LessonReader;
 import com.vibelog.domain.portfolio.model.policy.CourseAssignmentChecker;
 import com.vibelog.global.exception.BusinessException;
@@ -26,8 +27,9 @@ import java.util.stream.Collectors;
 
 /*
  * [CourseAdminService]
- * 역할 : 운영자의 코스 관리 (A-04 목록, A-05 만들기·상세·수정, API-ADM-11~15, FR-CRS-005, #96).
- * 책임 : - 새 코스는 비공개로 저장한다 (Course.create). 공개·비공개(API-ADM-16)는 공개 조건이 있어 따로 한다.
+ * 역할 : 운영자의 코스 관리 (A-04 목록, A-05 만들기·상세·수정, API-ADM-11~15, FR-CRS-005, #96 / 공개·비공개 API-ADM-16, FR-CRS-006, #117).
+ * 책임 : - 새 코스는 비공개로 저장한다 (Course.create).
+ *        - 공개는 공개된 수업(계약 ⑨ lesson)과 포트폴리오 과제(계약 ⑨ portfolio)가 모두 있어야 한다 (FR-CRS-006). 비공개는 조건 없이 된다.
  *        - 트랙·카테고리는 있는 것만 고를 수 있다. 없는 ID 면 TRACK_NOT_FOUND·CATEGORY_NOT_FOUND (컨트롤러가 칸 메시지로 바꾼다).
  *        - 수강자 수·수업 목록은 lesson 의 LessonReader, 포트폴리오 과제가 있는지는 계약 ⑨로 받는다 (다른 영역 Entity 를 보지 않는다).
  *        - 운영자인지는 SecurityConfig(/admin/**) 가 막는다.
@@ -42,6 +44,7 @@ public class CourseAdminService {
     private final CourseCategoryRepository courseCategoryRepository;
     private final LessonReader lessonReader;
     private final CourseAssignmentChecker courseAssignmentChecker;
+    private final CourseLessonInfo courseLessonInfo;
 
     /* API-ADM-11. 트랙·카테고리로 거를 수 있고(null 이면 전체), 만든 순서대로. 수강자 수는 지금까지 수강을 시작한 수 */
     public List<CourseAdminRow> getCourses(Long trackId, Long courseCategoryId) {
@@ -90,7 +93,8 @@ public class CourseAdminService {
         String categoryName = courseCategoryRepository.findById(course.getCourseCategoryId())
                 .map(CourseCategory::getName).orElse(null);
         return new CourseAdminDetail(course.getCourseId(), course.getTitle(), course.isPublic(), trackName, categoryName,
-                lessonReader.getLessonsOfCourse(courseId), courseAssignmentChecker.hasAssignment(courseId));
+                lessonReader.getLessonsOfCourse(courseId), courseAssignmentChecker.hasAssignment(courseId),
+                courseLessonInfo.hasPublicLesson(courseId));
     }
 
     /* 상세 화면의 수정 폼에 채울 값 */
@@ -105,6 +109,20 @@ public class CourseAdminService {
         checkTrackAndCategory(form);
         course.change(form.getTrackId(), form.getCourseCategoryId(), form.getTitle(), form.getSummary(),
                 form.getDescription(), form.getTarget(), form.getGoal(), form.getPlanDays());
+    }
+
+    /*
+     * API-ADM-16. 바꿨으면 true. 공개 조건이 모자라 공개하지 못하면 false (COURSE_NOT_PUBLISHABLE).
+     * 실패를 예외로 던지지 않는 이유: 명세 방식이 "상세 화면 + 토스트"(③)라 오류 화면으로 보내지 않는다 (수업 공개 API-ADM-33 과 같은 방식)
+     */
+    @Transactional
+    public boolean changeVisibility(Long courseId, boolean isPublic) {
+        Course course = findCourse(courseId);
+        if (isPublic && !(courseLessonInfo.hasPublicLesson(courseId) && courseAssignmentChecker.hasAssignment(courseId))) {
+            return false;
+        }
+        course.changeVisibility(isPublic);
+        return true;
     }
 
     private Course findCourse(Long courseId) {

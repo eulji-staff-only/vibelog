@@ -19,4 +19,8 @@ public interface ContestVoteRepository extends JpaRepository<ContestVote, Long> 
     /* 내가 투표한 출품작 (U-32 "투표함" 표시) */
     @Query("select v.contestEntryId from ContestVote v where v.contestId = :contestId and v.voterMemberId = :memberId")
     List<Long> findEntryIdsVotedBy(@Param("contestId") Long contestId, @Param("memberId") Long memberId);
+
+    /* 출품작별 받은 표 수: [contestEntryId, count] (집계·결과) */
+    @Query("select v.contestEntryId, count(v) from ContestVote v where v.contestId = :contestId group by v.contestEntryId")
+    List<Object[]> countByEntry(@Param("contestId") Long contestId);
 }

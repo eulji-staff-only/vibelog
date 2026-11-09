@@ -15,7 +15,8 @@
   A-05 코스 만들기·상세 (API-ADM-12~15, FR-CRS-005, #96). course 가 없으면 만들기, 있으면 상세(수정 폼 + 수업 목록 + 포트폴리오 과제 상태).
   - 입력 오류는 같은 폼에 칸 메시지(④). 새 코스는 비공개로 저장한다.
   - 수업 만들기(API-ADM-17)·순서 저장(API-ADM-18)은 lesson 영역 주소로 보낸다. 수업을 누르면 A-06, 과제 편집은 A-07.
-  - 코스 공개·비공개(API-ADM-16, FR-CRS-006)는 코스 공개·비공개 이슈에서 동작을 붙인다. 지금은 자리만 둔다.
+  - 코스 공개·비공개(API-ADM-16, FR-CRS-006, #117)는 확인 모달 뒤 보낸다. 공개된 수업이나 포트폴리오 과제가 없으면
+    공개 버튼을 막고 이유를 보여 준다 (서버도 다시 막는다, COURSE_NOT_PUBLISHABLE).
 -->
 <div class="vl-admin">
     <div th:replace="~{common/admin-layout :: sidebar('courses')}"></div>
@@ -25,9 +26,15 @@
             <h1 class="ca-title" th:text="${course == null} ? '코스 만들기' : ${course.title()}">코스 만들기</h1>
             <div class="ca-head__side" th:if="${course != null}">
                 <span th:replace="~{common/ui :: badge(${course.isPublic()} ? 'success' : 'neutral', ${course.isPublic()} ? '공개' : '비공개')}"></span>
-                <button type="button" class="vl-ui-btn is-outline" disabled th:text="${course.isPublic()} ? '비공개로 바꾸기' : '공개하기'">공개하기</button>
+                <button type="button" class="vl-ui-btn is-navy" th:if="${!course.isPublic()}" th:disabled="${!course.publishable()}"
+                        data-ui-modal-open="ca-publish-modal">공개하기</button>
+                <button type="button" class="vl-ui-btn is-outline" th:if="${course.isPublic()}"
+                        data-ui-modal-open="ca-unpublish-modal">비공개로 바꾸기</button>
             </div>
         </div>
+        <th:block th:if="${course != null and !course.isPublic() and !course.publishable()}">
+            <p th:replace="~{common/ui :: btnReason('공개된 수업과 포트폴리오 과제가 있어야 공개할 수 있습니다.')}"></p>
+        </th:block>
         <div class="vl-ui-notice is-info ca-toast" role="status" th:if="${toast}"><p th:text="${toast}">안내</p></div>
         <p class="ca-muted" th:if="${course == null}">새 코스는 비공개로 저장됩니다. 수업과 포트폴리오 과제를 갖춘 뒤 공개할 수 있습니다.</p>
 
@@ -138,6 +145,38 @@
             </section>
         </th:block>
     </main>
+</div>
+
+<!-- 코스 공개 (API-ADM-16, FR-CRS-006) -->
+<div class="vl-ui-modal" hidden id="ca-publish-modal" role="dialog" aria-modal="true" th:if="${course != null}"
+     th:attr="data-ui-modal='ca-publish-modal', aria-labelledby='ca-publish-modal-title'">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="ca-publish-modal-title" tabindex="-1">코스 공개</h2>
+        <p class="vl-ui-modal__body">이 코스를 공개할까요? 공개하면 학습자 코스 목록에 보입니다.</p>
+        <form method="post" th:action="@{/admin/courses/{id}/visibility(id=${course.courseId()})}">
+            <input type="hidden" name="isPublic" value="true">
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">공개</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 코스 비공개 (API-ADM-16, FR-CRS-006) -->
+<div class="vl-ui-modal" hidden id="ca-unpublish-modal" role="dialog" aria-modal="true" th:if="${course != null}"
+     th:attr="data-ui-modal='ca-unpublish-modal', aria-labelledby='ca-unpublish-modal-title'">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="ca-unpublish-modal-title" tabindex="-1">코스 비공개</h2>
+        <p class="vl-ui-modal__body">이 코스를 비공개할까요? 비공개하면 학습자 코스 목록에서 사라집니다.</p>
+        <form method="post" th:action="@{/admin/courses/{id}/visibility(id=${course.courseId()})}">
+            <input type="hidden" name="isPublic" value="false">
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">비공개</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- 수업 만들기 모달 (API-ADM-17). 만들면 비공개로 저장되고 수업 편집(A-06)으로 간다 -->

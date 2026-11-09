@@ -143,6 +143,20 @@ class MyLearningServiceTest {
         assertThat(completedCards.get(0).completed()).isTrue();
     }
 
+    @Test
+    void 포기한_코스는_완료_시각이_있어도_완료_탭에_나오지_않는다() {
+        Enrollment completed = enroll(LEARNER, COURSE_C);
+        completed.complete();
+        Enrollment droppedThenCompleted = enroll(LEARNER, COURSE_B);
+        droppedThenCompleted.drop();
+        droppedThenCompleted.complete(); // 포기한 동안 포트폴리오를 제출해 완료 시각이 기록된 경우
+        em.flush();
+
+        assertThat(myLearningService.getCompletedCourses(LEARNER))
+                .extracting(MyLearningCourseCard::courseId).containsExactly(completed.getCourseId());
+        assertThat(myLearningService.getActiveCourses(LEARNER)).isEmpty();
+    }
+
     private MyLearningLessonCard findLesson(MyLearningCourseCard card, long lessonId) {
         return card.lessons().stream().filter(l -> l.lessonId() == lessonId).findFirst().orElseThrow();
     }

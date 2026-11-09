@@ -1,5 +1,5 @@
 /*
- * contest 영역 화면: 이달의 콘테스트(U-32·M-09, #201), 백오피스 콘테스트 관리(A-11, #200).
+ * contest 영역 화면: 이달의 콘테스트(U-32·M-09, #201), 지난 콘테스트(U-33, #202), 백오피스 콘테스트 관리(A-11, #200).
  * 색·간격은 common.css 디자인 토큰(설계서 6장)을 쓴다.
  */
 .ct-admin-title { margin: 0 0 var(--space-7); font-size: 26px; font-weight: 900; }
@@ -51,6 +51,16 @@ textarea.ct-input { min-height: 120px; padding: var(--space-4); resize: vertical
 .ct-card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-6); border: 1px solid var(--line); border-radius: var(--radius-card); }
 .ct-card__title { margin: 0; font-size: 17px; font-weight: 900; overflow-wrap: anywhere; }
 .ct-card .ct-actions { margin-top: auto; padding-top: var(--space-3); align-items: center; }
+
+/* 수상작 (U-32 결과 보드, U-33 상세) */
+.ct-awards { display: flex; flex-direction: column; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.ct-award { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--line); border-radius: var(--radius-card); }
+.ct-award__rank { min-width: 40px; font-weight: 900; color: var(--navy-900); }
+
+/* U-33 지난 콘테스트 목록 */
+.ct-history { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ct-history a { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) 0; border-bottom: 1px solid var(--line-soft); color: inherit; }
 
 /* 모바일 (설계서 7장: 좌우 여백 16px, 페이지 제목 26px) */
 @media (max-width: 767px) {

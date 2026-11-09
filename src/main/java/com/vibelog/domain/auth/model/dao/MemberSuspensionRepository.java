@@ -13,6 +13,9 @@ public interface MemberSuspensionRepository extends JpaRepository<MemberSuspensi
 
     List<MemberSuspension> findByMemberIdAndReleasedAtIsNull(Long memberId);
 
+    /* 회원들의 모든 제재 (MemberReader.findSuspendedMemberIds: 지난 시각의 정지 여부) */
+    List<MemberSuspension> findByMemberIdIn(Collection<Long> memberIds);
+
     /* 운영자 회원 상세의 제재 이력. 최근 것부터 */
     List<MemberSuspension> findByMemberIdOrderByStartsAtDescMemberSuspensionIdDesc(Long memberId);
 
