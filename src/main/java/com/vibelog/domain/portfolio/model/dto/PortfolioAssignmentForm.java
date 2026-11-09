@@ -11,9 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /*
- * 과제·스텝 저장 폼 (API-ADM-35). steps 는 보낸 순서가 곧 스텝 순서(sort_order)다.
- * 새 스텝은 guideStepId 를 비운다. 폼 값을 목록으로 묶어 받으려고 setter 가 있는 클래스로 둔다 (Entity 가 아님).
- * 길이 제한은 sql/01-schema.sql 컬럼 크기 (topic VARCHAR(200)).
+ * [PortfolioAssignmentForm]
+ * 역할 : 과제·스텝 저장 폼 (API-ADM-35).
+ * 책임 : - steps 는 보낸 순서가 곧 스텝 순서(sort_order)다. 새 스텝은 guideStepId 를 비운다.
+ *        - 폼 값을 목록으로 묶어 받으려고 setter 가 있는 클래스로 둔다 (Entity 가 아님).
+ *        - 길이 제한은 sql/01-schema.sql 컬럼 크기 (topic VARCHAR(200)).
  */
 @Getter
 @Setter
