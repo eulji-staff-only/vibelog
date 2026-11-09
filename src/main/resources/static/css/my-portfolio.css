@@ -113,3 +113,13 @@
     .mp-modal-box { max-width: none; border-radius: var(--radius-large) var(--radius-large) 0 0; }
     .mp-modal-actions .mp-btn { width: 100%; }
 }
+
+/* U-20 받은 리뷰 (동료 리뷰 #281) */
+.mp-review-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.mp-reviews { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.mp-review { padding: var(--space-4); border: 1px solid var(--line-soft); border-radius: var(--radius-md); }
+.mp-review-meta { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.mp-review-comments { margin: var(--space-3) 0 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.mp-review-comments dt { font-weight: 700; }
+.mp-review-comments dd { margin: 4px 0 0; white-space: pre-wrap; }
+.mp-review-actions { margin-top: var(--space-3); display: flex; align-items: center; gap: var(--space-3); }

@@ -6,10 +6,16 @@
     <title>포트폴리오 | 바이브로그</title>
     <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
     <link rel="stylesheet" th:href="@{/css/my-portfolio.css}" href="/css/my-portfolio.css">
+    <!-- 도움됨(API-REV-06)은 JSON POST 라 CSRF 토큰을 헤더로 보낸다 (README "JSON API 약속") -->
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <script th:src="@{/js/ui.js}" src="/js/ui.js" defer></script>
+    <script th:src="@{/js/portfolio-detail.js}" src="/js/portfolio-detail.js" defer></script>
 </head>
 <body>
 <!-- U-20 포트폴리오 상세 (API-PRT-09, #114). 공개 작품은 회원 누구나, 비공개는 본인만 본다.
-     남의 비공개는 Service 가 PRIVATE_PORTFOLIO 를 던져 오류 화면(E-02) "비공개된 작품입니다"로 간다. -->
+     남의 비공개는 Service 가 PRIVATE_PORTFOLIO 를 던져 오류 화면(E-02) "비공개된 작품입니다"로 간다.
+     받은 리뷰·리뷰 요청(M-08)·마감·도움됨은 동료 리뷰(#281). 처리는 community 영역 API(API-REV-01·06·07)가 한다. -->
 <div th:replace="~{common/layout :: header}"></div>
 
 <section class="mp-band mp-band-left">
@@ -21,6 +27,7 @@
 
 <main class="mp-main">
     <div class="mp-panel">
+        <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
         <div class="mp-detail">
             <!-- 내 작품이고 비공개일 때 -->
             <div class="mp-notice" th:if="${portfolio.mine() and !portfolio.isPublic()}">
@@ -58,6 +65,49 @@
                 <div class="mp-shot"><img th:src="${portfolio.screenshotUrl()}" th:alt="|${portfolio.title()} 스크린샷|" alt="스크린샷"></div>
             </section>
 
+            <!-- 동료 리뷰 (FR-REV-001·003·004·005). 리뷰 요청은 내 공개 작품만 (PL-REV-001), 열린 요청이 있으면 마감 버튼 -->
+            <section class="mp-section" aria-labelledby="mp-review-h">
+                <div class="mp-review-head">
+                    <h2 class="mp-h3" id="mp-review-h" th:text="|받은 리뷰 ${#lists.size(reviews)}개|">받은 리뷰 0개</h2>
+                    <th:block th:if="${portfolio.mine()}">
+                        <form method="post" th:if="${openReviewRequestId != null}"
+                              th:action="@{/review-requests/{id}/close(id=${openReviewRequestId})}">
+                            <button type="submit" class="vl-ui-btn is-outline is-s">리뷰 마감</button>
+                        </form>
+                        <button type="button" class="vl-ui-btn is-outline is-s" data-ui-modal-open="review-request-modal"
+                                th:if="${openReviewRequestId == null and portfolio.isPublic()}">리뷰 요청</button>
+                    </th:block>
+                </div>
+                <p class="mp-text" th:if="${#lists.isEmpty(reviews)}">아직 받은 리뷰가 없습니다.</p>
+                <ul class="mp-reviews" th:unless="${#lists.isEmpty(reviews)}">
+                    <li class="mp-review" th:each="review : ${reviews}">
+                        <!-- 영구 정지 회원의 리뷰는 닉네임·코멘트 없이 안내만 (PL-ERR-006, #215) -->
+                        <p class="mp-text" th:if="${review.hidden()}">운영 정책에 따라 숨겨진 콘텐츠입니다</p>
+                        <th:block th:unless="${review.hidden()}">
+                        <div class="mp-review-meta">
+                            <strong th:text="${review.reviewerNickname()}">[리뷰어]</strong>
+                            <span class="mp-caption" th:text="${#temporals.format(review.createdAt(), 'yyyy.MM.dd')}">[작성일]</span>
+                            <span class="vl-ui-badge is-success" th:if="${review.helpful() and !portfolio.mine()}">도움됨</span>
+                        </div>
+                        <dl class="mp-review-comments">
+                            <div th:each="comment : ${review.comments()}">
+                                <dt th:text="${comment.criterionName() ?: '코멘트'}">[평가 기준]</dt>
+                                <dd class="mp-text" th:text="${comment.content()}">[코멘트]</dd>
+                            </div>
+                        </dl>
+                        <div class="mp-review-actions">
+                            <!-- 도움됨은 작품 주인(요청자)만 켜고 끈다 (FR-REV-004, PL-REV-003) -->
+                            <button type="button" class="vl-ui-btn is-outline is-s" th:if="${portfolio.mine()}" data-helpful
+                                    th:attr="data-helpful-url=@{/api/reviews/{id}/helpful(id=${review.peerReviewId()})},aria-pressed=${review.helpful()}"
+                                    th:text="${review.helpful()} ? '도움됨 ✓' : '도움됨'">도움됨</button>
+                            <a class="mp-link" th:if="${review.mine() and myReviewRequestIds[review.peerReviewId()] != null}"
+                               th:href="@{/reviews(reviewRequestId=${myReviewRequestIds[review.peerReviewId()]})}">내 리뷰 수정</a>
+                        </div>
+                        </th:block>
+                    </li>
+                </ul>
+            </section>
+
             <div class="mp-detail-actions">
                 <a class="mp-btn mp-btn-text" th:href="@{/community}">커뮤니티로 돌아가기</a>
                 <a class="mp-btn mp-btn-outline" th:if="${portfolio.mine() and portfolio.courseId() != null}"
@@ -67,6 +117,22 @@
     </div>
 </main>
 
+<!-- M-08 리뷰 요청 확인 (API-REV-01). 동시에 3개까지, 14일이 지나거나 비공개하면 마감 (PL-REV-002) -->
+<div class="vl-ui-modal" id="review-request-modal" hidden role="dialog" aria-modal="true"
+     data-ui-modal="review-request-modal" aria-labelledby="review-request-modal-title"
+     th:if="${portfolio.mine() and openReviewRequestId == null and portfolio.isPublic()}">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="review-request-modal-title" tabindex="-1">리뷰를 요청할까요?</h2>
+        <p class="vl-ui-modal__body">모든 학습자가 리뷰 요청 목록에서 이 작품을 보고 리뷰를 남길 수 있습니다.
+            리뷰 요청은 동시에 3개까지이고, 14일이 지나거나 작품을 비공개하면 마감됩니다.</p>
+        <form class="vl-ui-modal__actions" method="post" th:action="@{/portfolios/{id}/review-requests(id=${portfolio.portfolioId()})}">
+            <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+            <button type="submit" class="vl-ui-btn is-navy">리뷰 요청</button>
+        </form>
+    </div>
+</div>
+
+<div th:replace="~{common/ui :: toastContainer}"></div>
 <div th:replace="~{common/layout :: footer}"></div>
 </body>
 </html>
