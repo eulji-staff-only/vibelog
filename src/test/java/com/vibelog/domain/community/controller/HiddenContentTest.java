@@ -128,10 +128,13 @@ class HiddenContentTest {
         jdbcTemplate.update("INSERT INTO peer_review (review_request_id, reviewer_member_id) VALUES (?, ?)", shownRequest, writerId);
         long reviewId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
         jdbcTemplate.update("INSERT INTO review_comment (peer_review_id, content) VALUES (?, '숨겨야 할 리뷰')", reviewId);
+        long totalBefore = peerReviewService.getOpenRequests(1).getTotalElements();
         suspend(writerId, "PERMANENT", null, null);
 
-        assertThat(peerReviewService.getOpenRequests(1).getContent()).extracting(ReviewRequestCard::portfolioId)
-                .contains(shownPortfolio).doesNotContain(hiddenPortfolio);
+        // 페이지를 자르기 전에 빼므로 전체 건수에서도 빠진다
+        var requests = peerReviewService.getOpenRequests(1);
+        assertThat(requests.getContent()).extracting(ReviewRequestCard::portfolioId).contains(shownPortfolio).doesNotContain(hiddenPortfolio);
+        assertThat(requests.getTotalElements()).isEqualTo(totalBefore - 1);
         List<ReviewView> reviews = communityReader.findReviewsOfPortfolio(shownPortfolio, owner);
         assertThat(reviews).singleElement().satisfies(review -> {
             assertThat(review.hidden()).isTrue();

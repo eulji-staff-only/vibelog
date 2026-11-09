@@ -113,20 +113,19 @@ public class PeerReviewService {
 
     /* API-REV-02 열린 요청 카드, 최근 요청순 */
     public Page<ReviewRequestCard> getOpenRequests(int page) {
-        Page<ReviewRequest> requests = reviewRequestRepository.findByClosedAtIsNullAndRequestedAtAfterOrderByRequestedAtDescReviewRequestIdDesc(
-                openSince(), PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
+        // 영구 정지 회원의 작품 요청은 조회에서 미리 뺀다 (PL-RPT-006, #215). 없으면 IN () 이 되지 않게 0 을 넣는다 (ID 는 1부터)
+        List<Long> hidden = portfolioReader.findIdsOf(memberReader.findAllHiddenMemberIds());
+        Page<ReviewRequest> requests = reviewRequestRepository.findByClosedAtIsNullAndRequestedAtAfterAndPortfolioIdNotInOrderByRequestedAtDescReviewRequestIdDesc(
+                openSince(), hidden.isEmpty() ? List.of(0L) : hidden, PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
         Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(requests.map(ReviewRequest::getPortfolioId).toSet());
         Map<Long, String> courseTitles = courseReader.getCourseTitles(
                 portfolios.values().stream().map(PortfolioBrief::courseId).filter(Objects::nonNull).collect(Collectors.toSet()));
         Map<Long, String> nicknames = memberReader.getNicknames(
                 portfolios.values().stream().map(PortfolioBrief::memberId).collect(Collectors.toSet()));
         Map<Long, Long> reviewCounts = countReviews(requests.map(ReviewRequest::getReviewRequestId).toList());
-        // 영구 정지 회원의 작품 요청은 뺀다 (PL-RPT-006, #215)
-        Set<Long> hidden = memberReader.findHiddenMemberIds(portfolios.values().stream().map(PortfolioBrief::memberId).collect(Collectors.toSet()));
-        // ponytail: 계약 ⑭ 전에 비공개·삭제된 작품·영구 정지 회원 작품은 이 쪽에서 빼서 한 쪽이 20개보다 적을 수 있다
+        // ponytail: 계약 ⑭ 전에 비공개·삭제된 작품은 이 쪽에서 빼서 한 쪽이 20개보다 적을 수 있다. ⑭가 붙으면 생기지 않는다
         List<ReviewRequestCard> cards = requests.stream()
                 .filter(request -> visible(portfolios.get(request.getPortfolioId())))
-                .filter(request -> !hidden.contains(portfolios.get(request.getPortfolioId()).memberId()))
                 .map(request -> {
                     PortfolioBrief p = portfolios.get(request.getPortfolioId());
                     return new ReviewRequestCard(request.getReviewRequestId(), p.portfolioId(), p.title(), p.summary(),
