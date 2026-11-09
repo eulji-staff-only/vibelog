@@ -20,9 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 실제 DB(01·02 실행된 로컬 MySQL)로 확인한다. 끝나면 모두 롤백된다(@Transactional).
  *
  * 테스트 코스 구조 (코스 9501)
- *  - 수업 1(9501, 공개) : 영향 학습자 수(API-ADM-32) 확인용. 수강 4명 — 진행 중(A)·완료(B)·포기(C)는 이 수업
- *    진도(lesson_progress)가 있고, 진행 중인 D는 같은 코스를 수강 중이지만 이 수업 진도가 아직 없다.
- *    완료·포기한 수강은 진도가 있어도, 진도가 없는 수강은 수강 중이어도 영향 학습자 수에서 빠져야 한다
+ *  - 수업 1(9501, 공개) : 영향 학습자 수(API-ADM-32) 확인용. 수강 5명, 전부 이 수업에 lesson_progress 행이
+ *    있다(공개 수업은 수강 시작 때 전부 미리 만들어지므로, 행이 "있다"는 것만으로는 "열어봤다"를 뜻하지 않는다).
+ *    A는 열어봤고 진행 중(수강도 진행 중) → 센다. B는 수강 완료(이 수업도 완료) → 수강이 끝나서 안 센다.
+ *    C는 수강 포기(이 수업은 열어봄) → 수강이 끝나서 안 센다. D는 수강 중이지만 이 수업을 아직 안 열어봄
+ *    (unlocked_at NULL) → 안 센다. E는 수강 중이고 이 수업도 열었지만 이미 끝냄(completed_at 있음) → 안 센다.
+ *    A만 세어져야 한다(1명)
  *  - 수업 2(9502, 비공개): 개념(9511) → 퀴즈(9512, 문항 3개), 모의고사 문항 1개 → 공개 가능
  *  - 수업 3(9503, 비공개): 개념(9521) → 퀴즈(9522, 문항 2개), 모의고사 문항 1개 → 퀴즈 문항 수만 모자람
  */
@@ -33,7 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
                 + "(9501, 'lsn-visibility-a@vibelog.test', '학습자A'), "
                 + "(9502, 'lsn-visibility-b@vibelog.test', '학습자B'), "
                 + "(9503, 'lsn-visibility-c@vibelog.test', '학습자C'), "
-                + "(9504, 'lsn-visibility-d@vibelog.test', '학습자D')",
+                + "(9504, 'lsn-visibility-d@vibelog.test', '학습자D'), "
+                + "(9505, 'lsn-visibility-e@vibelog.test', '학습자E')",
         "INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9501, '테스트 트랙', '대상', '설명', 9501)",
         "INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9501, '테스트 카테고리', 9501)",
         "INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days, is_public) "
@@ -64,10 +68,15 @@ import static org.assertj.core.api.Assertions.assertThat;
                 + "(9501, 9501, 9501, NOW(), NULL, NULL), "
                 + "(9502, 9502, 9501, NOW(), NOW(), NULL), "
                 + "(9503, 9503, 9501, NOW(), NULL, NOW()), "
-                + "(9504, 9504, 9501, NOW(), NULL, NULL)",
-        "INSERT INTO lesson_progress (enrollment_id, lesson_id, unlocked_at) VALUES "
-                + "(9501, 9501, '2026-01-01 00:00:00'), (9502, 9501, '2026-01-01 00:00:00'), "
-                + "(9503, 9501, '2026-01-01 00:00:00'), (9501, 9502, '2026-01-01 00:00:00')"
+                + "(9504, 9504, 9501, NOW(), NULL, NULL), "
+                + "(9505, 9505, 9501, NOW(), NULL, NULL)",
+        "INSERT INTO lesson_progress (enrollment_id, lesson_id, unlocked_at, completed_at) VALUES "
+                + "(9501, 9501, '2026-01-01 00:00:00', NULL), "
+                + "(9502, 9501, '2026-01-01 00:00:00', '2026-01-02 00:00:00'), "
+                + "(9503, 9501, '2026-01-01 00:00:00', NULL), "
+                + "(9504, 9501, NULL, NULL), "
+                + "(9505, 9501, '2026-01-01 00:00:00', '2026-01-02 00:00:00'), "
+                + "(9501, 9502, '2026-01-01 00:00:00', NULL)"
 })
 class LessonVisibilityServiceTest {
 
@@ -134,7 +143,7 @@ class LessonVisibilityServiceTest {
     }
 
     @Test
-    void 영향_학습자_수는_이_수업_진도가_있으면서_완료_포기하지_않은_수강만_센다() {
+    void 영향_학습자_수는_이_수업을_열었고_아직_끝내지_않았고_수강도_끝나지_않은_학습자만_센다() {
         int activeLearnerCount = lessonAdminService.getActiveLearnerCount(LESSON_ALREADY_PUBLIC);
 
         assertThat(activeLearnerCount).isEqualTo(1);
