@@ -216,8 +216,8 @@ class PortfolioPageControllerTest {
 
     @Test
     void 수정을_마치고_오면_작성_내용_보관을_지우는_표시를_그린다() throws Exception {
-        mockMvc.perform(get("/my/portfolios").with(login()).flashAttr("clearDraft", "vibelog.portfolio-draft.1.3"))
-                .andExpect(content().string(Matchers.containsString("data-draft-clear=\"vibelog.portfolio-draft.1.3\"")));
+        mockMvc.perform(get("/my/portfolios").with(login()).flashAttr("clearDraft", "vibelog.portfolio-draft.1.3.edit"))
+                .andExpect(content().string(Matchers.containsString("data-draft-clear=\"vibelog.portfolio-draft.1.3.edit\"")));
     }
 
     @Test
@@ -389,7 +389,9 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("value=\"저장된 제목\"")))
                 .andExpect(content().string(Matchers.containsString("action=\"/portfolios/7/edit\"")))
                 .andExpect(content().string(Matchers.containsString("수정하기")))
-                .andExpect(content().string(Matchers.containsString("aria-pressed=\"true\">비공개")));
+                .andExpect(content().string(Matchers.containsString("aria-pressed=\"true\">비공개")))
+                // 수정 중인 내용은 새 제출과 다른 키에 보관한다 (새 제출 키를 지울 때 함께 지워지지 않게)
+                .andExpect(content().string(Matchers.containsString("data-draft-key=\"vibelog.portfolio-draft.1.3.edit\"")));
     }
 
     @Test
@@ -400,7 +402,7 @@ class PortfolioPageControllerTest {
                 .andExpect(redirectedUrl("/my/portfolios"))
                 .andExpect(flash().attribute("toast", "포트폴리오를 수정했습니다"))
                 // 수정이 끝났으니 내 포트폴리오 화면이 그 코스의 작성 내용 보관을 지운다 (FR-PRT-010)
-                .andExpect(flash().attribute("clearDraft", "vibelog.portfolio-draft.1.3"));
+                .andExpect(flash().attribute("clearDraft", "vibelog.portfolio-draft.1.3.edit"));
 
         verify(portfolioSubmitService).edit(eq(1L), eq(7L), any(PortfolioSubmitForm.class), isNull());
     }

@@ -112,7 +112,7 @@
                     <form method="post" enctype="multipart/form-data" novalidate th:object="${portfolioSubmitForm}"
                           th:action="${editPortfolioId != null} ? @{/portfolios/{id}/edit(id=${editPortfolioId})} : @{/courses/{id}/portfolio(id=${page.courseId})}"
                           th:if="${(page.submittedPortfolioId == null or editPortfolioId != null) and page.emailVerified}" data-submit-form
-                          th:attr="data-draft-key=${draftKey}">
+                          th:attr="data-draft-key=${editPortfolioId != null ? editDraftKey : draftKey}">
                     <p class="pf-muted" th:text="${editPortfolioId != null} ? '수정하면 지금 내용으로 덮어씁니다. 스크린샷은 새로 고를 때만 바뀝니다.' : '제출하면 그대로 포트폴리오 카드로 등록되고 코스가 완료됩니다.'">제출하면 그대로 포트폴리오 카드로 등록되고 코스가 완료됩니다.</p>
                     <p class="pf-msg is-error" role="alert" th:each="err : ${#fields.globalErrors()}" th:text="${err}">금칙어·파일 오류</p>
                     <!-- 작성 중 내용 보존 (FR-PRT-010): 보관해 둔 내용을 채웠을 때만 portfolio.js 가 보여 준다 -->

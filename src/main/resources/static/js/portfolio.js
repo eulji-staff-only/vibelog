@@ -66,8 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiKey = /(^|[^A-Za-z0-9])(sk-|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/;
     let ready = false;
 
-    // 작성 중 내용 보존 (FR-PRT-010, PL-ERR-003·004·005): 제출을 누를 때 입력 값을 회원·코스별 키로 7일 보관하고,
-    // 다시 열면 채운다. 그래서 서버 오류·네트워크 끊김·세션 만료로 제출이 안 돼도 내용이 남는다.
+    // 작성 중 내용 보존 (FR-PRT-010, PL-ERR-003·004·005): 입력할 때마다와 제출을 누를 때 입력 값을 회원·코스별 키로
+    // 7일 보관하고, 다시 열면 채운다. 그래서 서버 오류·네트워크 끊김·세션 만료(제출 전 포함)로 제출이 안 돼도 내용이 남는다.
+    // 새 제출과 수정(edit=true)은 서버가 다른 키를 준다.
     // 보관 전에 API 키 형식은 서버와 같은 규칙으로 가린다(PL-PRT-008). 스크린샷 파일은 보관하지 않는다.
     // 제출 성공이 확인되면(이미 제출함 화면, 수정 후 내 포트폴리오) data-draft-clear 로 지운다.
     const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;   // PL-ERR-004 7일
@@ -133,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     [url, retro, ...required, ...keyFields].forEach((field) => field.addEventListener('input', () => {
         showCount(field);
         render();
+        saveDraft();
     }));
 
     // 공개 여부 (PL-PRT-006): 기본값 없이 하나만 고른다. 고른 값을 숨은 칸 isPublic 에 넣는다
@@ -140,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         visButtons.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
         visInput.value = button.dataset.visValue;
         render();
+        saveDraft();
     }));
 
     // 준비가 안 됐으면 보내지 않고, 보낼 때는 버튼을 잠가 중복 제출을 막는다 (PL-ERR-003)
