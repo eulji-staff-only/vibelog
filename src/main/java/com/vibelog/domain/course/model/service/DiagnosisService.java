@@ -9,17 +9,15 @@ import com.vibelog.domain.course.model.dto.DiagnosisSurveyView;
 import com.vibelog.domain.course.model.entity.DiagnosisOption;
 import com.vibelog.domain.course.model.entity.DiagnosisQuestion;
 import com.vibelog.domain.course.model.entity.DiagnosisResult;
+import com.vibelog.domain.course.model.policy.DiagnosisAnswerPolicy;
 import com.vibelog.domain.course.model.policy.TrackRecommendPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /*
@@ -44,6 +42,7 @@ public class DiagnosisService {
     private final DiagnosisResultRepository diagnosisResultRepository;
     private final TrackRepository trackRepository;
     private final TrackRecommendPolicy trackRecommendPolicy;
+    private final DiagnosisAnswerPolicy diagnosisAnswerPolicy;
     private final CourseBrowseService courseBrowseService;
 
     /* 제출 결과: 저장한 결과 ID·추천 트랙과, 추천 이유로 보여 줄 보기 내용 (저장하지 않음) */
@@ -76,7 +75,8 @@ public class DiagnosisService {
     @Transactional
     public Optional<SubmitResult> submit(Long memberId, List<Long> diagnosisOptionIds) {
         List<DiagnosisQuestion> questions = diagnosisQuestionRepository.findByIsActiveTrueOrderBySortOrderAsc();
-        Optional<List<DiagnosisOption>> chosen = validChosenOptions(questions, diagnosisOptionIds);
+        List<DiagnosisOption> activeOptions = optionsOf(questions).values().stream().flatMap(List::stream).toList();
+        Optional<List<DiagnosisOption>> chosen = diagnosisAnswerPolicy.chosenOptions(questions.size(), activeOptions, diagnosisOptionIds);
         if (chosen.isEmpty()) {
             return Optional.empty();
         }
@@ -127,27 +127,7 @@ public class DiagnosisService {
                 });
     }
 
-    /* 문항마다 하나씩 고른 보기. 맞지 않으면 빈 값 */
-    private Optional<List<DiagnosisOption>> validChosenOptions(List<DiagnosisQuestion> questions, List<Long> diagnosisOptionIds) {
-        if (questions.isEmpty() || diagnosisOptionIds == null || diagnosisOptionIds.size() != questions.size()
-                || diagnosisOptionIds.stream().anyMatch(Objects::isNull)) {
-            return Optional.empty();
-        }
-        Map<Long, DiagnosisOption> optionsById = optionsOf(questions).values().stream()
-                .flatMap(List::stream)
-                .collect(Collectors.toMap(DiagnosisOption::getDiagnosisOptionId, option -> option));
-
-        Set<Long> answeredQuestions = new HashSet<>();
-        List<DiagnosisOption> chosen = diagnosisOptionIds.stream().map(optionsById::get).toList();
-        for (DiagnosisOption option : chosen) {
-            // 사용 중인 문항의 보기가 아니거나, 같은 문항에 두 번 답함
-            if (option == null || !answeredQuestions.add(option.getDiagnosisQuestionId())) {
-                return Optional.empty();
-            }
-        }
-        return Optional.of(chosen);
-    }
-
+    /* 문항들의 보기를 문항별로, 순서대로 */
     private Map<Long, List<DiagnosisOption>> optionsOf(List<DiagnosisQuestion> questions) {
         List<Long> questionIds = questions.stream().map(DiagnosisQuestion::getDiagnosisQuestionId).toList();
         return diagnosisOptionRepository.findByDiagnosisQuestionIdInOrderBySortOrderAsc(questionIds).stream()
