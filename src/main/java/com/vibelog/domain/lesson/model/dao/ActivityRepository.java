@@ -11,6 +11,9 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
     List<Activity> findByLessonIdAndIsActiveTrueOrderBySortOrderAsc(Long lessonId);
 
+    /* 운영자 수업 편집 화면(API-ADM-19, #100): 사용 중지된 활동도 함께 보여준다 */
+    List<Activity> findByLessonIdOrderBySortOrderAsc(Long lessonId);
+
     Optional<Activity> findTopByLessonIdAndIsActiveTrueOrderBySortOrderDesc(Long lessonId);
 
     long countByLessonIdAndActivityTypeAndIsActiveTrue(Long lessonId, ActivityType activityType);
