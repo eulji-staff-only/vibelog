@@ -2,7 +2,9 @@ package com.vibelog.domain.portfolio.controller;
 
 import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
+import com.vibelog.domain.portfolio.model.dto.PortfolioPageView;
 import com.vibelog.domain.portfolio.model.dto.PortfolioSubmitForm;
+import com.vibelog.domain.portfolio.model.service.PortfolioManageService;
 import com.vibelog.domain.portfolio.model.service.PortfolioService;
 import com.vibelog.domain.portfolio.model.service.PortfolioSubmitService;
 import com.vibelog.global.exception.BusinessException;
@@ -27,12 +29,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /*
  * [PortfolioPageController]
- * 역할 : 포트폴리오 영역의 화면을 연다. 과제 화면(API-PRT-01)·설정 파일 내려받기(API-PRT-03)·제출(API-PRT-04)을 받는다.
+ * 역할 : 포트폴리오 영역의 화면을 연다. 과제 화면(API-PRT-01)·설정 파일 내려받기(API-PRT-03)·제출(API-PRT-04),
+ *        내 포트폴리오(API-PRT-05)·수정(API-PRT-06)·삭제(API-PRT-07)·상세(API-PRT-09)를 받는다.
  * 책임 : - 로그인 회원은 여기서만 꺼내고 Service 에는 memberId 만 넘긴다 (README "로그인 약속").
  *        - 수강하지 않은 코스면 코스 소개(/courses/{courseId})로 보낸다 (명세 실패 칸).
  *        - 제출 입력 오류(검증·금칙어·파일)는 같은 폼 다시 + 칸별 메시지(_template.md 7-1 ④). 이미 제출함은 과제 화면 + toast,
  *          잠김·미인증처럼 폼으로 고칠 수 없는 것은 오류 화면으로 보낸다 (CommunityPageController 와 같은 방식).
- *        - U-19 내 포트폴리오·U-20 상세는 아직 화면 이름만 돌려준다 (화면 선행 작업 #58). 데이터·수정은 #114 에서 붙인다.
+ *        - 수정은 U-17 수정 상태(edit=true)에서 보낸다. 입력 오류면 U-17 수정 상태 폼을 다시 그린다 (제출과 같은 방식).
+ *          수정·삭제가 끝나면 내 포트폴리오 + toast. 남의 비공개 상세(PRIVATE_PORTFOLIO)·NOT_OWNER 는 오류 화면(E-02)이다.
  */
 @Controller
 @RequiredArgsConstructor
@@ -42,14 +46,24 @@ public class PortfolioPageController {
 
     private final PortfolioService portfolioService;
     private final PortfolioSubmitService portfolioSubmitService;
+    private final PortfolioManageService portfolioManageService;
 
-    /* U-17 포트폴리오 (과제 → 평가 에이전트 자가 점검 → 제출) */
+    /* U-17 포트폴리오 (과제 → 평가 에이전트 자가 점검 → 제출). edit=true 면 제출한 내 포트폴리오 값으로 채운 수정 상태 */
     @GetMapping("/courses/{courseId}/portfolio")
     public String portfolio(@PathVariable Long courseId,
+                            @RequestParam(defaultValue = "false") boolean edit,
                             @AuthenticationPrincipal LoginMember loginMember,
                             Model model) {
-        model.addAttribute("portfolioSubmitForm", new PortfolioSubmitForm());
-        return pageView(courseId, loginMember.getMemberId(), model);
+        Long memberId = loginMember.getMemberId();
+        String view = pageView(courseId, memberId, model);
+        PortfolioPageView page = (PortfolioPageView) model.getAttribute("page");
+        if (edit && page != null && page.submittedPortfolioId() != null) {
+            model.addAttribute("portfolioSubmitForm", portfolioManageService.getEditForm(memberId, page.submittedPortfolioId()));
+            model.addAttribute("editPortfolioId", page.submittedPortfolioId());
+        } else {
+            model.addAttribute("portfolioSubmitForm", new PortfolioSubmitForm());
+        }
+        return view;
     }
 
     /* API-PRT-04 제출 → U-18 코스 완료 */
@@ -71,17 +85,56 @@ public class PortfolioPageController {
                 redirectAttributes.addFlashAttribute("toast", e.getMessage());
                 return "redirect:/courses/" + courseId + "/portfolio";
             }
-            if (e.getErrorCode() == PortfolioErrorCode.INVALID_INPUT) {
-                // 제출에서 INVALID_INPUT 은 에이전트 점검 결과가 저장 칸보다 길 때뿐이다
-                bindingResult.rejectValue("agentResult", e.getErrorCode().toString(), "에이전트 점검 결과가 너무 깁니다. 줄여서 적어 주세요.");
-                return pageView(courseId, memberId, model);
-            }
-            if (e.getErrorCode() != CommonErrorCode.BANNED_WORD && e.getErrorCode() != CommonErrorCode.INVALID_FILE) {
-                throw e;   // 잠김·미인증 등 폼으로 고칠 수 없는 것
-            }
-            bindingResult.reject(e.getErrorCode().toString(), e.getMessage());
+            rejectOrThrow(e, bindingResult);
             return pageView(courseId, memberId, model);
         }
+    }
+
+    /* API-PRT-06 수정 → 내 포트폴리오 + toast */
+    @PostMapping("/portfolios/{portfolioId}/edit")
+    public String edit(@PathVariable Long portfolioId,
+                       @Valid @ModelAttribute PortfolioSubmitForm portfolioSubmitForm, BindingResult bindingResult,
+                       @RequestParam(required = false) MultipartFile screenshot,
+                       @AuthenticationPrincipal LoginMember loginMember,
+                       Model model, RedirectAttributes redirectAttributes) {
+        Long memberId = loginMember.getMemberId();
+        if (!bindingResult.hasErrors()) {
+            try {
+                portfolioSubmitService.edit(memberId, portfolioId, portfolioSubmitForm, screenshot);
+                redirectAttributes.addFlashAttribute("toast", "포트폴리오를 수정했습니다");
+                return "redirect:/my/portfolios";
+            } catch (BusinessException e) {
+                rejectOrThrow(e, bindingResult);
+            }
+        }
+        model.addAttribute("editPortfolioId", portfolioId);
+        return pageView(portfolioManageService.getOwnedCourseId(memberId, portfolioId), memberId, model);
+    }
+
+    /* API-PRT-07 삭제 (M-04 확인 후) → 내 포트폴리오 + toast */
+    @PostMapping("/portfolios/{portfolioId}/delete")
+    public String delete(@PathVariable Long portfolioId,
+                         @AuthenticationPrincipal LoginMember loginMember,
+                         RedirectAttributes redirectAttributes) {
+        portfolioManageService.delete(loginMember.getMemberId(), portfolioId);
+        redirectAttributes.addFlashAttribute("toast", "포트폴리오를 삭제했습니다");
+        return "redirect:/my/portfolios";
+    }
+
+    /*
+     * 폼으로 고칠 수 있는 오류(금칙어·파일·에이전트 점검 결과 길이)는 같은 폼의 메시지로 바꾼다.
+     * 잠김·미인증·NOT_OWNER 처럼 폼으로 고칠 수 없는 것은 그대로 던져 오류 화면으로 보낸다
+     */
+    private void rejectOrThrow(BusinessException e, BindingResult bindingResult) {
+        if (e.getErrorCode() == PortfolioErrorCode.INVALID_INPUT) {
+            // 제출·수정에서 INVALID_INPUT 은 에이전트 점검 결과가 저장 칸보다 길 때뿐이다
+            bindingResult.rejectValue("agentResult", e.getErrorCode().toString(), "에이전트 점검 결과가 너무 깁니다. 줄여서 적어 주세요.");
+            return;
+        }
+        if (e.getErrorCode() != CommonErrorCode.BANNED_WORD && e.getErrorCode() != CommonErrorCode.INVALID_FILE) {
+            throw e;
+        }
+        bindingResult.reject(e.getErrorCode().toString(), e.getMessage());
     }
 
     /* 수강하지 않은 코스면 코스 소개로 */
@@ -108,15 +161,19 @@ public class PortfolioPageController {
         return "forward:" + fileUrl;
     }
 
-    /* U-19 내 포트폴리오 */
+    /* U-19 내 포트폴리오 (API-PRT-05) */
     @GetMapping("/my/portfolios")
-    public String myPortfolios() {
+    public String myPortfolios(@AuthenticationPrincipal LoginMember loginMember, Model model) {
+        model.addAttribute("portfolios", portfolioManageService.getMyPortfolios(loginMember.getMemberId()));
         return "portfolio/my-portfolios";
     }
 
-    /* U-20 포트폴리오 상세 */
+    /* U-20 포트폴리오 상세 (API-PRT-09) */
     @GetMapping("/portfolios/{portfolioId}")
-    public String detail() {
+    public String detail(@PathVariable Long portfolioId,
+                         @AuthenticationPrincipal LoginMember loginMember,
+                         Model model) {
+        model.addAttribute("portfolio", portfolioManageService.getDetail(loginMember.getMemberId(), portfolioId));
         return "portfolio/detail";
     }
 }
