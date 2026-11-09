@@ -1,5 +1,6 @@
 package com.vibelog.domain.auth.controller;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +8,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,5 +39,13 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name(viewName))
                 .andExpect(content().string(containsString("<h1 class=\"au-title\">" + title + "</h1>")));
+    }
+
+    /* 처음 온 비회원도 redirect 로 오므로 "로그아웃되었습니다"라고 하지 않는다 (#163) */
+    @Test
+    void 회원_화면에서_보내진_로그인은_로그인이_필요하다고_안내한다() throws Exception {
+        mockMvc.perform(get("/login").param("redirect", "/mypage"))
+                .andExpect(content().string(allOf(containsString("로그인이 필요한 화면입니다. 로그인하면 보던 화면으로 돌아갑니다"),
+                        not(containsString("로그아웃되었습니다")))));
     }
 }
