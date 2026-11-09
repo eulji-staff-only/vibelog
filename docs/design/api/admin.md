@@ -1,8 +1,9 @@
 # admin API 명세 (운영자 · 백오피스)
 
-> 영역: admin / API ID: API-ADM-01~38
+> 영역: admin / API ID: API-ADM-01~40
 > 공통 규칙(응답 방식·URL·표 읽는 법)은 [_template.md](_template.md) 0장, 에러 코드는 7장입니다.
 > 화면은 [화면 흐름 설계서](../01-screen-flow.md), 테이블·상태 값은 [DB 설계서](../02-database.md), [테이블 정의서](../03-table-definition.md)를 봅니다.
+> P2(미리보기 · 확장 대시보드)는 마일스톤 `4. P2 구현` · #172
 
 모든 `/admin/**`, `/api/admin/**`은 운영자만 들어온다. 운영자가 아니면 → `/` (FR-ADM-001).
 
@@ -11,6 +12,7 @@
 | ID | 기능 | Method | URL | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | API-ADM-01 | 대시보드 | GET | `/admin` | query `from`, `to` | A-01 + 가입자 수, 트랙·코스별 수강 수·완료율 | `INVALID_INPUT`(기간) | FR-ADM-002 |
+| API-ADM-40 | 확장 대시보드 | GET | `/admin` (그대로, API-ADM-01 응답에 추가) | query `from`, `to`(API-ADM-01과 같음) | A-01 + 진단 완료·건너뛰기 비율, 추천 트랙 vs 실제 선택 트랙, 수업·활동별 이탈률, 퀴즈 통과율·개념별 오답률, 수업별 모의고사 평균·약한 개념, 포트폴리오 제출 수, 게시글 수, 리뷰 수, 쪽지 수, 신고 수, 콘테스트 참여 수 (아래 "영역 간 계약" 표) | `INVALID_INPUT`(기간) | FR-ADM-003 |
 | API-ADM-02 | 트랙 관리 | GET | `/admin/tracks` | - | A-02 + 트랙(이름, 대상, 설명, 순서, 코스 수) | - | FR-CRS-007 |
 | API-ADM-03 | 트랙 만들기 | POST | `/admin/tracks` | form `name`, `target`, `description`, `sortOrder` | → `/admin/tracks` | `INVALID_INPUT`, `DUPLICATE_NAME` | FR-CRS-007 |
 | API-ADM-04 | 트랙 수정 | POST | `/admin/tracks/{trackId}/edit` | form 위와 같음 | → `/admin/tracks` | `TRACK_NOT_FOUND`, `DUPLICATE_NAME` | FR-CRS-007 |
@@ -48,6 +50,9 @@
 | API-ADM-31 | 모의고사 문항 사용·중지 | POST | `/admin/exam-questions/{examQuestionId}/active` | form `active` | → `/admin/lessons/{lessonId}?tab=exam` | - | FR-EXM-007 |
 | API-ADM-32 | 비공개 영향 확인 | GET | `/api/admin/lessons/{lessonId}/impact` | path `lessonId` | JSON `activeLearnerCount` (경고 모달) | - | FR-LSN-014 |
 | API-ADM-33 | 수업 공개·비공개 | POST | `/admin/lessons/{lessonId}/visibility` | form `isPublic` (확인 모달 후) | 공개하면 기존 수강의 `lesson_progress` 추가(PL-ENR-005) → `/admin/courses/{courseId}` + toast | `LESSON_NOT_PUBLISHABLE`(빠진 항목 목록: 개념 뒤 퀴즈, 퀴즈 3~5문항, 정답, 모의고사 문항) | FR-LSN-014, PL-LSN-003 |
+| API-ADM-39 | 미리보기 | GET | `/courses/{courseId}/lessons/{lessonId}` (학습자 U-13과 같은 주소, A-06 "미리보기" 버튼이 `activity` 없이 새 탭으로 연다) | path `courseId`, `lessonId` | U-13을 운영자 권한으로 그대로 보여준다. 비공개 수업·수강하지 않은 코스여도 잠김·수강 여부를 검사하지 않는다(공개 전에 확인해야 하므로). 운영자는 진행 기록(`activity_progress`)이 없으므로 `activity` 쿼리가 없으면 API-LSN-01의 "진행 중 활동" 대신 **첫 번째 사용 중인 활동**(`sort_order` 1번)을 보여준다. 조회만 하고 진행 기록은 남기지 않는다 | `LESSON_NOT_FOUND` | FR-LSN-015 |
+
+- API-ADM-39는 `admin` 화면(A-06)에 버튼만 있고, 실제 요청·검사 로직은 lesson 영역의 API-LSN-01에 운영자 예외로 들어간다 (lesson.md 참고, 같은 묶음 C 담당이라 요청서 없이 함께 정함). 운영자이면서 진행 기록이 없을 때 첫 번째 활동을 고르는 분기도 API-LSN-01에 둔다.
 
 ## 포트폴리오 과제 · 회원
 
@@ -58,3 +63,24 @@
 | API-ADM-36 | 평가 에이전트 저장 | POST | `/admin/courses/{courseId}/portfolio/agent` | form `agentGuide`, file `agentFile`(선택, 저장 컬럼: `agent_file_url`) | → `/admin/courses/{courseId}/portfolio?tab=agent` | `INVALID_FILE`(md·json·yaml·txt, 5MB, 실행 파일 불가, PL-PRT-010) | FR-PRT-013 |
 | API-ADM-37 | 회원 목록 | GET | `/admin/members` | query `q`(닉네임·이메일), `page` | A-08 목록 | - | FR-USR-009 |
 | API-ADM-38 | 회원 상세 | GET | `/admin/members/{memberId}` | path `memberId` | A-08 상세 + 수강 코스, 진행률, 퀴즈·모의고사 결과, 포트폴리오 수 | `USER_NOT_FOUND` | FR-USR-009 |
+
+## 확장 대시보드 — 영역 간 계약 (P2, FR-ADM-003)
+
+admin은 직접 계산하지 않고, 각 지표를 담당 영역의 `<영역>Reader`에서 읽어 와 기간(`from`~`to`)으로 걸러 합친다. 영역 담당은 [README 영역 담당](../../../README.md#영역-담당) 표를 따른다. 아래 메서드는 **제안**이고, 받는 쪽이 자기 Reader에 없으면 구현 때(#194) 추가한다 ([08. 작업 순서](../../collaboration/08-task-flow.md) 규칙 1·4 "Reader는 새 메서드 추가만").
+
+| 지표 | 담당 영역 | Reader·메서드(제안) | 비고 |
+| --- | --- | --- | --- |
+| 진단 완료·건너뛰기 비율 | course | `CourseReader.countDiagnosisResultsByStatus(from, to)` → `Map<String, Integer>`(`COMPLETED`, `SKIPPED`) | `diagnosis_result.status` |
+| 추천 트랙 vs 실제 선택 트랙 | course, lesson | `CourseReader.findDiagnosisRecommendedTracks(from, to)` → `Map<Long memberId, Long trackId>` + `LessonReader.findEnrolledCourseIds(memberIds)` → `Map<Long memberId, Set<Long> courseId>` (courseId→trackId는 `CourseReader.getTrackIdsByCourseIds`로 변환해 admin이 비교) | 두 영역 값을 admin이 합친다 |
+| 수업·활동별 이탈률 | lesson | `LessonReader.getDropOffRateByLesson(from, to)` → `Map<Long lessonId, DropOffRate>`, `DropOffRate(int eligibleCount, int dropOffCount)` — `eligibleCount`는 그 수업·활동이 기간 안에 열린(`unlocked_at` 있음) 전체 건수, `dropOffCount`는 그중 기간이 끝난 시점까지도 `completed_at`이 없는 건수(진행 중인 회원도 포함되므로 정확한 "이탈"이 아니라 "아직 못 끝낸 비율"로 본다) | PL-ENR-006 계산 값과 같은 테이블 |
+| 퀴즈 통과율 · 개념별 오답률 | quiz | `QuizReader.getPassRate(from, to)`, `QuizReader.getWrongRateByConceptTag(from, to)` | PL-LSN-008 약한 개념 기준(60%) 재사용 |
+| 수업별 모의고사 평균 · 약한 개념 | exam | `ExamReader.getAverageScoreByLesson(from, to)`, `ExamReader.getWeakConceptsByLesson(from, to)` | PL-LSN-008과 같은 기준, 5명 미만 수업은 숨김(U-16과 같음) |
+| 포트폴리오 제출 수 | portfolio | `PortfolioReader.countSubmitted(from, to)` | - |
+| 게시글 수 | community | `CommunityReader.countPosts(from, to)` | - |
+| 리뷰 수 | community | `CommunityReader.countPeerReviews(from, to)` | 동료 리뷰(FR-REV) |
+| 쪽지 수 | message | `MessageReader.countMessages(from, to)` | - |
+| 신고 수 | message | `MessageReader.countReports(from, to)` | README 영역 담당 표에서 "신고"는 `message` 묶음(쪽지·신고·알림)이 담당. `report`는 P3 기능이라 신고 처리 자체는 아직 없고, 지금은 0으로 보여도 된다 |
+| 콘테스트 참여 수 | contest | `ContestReader.countEntries(from, to)` | FR-CTS |
+
+- 계약 표 ①~⑬(08 문서)에는 넣지 않는다. 단순 집계 조회라 "그 밖에 읽기만 하는 값"에 해당해 각 영역 Reader에 메서드만 추가하면 된다 (08 문서 "안 멈추는 규칙" 1번).
+- 기간(`from`~`to`) 없이 걸러지는 값(예: 지금 시점 기준 "약한 개념")은 영역 담당이 Reader 설계 때 정한다.

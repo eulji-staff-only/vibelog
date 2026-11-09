@@ -97,9 +97,10 @@
 | `TOKEN_EXPIRED` / `TOKEN_USED` | 400 | 링크가 만료되었습니다. | 화면 안 상태 | PL-USR-004 |
 | `RESEND_TOO_SOON` | 429 | 1분 뒤에 다시 받을 수 있습니다. | ⑤ | PL-CST-002 |
 | `ALREADY_VERIFIED` | 409 | 이미 인증된 이메일입니다. | ⑤ | FR-USR-002 |
-| `TRACK_NOT_FOUND` / `COURSE_NOT_FOUND` / `LESSON_NOT_FOUND` / `POST_NOT_FOUND` / `PORTFOLIO_NOT_FOUND` / `USER_NOT_FOUND` / `FILE_NOT_FOUND` | 404 | 찾을 수 없습니다. | ① E-01 | PL-ERR-006 |
+| `TRACK_NOT_FOUND` / `COURSE_NOT_FOUND` / `LESSON_NOT_FOUND` / `ACTIVITY_NOT_FOUND` / `POST_NOT_FOUND` / `PORTFOLIO_NOT_FOUND` / `USER_NOT_FOUND` / `FILE_NOT_FOUND` | 404 | 찾을 수 없습니다. | ① E-01 | PL-ERR-006 |
 | `LESSON_LOCKED` | 403 | 이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다. | ③ → `/my/learning` | FR-ENR-003 |
 | `ACTIVITY_LOCKED` | 403 | 앞 퀴즈를 정답률 50% 이상으로 통과하면 열립니다. | ③ → 수업 화면 | FR-LSN-009 |
+| `ENROLLMENT_NOT_FOUND` | 404 | 수강 중인 코스가 아닙니다. | ① E-01 | FR-ENR-005 (P2) |
 | `ALREADY_CHECKED` | 409 | 이미 확인한 문항입니다. | ⑤ | PL-LSN-006 |
 | `ATTEMPT_SUBMITTED` | 409 | 이미 제출했습니다. | ⑤ / ③ | DB `quiz_attempt`·`exam_attempt` |
 | `QUIZ_NOT_FINISHED` | 400 | 모든 문항을 확인한 뒤 제출할 수 있습니다. | ⑤ | PL-LSN-006 |
@@ -107,6 +108,7 @@
 | `REPORT_NOT_VIEWED` | 409 | 지난 응시의 리포트를 먼저 확인해 주세요. | ③ → 리포트 | PL-EXM-003 |
 | `EXAM_NOT_SUBMITTED` | 409 | 제출한 뒤에 리포트를 볼 수 있습니다. | ③ → 모의고사 | FR-EXM-003 |
 | `PORTFOLIO_LOCKED` | 403 | 마지막 수업의 오답 분석 리포트를 확인하면 열립니다. | 화면 안 안내 상자 / ⑤ | PL-PRT-001 |
+| `PORTFOLIO_NOT_SUBMITTED` | 403 | 포트폴리오를 제출하면 같은 코스 작품을 볼 수 있습니다. | ③ → 포트폴리오 과제 | PL-PRT-011 (P2) |
 | `ALREADY_SUBMITTED` | 409 | 이미 제출한 포트폴리오가 있습니다. 내 포트폴리오에서 수정해 주세요. | ④ | DB `portfolio` UNIQUE |
 | `PRIVATE_PORTFOLIO` | 403 | 비공개된 작품입니다. | ① E-02 | PL-ERR-006 |
 | `SHOWCASE_LINK_REQUIRED` | 400 | 작품 공유 글은 작품 링크가 필요합니다. | ④ | PL-CMT-008 |
@@ -144,13 +146,13 @@ P1 구현 뒤 같은 규칙으로 표를 채운다. 테이블은 이미 있다(D
 | P2 | 프로필 수정 | `/mypage?tab=info` | POST `/mypage/profile` |
 | P2 | 진단 다시 하기 | `/diagnosis` | API-DGN-02 재사용 |
 | P2 | 카테고리 탐색·코스 검색 (헤더 검색 포함) | `/courses?category=&q=` | API-CRS-02 query 사용 |
-| P2 | 수강 포기 | `/my/learning` | POST `/courses/{courseId}/drop` (M-12 확인 후) |
-| P2 | 연관 개념·개념 북마크 | U-13, U-24 북마크 탭 | POST `/api/concepts/{activityId}/bookmark` |
+| P2 | 수강 포기 | `/my/learning` | → [lesson.md](lesson.md) API-ENR-04 (재시작은 API-ENR-01 (P2)) |
+| P2 | 연관 개념·개념 북마크·태그 검색 | U-13, U-24 북마크 탭 | → [lesson.md](lesson.md) API-LSN-07~09 |
 | P2 | 틀린 문제 모아보기 | `/my/wrong-answers?course=&lesson=` | GET만 |
-| P2 | 평균 점수·리포트 다시 보기 | U-16 | API-EXM-05 응답에 추가 |
-| P2 | FAQ | U-17 | API-PRT-01 응답에 추가 |
-| P2 | 같은 코스 작품 보기 | `/courses/{courseId}/portfolios` | GET만 (그 코스 포트폴리오를 낸 사람만) |
-| P2 | 개인 작품 추가 | `/my/portfolios/new?template=` | POST `/my/portfolios` |
+| P2 | 평균 점수·리포트 다시 보기 | U-16 | → [exam.md](exam.md) API-EXM-05 (P2) |
+| P2 | FAQ (운영자 A-07 FAQ 탭 포함) | U-17, `/admin/courses/{courseId}/portfolio?tab=faq` | → [portfolio.md](portfolio.md) API-PRT-01 (P2)·API-PRT-11 |
+| P2 | 같은 코스 작품 보기 | `/courses/{courseId}/portfolios` | → [portfolio.md](portfolio.md) API-PRT-10 |
+| P2 | 개인 작품 추가 | `/my/portfolios/new?template=` | POST `/my/portfolios` (#168 결정 후 portfolio.md에 추가) |
 | P2 | 프로필 수정·닉네임 저장 | `/mypage?tab=info` | POST `/mypage/profile` |
 | P2 | 추천·랭킹·즐겨찾기·팔로우·공개 프로필 | `/community/ranking`, `/users/{memberId}` (회원) | POST `/api/posts/{postId}/recommend`, `/api/posts/{postId}/favorite`, `/api/users/{memberId}/follow` |
 | P2 | 콘테스트 | `/contests/current`, `/contests/{contestId}` (회원) | POST `/contests/{contestId}/entries`, `/api/contests/{contestId}/votes`. 미인증 "인증 메일 받기" → `/auth/verify` (API-USR-09, token 없음) |
@@ -158,7 +160,8 @@ P1 구현 뒤 같은 규칙으로 표를 채운다. 테이블은 이미 있다(D
 | P2 | 쪽지 | `/messages?box=` | → [message.md](message.md) API-MSG-01~05 |
 | P2 | 알림 | 상단 드롭다운 | → [message.md](message.md) API-NTF-01~03 |
 | P2 | 공지 (운영자 A-10 포함) | `/notices`, `/notices/{noticeId}`, `/admin/notices` | → [message.md](message.md) API-NTF-04~08 |
-| P2 | 운영자: 이용 정지, 진단 설정, 공지·콘테스트 관리, 확장 대시보드 | A-08~A-11 | `/admin/**` 같은 규칙 |
+| P2 | 운영자: 이용 정지, 진단 설정, 공지·콘테스트 관리 | A-08~A-11 | `/admin/**` 같은 규칙 |
+| P2 | 운영자: 수업 미리보기, 확장 대시보드 | A-06, A-01 | → [admin.md](admin.md) API-ADM-39~40 (lesson.md와 함께 정함) |
 | P3 | 신고·신고 처리, 템플릿 관리 | M-11, A-12, A-13 | POST `/api/reports`, `/admin/reports/{reportId}/hide`·`/dismiss` |
 
 ## 9. 확정 문서와 맞춘 것
