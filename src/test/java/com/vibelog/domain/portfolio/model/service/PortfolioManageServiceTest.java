@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 삭제 때 코스 완료 일시 비우기는 lesson 계약 ⑦ 실제 구현이 한다.
  *
  * 코스 8801. 회원 8801(인증됨, 코스 완료) = 비공개 포트폴리오 8801 (스크린샷 있음). 회원 8802 = 공개 포트폴리오 8802.
+ * 포트폴리오 8802 에는 열린 리뷰 요청 8802 가 있다 (계약 ⑭ 확인용).
  */
 @SpringBootTest
 @Transactional
@@ -37,7 +38,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
                 + "(8801, 8801, 8801, NOW(), NOW(), NOW()), (8802, 8802, 8801, NOW(), NOW(), NOW())",
         "INSERT INTO portfolio (portfolio_id, member_id, course_id, title, result_url, summary, retrospective, ai_tools, is_public, screenshot_url) VALUES "
                 + "(8801, 8801, 8801, '내 작품', 'https://github.com/a/app', '내 요약', '내 회고', 'Claude Code', FALSE, '/uploads/shot.png'), "
-                + "(8802, 8802, 8801, '남의 작품', 'https://github.com/b/app', '남 요약', '남 회고', 'Cursor', TRUE, NULL)"
+                + "(8802, 8802, 8801, '남의 작품', 'https://github.com/b/app', '남 요약', '남 회고', 'Cursor', TRUE, NULL)",
+        "INSERT INTO review_request (review_request_id, portfolio_id, requested_at) VALUES (8802, 8802, NOW())"
 })
 class PortfolioManageServiceTest {
 
@@ -102,6 +104,40 @@ class PortfolioManageServiceTest {
                 .hasFieldOrPropertyWithValue("errorCode", CommonErrorCode.NOT_OWNER);
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT completed_at IS NOT NULL FROM enrollment WHERE enrollment_id = 8802", Boolean.class)).isTrue();
+    }
+
+    private boolean reviewRequestClosed() {
+        entityManager.flush();
+        return jdbcTemplate.queryForObject(
+                "SELECT closed_at IS NOT NULL FROM review_request WHERE review_request_id = 8802", Boolean.class);
+    }
+
+    @Test
+    void 비공개로_바꾸면_열린_리뷰_요청을_닫는다() {
+        portfolioManageService.changeVisibility(OTHER, OTHERS, false);
+        assertThat(reviewRequestClosed()).isTrue();
+    }
+
+    @Test
+    void 공개로_바꾸면_리뷰_요청은_그대로다() {
+        portfolioManageService.changeVisibility(OTHER, OTHERS, true);
+        assertThat(reviewRequestClosed()).isFalse();
+    }
+
+    @Test
+    void 삭제하면_열린_리뷰_요청을_닫는다() {
+        portfolioManageService.delete(OTHER, OTHERS);
+        assertThat(reviewRequestClosed()).isTrue();
+    }
+
+    @Test
+    void 비공개로_수정하면_열린_리뷰_요청을_닫는다() {
+        PortfolioSubmitForm form = form();
+        form.setIsPublic(false);
+
+        portfolioSubmitService.edit(OTHER, OTHERS, form, null);
+
+        assertThat(reviewRequestClosed()).isTrue();
     }
 
     @Test

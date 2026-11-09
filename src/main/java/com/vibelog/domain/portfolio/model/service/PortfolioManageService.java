@@ -1,6 +1,7 @@
 package com.vibelog.domain.portfolio.model.service;
 
 import com.vibelog.domain.auth.model.service.MemberReader;
+import com.vibelog.domain.community.model.policy.ReviewRequestCloser;
 import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.lesson.model.policy.PortfolioEnrollmentProgress;
 import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
@@ -26,6 +27,8 @@ import java.util.Objects;
  *        - 수정·삭제·공개 전환은 본인만 (NOT_OWNER, NFR-SEC-003).
  *        - 상세는 공개면 회원 누구나, 비공개면 본인만 본다. 남이면 PRIVATE_PORTFOLIO "비공개된 작품입니다" (PL-ERR-006).
  *        - 코스 작품을 삭제하면 같은 트랜잭션에서 lesson 계약 ⑦ recordDeleted 로 그 수강의 완료 일시를 비운다 (PL-ENR-003).
+ *        - 비공개로 바꾸거나 삭제하면 같은 트랜잭션에서 community 계약 ⑭ closeOpenRequests 로 그 작품의 열린 리뷰 요청을 닫는다
+ *          (FR-REV-005, community.md 결정 8: 다시 공개해도 요청이 되살아나지 않게).
  *        - 코스 이름은 CourseReader, 작성자 닉네임은 MemberReader 로 읽는다.
  */
 @Service
@@ -37,6 +40,7 @@ public class PortfolioManageService {
     private final PortfolioEnrollmentProgress portfolioEnrollmentProgress;
     private final CourseReader courseReader;
     private final MemberReader memberReader;
+    private final ReviewRequestCloser reviewRequestCloser;
 
     /* U-19 카드 목록 (최근 제출 먼저) */
     public List<MyPortfolioCard> getMyPortfolios(Long memberId) {
@@ -79,6 +83,7 @@ public class PortfolioManageService {
     public void delete(Long memberId, Long portfolioId) {
         Portfolio p = getOwned(memberId, portfolioId);
         p.markDeleted();
+        reviewRequestCloser.closeOpenRequests(portfolioId);
         if (p.getCourseId() != null) {
             portfolioEnrollmentProgress.recordDeleted(memberId, p.getCourseId());
         }
@@ -89,6 +94,9 @@ public class PortfolioManageService {
     public boolean changeVisibility(Long memberId, Long portfolioId, boolean isPublic) {
         Portfolio p = getOwned(memberId, portfolioId);
         p.changeVisibility(isPublic);
+        if (!isPublic) {
+            reviewRequestCloser.closeOpenRequests(portfolioId);
+        }
         return p.isPublic();
     }
 
