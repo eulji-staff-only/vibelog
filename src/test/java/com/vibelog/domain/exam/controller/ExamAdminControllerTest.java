@@ -128,7 +128,10 @@ class ExamAdminControllerTest {
                 .andExpect(content().string(Matchers.containsString("value=\"보냈던 보기1\"")))
                 .andExpect(content().string(Matchers.containsString("연관 개념을 골라야 저장할 수 있습니다.")))
                 // 추가 모달만 hidden 없이 열린 채로 그린다
-                .andExpect(content().string(Matchers.containsString("id=\"exam-question-add-modal\" role=\"dialog\"")));
+                .andExpect(content().string(Matchers.containsString("id=\"exam-question-add-modal\" role=\"dialog\"")))
+                // 열린 모달 제목에만 autofocus (키보드 초점이 오류 난 모달로 간다)
+                .andExpect(content().string(Matchers.containsString("id=\"exam-question-add-modal-title\" autofocus=\"autofocus\"")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("id=\"exam-question-edit-modal-21-title\" autofocus"))));
     }
 
     private void givenEditView() {

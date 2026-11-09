@@ -55,7 +55,7 @@
      th:attr="data-ui-modal=${modalId}, aria-labelledby=${modalId + '-title'}"
      th:with="f=${open ? examQuestionForm : null}, errs=${open ? examQuestionErrors : null}">
     <div class="vl-ui-modal__box">
-        <h2 class="vl-ui-modal__title" tabindex="-1" th:id="${modalId + '-title'}" th:text="${heading}">문항 추가</h2>
+        <h2 class="vl-ui-modal__title" tabindex="-1" th:autofocus="${open}" th:id="${modalId + '-title'}" th:text="${heading}">문항 추가</h2>
         <form class="al-form" method="post" novalidate th:action="${action}">
             <div class="al-field">
                 <label th:for="${modalId + '-concept'}">연관 개념</label>
