@@ -81,6 +81,9 @@
                 <p class="mp-text" th:if="${#lists.isEmpty(reviews)}">아직 받은 리뷰가 없습니다.</p>
                 <ul class="mp-reviews" th:unless="${#lists.isEmpty(reviews)}">
                     <li class="mp-review" th:each="review : ${reviews}">
+                        <!-- 영구 정지 회원의 리뷰는 닉네임·코멘트 없이 안내만 (PL-ERR-006, #215) -->
+                        <p class="mp-text" th:if="${review.hidden()}">운영 정책에 따라 숨겨진 콘텐츠입니다</p>
+                        <th:block th:unless="${review.hidden()}">
                         <div class="mp-review-meta">
                             <strong th:text="${review.reviewerNickname()}">[리뷰어]</strong>
                             <span class="mp-caption" th:text="${#temporals.format(review.createdAt(), 'yyyy.MM.dd')}">[작성일]</span>
@@ -100,6 +103,7 @@
                             <a class="mp-link" th:if="${review.mine() and myReviewRequestIds[review.peerReviewId()] != null}"
                                th:href="@{/reviews(reviewRequestId=${myReviewRequestIds[review.peerReviewId()]})}">내 리뷰 수정</a>
                         </div>
+                        </th:block>
                     </li>
                 </ul>
             </section>

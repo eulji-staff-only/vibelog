@@ -215,7 +215,18 @@ class PortfolioPageControllerTest {
 
     private ReviewView review(boolean helpful, boolean mine) {
         return new ReviewView(11L, 2L, "리뷰어", LocalDateTime.of(2026, 11, 9, 11, 0), helpful, mine,
-                List.of(new ReviewView.Comment("요청 범위", "범위가 분명해요"), new ReviewView.Comment(null, "전체 의견")));
+                List.of(new ReviewView.Comment("요청 범위", "범위가 분명해요"), new ReviewView.Comment(null, "전체 의견")), false);
+    }
+
+    @Test
+    void 영구_정지_회원의_리뷰는_숨김_안내만_그린다() throws Exception {
+        given(portfolioManageService.getDetail(1L, 7L)).willReturn(detailView(true, true));
+        given(communityReader.findReviewsOfPortfolio(7L, 1L)).willReturn(List.of(
+                new ReviewView(11L, 2L, null, LocalDateTime.of(2026, 11, 9, 11, 0), false, false, List.of(), true)));
+
+        mockMvc.perform(get("/portfolios/7").with(login()))
+                .andExpect(content().string(Matchers.containsString("운영 정책에 따라 숨겨진 콘텐츠입니다")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("data-helpful-url"))));
     }
 
     @Test
