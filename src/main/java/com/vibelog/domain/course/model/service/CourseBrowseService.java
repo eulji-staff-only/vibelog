@@ -6,6 +6,7 @@ import com.vibelog.domain.course.model.dao.CourseRepository;
 import com.vibelog.domain.course.model.dao.DiagnosisResultRepository;
 import com.vibelog.domain.course.model.dao.TrackRepository;
 import com.vibelog.domain.course.model.dto.CourseCard;
+import com.vibelog.domain.course.model.dto.CourseDetailView;
 import com.vibelog.domain.course.model.dto.CourseListView;
 import com.vibelog.domain.course.model.dto.TrackChip;
 import com.vibelog.domain.course.model.dto.TrackCourseGroup;
@@ -27,10 +28,11 @@ import java.util.stream.Collectors;
 
 /*
  * [CourseBrowseService]
- * 역할 : 학습자가 트랙·코스를 둘러보는 화면의 데이터를 만든다. 트랙 소개(API-CRS-01), 코스 목록(API-CRS-02).
- * 책임 : - 공개 코스(is_public = TRUE)만 보여준다. 비회원도 볼 수 있다 (FR-CRS-001, 004).
+ * 역할 : 학습자가 트랙·코스를 둘러보는 화면의 데이터를 만든다. 트랙 소개(API-CRS-01), 코스 목록(API-CRS-02),
+ *        코스 상세(API-CRS-03).
+ * 책임 : - 공개 코스(is_public = TRUE)만 보여준다. 비회원도 볼 수 있다 (FR-CRS-001, 002, 004).
  *        - 진단을 마친 회원(COMPLETED)에게만 추천 트랙과 그 코스를 위에 보여준다. 건너뛴 회원·비회원은 없다.
- *        - 수업 수는 lesson 영역의 계약 ⑪ countPublicLessons 로 받는다 (코스 ID 묶음, 공개 수업만).
+ *        - 수업 수·공개 수업 목록·수강 상태는 lesson 영역의 계약 ⑪ 로 받는다 (공개 수업만).
  *        - 카테고리·검색(category, q)은 P2라 받지 않는다.
  */
 @Service
@@ -76,6 +78,24 @@ public class CourseBrowseService {
 
         List<TrackChip> chips = tracks.stream().map(track -> new TrackChip(track.getTrackId(), track.getName())).toList();
         return new CourseListView(chips, trackId, recommendedFor(memberId, trackNames), groups, totalCount);
+    }
+
+    /*
+     * U-11 코스 상세 (API-CRS-03). memberId 는 비회원이면 null → 수강 상태 NONE.
+     * 없거나 비공개인 코스는 COURSE_NOT_FOUND (E-01). 비공개 코스를 있다고 알리지 않는다.
+     */
+    public CourseDetailView getCourseDetail(Long memberId, Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .filter(Course::isPublic)
+                .orElseThrow(() -> new BusinessException(CourseErrorCode.COURSE_NOT_FOUND));
+        String trackName = trackRepository.findById(course.getTrackId()).map(Track::getName).orElse(null);
+        String categoryName = courseCategoryRepository.findById(course.getCourseCategoryId())
+                .map(CourseCategory::getName).orElse(null);
+        String enrollmentStatus = memberId == null ? "NONE" : courseLessonInfo.getEnrollmentStatus(memberId, courseId);
+
+        return new CourseDetailView(course.getCourseId(), course.getTitle(), course.getTrackId(), trackName, categoryName,
+                course.getSummary(), course.getTarget(), course.getGoal(), course.getPlanDays(), course.getDescription(),
+                courseLessonInfo.getPublicLessons(courseId), enrollmentStatus);
     }
 
     /* 진단을 마친 회원의 가장 최근 추천 트랙과 그 공개 코스. 비회원·건너뜀·결과 없음은 null */

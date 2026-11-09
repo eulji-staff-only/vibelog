@@ -128,6 +128,8 @@ a.crs-eyebrow:hover { border-color: var(--glow); }
 .crs-stat dd { margin: 0; font-size: 17px; font-weight: 700; }
 .crs-enroll { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); }
 .crs-enroll__hint { margin: 0; font-size: 13px; color: var(--ink-muted); }
+.crs-enroll__form { margin: 0; display: flex; flex-direction: column; align-items: inherit; gap: var(--space-2); }
+.crs-h3 { margin: var(--space-2) 0 0; font-size: 17px; line-height: 1.45; font-weight: 700; }
 
 /* 수업 목록 아코디언 (Accordion) */
 .crs-accordion { display: flex; flex-direction: column; gap: var(--space-2); }
