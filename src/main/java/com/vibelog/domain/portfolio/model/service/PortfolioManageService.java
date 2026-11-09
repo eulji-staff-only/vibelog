@@ -1,0 +1,109 @@
+package com.vibelog.domain.portfolio.model.service;
+
+import com.vibelog.domain.auth.model.service.MemberReader;
+import com.vibelog.domain.course.model.service.CourseReader;
+import com.vibelog.domain.lesson.model.policy.PortfolioEnrollmentProgress;
+import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
+import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
+import com.vibelog.domain.portfolio.model.dto.MyPortfolioCard;
+import com.vibelog.domain.portfolio.model.dto.PortfolioDetailView;
+import com.vibelog.domain.portfolio.model.dto.PortfolioSubmitForm;
+import com.vibelog.domain.portfolio.model.entity.Portfolio;
+import com.vibelog.global.exception.BusinessException;
+import com.vibelog.global.exception.CommonErrorCode;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/*
+ * [PortfolioManageService]
+ * 역할 : 내 포트폴리오 목록(API-PRT-05)·삭제(API-PRT-07)·공개 전환(API-PRT-08)·상세(API-PRT-09), U-17 수정 상태 값.
+ * 책임 : - 삭제 표시(deleted_at)한 포트폴리오는 없는 것으로 본다 (PORTFOLIO_NOT_FOUND).
+ *        - 수정·삭제·공개 전환은 본인만 (NOT_OWNER, NFR-SEC-003).
+ *        - 상세는 공개면 회원 누구나, 비공개면 본인만 본다. 남이면 PRIVATE_PORTFOLIO "비공개된 작품입니다" (PL-ERR-006).
+ *        - 코스 작품을 삭제하면 같은 트랜잭션에서 lesson 계약 ⑦ recordDeleted 로 그 수강의 완료 일시를 비운다 (PL-ENR-003).
+ *        - 코스 이름은 CourseReader, 작성자 닉네임은 MemberReader 로 읽는다.
+ */
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PortfolioManageService {
+
+    private final PortfolioRepository portfolioRepository;
+    private final PortfolioEnrollmentProgress portfolioEnrollmentProgress;
+    private final CourseReader courseReader;
+    private final MemberReader memberReader;
+
+    /* U-19 카드 목록 (최근 제출 먼저) */
+    public List<MyPortfolioCard> getMyPortfolios(Long memberId) {
+        List<Portfolio> portfolios = portfolioRepository.findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(memberId);
+        Map<Long, String> courseTitles = courseReader.getCourseTitles(
+                portfolios.stream().map(Portfolio::getCourseId).filter(Objects::nonNull).distinct().toList());
+        return portfolios.stream()
+                .map(p -> new MyPortfolioCard(p.getPortfolioId(), p.getCourseId(), courseTitles.get(p.getCourseId()),
+                        p.getTitle(), p.getSummary(), p.isPublic(), p.getCreatedAt()))
+                .toList();
+    }
+
+    /* U-20 상세 */
+    public PortfolioDetailView getDetail(Long memberId, Long portfolioId) {
+        Portfolio p = getActive(portfolioId);
+        boolean mine = p.isOwnedBy(memberId);
+        if (!p.isPublic() && !mine) {
+            throw new BusinessException(PortfolioErrorCode.PRIVATE_PORTFOLIO);
+        }
+        String courseTitle = p.getCourseId() == null ? null
+                : courseReader.getCourseTitles(List.of(p.getCourseId())).get(p.getCourseId());
+        return new PortfolioDetailView(p.getPortfolioId(), p.getTitle(), p.getResultUrl(), p.getSummary(),
+                p.getRetrospective(), p.getAiTools(), p.getAgentResult(), p.getScreenshotUrl(),
+                p.getCourseId(), courseTitle, memberReader.getNickname(p.getMemberId()),
+                p.getCreatedAt(), p.isPublic(), mine);
+    }
+
+    /* U-17 수정 상태(edit=true)를 채울 값 */
+    public PortfolioSubmitForm getEditForm(Long memberId, Long portfolioId) {
+        return PortfolioSubmitForm.from(getOwned(memberId, portfolioId));
+    }
+
+    /* 수정 폼 입력이 틀렸을 때 다시 그릴 U-17 의 코스 */
+    public Long getOwnedCourseId(Long memberId, Long portfolioId) {
+        return getOwned(memberId, portfolioId).getCourseId();
+    }
+
+    /* API-PRT-07 삭제 표시 + 코스 완료 일시 비움 (계약 ⑦) */
+    @Transactional
+    public void delete(Long memberId, Long portfolioId) {
+        Portfolio p = getOwned(memberId, portfolioId);
+        p.markDeleted();
+        if (p.getCourseId() != null) {
+            portfolioEnrollmentProgress.recordDeleted(memberId, p.getCourseId());
+        }
+    }
+
+    /* API-PRT-08 공개 전환. 바뀐 값을 돌려준다 */
+    @Transactional
+    public boolean changeVisibility(Long memberId, Long portfolioId, boolean isPublic) {
+        Portfolio p = getOwned(memberId, portfolioId);
+        p.changeVisibility(isPublic);
+        return p.isPublic();
+    }
+
+    /* 본인 것만 (수정·삭제·공개 전환). 같은 패키지의 PortfolioSubmitService(수정)도 쓴다 */
+    Portfolio getOwned(Long memberId, Long portfolioId) {
+        Portfolio p = getActive(portfolioId);
+        if (!p.isOwnedBy(memberId)) {
+            throw new BusinessException(CommonErrorCode.NOT_OWNER);
+        }
+        return p;
+    }
+
+    private Portfolio getActive(Long portfolioId) {
+        return portfolioRepository.findById(portfolioId)
+                .filter(p -> !p.isDeleted())
+                .orElseThrow(() -> new BusinessException(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
+    }
+}

@@ -13,7 +13,7 @@
 </head>
 <body>
 <div th:replace="~{common/layout :: header}"></div>
-<!-- U-17 포트폴리오. 과제·스텝 체크·설정 파일은 #112(API-PRT-01~03), 제출(API-PRT-04)은 #113에서 연결했다. 수정 상태(edit=true)는 #114.
+<!-- U-17 포트폴리오. 과제·스텝 체크·설정 파일은 #112(API-PRT-01~03), 제출(API-PRT-04)은 #113, 수정 상태(edit=true, API-PRT-06)는 #114에서 연결했다.
      공통 헤더·푸터는 #133에서 적용했다. 버튼·안내 상자 조각(#46)은 아직 화면 전용 클래스를 쓴다. -->
 <div class="pf-page">
 
@@ -82,23 +82,25 @@
                 <section class="pf-section" aria-labelledby="pf-submit-h">
                     <h2 class="pf-h2" id="pf-submit-h">포트폴리오 제출</h2>
 
-                    <!-- 이미 제출함: 수정 상태(edit=true)는 #114 에서 붙인다 -->
-                    <div class="pf-notice" th:if="${page.submittedPortfolioId != null}">
+                    <!-- 이미 제출함 (수정 상태가 아닐 때): 보기·수정 -->
+                    <div class="pf-notice" th:if="${page.submittedPortfolioId != null and editPortfolioId == null}">
                         <strong>이 코스의 포트폴리오를 제출했습니다.</strong>
                         <a class="pf-link" th:href="@{/portfolios/{id}(id=${page.submittedPortfolioId})}">내 포트폴리오 보기</a>
+                        <a class="pf-link" th:href="@{/courses/{id}/portfolio(id=${page.courseId},edit=true)}">수정</a>
                     </div>
 
-                    <!-- 이메일 미인증: 제출 대신 인증 안내 (PL-USR-003) -->
-                    <div class="pf-notice" th:if="${page.submittedPortfolioId == null and !page.emailVerified}">
+                    <!-- 이메일 미인증: 제출·수정 대신 인증 안내 (PL-USR-003) -->
+                    <div class="pf-notice" th:if="${(page.submittedPortfolioId == null or editPortfolioId != null) and !page.emailVerified}">
                         <strong>이메일 인증 후 포트폴리오를 제출할 수 있습니다.</strong>
                         <a class="pf-link" th:href="@{/auth/verify}">인증 메일 받기</a>
                     </div>
 
-                    <!-- 제출 양식 (API-PRT-04). 틀리면 같은 폼을 입력 값 그대로 다시 그리고 칸별 메시지를 보여 준다 (_template.md 7-1 ④) -->
+                    <!-- 제출 양식 (API-PRT-04). 수정 상태(editPortfolioId 있음)면 같은 양식으로 수정(API-PRT-06)에 보낸다.
+                         틀리면 같은 폼을 입력 값 그대로 다시 그리고 칸별 메시지를 보여 준다 (_template.md 7-1 ④) -->
                     <form method="post" enctype="multipart/form-data" novalidate th:object="${portfolioSubmitForm}"
-                          th:action="@{/courses/{id}/portfolio(id=${page.courseId})}"
-                          th:if="${page.submittedPortfolioId == null and page.emailVerified}" data-submit-form>
-                    <p class="pf-muted">제출하면 그대로 포트폴리오 카드로 등록되고 코스가 완료됩니다.</p>
+                          th:action="${editPortfolioId != null} ? @{/portfolios/{id}/edit(id=${editPortfolioId})} : @{/courses/{id}/portfolio(id=${page.courseId})}"
+                          th:if="${(page.submittedPortfolioId == null or editPortfolioId != null) and page.emailVerified}" data-submit-form>
+                    <p class="pf-muted" th:text="${editPortfolioId != null} ? '수정하면 지금 내용으로 덮어씁니다. 스크린샷은 새로 고를 때만 바뀝니다.' : '제출하면 그대로 포트폴리오 카드로 등록되고 코스가 완료됩니다.'">제출하면 그대로 포트폴리오 카드로 등록되고 코스가 완료됩니다.</p>
                     <p class="pf-msg is-error" role="alert" th:each="err : ${#fields.globalErrors()}" th:text="${err}">금칙어·파일 오류</p>
 
                     <div class="pf-form" data-pf-form>
@@ -166,7 +168,8 @@
 
                     <div class="pf-submit">
                         <span class="pf-muted" id="pf-submit-reason">필수 항목을 모두 입력하고 공개 여부를 고르면 제출할 수 있습니다.</span>
-                        <button type="submit" class="pf-btn pf-btn-navy" aria-disabled="true" aria-describedby="pf-submit-reason" data-submit>제출하기</button>
+                        <button type="submit" class="pf-btn pf-btn-navy" aria-disabled="true" aria-describedby="pf-submit-reason" data-submit
+                                th:text="${editPortfolioId != null} ? '수정하기' : '제출하기'">제출하기</button>
                     </div>
                     </form>
                 </section>

@@ -22,5 +22,8 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
 
     long countByMemberIdAndDeletedAtIsNull(Long memberId);
 
+    /* U-19 내 포트폴리오 (삭제 표시 제외, 최근 제출 먼저) */
+    List<Portfolio> findAllByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(Long memberId);
+
     List<Portfolio> findAllByMemberIdAndIsPublicTrueAndDeletedAtIsNullOrderByCreatedAtDescPortfolioIdDesc(Long memberId);
 }
