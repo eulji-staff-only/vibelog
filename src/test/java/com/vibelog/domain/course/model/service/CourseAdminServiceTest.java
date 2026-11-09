@@ -118,6 +118,43 @@ class CourseAdminServiceTest {
         assertThat(service.getCourse(9972L).hasAssignment()).isTrue();
     }
 
+    @Test
+    void 공개된_수업과_포트폴리오_과제가_모두_있어야_공개된다() {
+        // 9972: 비공개 코스. 수업은 비공개 하나뿐, 과제 없음
+        jdbcTemplate.update("INSERT INTO lesson (lesson_id, course_id, title, intro, goal, contents, estimated_minutes, sort_order, is_public) "
+                + "VALUES (9973, 9972, '코관 비공개 수업', '소개', '목표', '본문', 10, 1, FALSE)");
+        assertThat(service.changeVisibility(9972L, true)).isFalse();
+        assertThat(service.getCourse(9972L).publishable()).isFalse();
+
+        jdbcTemplate.update("INSERT INTO portfolio_assignment (course_id, topic, goal, agent_guide) VALUES (9972, '주제', '목표', '안내')");
+        assertThat(service.changeVisibility(9972L, true)).isFalse();   // 과제만 있고 공개 수업 없음
+
+        jdbcTemplate.update("UPDATE lesson SET is_public = TRUE WHERE lesson_id = 9973");
+        assertThat(service.getCourse(9972L).publishable()).isTrue();
+        assertThat(service.changeVisibility(9972L, true)).isTrue();
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(courseRepository.findByIsPublicTrueOrderByCourseIdAsc()).extracting(Course::getCourseId).contains(9972L);
+    }
+
+    @Test
+    void 공개_수업이_있어도_과제가_없으면_공개되지_않는다() {
+        jdbcTemplate.update("INSERT INTO lesson (lesson_id, course_id, title, intro, goal, contents, estimated_minutes, sort_order, is_public) "
+                + "VALUES (9974, 9972, '코관 공개 수업', '소개', '목표', '본문', 10, 1, TRUE)");
+        assertThat(service.changeVisibility(9972L, true)).isFalse();
+        entityManager.flush();
+        assertThat(jdbcTemplate.queryForObject("SELECT is_public FROM course WHERE course_id = 9972", Boolean.class)).isFalse();
+    }
+
+    @Test
+    void 비공개는_조건_없이_되고_학습자_코스_목록에서_사라진다() {
+        assertThat(service.changeVisibility(9971L, false)).isTrue();   // 9971: 공개 코스, 수업·과제 없음
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(courseRepository.findByIsPublicTrueOrderByCourseIdAsc()).extracting(Course::getCourseId).doesNotContain(9971L);
+        assertError(() -> service.changeVisibility(9979L, false), CourseErrorCode.COURSE_NOT_FOUND);
+    }
+
     private List<CourseAdminRow> mine(List<CourseAdminRow> rows) {
         return rows.stream().filter(row -> row.title().startsWith("코관")).toList();
     }

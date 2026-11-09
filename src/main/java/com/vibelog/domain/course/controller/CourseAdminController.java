@@ -21,11 +21,12 @@ import java.util.Map;
 
 /*
  * [CourseAdminController]
- * 역할 : 운영자의 코스 목록(A-04)·코스 만들기·상세(A-05) 화면과 폼 (API-ADM-11~15, FR-CRS-005, #96).
+ * 역할 : 운영자의 코스 목록(A-04)·코스 만들기·상세(A-05) 화면과 폼 (API-ADM-11~16, FR-CRS-005·006, #96·#117).
  * 책임 : - 운영자만 들어온다 (SecurityConfig /admin/**).
  *        - 입력 오류는 "같은 폼 다시 + 칸별 메시지"(_template.md ④, INVALID_INPUT). 없는 트랙·카테고리를 보낸 경우도
  *          그 칸 메시지로 바꾼다 (트랙·카테고리 관리 CourseCatalogAdminController 와 같은 방식). 나머지 오류는 그대로 던진다.
  *        - 수업 만들기·순서 저장은 이 화면(A-05)의 폼이 lesson 영역 주소(API-ADM-17·18)로 보낸다.
+ *        - 공개·비공개(API-ADM-16, #117)는 확인 모달이 보낸다. 공개 조건이 모자라면 상세로 돌아가 토스트로 알린다(③).
  */
 @Controller
 @RequiredArgsConstructor
@@ -96,6 +97,15 @@ public class CourseAdminController {
             }
         }
         return courseView(courseId, model);
+    }
+
+    /* API-ADM-16 */
+    @PostMapping("/admin/courses/{courseId}/visibility")
+    public String visibility(@PathVariable Long courseId, @RequestParam boolean isPublic, RedirectAttributes redirectAttributes) {
+        boolean changed = courseAdminService.changeVisibility(courseId, isPublic);
+        redirectAttributes.addFlashAttribute("toast", !changed ? CourseErrorCode.COURSE_NOT_PUBLISHABLE.getMessage()
+                : isPublic ? "코스를 공개했습니다" : "코스를 비공개했습니다");
+        return "redirect:/admin/courses/" + courseId;
     }
 
     /* 만들기(courseId == null)와 상세는 같은 화면. 상세면 수업 목록·과제 상태를 같이 싣는다 */
