@@ -119,7 +119,21 @@ public class PortfolioManageService {
         return PortfolioSubmitForm.from(getOwned(memberId, portfolioId));
     }
 
-    /* 수정 폼 입력이 틀렸을 때 다시 그릴 U-17 의 코스 */
+    /* U-34 개인 작품 수정 상태(?edit=) 값. 코스 포트폴리오는 U-17 에서 고치므로 여기서는 없는 것으로 본다 */
+    public PortfolioSubmitForm getPersonalEditForm(Long memberId, Long portfolioId) {
+        Portfolio p = getOwned(memberId, portfolioId);
+        if (!p.isPersonal()) {
+            throw new BusinessException(PortfolioErrorCode.PORTFOLIO_NOT_FOUND);
+        }
+        return PortfolioSubmitForm.from(p);
+    }
+
+    /* U-34 는 미인증 회원에게 양식 대신 인증 안내를 보여 준다 (PL-USR-003) */
+    public boolean isEmailVerified(Long memberId) {
+        return memberReader.isEmailVerified(memberId);
+    }
+
+    /* 수정 폼 입력이 틀렸을 때 다시 그릴 U-17 의 코스. 개인 작품이면 null */
     public Long getOwnedCourseId(Long memberId, Long portfolioId) {
         return getOwned(memberId, portfolioId).getCourseId();
     }

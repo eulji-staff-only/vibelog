@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>개인 작품 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/portfolio.css}" href="/css/portfolio.css">
+    <script th:src="@{/js/portfolio.js}" src="/js/portfolio.js" defer></script>
+
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+</head>
+<body>
+<div th:replace="~{common/layout :: header}"></div>
+<!-- U-34 개인 작품 추가·수정 (API-PRT-12·13, FR-PRT-011, #199). 항목은 5개로 고정(#168 결정 A)이고 공개 여부를 고른다.
+     ?edit={portfolioId} 면 그 작품 값으로 채운 수정 상태이고 기존 수정 API-PRT-06 으로 보낸다.
+     입력 확인·공개 여부 선택·작성 중 내용 보존(FR-PRT-010)은 U-17 과 같은 portfolio.js 가 한다. 에이전트 점검 결과·스크린샷은 받지 않는다. -->
+<div class="pf-page">
+
+    <section class="pf-band">
+        <span class="pf-eyebrow">개인 작품</span>
+        <h1 class="pf-title" th:text="${editPortfolioId != null} ? '개인 작품 수정' : '개인 작품 추가'">개인 작품 추가</h1>
+        <p class="pf-lead">코스와 상관없이 만든 작품을 정해진 항목에 맞춰 등록하세요.</p>
+    </section>
+
+    <main class="pf-main">
+        <div class="pf-panel">
+            <div class="pf-body" data-pf>
+                <section class="pf-section" aria-labelledby="pf-personal-h">
+                    <h2 class="pf-h2" id="pf-personal-h">작품 정보</h2>
+
+                    <!-- 이메일 미인증: 양식 대신 인증 안내 (PL-USR-003) -->
+                    <div class="pf-notice" th:if="${!emailVerified}">
+                        <strong>이메일 인증 후 개인 작품을 등록할 수 있습니다.</strong>
+                        <a class="pf-link" th:href="@{/auth/verify}">인증 메일 받기</a>
+                    </div>
+
+                    <!-- 등록(API-PRT-13) 또는 수정(API-PRT-06). 틀리면 같은 폼을 입력 값 그대로 다시 그리고 칸별 메시지를 보여 준다 (_template.md 7-1 ④) -->
+                    <form method="post" novalidate th:object="${portfolioSubmitForm}" th:if="${emailVerified}"
+                          th:action="${editPortfolioId != null} ? @{/portfolios/{id}/edit(id=${editPortfolioId})} : @{/my/portfolios}"
+                          data-submit-form th:attr="data-draft-key=${draftKey}">
+                    <p class="pf-muted" th:text="${editPortfolioId != null} ? '수정하면 지금 내용으로 덮어씁니다.' : '등록하면 내 포트폴리오에 카드로 추가됩니다.'">등록하면 내 포트폴리오에 카드로 추가됩니다.</p>
+                    <p class="pf-msg is-error" role="alert" th:each="err : ${#fields.globalErrors()}" th:text="${err}">금칙어·출품 중 오류</p>
+                    <!-- 작성 중 내용 보존 (FR-PRT-010): 보관해 둔 내용을 채웠을 때만 portfolio.js 가 보여 준다 -->
+                    <p class="pf-msg" role="status" data-draft-notice hidden>임시 저장한 작성 내용을 불러왔습니다. 확인한 뒤 다시 저장해 주세요.</p>
+
+                    <div class="pf-form" data-pf-form>
+                        <div class="pf-field">
+                            <label class="pf-label" for="pf-title">제목 <em>*</em></label>
+                            <input class="pf-input" id="pf-title" type="text" maxlength="50" placeholder="작품 제목" aria-describedby="pf-title-msg" data-required data-max="50" data-key-check th:field="*{title}">
+                            <span class="pf-msg" id="pf-title-msg">50자 이내 · <span data-count>0</span> / 50자</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">제목 오류</span>
+                        </div>
+                        <div class="pf-field">
+                            <label class="pf-label" for="pf-url">링크 <em>*</em></label>
+                            <input class="pf-input" id="pf-url" type="url" placeholder="https://github.com/…" aria-describedby="pf-url-msg" data-url th:field="*{resultUrl}">
+                            <span class="pf-msg" id="pf-url-msg" data-url-msg>GitHub, 배포 URL 등. 접속 여부는 확인하지 않습니다.</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('resultUrl')}" th:text="${#fields.errors('resultUrl')[0]}">링크 오류</span>
+                        </div>
+                        <div class="pf-field">
+                            <label class="pf-label" for="pf-summary">설명 <em>*</em></label>
+                            <input class="pf-input" id="pf-summary" type="text" maxlength="100" placeholder="이 작품을 한 줄로 소개해 주세요" aria-describedby="pf-summary-msg" data-required data-max="100" data-key-check th:field="*{summary}">
+                            <span class="pf-msg" id="pf-summary-msg">100자 이내 · <span data-count>0</span> / 100자</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('summary')}" th:errors="*{summary}">설명 오류</span>
+                        </div>
+                        <div class="pf-field">
+                            <label class="pf-label" for="pf-tools">사용한 AI 도구 <em>*</em></label>
+                            <input class="pf-input" id="pf-tools" type="text" maxlength="200" placeholder="예: Claude Code, Cursor" data-required data-max="200" data-key-check th:field="*{aiTools}">
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('aiTools')}" th:errors="*{aiTools}">도구 오류</span>
+                        </div>
+                        <div class="pf-field">
+                            <label class="pf-label" for="pf-retro">회고 <em>*</em></label>
+                            <textarea class="pf-input pf-textarea" id="pf-retro" maxlength="2000" placeholder="이 작품을 만들며 배운 점과 아쉬운 점" aria-describedby="pf-retro-msg" data-retro data-key-check th:field="*{retrospective}"></textarea>
+                            <span class="pf-msg" id="pf-retro-msg" data-retro-msg>100자 이상 2,000자 이하 · 현재 <span data-count>0</span>자. API 키 형식의 문자열이 있으면 저장 전에 경고하고 자동으로 가립니다.</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('retrospective')}" th:errors="*{retrospective}">회고 오류</span>
+                        </div>
+                        <div class="pf-field">
+                            <span class="pf-label" id="pf-vis-label">공개 여부 <em>*</em></span>
+                            <!-- 기본값 없이 하나를 고른다 (PL-PRT-006). 고른 값은 portfolio.js 가 숨은 칸 isPublic 에 넣는다 -->
+                            <input type="hidden" name="isPublic" th:value="*{isPublic}" data-vis-input>
+                            <div class="pf-chips" role="group" aria-labelledby="pf-vis-label">
+                                <button type="button" class="pf-chip" data-vis data-vis-value="true"
+                                        th:attr="aria-pressed=${portfolioSubmitForm.isPublic != null and portfolioSubmitForm.isPublic}">공개</button>
+                                <button type="button" class="pf-chip" data-vis data-vis-value="false"
+                                        th:attr="aria-pressed=${portfolioSubmitForm.isPublic != null and not portfolioSubmitForm.isPublic}">비공개</button>
+                            </div>
+                            <span class="pf-msg">직접 골라 주세요. 공개하면 공개 프로필에 보이고 콘테스트에 출품할 수 있습니다.</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('isPublic')}" th:errors="*{isPublic}">공개 여부 오류</span>
+                        </div>
+                        <p class="pf-msg is-error" role="alert" data-key-warning hidden>API 키 형식의 문자열이 있습니다. 저장할 때 자동으로 가립니다 (예: sk-****).</p>
+                    </div>
+
+                    <div class="pf-submit">
+                        <a class="pf-btn pf-btn-outline" th:href="@{/my/portfolios}">취소</a>
+                        <span class="pf-muted" id="pf-submit-reason">필수 항목을 모두 입력하고 공개 여부를 고르면 저장할 수 있습니다.</span>
+                        <button type="submit" class="pf-btn pf-btn-navy" aria-disabled="true" aria-describedby="pf-submit-reason" data-submit
+                                th:text="${editPortfolioId != null} ? '수정하기' : '등록하기'">등록하기</button>
+                    </div>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

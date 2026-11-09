@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const shot = root.querySelector('[data-shot]');
     const shotError = root.querySelector('[data-shot-error]');
     const SHOT_MAX = 5 * 1024 * 1024;   // PL-PRT-005·PL-DAT-004. 서버(FileStorage)도 다시 검사한다
-    const shotOk = () => !shot.files.length || shot.files[0].size <= SHOT_MAX;
+    // U-34 개인 작품 양식에는 스크린샷 칸이 없다 (#199)
+    const shotOk = () => !shot || !shot.files.length || shot.files[0].size <= SHOT_MAX;
     // 서버(ApiKeyMasker)와 같은 형식 (PL-PRT-008)
     const apiKey = /(^|[^A-Za-z0-9])(sk-|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/;
     let ready = false;
@@ -73,7 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 제출 성공이 확인되면(이미 제출함 화면, 수정 후 내 포트폴리오) data-draft-clear 로 지운다.
     const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;   // PL-ERR-004 7일
     const draftKey = form.dataset.draftKey;
-    const draftFields = ['resultUrl', 'title', 'summary', 'retrospective', 'aiTools', 'agentResult'];
+    // 양식에 있는 칸만 보관한다 (U-34 개인 작품에는 에이전트 점검 결과가 없다)
+    const draftFields = ['resultUrl', 'title', 'summary', 'retrospective', 'aiTools', 'agentResult'].filter((name) => form.elements[name]);
     const maskKeys = (value) => value.replace(/(?<![A-Za-z0-9])(sk-|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/g, '$1****');
     const readDraft = () => {
         try {
@@ -122,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         keyWarning.hidden = !keyFields.some((f) => apiKey.test(f.value));
 
         // 스크린샷 크기: 너무 크면 서버 업로드 제한에 걸려 입력한 내용이 사라지므로 보내기 전에 막는다
-        shotError.hidden = shotOk();
+        if (shotError) shotError.hidden = shotOk();
 
         ready = shotOk() && isUrl(url.value)
             && required.every((f) => f.value.trim().length > 0 && f.value.length <= Number(f.dataset.max || Infinity))
@@ -146,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
 
     // 준비가 안 됐으면 보내지 않고, 보낼 때는 버튼을 잠가 중복 제출을 막는다 (PL-ERR-003)
-    shot.addEventListener('change', render);
+    if (shot) shot.addEventListener('change', render);
 
     form.addEventListener('submit', (e) => {
         if (!ready || submit.disabled) {

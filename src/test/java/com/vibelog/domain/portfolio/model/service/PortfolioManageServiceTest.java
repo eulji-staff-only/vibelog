@@ -286,6 +286,86 @@ class PortfolioManageServiceTest {
         assertThat(entryCanceled()).isTrue();
     }
 
+    /* ---------- #199 개인 작품 (FR-PRT-011, API-PRT-13·06) ---------- */
+
+    private Long personalId() {
+        entityManager.flush();
+        return jdbcTemplate.queryForObject("SELECT portfolio_id FROM portfolio WHERE member_id = 8801 AND portfolio_type = 'PERSONAL'", Long.class);
+    }
+
+    @Test
+    void 개인_작품은_코스_없이_PERSONAL_로_저장하고_API_키를_가린다() {
+        PortfolioSubmitForm form = form();
+        form.setRetrospective(form.getRetrospective() + " 키 sk-abc123XYZ");
+        form.setAgentResult("보내도 버린다");
+
+        portfolioSubmitService.submitPersonal(ME, form);
+
+        Map<String, Object> row = row(personalId());
+        assertThat(row.get("course_id")).isNull();
+        assertThat(row.get("portfolio_type")).isEqualTo("PERSONAL");
+        assertThat(row.get("title")).isEqualTo("고친 제목");
+        assertThat((String) row.get("retrospective")).contains("sk-****").doesNotContain("abc123XYZ");
+        assertThat(row.get("agent_result")).isNull();
+        assertThat(row.get("screenshot_url")).isNull();
+    }
+
+    @Test
+    void 개인_작품은_여러_개_등록할_수_있다() {
+        portfolioSubmitService.submitPersonal(ME, form());
+        portfolioSubmitService.submitPersonal(ME, form());
+
+        entityManager.flush();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM portfolio WHERE member_id = 8801 AND portfolio_type = 'PERSONAL'", Integer.class)).isEqualTo(2);
+    }
+
+    @Test
+    void 이메일_미인증이면_개인_작품을_등록할_수_없다() {
+        jdbcTemplate.update("INSERT INTO member (member_id, email, nickname, email_verified_at) VALUES (8807, 'pf-c7@vibelog.test', '미인증', NULL)");
+
+        assertThatThrownBy(() -> portfolioSubmitService.submitPersonal(8807L, form()))
+                .hasFieldOrPropertyWithValue("errorCode", CommonErrorCode.EMAIL_NOT_VERIFIED);
+    }
+
+    @Test
+    void 개인_작품_수정은_최신본으로_덮고_에이전트_점검_결과는_받지_않는다() {
+        portfolioSubmitService.submitPersonal(ME, form());
+        Long id = personalId();
+        PortfolioSubmitForm edited = form();
+        edited.setTitle("개인 작품 고침");
+        edited.setAgentResult("보내도 버린다");
+
+        portfolioSubmitService.edit(ME, id, edited, null);
+
+        Map<String, Object> row = row(id);
+        assertThat(row.get("title")).isEqualTo("개인 작품 고침");
+        assertThat(row.get("agent_result")).isNull();
+        assertThat(row.get("portfolio_type")).isEqualTo("PERSONAL");
+    }
+
+    @Test
+    void 수정_상태_폼은_내_개인_작품만_채우고_코스_포트폴리오면_찾을_수_없다() {
+        portfolioSubmitService.submitPersonal(ME, form());
+
+        assertThat(portfolioManageService.getPersonalEditForm(ME, personalId()).getTitle()).isEqualTo("고친 제목");
+        assertThatThrownBy(() -> portfolioManageService.getPersonalEditForm(ME, MINE))
+                .hasFieldOrPropertyWithValue("errorCode", PortfolioErrorCode.PORTFOLIO_NOT_FOUND);
+        assertThatThrownBy(() -> portfolioManageService.getPersonalEditForm(OTHER, personalId()))
+                .hasFieldOrPropertyWithValue("errorCode", CommonErrorCode.NOT_OWNER);
+    }
+
+    @Test
+    void 개인_작품을_지워도_코스_완료_일시는_그대로다() {
+        portfolioSubmitService.submitPersonal(ME, form());
+
+        portfolioManageService.delete(ME, personalId());
+
+        assertThat(row(personalId()).get("deleted_at")).isNotNull();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT completed_at IS NOT NULL FROM enrollment WHERE enrollment_id = 8801", Boolean.class)).isTrue();
+    }
+
     private PortfolioSubmitForm form() {
         PortfolioSubmitForm form = new PortfolioSubmitForm();
         form.setTitle("고친 제목");

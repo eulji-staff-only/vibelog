@@ -30,6 +30,8 @@
         <div class="mp-head">
             <h2 class="mp-h2">제출한 포트폴리오</h2>
             <span class="mp-muted" th:text="|${#lists.size(portfolios)}개|">2개</span>
+            <!-- 개인 작품 추가 → U-34 (FR-PRT-011, #199) -->
+            <a class="mp-btn mp-btn-outline" th:href="@{/my/portfolios/new}">개인 작품 추가</a>
         </div>
 
         <div class="mp-cards" data-mp-list th:unless="${#lists.isEmpty(portfolios)}">
@@ -39,7 +41,7 @@
                         <span class="mp-badge" data-vis-badge th:classappend="${card.isPublic()} ? 'mp-badge-strong' : 'mp-badge-neutral'"
                               th:text="${card.isPublic()} ? '공개' : '비공개'">공개</span>
                         <span class="mp-badge mp-badge-neutral" th:if="${reviewOpenIds.contains(card.portfolioId())}">리뷰 요청 중</span>
-                        <span class="mp-muted" th:text="${card.courseTitle()}">[코스 이름]</span>
+                        <span class="mp-muted" th:text="${card.courseId() != null} ? ${card.courseTitle()} : '개인 작품'">[코스 이름]</span>
                     </div>
                     <a class="mp-card-title" th:href="@{/portfolios/{id}(id=${card.portfolioId()})}" th:text="${card.title()}">[포트폴리오 제목]</a>
                     <p class="mp-card-summary" th:text="${card.summary()}">[한 줄 요약]</p>
@@ -49,10 +51,13 @@
                     <button type="button" class="mp-btn mp-btn-outline" data-vis-toggle
                             th:attr="data-visibility-url=@{/api/portfolios/{id}/visibility(id=${card.portfolioId()})},data-public=${card.isPublic()}"
                             th:text="${card.isPublic()} ? '비공개로 전환' : '공개로 전환'">비공개로 전환</button>
+                    <!-- 수정: 코스 포트폴리오는 U-17 수정 상태, 개인 작품은 U-34 수정 상태 (FR-PRT-006, #199) -->
                     <a class="mp-btn mp-btn-outline" th:if="${card.courseId() != null}"
                        th:href="@{/courses/{id}/portfolio(id=${card.courseId()},edit=true)}">수정</a>
+                    <a class="mp-btn mp-btn-outline" th:if="${card.courseId() == null}"
+                       th:href="@{/my/portfolios/new(edit=${card.portfolioId()})}">수정</a>
                     <button type="button" class="mp-btn mp-btn-text" data-open-delete
-                            th:attr="data-delete-url=@{/portfolios/{id}/delete(id=${card.portfolioId()})}">삭제</button>
+                            th:attr="data-delete-url=@{/portfolios/{id}/delete(id=${card.portfolioId()})},data-course=${card.courseId() != null}">삭제</button>
                 </div>
             </article>
         </div>
@@ -71,7 +76,8 @@
     <div class="mp-modal-box" role="dialog" aria-modal="true" aria-labelledby="mp-delete-title">
         <h2 class="mp-modal-title" id="mp-delete-title" tabindex="-1">포트폴리오를 삭제할까요?</h2>
         <p class="mp-modal-text">삭제하면 포트폴리오 카드와 공개 페이지가 사라지며 되돌릴 수 없습니다.</p>
-        <p class="mp-modal-warn">이 코스의 완료 조건이 다시 미충족 상태가 됩니다.</p>
+        <!-- 코스 포트폴리오만. 개인 작품은 코스가 없어 이 안내를 숨긴다 (my-portfolio.js, #199) -->
+        <p class="mp-modal-warn" data-delete-warn>이 코스의 완료 조건이 다시 미충족 상태가 됩니다.</p>
         <form class="mp-modal-actions" method="post" th:action="@{/portfolios/0/delete}" data-delete-form>
             <button type="button" class="mp-btn mp-btn-outline" data-close-delete>취소</button>
             <button type="submit" class="mp-btn mp-btn-danger">삭제</button>
