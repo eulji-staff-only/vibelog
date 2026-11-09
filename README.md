@@ -496,12 +496,13 @@ public class Quiz extends BaseTimeEntity { ... }
 | PR 종류 | 지정되는 리뷰어 | 머지 조건 (GitHub이 강제) |
 |---|---|---|
 | 모든 PR | 없음 | `build` ✅ + 리뷰 대화(CodeRabbit 코멘트 포함) 모두 해결 + `area-review` ✅ |
-| **P1 PR** — 본문 "🔗 관련 이슈"에 연결한 이슈(`Closes`·`Part of`·`Refs #번호`)나 PR의 마일스톤이 `3. P1 구현` | PM `dyryoo316` + 형상관리 `SeungBinYang` (`area-review` 검사가 추가) | 위 + 둘 중 1명 승인. 작성자 본인은 빠지므로 PM의 PR은 형상관리가, 형상관리의 PR은 PM이 승인 |
+| **P1 PR** — PR 자체의 마일스톤이나 본문 "🔗 관련 이슈"에 연결한 이슈(`Closes`·`Part of`·`Refs #번호`)의 마일스톤이 `3. P1 구현` | PM `dyryoo316` + 형상관리 `SeungBinYang` (`area-review` 검사가 추가) | 위 + 둘 중 1명 승인. 작성자 본인은 빠지므로 PM의 PR은 형상관리가, 형상관리의 PR은 PM이 승인 |
 | P1 PR 중 **영역 간 연동** — 다른 묶음 담당 영역의 파일(`domain/<영역>/`, `templates/<영역>/`, `static/*/<영역>.*`)을 바꾼 PR (예: 상대 영역에 `Fake` 추가) | 위 + **그 영역 담당** ([영역 담당](#영역-담당) 표) | 위 + 그 영역 담당 승인 |
 | P1 PR 중 `sql/`을 바꾼 PR (`Choyeonik`이 아닌 사람이) | 위 + DB 팀 `Choyeonik` | 위 + `Choyeonik` 승인 |
 
-- `area-review` 검사는 PR을 열거나 push하거나 본문을 고칠 때 P1인지 봅니다. P1이 아니면 바로 ✅, P1이면 승인이 들어올 때마다 다시 돌아서 ✅로 바뀝니다.
-- P1 PR인데 이슈 연결을 빠뜨리면 검사가 P1로 보지 못합니다. 본문 "🔗 관련 이슈"에 `Closes #번호`를 꼭 적습니다.
+- `area-review` 검사는 PR을 열거나 push하거나 본문·마일스톤을 바꿀 때 P1인지 봅니다. P1이 아니면 바로 ✅, P1이면 승인이 들어올 때마다 다시 돌아서 ✅로 바뀝니다. 연결한 이슈를 읽지 못하면 ❌입니다.
+- PR에 P1 마일스톤을 따로 달지 않았다면, P1 이슈 연결을 빠뜨렸을 때 검사가 P1로 보지 못합니다. 본문 "🔗 관련 이슈"에 `Closes #번호`를 꼭 적습니다.
+- `main`으로 가는 릴리스 PR은 P1과 상관없이 PM·형상관리 중 1명 승인이 필요합니다 (`area-review` 검사, 영역 담당은 보지 않음).
 - 공통 파일(`global/`, `templates/common/`, `static/css/common.css` 등)과 `contest`·`message`처럼 담당이 없는 영역은 P1이어도 기본 리뷰어만 봅니다.
 - 묶음 B(`course`·`quiz`)는 영역 담당 승인을 요구하지 않습니다 (#204). 기본 리뷰어만 봅니다.
 - 묶음 담당이 바뀌면 [영역 담당](#영역-담당) 표와 [`.github/scripts/area-review.sh`](.github/scripts/area-review.sh)의 담당 표를 같이 고칩니다.

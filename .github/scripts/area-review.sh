@@ -5,8 +5,10 @@
 #          머지 직전 확인은 CodeRabbit 이 맡는다 (리뷰 대화 해결 + build 는 Ruleset 이 그대로 강제).
 #        - P1 PR: PM·형상관리 중 1명(작성자 본인 제외) 승인 + 다른 묶음 담당 영역·sql/ 을 바꿨으면 그 담당 승인.
 #          아직 승인 안 한 사람을 리뷰어로 추가하고, 다 승인되면 통과한다.
-# 책임 : - P1 판단: PR 본문의 Closes·Fixes·Resolves·Part of·Refs #번호 이슈와 PR 자체의 마일스톤 중
-#          하나라도 제목에 "P1" 이 있으면 P1 이다 (마일스톤 "3. P1 구현").
+#        - main 으로 가는 릴리스 PR: P1 과 상관없이 PM·형상관리 중 1명 승인 (모든 영역이 바뀌므로 영역 담당은 보지 않는다).
+#          CODEOWNERS 를 비워 protect-main 의 코드 소유자 승인이 승인자를 가리지 못하므로 여기서 강제한다.
+# 책임 : - P1 판단: PR 자체의 마일스톤과 본문의 Closes·Fixes·Resolves·Part of·Refs #번호 이슈의 마일스톤 중
+#          하나라도 제목에 "P1" 이 있으면 P1 이다 (마일스톤 "3. P1 구현"). 이슈를 읽지 못하면 통과시키지 않는다.
 #        - 영역 ↔ 담당 표는 README "영역 담당" 표와 같게 유지한다. (담당이 바뀌면 이 파일도 고친다)
 # 사용 : PR=<번호> REPO=<owner/name> GH_TOKEN=<토큰> bash .github/scripts/area-review.sh
 #        DRY_RUN=1 이면 리뷰어 추가 없이 결과만 출력한다.
@@ -24,22 +26,30 @@ owner_of() {
   esac
 }
 
-author=$(gh api "repos/$REPO/pulls/$PR" --jq '.user.login')
-report="### 리뷰 검사 (작성자: $author)"$'\n'
+pr_view() { gh api "repos/$REPO/pulls/$PR" --jq "$1"; }
+author=$(pr_view '.user.login')
+base_ref=$(pr_view '.base.ref')
+report="### 리뷰 검사 (작성자: $author, base: $base_ref)"$'\n'
 
-# P1 인지: PR 마일스톤 + 본문에 연결한 이슈의 마일스톤
-milestones=$(gh api "repos/$REPO/pulls/$PR" --jq '.milestone.title // ""')
-issues=$(gh api "repos/$REPO/pulls/$PR" --jq '.body // ""' \
-  | grep -oiE '(close[sd]?|fix(e[sd])?|resolve[sd]?|part of|refs?) #[0-9]+' | grep -oE '[0-9]+' | sort -u || true)
-for n in $issues; do
-  milestones+=$'\n'"$(gh api "repos/$REPO/issues/$n" --jq '.milestone.title // ""' 2>/dev/null || true)"
-done
+if [ "$base_ref" != "main" ]; then
+  # P1 인지: PR 마일스톤 + 본문에 연결한 이슈의 마일스톤
+  milestones=$(pr_view '.milestone.title // ""')
+  issues=$(pr_view '.body // ""' \
+    | grep -oiE '(close[sd]?|fix(e[sd])?|resolve[sd]?|part of|refs?) #[0-9]+' | grep -oE '[0-9]+' | sort -u || true)
+  for n in $issues; do
+    if ! m=$(gh api "repos/$REPO/issues/$n" --jq '.milestone.title // ""'); then
+      echo "연결한 이슈 #$n 을 읽지 못해 P1 인지 알 수 없습니다. 본문의 이슈 번호를 확인하고 다시 돌려 주세요."
+      exit 1
+    fi
+    milestones+=$'\n'"$m"
+  done
 
-if ! printf '%s\n' "$milestones" | grep -q 'P1'; then
-  report+="- P1 이슈가 아님 (연결한 이슈: ${issues//$'\n'/ }) → 사람 리뷰 없이 머지 가능 (CodeRabbit 대화 해결 + build)"$'\n'
-  printf '%s' "$report"
-  [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s' "$report" >> "$GITHUB_STEP_SUMMARY"
-  exit 0
+  if ! printf '%s\n' "$milestones" | grep -q 'P1'; then
+    report+="- P1 이 아님 (PR 마일스톤·연결한 이슈: ${issues//$'\n'/ }) → 사람 리뷰 없이 머지 가능 (CodeRabbit 대화 해결 + build)"$'\n'
+    printf '%s' "$report"
+    [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s' "$report" >> "$GITHUB_STEP_SUMMARY"
+    exit 0
+  fi
 fi
 
 # 사람별 마지막 리뷰 상태가 APPROVED 인 사람
@@ -60,19 +70,23 @@ for r in $base; do
   if is_approved "$r"; then base_ok="$r"; fi
 done
 if [ -n "$base_ok" ]; then
-  report+="- P1 기본 승인 (PM·형상관리 중 1명): ✅ 승인됨 ($base_ok)"$'\n'
+  report+="- 기본 승인 (PM·형상관리 중 1명): ✅ 승인됨 ($base_ok)"$'\n'
 else
-  report+="- P1 기본 승인 (PM·형상관리 중 1명): ❌ 승인 필요"$'\n'
+  report+="- 기본 승인 (PM·형상관리 중 1명): ❌ 승인 필요"$'\n'
   need="$need $base"
 fi
 
-# 바뀐 파일 → 영역 이름. 파일을 옮긴(rename) 경우 원래 위치(previous_filename)도 본다
-files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[] | .filename, (.previous_filename // empty)')
-areas=$(printf '%s\n' "$files" | sed -nE \
-  -e 's#^src/(main|test)/java/com/vibelog/domain/([a-z]+)/.*#\2#p' \
-  -e 's#^src/main/resources/templates/([a-z]+)/.*#\1#p' \
-  -e 's#^src/main/resources/static/(css|js)/([a-z]+)[./].*#\2#p' \
-  -e 's#^sql/.*#sql#p' | sort -u)
+# 바뀐 파일 → 영역 이름. 파일을 옮긴(rename) 경우 원래 위치(previous_filename)도 본다.
+# main 릴리스 PR 은 모든 영역이 바뀌므로 영역 담당은 보지 않는다
+areas=""
+if [ "$base_ref" != "main" ]; then
+  files=$(gh api --paginate "repos/$REPO/pulls/$PR/files" --jq '.[] | .filename, (.previous_filename // empty)')
+  areas=$(printf '%s\n' "$files" | sed -nE \
+    -e 's#^src/(main|test)/java/com/vibelog/domain/([a-z]+)/.*#\2#p' \
+    -e 's#^src/main/resources/templates/([a-z]+)/.*#\1#p' \
+    -e 's#^src/main/resources/static/(css|js)/([a-z]+)[./].*#\2#p' \
+    -e 's#^sql/.*#sql#p' | sort -u)
+fi
 
 for area in $areas; do
   owners=$(owner_of "$area")
@@ -98,5 +112,5 @@ if [ -z "${DRY_RUN:-}" ]; then
       && echo "리뷰어 추가: $o" || echo "리뷰어 추가 실패(권한 없음 등): $o"
   done
 fi
-echo "P1 PR 이라 승인이 필요합니다. 승인되면 이 검사가 다시 돌아 통과합니다."
+echo "P1 PR(또는 main 릴리스 PR)이라 승인이 필요합니다. 승인되면 이 검사가 다시 돌아 통과합니다."
 exit 1

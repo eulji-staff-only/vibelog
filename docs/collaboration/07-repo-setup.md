@@ -134,9 +134,9 @@ bash scripts/setup-labels.sh --clean    # GitHub 기본 라벨(bug, enhancement 
 |---|---|
 | Ruleset Name | `protect-main` |
 | Target branches | `main` |
-| Required approvals | **1** (코드 오너 = PM·형상관리 중 1명) |
+| Required approvals | **1** (누가 승인해야 하는지는 `area-review` 검사가 PM·형상관리 중 1명으로 강제, #287) |
 | Allowed merge methods | **Merge**, **Squash** (Squash는 hotfix용) |
-| Require status checks | `build`만 (`area-review`는 넣지 않음 — develop→main 릴리스 PR은 모든 영역을 바꾸므로) |
+| Require status checks | `build`, `area-review` (#287부터. 릴리스 PR은 영역 담당을 보지 않고 PM·형상관리 중 1명 승인만 본다) |
 
 > ⚠️ **비공개(Private) 저장소 + 무료 플랜**에서는 규칙이 실제로 강제되지 않을 수 있습니다.
 > 공개 저장소로 운영하거나, 학생이라면 [GitHub Education](https://education.github.com/) 혜택을 확인해 보세요.
