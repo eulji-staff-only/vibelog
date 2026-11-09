@@ -28,9 +28,12 @@
             if (title) title.focus();
         };
 
+        // 서버가 처음부터 열어 둔 모달(예: 전송 실패로 돌아온 화면)은 누른 버튼이 없어서, 그 모달의 여는 버튼으로 되돌린다
         const closeModal = (modal) => {
             modal.hidden = true;
-            if (lastTrigger) lastTrigger.focus();
+            const trigger = lastTrigger || document.querySelector(`[data-ui-modal-open="${modal.id}"]`);
+            if (trigger) trigger.focus();
+            lastTrigger = null;
         };
 
         document.addEventListener('click', (e) => {
@@ -52,9 +55,28 @@
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key !== 'Escape') return;
             const openModalEl = document.querySelector('[data-ui-modal]:not([hidden])');
-            if (openModalEl) closeModal(openModalEl);
+            if (!openModalEl) return;
+            if (e.key === 'Escape') {
+                closeModal(openModalEl);
+                return;
+            }
+            if (e.key !== 'Tab') return;
+            // aria-modal: 열려 있는 동안 Tab·Shift+Tab 은 모달 안에서만 돈다 (5-2 키보드 포커스).
+            // 처음 포커스는 제목(tabindex=-1)이라 제목에서 Shift+Tab 도 마지막 요소로 보낸다
+            const controls = [...openModalEl.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])')];
+            if (controls.length === 0) return;
+            const first = controls[0];
+            const last = controls[controls.length - 1];
+            const active = document.activeElement;
+            if (e.shiftKey && (active === first || !controls.includes(active))) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && (active === last || !openModalEl.contains(active))) {
+                e.preventDefault();
+                first.focus();
+            }
         });
     }
 
