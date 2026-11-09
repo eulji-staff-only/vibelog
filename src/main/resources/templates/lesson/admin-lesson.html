@@ -7,15 +7,23 @@
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <link rel="stylesheet" th:href="@{/css/lesson-admin.css}">
+    <!-- 개념 이미지 올리기(API-ADM-25)는 JSON POST 라 CSRF 토큰을 헤더로 보낸다 (README "JSON API 약속") -->
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <script th:src="@{/js/ui.js}" defer></script>
+    <script th:src="@{/js/lesson-admin.js}" defer></script>
 </head>
 <body>
 <!--
-  A-06 수업 편집 (API-ADM-19·20, FR-LSN-011, #100). 활동 추가·수정·순서(API-ADM-21~25, #101)와
-  퀴즈 문항(API-ADM-26~28, FR-LSN-012)·모의고사 문항(API-ADM-29~31, FR-EXM-007) 등록·수정은 이 이슈 범위
-  밖이라 읽기만 하고, 추가 버튼은 비활성 + 이유 문구로 자리만 잡아둔다 (common/ui :: btnReason).
-  퀴즈 문항은 quiz_question Entity가 아직 없어(quiz 영역 기반 작업 전) 목록 대신 안내 상자를 보여준다.
-  왼쪽 메뉴(common/admin-layout, #81)는 아직 develop에 없어 #166과 같은 내용으로 이 PR에 임시로 같이 둔다.
+  A-06 수업 편집 (API-ADM-19·20, FR-LSN-011, #100 / 활동 추가·수정·사용 중지·순서 API-ADM-21~24, 개념
+  이미지 올리기 API-ADM-25, #101 / 공개·비공개 API-ADM-32·33, FR-LSN-014, #118). 퀴즈 문항(API-ADM-26~28,
+  FR-LSN-012)·모의고사 문항(API-ADM-29~31, FR-EXM-007) 등록·수정은 이 이슈 범위 밖이라 읽기만 하고, 추가
+  버튼은 비활성 + 이유 문구로 자리만 잡아둔다 (common/ui :: btnReason). 퀴즈 문항은 quiz_question Entity가
+  아직 없어(quiz 영역 기반 작업 전) 목록 대신 안내 상자를 보여준다.
+  공개 버튼은 빠진 항목(PL-LSN-003)이 있으면 비활성 + 이유 문구로 막는다. 비공개 버튼은 영향 학습자 수
+  (API-ADM-32)를 모달을 열 때 lesson-admin.js가 불러와 경고 문구로 보여준다.
+  개념 본문은 지금 textarea 하나뿐이다 (마크다운↔리치 텍스트 전환 에디터는 의존성 추가라 이번 이슈
+  범위 밖, 팀 논의 뒤 결정). 저장 값은 Service가 항상 MARKDOWN으로 맞춘다.
 -->
 <div class="vl-admin">
     <div th:replace="~{common/admin-layout :: sidebar('courses')}"></div>
@@ -28,9 +36,18 @@
         </nav>
 
         <h1 class="al-title" th:text="${lesson.title()}">수업 제목</h1>
-        <p class="al-sub">
+        <!-- 공개·비공개 (API-ADM-32·33, FR-LSN-014, #118). 비공개→공개는 필수 항목 검사(PL-LSN-003)를 통과해야 한다 -->
+        <div class="al-visibility">
             <span th:replace="~{common/ui :: badge(${lesson.publicLesson()} ? 'success' : 'neutral', ${lesson.publicLesson()} ? '공개' : '비공개')}"></span>
-        </p>
+            <button type="button" class="vl-ui-btn is-navy is-s" th:if="${!lesson.publicLesson()}"
+                    th:attr="aria-disabled=${!lesson.publishStatus().publishable()}"
+                    data-ui-modal-open="lesson-publish-modal">공개</button>
+            <button type="button" class="vl-ui-btn is-outline is-s" th:if="${lesson.publicLesson()}"
+                    id="lesson-unpublish-trigger" th:attr="data-lesson-id=${lesson.lessonId()}"
+                    data-ui-modal-open="lesson-unpublish-modal">비공개</button>
+        </div>
+        <p th:replace="~{common/ui :: btnReason(${'빠진 항목: ' + lesson.publishStatus().missingSummary()})}"
+           th:if="${!lesson.publicLesson() and !lesson.publishStatus().publishable()}"></p>
 
         <!-- 수업 정보 (API-ADM-20). 틀리면 같은 화면에 칸별 메시지로 다시 보여준다 -->
         <section class="vl-ui-panel al-form-panel">
@@ -68,7 +85,7 @@
             </form>
         </section>
 
-        <!-- 활동 / 모의고사 탭 (화면 틀만, 데이터는 읽기만 한다) -->
+        <!-- 활동 / 모의고사 탭 -->
         <div class="vl-ui-tabs" role="tablist" data-ui-tabs>
             <button th:replace="~{common/ui :: tabButton('al-activities-panel', '활동', ${lesson.tab() == 'activities'})}"></button>
             <button th:replace="~{common/ui :: tabButton('al-exam-panel', '모의고사', ${lesson.tab() == 'exam'})}"></button>
@@ -79,19 +96,33 @@
             <section class="vl-ui-panel">
                 <div class="al-panel-head">
                     <h2 class="al-h2">활동 목록</h2>
-                    <button th:replace="~{common/ui :: btnButton('활동 추가', 'outline', 's')}" aria-disabled="true"></button>
+                    <button type="button" class="vl-ui-btn is-outline is-s" data-ui-modal-open="activity-add-modal">활동 추가</button>
                 </div>
-                <p th:replace="~{common/ui :: btnReason('활동 추가·수정·순서 변경은 다음 업데이트에서 열립니다 (#101)')}"></p>
+                <p class="al-hint">드래그로 순서를 바꾼 뒤 "순서 저장"을 눌러 반영합니다. 개념 뒤에는 퀴즈가 하나씩 와야 합니다 (PL-LSN-001).</p>
+
+                <!-- API-ADM-24. 실제 activityIds 값은 lesson-admin.js 가 제출 직전에 현재 드래그 순서로 채운다 -->
+                <form id="activity-order-form" method="post"
+                      th:action="@{/admin/lessons/{id}/activities/order(id=${lesson.lessonId()})}"></form>
 
                 <p class="al-empty" th:if="${lesson.activities().empty}">아직 등록된 활동이 없습니다</p>
-                <ol class="al-activity-list" th:unless="${lesson.activities().empty}">
-                    <li class="al-activity-row" th:each="activity : ${lesson.activities()}">
+                <ol class="al-activity-list" th:unless="${lesson.activities().empty}" data-activity-reorder>
+                    <li class="al-activity-row" th:each="activity : ${lesson.activities()}"
+                        th:attr="data-activity-id=${activity.activityId()}" draggable="true">
                         <span class="al-activity-no" th:text="${activity.sortOrder()}">1</span>
                         <span class="al-activity-kind" th:text="${activity.activityType().name() == 'CONCEPT'} ? '개념' : '퀴즈'">개념</span>
                         <span class="al-activity-title" th:text="${activity.title()}">활동 제목</span>
                         <span th:replace="~{common/ui :: badge(${activity.active()} ? 'success' : 'neutral', ${activity.active()} ? '사용' : '중지')}"></span>
+                        <div class="al-activity-actions">
+                            <button type="button" class="vl-ui-btn is-outline is-s"
+                                    th:attr="data-ui-modal-open='activity-edit-modal-' + ${activity.activityId()}">수정</button>
+                            <button type="button" class="vl-ui-btn is-outline is-s" th:if="${activity.active()}"
+                                    th:attr="data-ui-modal-open='activity-deactivate-modal-' + ${activity.activityId()}">사용 중지</button>
+                        </div>
                     </li>
                 </ol>
+                <div th:unless="${lesson.activities().empty}">
+                    <button type="submit" form="activity-order-form" class="vl-ui-btn is-navy is-s">순서 저장</button>
+                </div>
 
                 <div th:replace="~{common/ui :: notice('info', '퀴즈 문항', '퀴즈 문항 등록·관리 기능은 다음 업데이트에서 열립니다 (FR-LSN-012)')}"></div>
 
@@ -125,5 +156,162 @@
         </div>
     </main>
 </div>
+
+<!-- 활동 추가 (API-ADM-21) -->
+<div class="vl-ui-modal" hidden id="activity-add-modal" role="dialog" aria-modal="true"
+     th:attr="data-ui-modal='activity-add-modal', aria-labelledby='activity-add-modal-title'">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="activity-add-modal-title" tabindex="-1">활동 추가</h2>
+        <form class="al-form" method="post" th:action="@{/admin/lessons/{id}/activities(id=${lesson.lessonId()})}">
+            <div class="al-field">
+                <label for="activity-add-type">활동 종류</label>
+                <select id="activity-add-type" name="activityType">
+                    <option value="CONCEPT">개념</option>
+                    <option value="QUIZ">퀴즈</option>
+                </select>
+            </div>
+            <div class="al-field">
+                <label for="activity-add-title">제목</label>
+                <input id="activity-add-title" type="text" name="title" maxlength="100" required>
+            </div>
+            <div class="al-field">
+                <label for="activity-add-body">개념 본문</label>
+                <textarea id="activity-add-body" name="body" style="min-height: 160px"></textarea>
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden
+                       id="activity-add-image-file" data-image-upload-target="activity-add-body">
+                <button type="button" class="vl-ui-btn is-outline is-s" data-image-upload-trigger="activity-add-image-file">이미지 올리기</button>
+            </div>
+            <div class="al-field">
+                <label for="activity-add-tool-note-url">도구 노트 링크</label>
+                <input id="activity-add-tool-note-url" type="text" name="toolNoteUrl" maxlength="500">
+            </div>
+            <div class="al-field al-field-inline">
+                <label for="activity-add-estimated-minutes">예상 소요 시간(분)</label>
+                <input id="activity-add-estimated-minutes" type="number" min="1" name="estimatedMinutes">
+            </div>
+            <div class="al-field">
+                <label for="activity-add-tags">개념 태그 (쉼표로 구분)</label>
+                <input id="activity-add-tags" type="text" name="tagNames" placeholder="변수, 조건문">
+            </div>
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">추가</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 활동별 수정(API-ADM-22)·사용 중지(API-ADM-23) 모달 -->
+<th:block th:each="activity : ${lesson.activities()}">
+    <div class="vl-ui-modal" hidden th:id="'activity-edit-modal-' + ${activity.activityId()}"
+         role="dialog" aria-modal="true"
+         th:attr="data-ui-modal='activity-edit-modal-' + ${activity.activityId()},
+                   aria-labelledby='activity-edit-modal-' + ${activity.activityId()} + '-title'">
+        <div class="vl-ui-modal__box">
+            <h2 class="vl-ui-modal__title" tabindex="-1"
+                th:id="'activity-edit-modal-' + ${activity.activityId()} + '-title'">활동 수정</h2>
+            <form class="al-form" method="post"
+                  th:action="@{/admin/activities/{id}/edit(id=${activity.activityId()})}">
+                <div class="al-field">
+                    <label th:for="'activity-edit-type-' + ${activity.activityId()}">활동 종류</label>
+                    <!-- 만든 뒤에는 바꿀 수 없다 (모의고사 열림 계약·연관 개념 참조가 깨짐, Choyeonik 리뷰) -->
+                    <select th:id="'activity-edit-type-' + ${activity.activityId()}" disabled>
+                        <option value="CONCEPT" th:selected="${activity.activityType().name() == 'CONCEPT'}">개념</option>
+                        <option value="QUIZ" th:selected="${activity.activityType().name() == 'QUIZ'}">퀴즈</option>
+                    </select>
+                    <input type="hidden" name="activityType" th:value="${activity.activityType()}">
+                </div>
+                <div class="al-field">
+                    <label th:for="'activity-edit-title-' + ${activity.activityId()}">제목</label>
+                    <input th:id="'activity-edit-title-' + ${activity.activityId()}" type="text" name="title"
+                           maxlength="100" required th:value="${activity.title()}">
+                </div>
+                <div class="al-field">
+                    <label th:for="'activity-edit-body-' + ${activity.activityId()}">개념 본문</label>
+                    <textarea th:id="'activity-edit-body-' + ${activity.activityId()}" name="body"
+                              style="min-height: 160px" th:text="${activity.body()}"></textarea>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" hidden
+                           th:id="'activity-edit-image-file-' + ${activity.activityId()}"
+                           th:attr="data-image-upload-target='activity-edit-body-' + ${activity.activityId()}">
+                    <button type="button" class="vl-ui-btn is-outline is-s"
+                            th:attr="data-image-upload-trigger='activity-edit-image-file-' + ${activity.activityId()}">이미지 올리기</button>
+                </div>
+                <div class="al-field">
+                    <label th:for="'activity-edit-tool-note-url-' + ${activity.activityId()}">도구 노트 링크</label>
+                    <input th:id="'activity-edit-tool-note-url-' + ${activity.activityId()}" type="text"
+                           name="toolNoteUrl" maxlength="500" th:value="${activity.toolNoteUrl()}">
+                </div>
+                <div class="al-field al-field-inline">
+                    <label th:for="'activity-edit-estimated-minutes-' + ${activity.activityId()}">예상 소요 시간(분)</label>
+                    <input th:id="'activity-edit-estimated-minutes-' + ${activity.activityId()}" type="number"
+                           min="1" name="estimatedMinutes" th:value="${activity.estimatedMinutes()}">
+                </div>
+                <div class="al-field">
+                    <label th:for="'activity-edit-tags-' + ${activity.activityId()}">개념 태그 (쉼표로 구분)</label>
+                    <input th:id="'activity-edit-tags-' + ${activity.activityId()}" type="text" name="tagNames"
+                           th:value="${activity.tagNamesJoined()}">
+                </div>
+                <div class="vl-ui-modal__actions">
+                    <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                    <button type="submit" class="vl-ui-btn is-navy">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="vl-ui-modal" hidden th:if="${activity.active()}"
+         th:id="'activity-deactivate-modal-' + ${activity.activityId()}"
+         role="dialog" aria-modal="true"
+         th:attr="data-ui-modal='activity-deactivate-modal-' + ${activity.activityId()},
+                   aria-labelledby='activity-deactivate-modal-' + ${activity.activityId()} + '-title'">
+        <div class="vl-ui-modal__box">
+            <h2 class="vl-ui-modal__title" tabindex="-1"
+                th:id="'activity-deactivate-modal-' + ${activity.activityId()} + '-title'">활동 사용 중지</h2>
+            <p class="vl-ui-modal__body" th:text="|'${activity.title()}' 활동을 사용 중지할까요? 학습자 진도 기록은 그대로 남습니다.|">
+                정말 사용 중지할까요?
+            </p>
+            <form method="post" th:action="@{/admin/activities/{id}/deactivate(id=${activity.activityId()})}">
+                <div class="vl-ui-modal__actions">
+                    <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                    <button type="submit" class="vl-ui-btn is-navy">사용 중지</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</th:block>
+
+<!-- 수업 공개 (API-ADM-33, FR-LSN-014) -->
+<div class="vl-ui-modal" hidden id="lesson-publish-modal" role="dialog" aria-modal="true"
+     th:attr="data-ui-modal='lesson-publish-modal', aria-labelledby='lesson-publish-modal-title'">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="lesson-publish-modal-title" tabindex="-1">수업 공개</h2>
+        <p class="vl-ui-modal__body">이 수업을 공개할까요? 공개하면 학습자가 이 수업을 볼 수 있습니다.</p>
+        <form method="post" th:action="@{/admin/lessons/{id}/visibility(id=${lesson.lessonId()})}">
+            <input type="hidden" name="isPublic" value="true">
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">공개</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 수업 비공개 (API-ADM-33, FR-LSN-014). 영향 학습자 수(API-ADM-32)는 열 때 lesson-admin.js가 채운다 -->
+<div class="vl-ui-modal" hidden id="lesson-unpublish-modal" role="dialog" aria-modal="true"
+     th:attr="data-ui-modal='lesson-unpublish-modal', aria-labelledby='lesson-unpublish-modal-title'">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="lesson-unpublish-modal-title" tabindex="-1">수업 비공개</h2>
+        <p class="vl-ui-modal__body" id="lesson-unpublish-modal-body">이 수업을 비공개할까요?</p>
+        <form method="post" th:action="@{/admin/lessons/{id}/visibility(id=${lesson.lessonId()})}">
+            <input type="hidden" name="isPublic" value="false">
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">비공개</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div th:replace="~{common/ui :: toastContainer}"></div>
 </body>
 </html>

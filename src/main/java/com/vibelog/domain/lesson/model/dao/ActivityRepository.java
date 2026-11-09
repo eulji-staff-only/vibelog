@@ -29,4 +29,7 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
     Optional<Activity> findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(
             Long lessonId, ActivityType activityType);
+
+    /* 새 활동의 다음 순서 계산(API-ADM-21, #101). uk_activity_lesson_sort 가 사용 중지 활동도 포함해 걸려 있어 전체에서 구한다 */
+    Optional<Activity> findTopByLessonIdOrderBySortOrderDesc(Long lessonId);
 }

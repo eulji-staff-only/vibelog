@@ -7,52 +7,63 @@
     <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
     <link rel="stylesheet" th:href="@{/css/portfolio.css}" href="/css/portfolio.css">
     <script th:src="@{/js/portfolio.js}" src="/js/portfolio.js" defer></script>
+
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
 </head>
 <body>
 <div th:replace="~{common/layout :: header}"></div>
-<!-- U-17 포트폴리오. 화면 선행 작업(#57): 문구는 샘플이고, 과제 데이터·스텝 체크 저장·제출은 ③ 단계(API-PRT-01~04)에서 붙인다.
-     공통 헤더·푸터는 #133에서 적용했다. 버튼·안내 상자 조각(#46)은 ③ 단계에서 바꾼다. -->
+<!-- U-17 포트폴리오. 과제·스텝 체크·설정 파일은 #112(API-PRT-01~03), 제출(API-PRT-04)은 #113에서 연결했다. 수정 상태(edit=true)는 #114.
+     공통 헤더·푸터는 #133에서 적용했다. 버튼·안내 상자 조각(#46)은 아직 화면 전용 클래스를 쓴다. -->
 <div class="pf-page">
 
     <section class="pf-band">
-        <span class="pf-eyebrow">[트랙] · [코스 이름]</span>
+        <span class="pf-eyebrow" th:text="${page.courseTitle}">[코스 이름]</span>
         <h1 class="pf-title">포트폴리오</h1>
         <p class="pf-lead">과제를 읽고 결과물을 만든 뒤, 맨 아래에서 제출하세요.</p>
     </section>
 
     <main class="pf-main">
+        <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
         <div class="pf-panel">
 
-            <!-- 잠김 상태 (PL-PRT-001). ③ 단계에서 실제 조건으로 보여 준다. -->
-            <section class="pf-locked" data-pf-locked hidden>
+            <!-- 잠김 상태 (PL-PRT-001): 마지막 공개 수업의 리포트(U-16)로 안내한다. 공개 수업이 없으면 내 학습으로 -->
+            <section class="pf-locked" th:if="${!page.unlocked}">
                 <h2 class="pf-h2">아직 열리지 않았습니다</h2>
                 <div class="pf-notice">
                     <strong>마지막 수업의 오답 분석 리포트를 확인하면 열립니다.</strong>
                     <p>남은 수업을 마치면 포트폴리오 과제를 볼 수 있습니다.</p>
-                    <!-- 리포트 화면(U-16) 주소에는 lessonId 가 필요해 ③ 단계에서 연결한다. -->
-                    <a class="pf-link" href="#">리포트 보러 가기</a>
+                    <a class="pf-link" th:if="${page.reportLessonId != null}"
+                       th:href="@{/lessons/{id}/exam/report(id=${page.reportLessonId})}">리포트 보러 가기</a>
+                    <a class="pf-link" th:unless="${page.reportLessonId != null}" th:href="@{/my/learning}">내 학습으로</a>
                 </div>
             </section>
 
-            <div class="pf-body" data-pf>
+            <div class="pf-body" data-pf th:if="${page.unlocked}">
                 <section class="pf-section" aria-labelledby="pf-task-h">
                     <h2 class="pf-h2" id="pf-task-h">과제</h2>
                     <dl class="pf-task">
-                        <dt>주제</dt><dd>[과제 주제]</dd>
-                        <dt>학습 목표</dt><dd>[학습 목표]</dd>
+                        <dt>주제</dt><dd th:text="${page.topic}">[과제 주제]</dd>
+                        <dt>학습 목표</dt><dd class="pf-pre" th:text="${page.goal}">[학습 목표]</dd>
                     </dl>
                 </section>
 
-                <section class="pf-section" aria-labelledby="pf-step-h">
+                <section class="pf-section" aria-labelledby="pf-step-h" th:if="${!#lists.isEmpty(page.steps)}">
                     <div class="pf-section-head">
                         <h2 class="pf-h2" id="pf-step-h">스텝 가이드</h2>
-                        <span class="pf-muted">체크는 자동 저장됩니다 · <span data-step-done>0</span> / <span data-step-total>3</span> 완료</span>
+                        <span class="pf-muted">체크는 자동 저장됩니다 ·
+                            <span data-step-done th:text="${page.checkedCount}">0</span> / <span data-step-total th:text="${#lists.size(page.steps)}">3</span> 완료</span>
                     </div>
                     <ul class="pf-steps">
-                        <li><label class="pf-step"><input type="checkbox" data-step><span><strong>[스텝 1 제목]</strong><span class="pf-muted">[스텝 설명]</span></span></label></li>
-                        <li><label class="pf-step"><input type="checkbox" data-step><span><strong>[스텝 2 제목]</strong><span class="pf-muted">[스텝 설명]</span></span></label></li>
-                        <li><label class="pf-step"><input type="checkbox" data-step><span><strong>[스텝 3 제목]</strong><span class="pf-muted">[스텝 설명]</span></span></label></li>
+                        <li th:each="step : ${page.steps}">
+                            <label class="pf-step">
+                                <input type="checkbox" data-step th:checked="${step.checked}"
+                                       th:attr="data-check-url=@{/api/guide-steps/{id}/check(id=${step.guideStepId})}">
+                                <span class="pf-pre" th:text="${step.content}">[스텝 내용]</span>
+                            </label>
+                        </li>
                     </ul>
+                    <p class="pf-msg is-error" role="alert" data-step-error hidden></p>
                 </section>
 
                 <section class="pf-section" aria-labelledby="pf-agent-h">
@@ -61,74 +72,103 @@
                         <strong>실행은 내 환경에서 합니다.</strong>
                         <p>서비스는 설명과 설정 파일만 제공하고, 실행 결과는 자동으로 받지 않습니다. 점검 결과는 제출 양식의 선택 항목에 직접 적을 수 있습니다.</p>
                     </div>
-                    <div><a class="pf-btn pf-btn-outline" href="portfolio/agent-file">설정 파일 내려받기</a></div>
-                    <div class="pf-accordion">
-                        <details><summary>세팅 방법</summary><p>[세팅 방법 설명]</p></details>
-                        <details><summary>평가 기준</summary><p>[평가 기준 설명]</p></details>
-                        <details><summary>실행 방법</summary><p>[실행 방법 설명]</p></details>
-                        <details><summary>실행이 안 될 때</summary><p>[체크리스트]</p></details>
+                    <div th:if="${page.hasAgentFile}">
+                        <a class="pf-btn pf-btn-outline" th:href="@{/courses/{id}/portfolio/agent-file(id=${page.courseId})}">설정 파일 내려받기</a>
                     </div>
+                    <!-- 세팅 방법·평가 기준·실행 방법·"실행이 안 될 때"는 운영자가 한 칸(agent_guide)에 함께 쓴다 (FR-PRT-013) -->
+                    <p class="pf-guide pf-pre" th:text="${page.agentGuide}">[세팅 방법 · 평가 기준 · 실행 방법 · 실행이 안 될 때]</p>
                 </section>
 
                 <section class="pf-section" aria-labelledby="pf-submit-h">
                     <h2 class="pf-h2" id="pf-submit-h">포트폴리오 제출</h2>
+
+                    <!-- 이미 제출함: 수정 상태(edit=true)는 #114 에서 붙인다 -->
+                    <div class="pf-notice" th:if="${page.submittedPortfolioId != null}">
+                        <strong>이 코스의 포트폴리오를 제출했습니다.</strong>
+                        <a class="pf-link" th:href="@{/portfolios/{id}(id=${page.submittedPortfolioId})}">내 포트폴리오 보기</a>
+                    </div>
+
+                    <!-- 이메일 미인증: 제출 대신 인증 안내 (PL-USR-003) -->
+                    <div class="pf-notice" th:if="${page.submittedPortfolioId == null and !page.emailVerified}">
+                        <strong>이메일 인증 후 포트폴리오를 제출할 수 있습니다.</strong>
+                        <a class="pf-link" th:href="@{/auth/verify}">인증 메일 받기</a>
+                    </div>
+
+                    <!-- 제출 양식 (API-PRT-04). 틀리면 같은 폼을 입력 값 그대로 다시 그리고 칸별 메시지를 보여 준다 (_template.md 7-1 ④) -->
+                    <form method="post" enctype="multipart/form-data" novalidate th:object="${portfolioSubmitForm}"
+                          th:action="@{/courses/{id}/portfolio(id=${page.courseId})}"
+                          th:if="${page.submittedPortfolioId == null and page.emailVerified}" data-submit-form>
                     <p class="pf-muted">제출하면 그대로 포트폴리오 카드로 등록되고 코스가 완료됩니다.</p>
+                    <p class="pf-msg is-error" role="alert" th:each="err : ${#fields.globalErrors()}" th:text="${err}">금칙어·파일 오류</p>
 
                     <div class="pf-form" data-pf-form>
                         <div class="pf-field">
                             <label class="pf-label" for="pf-url">결과물 링크 <em>*</em></label>
-                            <input class="pf-input" id="pf-url" type="url" placeholder="https://github.com/…" aria-describedby="pf-url-msg" data-url>
+                            <input class="pf-input" id="pf-url" type="url" placeholder="https://github.com/…" aria-describedby="pf-url-msg" data-url th:field="*{resultUrl}">
                             <span class="pf-msg" id="pf-url-msg" data-url-msg>GitHub, 배포 URL 등. 접속 여부는 확인하지 않습니다.</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('resultUrl')}" th:text="${#fields.errors('resultUrl')[0]}">링크 오류</span>
                         </div>
                         <div class="pf-field">
                             <label class="pf-label" for="pf-title">제목 <em>*</em></label>
-                            <input class="pf-input" id="pf-title" type="text" maxlength="50" placeholder="포트폴리오 제목" aria-describedby="pf-title-msg" data-required data-max="50">
+                            <input class="pf-input" id="pf-title" type="text" maxlength="50" placeholder="포트폴리오 제목" aria-describedby="pf-title-msg" data-required data-max="50" data-key-check th:field="*{title}">
                             <span class="pf-msg" id="pf-title-msg">50자 이내 · <span data-count>0</span> / 50자</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">제목 오류</span>
                         </div>
                         <div class="pf-field">
                             <label class="pf-label" for="pf-summary">한 줄 요약 <em>*</em></label>
-                            <input class="pf-input" id="pf-summary" type="text" maxlength="100" placeholder="[한 줄 요약]" aria-describedby="pf-summary-msg" data-required data-max="100">
+                            <input class="pf-input" id="pf-summary" type="text" maxlength="100" placeholder="이 작품을 한 줄로 소개해 주세요" aria-describedby="pf-summary-msg" data-required data-max="100" data-key-check th:field="*{summary}">
                             <span class="pf-msg" id="pf-summary-msg">100자 이내 · <span data-count>0</span> / 100자</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('summary')}" th:errors="*{summary}">요약 오류</span>
                         </div>
                         <div class="pf-field">
                             <label class="pf-label" for="pf-retro">회고 <em>*</em></label>
-                            <textarea class="pf-input pf-textarea" id="pf-retro" maxlength="2000" placeholder="[이번 코스에서 배운 점과 아쉬운 점]" aria-describedby="pf-retro-msg" data-retro></textarea>
+                            <textarea class="pf-input pf-textarea" id="pf-retro" maxlength="2000" placeholder="이번 코스에서 배운 점과 아쉬운 점" aria-describedby="pf-retro-msg" data-retro data-key-check th:field="*{retrospective}"></textarea>
                             <span class="pf-msg" id="pf-retro-msg" data-retro-msg>100자 이상 2,000자 이하 · 현재 <span data-count>0</span>자. API 키 형식의 문자열이 있으면 저장 전에 경고하고 자동으로 가립니다.</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('retrospective')}" th:errors="*{retrospective}">회고 오류</span>
                         </div>
                         <div class="pf-field">
                             <label class="pf-label" for="pf-tools">사용한 AI 도구·모델 <em>*</em></label>
-                            <input class="pf-input" id="pf-tools" type="text" placeholder="[도구 · 모델]" data-required>
+                            <input class="pf-input" id="pf-tools" type="text" maxlength="200" placeholder="예: Claude Code, Cursor" data-required data-max="200" data-key-check th:field="*{aiTools}">
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('aiTools')}" th:errors="*{aiTools}">도구 오류</span>
                         </div>
                         <div class="pf-field">
                             <span class="pf-label" id="pf-vis-label">공개 여부 <em>*</em></span>
+                            <!-- 기본값 없이 하나를 고른다 (PL-PRT-006). 고른 값은 portfolio.js 가 숨은 칸 isPublic 에 넣는다 -->
+                            <input type="hidden" name="isPublic" th:value="*{isPublic}" data-vis-input>
                             <div class="pf-chips" role="group" aria-labelledby="pf-vis-label">
-                                <button type="button" class="pf-chip" aria-pressed="false" data-vis>공개</button>
-                                <button type="button" class="pf-chip" aria-pressed="false" data-vis>비공개</button>
+                                <button type="button" class="pf-chip" data-vis data-vis-value="true"
+                                        th:attr="aria-pressed=${portfolioSubmitForm.isPublic != null and portfolioSubmitForm.isPublic}">공개</button>
+                                <button type="button" class="pf-chip" data-vis data-vis-value="false"
+                                        th:attr="aria-pressed=${portfolioSubmitForm.isPublic != null and not portfolioSubmitForm.isPublic}">비공개</button>
                             </div>
                             <span class="pf-msg">제출할 때 직접 골라 주세요. 공개하면 공개 프로필과 같은 코스 작품 보기에 보입니다.</span>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('isPublic')}" th:errors="*{isPublic}">공개 여부 오류</span>
                         </div>
 
                         <hr class="pf-divider">
 
                         <div class="pf-field">
                             <label class="pf-label" for="pf-agent-result">에이전트 점검 결과 (선택)</label>
-                            <textarea class="pf-input pf-textarea" id="pf-agent-result" placeholder="[평가 에이전트를 실행한 결과를 직접 적어 주세요]"></textarea>
+                            <textarea class="pf-input pf-textarea" id="pf-agent-result" placeholder="평가 에이전트를 실행한 결과를 직접 적어 주세요" data-key-check th:field="*{agentResult}"></textarea>
+                            <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('agentResult')}" th:errors="*{agentResult}">점검 결과 오류</span>
                         </div>
                         <div class="pf-field">
                             <span class="pf-label">스크린샷 (선택)</span>
                             <div class="pf-upload">
                                 <label class="pf-btn pf-btn-outline pf-btn-s" for="pf-screenshot">이미지 추가</label>
-                                <input class="pf-sr" id="pf-screenshot" type="file" accept="image/jpeg,image/png,image/webp">
+                                <input class="pf-sr" id="pf-screenshot" type="file" name="screenshot" accept="image/jpeg,image/png,image/webp" data-shot>
                                 <span class="pf-msg">JPG·PNG·WebP · 1장 · 5MB</span>
                             </div>
+                            <span class="pf-msg is-error" role="alert" data-shot-error hidden>스크린샷은 5MB까지 올릴 수 있습니다. 더 작은 이미지를 골라 주세요.</span>
                         </div>
+                        <p class="pf-msg is-error" role="alert" data-key-warning hidden>API 키 형식의 문자열이 있습니다. 저장할 때 자동으로 가립니다 (예: sk-****).</p>
                     </div>
 
                     <div class="pf-submit">
                         <span class="pf-muted" id="pf-submit-reason">필수 항목을 모두 입력하고 공개 여부를 고르면 제출할 수 있습니다.</span>
-                        <!-- 제출(API-PRT-04, POST)은 ③ 단계. 지금은 코스 완료 화면(U-18)으로 이동만 한다. -->
-                        <a class="pf-btn pf-btn-navy" href="complete" aria-disabled="true" aria-describedby="pf-submit-reason" data-submit>제출하기</a>
+                        <button type="submit" class="pf-btn pf-btn-navy" aria-disabled="true" aria-describedby="pf-submit-reason" data-submit>제출하기</button>
                     </div>
+                    </form>
                 </section>
             </div>
         </div>
