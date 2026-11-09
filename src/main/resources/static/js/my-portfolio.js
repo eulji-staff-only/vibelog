@@ -54,6 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const open = (button) => {
         opener = button;
         form.action = button.dataset.deleteUrl;
+        // 개인 작품은 코스가 없어 "완료 조건이 다시 미충족" 안내를 숨긴다 (#199)
+        modal.querySelector('[data-delete-warn]').hidden = button.dataset.course !== 'true';
         modal.hidden = false;
         modal.querySelector('#mp-delete-title').focus();
     };

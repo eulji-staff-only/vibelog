@@ -74,6 +74,21 @@ public class Portfolio extends BaseTimeEntity {
     }
 
     /*
+     * 개인 작품을 만든다 (FR-PRT-011, portfolio.md API-PRT-13). 코스가 없고(course_id NULL, ck_portfolio_type_course),
+     * 에이전트 점검 결과·스크린샷은 코스 과제 전용이라 비운다. 입력 검증·API 키 가리기는 Service 에서 끝낸 값을 받는다
+     */
+    public static Portfolio createPersonal(Long memberId, String title, String resultUrl, String summary,
+                                           String retrospective, String aiTools, boolean isPublic) {
+        Portfolio portfolio = create(memberId, null, title, resultUrl, summary, retrospective, aiTools, isPublic, null, null);
+        portfolio.portfolioType = PortfolioType.PERSONAL;
+        return portfolio;
+    }
+
+    public boolean isPersonal() {
+        return portfolioType == PortfolioType.PERSONAL;
+    }
+
+    /*
      * 삭제 표시한 코스 작품을 같은 코스로 다시 제출하면 이 행을 되살려 덮어쓴다 (DB 설계서 5-4, uk_portfolio_member_course 유지).
      * 입력 검증·API 키 가리기는 Service 에서 끝낸 값을 받는다
      */

@@ -36,6 +36,8 @@ import static com.vibelog.domain.portfolio.model.policy.ApiKeyMasker.mask;
  *        - 수정은 제출과 같은 폼·같은 검사(인증·금칙어·API 키·길이)를 하고 최신본으로 덮는다 (PL-PRT-007).
  *          본인 것이 아니면 NOT_OWNER. 스크린샷은 새로 올렸을 때만 바꾼다.
  *          콘테스트 출품 중(투표가 끝나기 전)이면 contest 계약 ⑮ isEntered 로 막는다 (CONTEST_ENTERED, PL-PRT-007, #314).
+ *        - 개인 작품(FR-PRT-011, API-PRT-13, #199): 코스 없이 고정 항목 5개 + 공개 여부만 받는다. 검사(인증·금칙어·API 키 가리기·길이)는
+ *          코스 포트폴리오와 같고, 에이전트 점검 결과·스크린샷은 받지 않는다 (보내도 버린다). 수정도 같은 규칙이다.
  *          수정 폼에도 공개 여부가 있어, 비공개로 저장하면 계약 ⑭ 로 열린 리뷰 요청을 닫는다 (FR-REV-005).
  */
 @Service
@@ -77,6 +79,15 @@ public class PortfolioSubmitService {
         portfolioEnrollmentProgress.recordSubmitted(memberId, courseId);
     }
 
+    /* API-PRT-13 개인 작품 등록. 개수 제한은 없다 */
+    @Transactional
+    public void submitPersonal(Long memberId, PortfolioSubmitForm form) {
+        requireEmailVerified(memberId);
+        checkPersonalBannedWords(form);
+        portfolioRepository.save(Portfolio.createPersonal(memberId, mask(form.getTitle()), form.getResultUrl(),
+                mask(form.getSummary()), mask(form.getRetrospective()), mask(form.getAiTools()), form.getIsPublic()));
+    }
+
     /* API-PRT-06 수정: 최신본으로 덮는다 */
     @Transactional
     public void edit(Long memberId, Long portfolioId, PortfolioSubmitForm form, MultipartFile screenshot) {
@@ -85,9 +96,16 @@ public class PortfolioSubmitService {
             throw new BusinessException(PortfolioErrorCode.CONTEST_ENTERED);
         }
         requireEmailVerified(memberId);
-        String agentResult = checkAndMaskAgentResult(form);
+        String agentResult = null;
+        String screenshotUrl = null;
+        if (portfolio.isPersonal()) {
+            checkPersonalBannedWords(form);   // 개인 작품은 에이전트 점검 결과·스크린샷을 받지 않는다
+        } else {
+            agentResult = checkAndMaskAgentResult(form);
+            screenshotUrl = saveScreenshot(screenshot);
+        }
         portfolio.edit(mask(form.getTitle()), form.getResultUrl(), mask(form.getSummary()), mask(form.getRetrospective()),
-                mask(form.getAiTools()), form.getIsPublic(), agentResult, saveScreenshot(screenshot));
+                mask(form.getAiTools()), form.getIsPublic(), agentResult, screenshotUrl);
         if (!form.getIsPublic()) {
             reviewRequestCloser.closeOpenRequests(portfolioId);
         }
@@ -109,6 +127,10 @@ public class PortfolioSubmitService {
             throw new BusinessException(PortfolioErrorCode.INVALID_INPUT);
         }
         return agentResult;
+    }
+
+    private void checkPersonalBannedWords(PortfolioSubmitForm form) {
+        bannedWordPolicy.check(form.getTitle(), form.getSummary(), form.getRetrospective(), form.getAiTools());
     }
 
     private String saveScreenshot(MultipartFile screenshot) {
