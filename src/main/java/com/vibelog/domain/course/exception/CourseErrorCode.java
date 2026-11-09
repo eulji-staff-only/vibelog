@@ -17,7 +17,9 @@ import org.springframework.http.HttpStatus;
 public enum CourseErrorCode implements ErrorCode {
 
     TRACK_NOT_FOUND(HttpStatus.NOT_FOUND, "트랙을 찾을 수 없습니다."),
-    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다.");
+    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다."),
+    /* 진단 제출(API-DGN-02): 문항 수와 답 수가 다르거나, 문항에 없는 보기를 보냈을 때. 문구는 GlobalExceptionHandler 와 같다 */
+    INVALID_INPUT(HttpStatus.BAD_REQUEST, "입력 값을 확인해주세요.");
 
     private final HttpStatus status;
     private final String message;
