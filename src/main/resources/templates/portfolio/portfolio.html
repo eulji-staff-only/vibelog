@@ -24,8 +24,8 @@
     </section>
 
     <main class="pf-main">
-        <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
         <div class="pf-panel">
+            <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
 
             <!-- 잠김 상태 (PL-PRT-001): 마지막 공개 수업의 리포트(U-16)로 안내한다. 공개 수업이 없으면 내 학습으로 -->
             <section class="pf-locked" th:if="${!page.unlocked}">
