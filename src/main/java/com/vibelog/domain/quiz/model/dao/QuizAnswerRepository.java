@@ -12,4 +12,7 @@ public interface QuizAnswerRepository extends JpaRepository<QuizAnswer, Long> {
 
     /* 이 풀이에서 확인한 답 전부 (제출·채점 API-LSN-06) */
     List<QuizAnswer> findByQuizAttemptId(Long quizAttemptId);
+
+    /* 이 문항에 풀이 기록(확인한 답)이 있는지. 있으면 고치지 않고 새 문항으로 저장한다 (API-ADM-27, DB 설계서 5-4) */
+    boolean existsByQuizQuestionId(Long quizQuestionId);
 }
