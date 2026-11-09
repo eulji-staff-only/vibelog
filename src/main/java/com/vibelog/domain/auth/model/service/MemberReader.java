@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -76,5 +77,10 @@ public class MemberReader {
     /* 탈퇴하지 않은 회원인가 (쪽지 받는 사람 검사, MESSAGE_RECEIVER_NOT_FOUND). 없는 ID 면 false */
     public boolean isActive(Long memberId) {
         return memberRepository.existsByMemberIdAndStatus(memberId, MemberStatus.ACTIVE);
+    }
+
+    /* 기간 내 가입자 수 (member.created_at 기준). from·to 가 null 이면 그 쪽 제한 없음 (운영자 대시보드 API-ADM-01, FR-ADM-002) */
+    public long countJoinedBetween(LocalDateTime from, LocalDateTime to) {
+        return memberRepository.countByCreatedAtBetween(from, to);
     }
 }
