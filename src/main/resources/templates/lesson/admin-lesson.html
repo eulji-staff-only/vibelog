@@ -47,6 +47,10 @@
             <button type="button" class="vl-ui-btn is-outline is-s" th:if="${lesson.publicLesson()}"
                     id="lesson-unpublish-trigger" th:attr="data-lesson-id=${lesson.lessonId()}"
                     data-ui-modal-open="lesson-unpublish-modal">비공개</button>
+            <!-- 미리보기 (API-ADM-39, FR-LSN-015): 학습자 수업 화면(U-13)을 새 탭으로 연다. 운영자는 수강·공개 여부와 상관없이 볼 수 있다 -->
+            <a class="vl-ui-btn is-outline is-s" id="lesson-preview-link"
+               th:href="@{/courses/{courseId}/lessons/{lessonId}(courseId=${lesson.courseId()},lessonId=${lesson.lessonId()})}"
+               target="_blank" rel="noopener noreferrer">미리보기 (새 탭)</a>
         </div>
         <p th:replace="~{common/ui :: btnReason(${'빠진 항목: ' + lesson.publishStatus().missingSummary()})}"
            th:if="${!lesson.publicLesson() and !lesson.publishStatus().publishable()}"></p>

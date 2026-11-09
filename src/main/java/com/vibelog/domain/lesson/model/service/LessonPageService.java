@@ -44,6 +44,9 @@ import java.util.stream.Collectors;
  *        - 활동 목록은 개념·퀴즈(activity 테이블) + 모의고사(계약 ②, 활동 테이블에 없는 가상 항목) 순서로 만든다.
  *        - 개념 카드에는 연관 개념(API-LSN-07)·개념 태그 ID·내 북마크 여부(API-LSN-08)를 함께 담는다 (ConceptService).
  *        - 기본 선택 활동은 "진행 중"인 첫 활동, 없으면 모의고사. query activity 가 있으면 그 활동(또는 "exam")으로 바꾼다.
+ *        - 운영자 미리보기(P2, FR-LSN-015): preview 가 true 면 수강·잠김 검사를 하지 않고 모든 활동을 열린 상태로 보여 준다.
+ *          기본 선택은 첫 번째 사용 중인 활동(API-ADM-39). 조회만 하며 진행 기록·학습자 점수·북마크는 읽지도 만들지도 않는다.
+ *          운영자인지는 Controller 가 판단해서 넘기고, 이 Service 는 보안 컨텍스트를 읽지 않는다.
  */
 @Service
 @RequiredArgsConstructor
@@ -62,8 +65,11 @@ public class LessonPageService {
     private final LessonQuizScoreChecker lessonQuizScoreChecker;
     private final ConceptService conceptService;
 
-    public LessonPageResult getPage(Long memberId, Long courseId, Long lessonId, String activityQuery) {
+    public LessonPageResult getPage(Long memberId, Long courseId, Long lessonId, String activityQuery, boolean preview) {
         Lesson lesson = getLesson(lessonId, courseId);
+        if (preview) {
+            return LessonPageResult.ok(buildPreview(courseId, lesson, activityQuery));
+        }
 
         // 포기한 수강은 수강 안 함과 같다 (계약 ⑪ NONE, PL-ENR-004). 완료한 코스는 복습할 수 있어서 포기 여부만 본다
         Optional<Enrollment> enrollmentOpt = enrollmentRepository.findByMemberIdAndCourseId(memberId, courseId)
@@ -98,6 +104,37 @@ public class LessonPageService {
         cards = applySelection(cards, activityQuery);
 
         return LessonPageResult.ok(new LessonPageData(courseId, lessonId, lesson.getTitle(), lesson.getGoal(), cards));
+    }
+
+    /* 운영자 미리보기: 활동을 sort_order 순으로 모두 "열린" 카드로 만든다. 학습자 데이터(진행·점수·북마크)는 읽지 않는다 */
+    private LessonPageData buildPreview(Long courseId, Lesson lesson, String activityQuery) {
+        List<Activity> activities = activityRepository
+                .findByLessonIdAndIsActiveTrueOrderBySortOrderAsc(lesson.getLessonId());
+        List<LessonActivityCard> cards = new ArrayList<>();
+        for (Activity activity : activities) {
+            cards.add(toPreviewCard(activity));
+        }
+        cards.add(new LessonActivityCard(null, LessonActivityCard.EXAM, "모의고사", ActivityStatus.IN_PROGRESS, false,
+                null, null, null, null, null, null, null, null));
+        int selectedIndex = requestedIndex(cards, activityQuery);
+        if (selectedIndex < 0) {
+            selectedIndex = 0;
+        }
+        cards.set(selectedIndex, cards.get(selectedIndex).select());
+        return new LessonPageData(courseId, lesson.getLessonId(), lesson.getTitle(), lesson.getGoal(), cards, true);
+    }
+
+    private LessonActivityCard toPreviewCard(Activity activity) {
+        ActivityStatus status = ActivityStatus.IN_PROGRESS;
+        if (!activity.isConcept()) {
+            return new LessonActivityCard(activity.getActivityId(), LessonActivityCard.QUIZ, activity.getTitle(), status,
+                    false, null, null, null, null, null, null, null, null);
+        }
+        List<Long> tagIds = conceptTagIdsOf(activity.getActivityId());
+        return new LessonActivityCard(activity.getActivityId(), LessonActivityCard.CONCEPT, activity.getTitle(), status,
+                false, renderBody(activity.getBody(), activity.getBodyFormat()), activity.getBodyFormat(),
+                conceptTagNamesOf(tagIds), activity.getToolNoteUrl(), null, null, null, null, tagIds, false,
+                conceptService.findRelatedConcepts(activity.getActivityId()));
     }
 
     private LessonActivityCard toCard(Long memberId, Activity activity, ActivityProgress progress) {
