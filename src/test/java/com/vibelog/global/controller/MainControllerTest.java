@@ -4,6 +4,8 @@ import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.auth.model.service.MemberReader;
 import com.vibelog.domain.community.model.dto.RankingItem;
 import com.vibelog.domain.community.model.service.CommunityReader;
+import com.vibelog.domain.contest.model.dto.ContestSummary;
+import com.vibelog.domain.contest.model.service.ContestReader;
 import com.vibelog.domain.message.model.dto.NoticeSummary;
 import com.vibelog.domain.message.model.service.MessageReader;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -47,6 +50,9 @@ class MainControllerTest {
     @MockitoBean
     private CommunityReader communityReader;
 
+    @MockitoBean
+    private ContestReader contestReader;
+
     @Test
     void 메인_화면_요청하면_공통_메인_뷰를_돌려준다() throws Exception {
         mockMvc.perform(get("/"))
@@ -66,10 +72,20 @@ class MainControllerTest {
     }
 
     @Test
-    void 공지와_추천_작품이_없으면_안내_문구를_보여준다() throws Exception {
+    void 이달의_콘테스트_주제와_출품_마감을_보여준다() throws Exception {
+        LocalDateTime start = LocalDateTime.of(2026, 11, 1, 0, 0);
+        given(contestReader.findCurrent()).willReturn(Optional.of(new ContestSummary(3L, "나만의 할 일 앱",
+                start, LocalDateTime.of(2026, 11, 20, 23, 59), start.plusDays(20), start.plusDays(29))));
+
+        mockMvc.perform(get("/"))
+                .andExpect(content().string(allOf(containsString("나만의 할 일 앱"), containsString("출품 마감 2026-11-20 23:59"))));
+    }
+
+    @Test
+    void 공지와_추천_작품과_콘테스트가_없으면_안내_문구를_보여준다() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(content().string(allOf(containsString("등록된 공지사항이 없습니다"),
-                        containsString("이번 주에 추천받은 작품이 아직 없습니다"))));
+                        containsString("이번 주에 추천받은 작품이 아직 없습니다"), containsString("이번 달 콘테스트가 아직 없습니다"))));
     }
 
     @Test

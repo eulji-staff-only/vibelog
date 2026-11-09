@@ -7,6 +7,7 @@ import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
 import com.vibelog.domain.lesson.model.dto.CourseEnrollmentStat;
+import com.vibelog.domain.lesson.model.dto.CourseLessonRow;
 import com.vibelog.domain.lesson.model.dto.MemberEnrollmentSummary;
 import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.ConceptTag;
@@ -99,6 +100,13 @@ public class LessonReader {
         return byCourse.entrySet().stream()
                 .map(entry -> new CourseEnrollmentStat(entry.getKey(), entry.getValue().size(),
                         entry.getValue().stream().filter(Enrollment::isCompleted).count()))
+                .toList();
+    }
+
+    /* 코스의 모든 수업(비공개 포함), 순서대로. 운영자 코스 상세(A-05, API-ADM-14, course #96)의 수업 목록이 쓴다 */
+    public List<CourseLessonRow> getLessonsOfCourse(Long courseId) {
+        return lessonRepository.findByCourseIdOrderBySortOrderAsc(courseId).stream()
+                .map(lesson -> new CourseLessonRow(lesson.getLessonId(), lesson.getTitle(), lesson.getSortOrder(), lesson.isPublic()))
                 .toList();
     }
 
