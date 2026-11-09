@@ -18,7 +18,7 @@
 - **보내기 검사 순서:** 입력 → 금칙어 → 이메일 인증 → 나에게 보냄 → 받는 사람 → 하루 20통 → 연속 3통. 세 POST가 같은 Service 메서드를 쓴다.
 - **하루 20통:** 오늘 0시부터 내가 보낸 쪽지가 20통이면 막는다 (`idx_message_sender_member_id_created_at`).
 - **연속 3통:** 상대가 나에게 보낸 마지막 쪽지 이후(없으면 처음부터) 내가 그 상대에게 보낸 쪽지가 3통이면 막는다. 상대가 한 번 답하면 다시 3통까지 보낼 수 있다.
-- **1년 지난 쪽지 삭제 (PL-MSG-003):** 하루 한 번 배치로 `created_at`이 1년 지난 행을 지운다. 지울 쪽지를 가리키는 답장이 있으면 답장의 `parent_message_id`를 먼저 비운다 (FK가 RESTRICT).
+- **1년 지난 쪽지 삭제 (PL-MSG-003):** 하루 한 번 배치로 `created_at`이 1년 지난 행을 지운다. 지울 쪽지를 가리키는 답장이 있으면 답장의 `parent_message_id`를 먼저 비운다 (FK가 RESTRICT). 단, 그 쪽지를 대상으로 하는 PENDING 신고가 있으면 배치에서 빼고, 신고가 처리된 뒤 배치에서 지운다.
 - `sender_deleted_at`·`receiver_deleted_at`(각자 지우기)는 화면 설계(U-27)에 삭제 버튼이 없어 이번에는 쓰지 않는다.
 - 사용자 차단(FR-MSG-003, PL-MSG-002)은 이번 범위 제외다.
 
@@ -90,8 +90,14 @@ README 영역 담당 표대로 신고는 message 영역이 구현한다. 신고 
 
 | Reader | 메서드 | 쓰는 곳 |
 | --- | --- | --- |
-| `CommunityReader` | `Map<Long, ReportTarget> findReportTargets(String targetType, Collection<Long> targetIds)` — POST·COMMENT·REVIEW, 삭제된 것은 빠진다 | 신고 대상 확인(API-RPT-01), A-13 미리보기·원문(API-RPT-02), HIDDEN 알림 문구 |
-| `PortfolioReader` | `Map<Long, ReportTarget> findReportTargets(Collection<Long> portfolioIds)` — 공개 포트폴리오만 | 〃 |
+| `CommunityReader` | `Map<Long, ReportTarget> findReportTargets(String targetType, Collection<Long> targetIds)` — POST·COMMENT·REVIEW, 삭제된 것은 빠진다 | 신고 대상 확인(API-RPT-01) |
+| `CommunityReader` | `Map<Long, ReportTarget> findReportReviewTargets(String targetType, Collection<Long> targetIds)` — POST·COMMENT·REVIEW, 삭제 표시 포함 전부 | A-13 미리보기·원문(API-RPT-02), HIDDEN 알림 문구. 운영자 쪽에서만 |
+| `PortfolioReader` | `Map<Long, ReportTarget> findReportTargets(Collection<Long> portfolioIds)` — 공개 포트폴리오만 | 신고 대상 확인(API-RPT-01) |
+| `PortfolioReader` | `Map<Long, ReportTarget> findReportReviewTargets(Collection<Long> portfolioIds)` — 비공개·삭제 표시 포함 전부 | A-13 미리보기·원문(API-RPT-02), HIDDEN 알림 문구. 운영자 쪽에서만 |
+
+- **접수용(`findReportTargets`)** 은 지금 볼 수 있는 것만 돌려준다. 15번 결정("볼 수 없는 콘텐츠가 있는지 알리지 않는다")과 맞춘다.
+- **심사용(`findReportReviewTargets`)** 은 신고 뒤 작성자가 지우거나 비공개로 바꿔도 A-13에서 처리할 수 있게 전부 돌려준다. 콘텐츠는 삭제 표시(PL-DAT-002)라 원문이 DB에 남아 있다. community.md의 `getPostIdOfComment`·`getPortfolioIdOfReview`("삭제 표시된 댓글도")와 같은 방식이다.
+- 심사용은 **운영자 화면(A-13)과 HIDDEN 알림에서만** 쓴다. 학습자 화면에서 쓰면 PL-SEC-002(비공개 포트폴리오 차단)를 어긴다. 운영자 열람 근거는 FR-RPT-004 "원문을 보고"다.
 
 `ReportTarget(Long authorMemberId, String preview, String content)`는 각 Reader 영역의 `model/dto`에 둔다. `preview`는 게시글·포트폴리오면 제목, 댓글·리뷰면 내용 앞 50자다. 쪽지는 message 영역 안에서 읽는다. 닉네임은 `MemberReader.getNicknames`를 쓴다.
 
@@ -165,5 +171,7 @@ README 영역 담당 표대로 신고는 message 영역이 구현한다. 신고 
 | 23 | A-13 목록 | 처리 대기만 (처리 결과는 작성자 이력·A-08) | 화면 설계가 "숨김 / 기각 → 목록"뿐이고 처리 이력 탭이 없다 |
 | 24 | 작성자 이력·신고 이력 | `report.target_member_id`를 추가해 대상 작성자를 함께 저장 | 없으면 이력을 구할 때마다 모든 영역에서 그 회원의 콘텐츠 ID를 다시 모아야 한다. DB 설계서도 신고 이력을 `report`로 본다(FR-USR-009) |
 | 25 | 숨김 해제 | 만들지 않음 | 요구사항·화면에 없다 |
+| 26 | 쪽지 1년 삭제 예외 | 대상에 PENDING 신고가 있으면 배치에서 뺌 | 처리 전에 지워지면 A-13에서 원문을 볼 수 없다(FR-RPT-004). PL-MSG-003에도 같은 예외를 적음 (#269) |
+| 27 | 신고 대상 읽기 분리 | 접수용(지금 볼 수 있는 것만)과 심사용(전부, 운영자 쪽에서만) | 신고 뒤 작성자가 지우거나 비공개로 바꿔도 A-13에서 처리해야 한다(FR-RPT-004). PL-SEC-002는 학습자 접근 제한이라 운영자 심사와 부딪히지 않는다 |
 
 > 배치 삭제(쪽지 1년, 알림 90일)는 `@Scheduled`를 쓴다. `@EnableScheduling`은 `global/config`(형상관리)에 둔다.
