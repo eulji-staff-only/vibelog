@@ -79,8 +79,11 @@
 
     let dragging = null;
     list.querySelectorAll('li[draggable="true"]').forEach((row) => {
-        row.addEventListener('dragstart', () => {
+        row.addEventListener('dragstart', (e) => {
             dragging = row;
+            // Firefox 는 dataTransfer 에 값이 없으면 드래그를 시작하지 않는다 (#308)
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', '');
             row.classList.add('is-dragging');
         });
         row.addEventListener('dragend', () => {
