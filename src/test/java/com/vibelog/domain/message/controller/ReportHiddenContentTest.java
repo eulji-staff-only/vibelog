@@ -11,6 +11,7 @@ import com.vibelog.domain.contest.model.dto.ContestCurrentView.EntryCard;
 import com.vibelog.domain.contest.model.service.ContestResultService;
 import com.vibelog.domain.contest.model.service.ContestService;
 import com.vibelog.domain.message.model.service.MessageReader;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,7 @@ class ReportHiddenContentTest {
     @Autowired CommunityReader communityReader;
     @Autowired ContestService contestService;
     @Autowired ContestResultService contestResultService;
+    @Autowired EntityManager entityManager;
 
     private long writerId;
 
@@ -203,6 +205,7 @@ class ReportHiddenContentTest {
                 .andExpect(content().string(allOf(containsString("/portfolios/" + shown + "\""), not(containsString("/portfolios/" + hidden + "\"")))));
         // 작성자가 비공개로 바꿔도 다른 회원에게는 숨김 문구가 먼저다 (영구 정지 숨김과 같은 순서)
         jdbcTemplate.update("UPDATE portfolio SET is_public = FALSE WHERE portfolio_id = ?", hidden);
+        entityManager.clear(); // 앞 요청이 읽은 공개 상태의 Portfolio 를 버리고 DB 에서 다시 읽게 한다
         mockMvc.perform(get("/portfolios/{id}", hidden).with(as(viewer)))
                 .andExpect(content().string(allOf(containsString(HIDDEN_TEXT), not(containsString("비공개된 작품입니다")))));
     }
