@@ -39,7 +39,7 @@ class CourseReaderTest {
         jdbcTemplate.update("INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days, is_public) "
                 + "VALUES (9501, 9501, 9501, '첫 코스', '한 줄', '소개', '대상', '목표', 7, TRUE)");
 
-        assertThat(courseReader.getTrackNames(List.of(9501L, 9999L))).isEqualTo(Map.of(9501L, "리더 트랙"));
+        assertThat(courseReader.getTrackTitles(List.of(9501L, 9999L))).isEqualTo(Map.of(9501L, "리더 트랙"));
         assertThat(courseReader.getCategoryNames(List.of(9501L, 9999L))).isEqualTo(Map.of(9501L, "웹 기초"));
         assertThat(courseReader.getCourseTitles(List.of(9501L, 9999L))).isEqualTo(Map.of(9501L, "첫 코스"));
     }

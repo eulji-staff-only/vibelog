@@ -36,8 +36,14 @@ public class CourseReader {
                 .collect(Collectors.toMap(Course::getCourseId, Course::getTitle));
     }
 
-    /* 트랙 ID → 트랙 이름. 없는 ID 는 결과에 빠진다 */
-    public Map<Long, String> getTrackNames(Collection<Long> trackIds) {
+    /* 코스 ID → 트랙 ID. 없는 ID 는 결과에 빠진다. 운영자 대시보드(admin #120, FR-ADM-002)가 코스를 트랙별로 묶을 때 쓴다 */
+    public Map<Long, Long> getTrackIdsByCourse(Collection<Long> courseIds) {
+        return courseRepository.findAllById(courseIds).stream()
+                .collect(Collectors.toMap(Course::getCourseId, Course::getTrackId));
+    }
+
+    /* 트랙 ID → 트랙 이름. 없는 ID 는 결과에 빠진다. 운영자 대시보드(admin #120, FR-ADM-002)가 쓴다 */
+    public Map<Long, String> getTrackTitles(Collection<Long> trackIds) {
         return trackRepository.findAllById(trackIds).stream()
                 .collect(Collectors.toMap(Track::getTrackId, Track::getName));
     }
