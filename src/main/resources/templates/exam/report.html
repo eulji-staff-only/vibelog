@@ -20,8 +20,8 @@
     </section>
 
     <main class="report-main">
-        <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
         <div class="report-panel">
+            <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
 
             <!-- 점수: 정답 수 / 문항 수 (이 회차 기준, PL-EXM-004) -->
             <section class="report-score" aria-label="내 점수">
