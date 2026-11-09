@@ -46,6 +46,9 @@
         <a class="vl-admin__link" href="/admin/contests"
            th:classappend="${active == 'contests'} ? 'is-active' : ''"
            th:attr="aria-current=${active == 'contests'} ? 'page' : null">콘테스트</a>
+        <a class="vl-admin__link" href="/admin/templates"
+           th:classappend="${active == 'templates'} ? 'is-active' : ''"
+           th:attr="aria-current=${active == 'templates'} ? 'page' : null">템플릿</a>
         <a class="vl-admin__link" href="/admin/reports"
            th:classappend="${active == 'reports'} ? 'is-active' : ''"
            th:attr="aria-current=${active == 'reports'} ? 'page' : null">신고</a>

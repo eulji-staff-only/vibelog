@@ -1,5 +1,6 @@
 /*
  * A-07 포트폴리오 과제 편집 화면 안에서만 도는 동작: 스텝(API-ADM-35)·FAQ(API-PRT-11) 목록의 추가·삭제·위아래로 옮기기.
+ * A-12 템플릿 관리(API-PRT-15)의 항목 목록도 같은 방식으로 위아래로만 옮긴다 (항목 고정이라 추가·삭제 버튼이 없다).
  * 서버를 부르지 않는다. 바꿀 때마다 name 을 steps[0].guideStepId, faqs[0].question … 처럼
  * 화면 순서대로 다시 붙여서, 저장하면 보낸 순서가 곧 순서(sort_order)가 된다.
  *
@@ -35,7 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
             renumber();
         });
 
-        document.querySelector(`[data-add="${name}"]`).addEventListener('click', () => {
+        const add = document.querySelector(`[data-add="${name}"]`);
+        if (add) add.addEventListener('click', () => {
             const item = template.content.firstElementChild.cloneNode(true);
             list.appendChild(item);
             renumber();

@@ -10,6 +10,7 @@ import com.vibelog.domain.portfolio.model.dto.PortfolioPageView;
 import com.vibelog.domain.portfolio.model.dto.PortfolioSubmitForm;
 import com.vibelog.domain.portfolio.model.service.PortfolioManageService;
 import com.vibelog.domain.portfolio.model.service.PortfolioService;
+import com.vibelog.domain.portfolio.model.service.PortfolioTemplateService;
 import com.vibelog.domain.portfolio.model.service.PortfolioSubmitService;
 import com.vibelog.global.exception.BusinessException;
 import com.vibelog.global.exception.CommonErrorCode;
@@ -62,6 +63,7 @@ public class PortfolioPageController {
     private final PortfolioSubmitService portfolioSubmitService;
     private final PortfolioManageService portfolioManageService;
     private final CommunityReader communityReader;
+    private final PortfolioTemplateService portfolioTemplateService;
 
     /* U-17 포트폴리오 (과제 → 평가 에이전트 자가 점검 → 제출). edit=true 면 제출한 내 포트폴리오 값으로 채운 수정 상태 */
     @GetMapping("/courses/{courseId}/portfolio")
@@ -205,8 +207,9 @@ public class PortfolioPageController {
         return "vibelog.portfolio-draft." + memberId + ".personal" + (portfolioId == null ? "" : "." + portfolioId);
     }
 
-    /* U-34. editPortfolioId 가 있으면 수정 상태 (보내는 곳 API-PRT-06) */
+    /* U-34. editPortfolioId 가 있으면 수정 상태 (보내는 곳 API-PRT-06). 항목 이름·안내 문구·순서는 템플릿 관리(A-12) 값 (P3 #258) */
     private String personalView(Long memberId, Long editPortfolioId, Model model) {
+        model.addAttribute("templateItems", portfolioTemplateService.getItems());
         model.addAttribute("editPortfolioId", editPortfolioId);
         model.addAttribute("emailVerified", portfolioManageService.isEmailVerified(memberId));
         model.addAttribute("draftKey", personalDraftKey(memberId, editPortfolioId));
