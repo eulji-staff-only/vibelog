@@ -108,7 +108,7 @@
                 if (!response.ok) throw new Error('impact request failed');
                 const result = await response.json();
                 body.textContent = result.activeLearnerCount > 0
-                    ? '현재 ' + result.activeLearnerCount + '명이 이 코스를 수강 중입니다. 비공개해도 될까요?'
+                    ? '현재 ' + result.activeLearnerCount + '명이 이 수업을 학습 중입니다. 비공개해도 될까요?'
                     : '이 수업을 비공개할까요?';
             } catch (e) {
                 body.textContent = '영향 받는 학습자 수를 확인하지 못했습니다. 그래도 비공개할까요?';

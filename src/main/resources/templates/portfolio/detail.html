@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>포트폴리오 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/my-portfolio.css}" href="/css/my-portfolio.css">
+</head>
+<body>
+<!-- U-20 포트폴리오 상세. 화면 선행 작업(#58): 문구는 샘플이고, 상세 데이터·본인 여부·비공개 판단은 ③ 단계(API-PRT-09)에서 붙인다.
+     기본은 "다른 사람의 공개 작품" 모습이고, 내 작품·비공개 상태는 hidden 으로 넣어 두었다. -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="mp-band mp-band-left">
+    <!-- 내 작품일 때만 (U-20 누르면) -->
+    <a class="mp-back" href="/my/portfolios" data-mine hidden>← 내 포트폴리오</a>
+    <h1 class="mp-title">[포트폴리오 제목]</h1>
+    <span class="mp-eyebrow">포트폴리오</span>
+    <p class="mp-lead">[작성자] · [제출일]</p>
+</section>
+
+<main class="mp-main">
+    <div class="mp-panel">
+
+        <!-- 비공개 · 본인이 아님 (U-20 예외) -->
+        <div class="mp-closed" data-closed hidden>
+            <div class="mp-notice">
+                <strong>비공개된 작품입니다.</strong>
+                <p>작성자가 공개하지 않은 포트폴리오는 작성자만 볼 수 있습니다.</p>
+            </div>
+            <div><a class="mp-btn mp-btn-outline" href="/community">커뮤니티로 돌아가기</a></div>
+        </div>
+
+        <div class="mp-detail">
+            <!-- 내 작품이고 비공개일 때 -->
+            <div class="mp-notice" data-mine hidden>
+                <strong>비공개로 제출한 포트폴리오입니다.</strong>
+                <p>나만 볼 수 있습니다. 내 포트폴리오에서 공개로 전환할 수 있습니다.</p>
+            </div>
+
+            <dl class="mp-facts">
+                <dt>결과물 링크</dt>
+                <dd><a class="mp-link" href="https://github.com/" target="_blank" rel="noopener noreferrer">[결과물 링크]</a></dd>
+                <dt>코스</dt>
+                <dd><a class="mp-link" href="/courses/1">[코스 이름]</a></dd>
+                <dt>사용한 AI 도구·모델</dt>
+                <dd>[도구 · 모델]</dd>
+                <dt>작성자</dt>
+                <dd>[작성자]</dd>
+            </dl>
+
+            <section class="mp-section mp-section-first" aria-labelledby="mp-summary-h">
+                <h2 class="mp-h3" id="mp-summary-h">한 줄 요약</h2>
+                <p class="mp-text">[한 줄 요약]</p>
+            </section>
+            <section class="mp-section" aria-labelledby="mp-retro-h">
+                <h2 class="mp-h3" id="mp-retro-h">회고</h2>
+                <p class="mp-text">[회고 본문: 이번 코스에서 배운 점과 아쉬운 점]</p>
+            </section>
+            <section class="mp-section" aria-labelledby="mp-agent-h">
+                <h2 class="mp-h3" id="mp-agent-h">에이전트 점검 결과</h2>
+                <p class="mp-text">[점검 결과: 작성자가 선택 항목으로 적은 경우에만 보입니다]</p>
+            </section>
+            <section class="mp-section" aria-labelledby="mp-shot-h">
+                <h2 class="mp-h3" id="mp-shot-h">스크린샷</h2>
+                <div class="mp-shot">[스크린샷]</div>
+            </section>
+
+            <div class="mp-detail-actions">
+                <a class="mp-btn mp-btn-text" href="/community">커뮤니티로 돌아가기</a>
+                <!-- 내 작품일 때만: 수정 → U-17 수정 상태 -->
+                <a class="mp-btn mp-btn-outline" href="/courses/1/portfolio?edit=true" data-mine hidden>수정</a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

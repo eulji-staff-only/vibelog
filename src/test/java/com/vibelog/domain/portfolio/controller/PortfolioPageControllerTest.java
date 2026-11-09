@@ -29,4 +29,20 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("vl-header")))
                 .andExpect(content().string(Matchers.containsString("vl-footer")));
     }
+
+    @Test
+    void 내_포트폴리오_화면을_연다() throws Exception {
+        mockMvc.perform(get("/my/portfolios"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portfolio/my-portfolios"))
+                .andExpect(content().string(Matchers.containsString("포트폴리오를 삭제할까요?")));
+    }
+
+    @Test
+    void 포트폴리오_상세_화면을_연다() throws Exception {
+        mockMvc.perform(get("/portfolios/1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portfolio/detail"))
+                .andExpect(content().string(Matchers.containsString("비공개된 작품입니다.")));
+    }
 }
