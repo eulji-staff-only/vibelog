@@ -7,10 +7,13 @@
     const form = document.querySelector('[data-report-form]');
     if (!form) return;
     const error = form.querySelector('[data-report-error]');
+    // 모달을 새로 열 때마다 올린다. 이전 신고의 응답이 늦게 와도 새로 연 모달은 바꾸지 않는다.
+    let generation = 0;
 
     document.addEventListener('click', (e) => {
         const button = e.target.closest('[data-report-type]');
         if (!button) return;
+        generation++;
         form.reset();
         error.textContent = '';
         form.elements.targetType.value = button.dataset.reportType;
@@ -19,6 +22,7 @@
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const sent = generation;
         error.textContent = '';
         const detail = form.elements.reasonDetail.value.trim();
         const body = {
@@ -33,14 +37,17 @@
                 headers: { 'Content-Type': 'application/json', [form.dataset.csrfHeader]: form.dataset.csrfToken },
                 body: JSON.stringify(body),
             });
+            if (sent !== generation) return;
             if (res.ok) {
                 form.closest('[data-ui-modal]').querySelector('[data-ui-modal-close]').click();
                 window.VLToast.show('신고가 접수되었습니다');
                 return;
             }
             const data = await res.json().catch(() => ({}));
+            if (sent !== generation) return;
             error.textContent = data.message || '신고하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
         } catch (err) {
+            if (sent !== generation) return;
             error.textContent = '신고하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
         }
     });
