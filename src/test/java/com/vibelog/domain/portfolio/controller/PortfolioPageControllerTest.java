@@ -25,6 +25,8 @@ class PortfolioPageControllerTest {
         mockMvc.perform(get("/courses/1/portfolio"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("portfolio/portfolio"))
-                .andExpect(content().string(Matchers.containsString("포트폴리오 제출")));
+                .andExpect(content().string(Matchers.containsString("포트폴리오 제출")))
+                .andExpect(content().string(Matchers.containsString("vl-header")))
+                .andExpect(content().string(Matchers.containsString("vl-footer")));
     }
 }

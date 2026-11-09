@@ -51,4 +51,13 @@ public class Notice extends BaseTimeEntity {
                                 LocalDateTime bannerStartsAt, LocalDateTime bannerEndsAt) {
         return new Notice(adminMemberId, title, body, isBannerShown, bannerStartsAt, bannerEndsAt);
     }
+
+    /* API-NTF-08 공지 수정. 작성한 운영자는 그대로 둔다 */
+    public void update(String title, String body, boolean isBannerShown, LocalDateTime bannerStartsAt, LocalDateTime bannerEndsAt) {
+        this.title = title;
+        this.body = body;
+        this.isBannerShown = isBannerShown;
+        this.bannerStartsAt = bannerStartsAt;
+        this.bannerEndsAt = bannerEndsAt;
+    }
 }
