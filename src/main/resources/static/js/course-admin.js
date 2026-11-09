@@ -32,7 +32,10 @@
     let confirmedDelete = null;   // 확인을 눌러 실제로 보내는 폼
     document.querySelectorAll('form[data-ca-delete]').forEach((form) => {
         form.addEventListener('submit', (e) => {
-            if (form === confirmedDelete) return;   // 확인을 눌러 보내는 중
+            if (form === confirmedDelete) {   // 확인을 눌러 보내는 중: 한 번만 통과시키고 비운다 (뒤로 가기로 화면이 복원돼도 다시 모달을 띄우게)
+                confirmedDelete = null;
+                return;
+            }
             e.preventDefault();
             pendingDelete = form;
             deleteModal.querySelector('.vl-ui-modal__title').textContent = '"' + form.dataset.caDelete + '"을(를) 삭제할까요?';
