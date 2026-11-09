@@ -6,32 +6,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const root = document.querySelector('[data-pf]');
     if (!root) return;
 
-    // 스텝 가이드: 체크하면 바로 저장하고, 서버가 돌려준 "n / 전체"로 고친다. 실패하면 체크를 되돌린다
+    // 스텝 가이드: 체크하면 바로 저장하고, 서버가 돌려준 "n / 전체"로 고친다.
+    // 저장 요청은 한 줄로 세워 앞 요청이 끝난 뒤 보낸다. 빠르게 체크·해제해도 마지막 선택이 마지막으로 저장된다.
     const csrfToken = document.querySelector('meta[name="_csrf"]').content;
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
     const stepError = root.querySelector('[data-step-error]');
-    root.querySelectorAll('[data-step]').forEach((step) => step.addEventListener('change', () => {
-        fetch(step.dataset.checkUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
-            body: JSON.stringify({ checked: step.checked }),
+    let saving = Promise.resolve();
+    const save = (step, checked) => fetch(step.dataset.checkUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
+        body: JSON.stringify({ checked }),
+    })
+        .then((res) => res.json().then((body) => {
+            if (!res.ok) throw body;   // 서버 오류 {code, message}
+            return body;
+        }))
+        .then((body) => {
+            root.querySelector('[data-step-done]').textContent = body.checkedCount;
+            root.querySelector('[data-step-total]').textContent = body.totalCount;
+            stepError.hidden = true;
         })
-            .then((res) => res.json().then((body) => {
-                if (!res.ok) throw body;   // 서버 오류 {code, message}
-                return body;
-            }))
-            .then((body) => {
-                root.querySelector('[data-step-done]').textContent = body.checkedCount;
-                root.querySelector('[data-step-total]').textContent = body.totalCount;
-                stepError.hidden = true;
-            })
-            .catch((err) => {
-                // 네트워크 끊김 같은 브라우저 오류(Error)는 기술 문구라 보여 주지 않는다 (PL-ERR-001)
-                step.checked = !step.checked;
-                stepError.textContent = err instanceof Error || !err.message
-                    ? '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.' : err.message;
-                stepError.hidden = false;
-            });
+        .catch((err) => {
+            // 그 사이 다시 바꿨으면 이후 선택을 되돌리지 않는다
+            if (step.checked === checked) step.checked = !checked;
+            // 네트워크 끊김 같은 브라우저 오류(Error)는 기술 문구라 보여 주지 않는다 (PL-ERR-001)
+            stepError.textContent = err instanceof Error || !err.message
+                ? '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.' : err.message;
+            stepError.hidden = false;
+        });
+    root.querySelectorAll('[data-step]').forEach((step) => step.addEventListener('change', () => {
+        const checked = step.checked;
+        saving = saving.then(() => save(step, checked));
     }));
 
     // 제출 양식: 이미 제출했거나 이메일 미인증이면 양식이 없다

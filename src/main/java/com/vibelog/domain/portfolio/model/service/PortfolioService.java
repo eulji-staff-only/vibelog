@@ -75,7 +75,7 @@ public class PortfolioService {
                 stepViews, checked.size(), submittedPortfolioId, memberReader.isEmailVerified(memberId)));
     }
 
-    /* API-PRT-02 체크 저장·삭제. 같은 값을 두 번 보내도 결과가 같다 (자동 저장이 겹쳐도 행이 두 번 생기지 않음) */
+    /* API-PRT-02 체크 저장·삭제. 같은 값을 두 번(또는 동시에) 보내도 결과가 같다 (행이 두 번 생기지 않음) */
     @Transactional
     public GuideStepCheckResult check(Long memberId, Long guideStepId, boolean checked) {
         GuideStep step = guideStepRepository.findById(guideStepId)
@@ -85,10 +85,9 @@ public class PortfolioService {
                 .orElseThrow(() -> new BusinessException(PortfolioErrorCode.PORTFOLIO_NOT_FOUND));
         requireUnlocked(memberId, assignment.getCourseId());
 
-        boolean alreadyChecked = guideStepCheckRepository.existsByMemberIdAndGuideStepId(memberId, guideStepId);
-        if (checked && !alreadyChecked) {
-            guideStepCheckRepository.save(GuideStepCheck.create(memberId, guideStepId));
-        } else if (!checked && alreadyChecked) {
+        if (checked) {
+            guideStepCheckRepository.insertIfAbsent(memberId, guideStepId);
+        } else {
             guideStepCheckRepository.deleteByMemberIdAndGuideStepId(memberId, guideStepId);
         }
 
