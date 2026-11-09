@@ -201,6 +201,10 @@ class ReportHiddenContentTest {
                 .andExpect(status().isOk()).andExpect(content().string(allOf(containsString("숨길 코스 작품"), containsString(NOTICE))));
         mockMvc.perform(get("/courses/9701/portfolios").with(as(viewer)))
                 .andExpect(content().string(allOf(containsString("/portfolios/" + shown + "\""), not(containsString("/portfolios/" + hidden + "\"")))));
+        // 작성자가 비공개로 바꿔도 다른 회원에게는 숨김 문구가 먼저다 (영구 정지 숨김과 같은 순서)
+        jdbcTemplate.update("UPDATE portfolio SET is_public = FALSE WHERE portfolio_id = ?", hidden);
+        mockMvc.perform(get("/portfolios/{id}", hidden).with(as(viewer)))
+                .andExpect(content().string(allOf(containsString(HIDDEN_TEXT), not(containsString("비공개된 작품입니다")))));
     }
 
     @Test

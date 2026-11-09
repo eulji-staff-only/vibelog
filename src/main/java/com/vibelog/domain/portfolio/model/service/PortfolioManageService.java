@@ -77,13 +77,13 @@ public class PortfolioManageService {
         if (!mine && !memberReader.findHiddenMemberIds(Set.of(p.getMemberId())).isEmpty()) {
             throw new BusinessException(PortfolioErrorCode.HIDDEN_CONTENT);
         }
-        if (!p.isPublic() && !mine) {
-            throw new BusinessException(PortfolioErrorCode.PRIVATE_PORTFOLIO);
-        }
-        // 신고로 숨긴 작품은 작성자에게만 내용 + 숨김 안내 (FR-RPT-003, message 명세 결정 19, #256)
+        // 신고로 숨긴 작품은 작성자에게만 내용 + 숨김 안내 (FR-RPT-003, message 명세 결정 19, #256). 영구 정지처럼 비공개 검사보다 먼저 본다
         boolean reportHidden = !messageReader.findHiddenTargetIds("PORTFOLIO", List.of(portfolioId)).isEmpty();
         if (reportHidden && !mine) {
             throw new BusinessException(PortfolioErrorCode.HIDDEN_CONTENT);
+        }
+        if (!p.isPublic() && !mine) {
+            throw new BusinessException(PortfolioErrorCode.PRIVATE_PORTFOLIO);
         }
         String courseTitle = p.getCourseId() == null ? null
                 : courseReader.getCourseTitles(List.of(p.getCourseId())).get(p.getCourseId());
