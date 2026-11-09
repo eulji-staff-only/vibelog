@@ -13,6 +13,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     /* 대상들이 받은 신고 전부 (숨김 여부 계산, idx_report_target_type_target_id) */
     List<Report> findByTargetTypeAndTargetIdIn(ReportTargetType targetType, Collection<Long> targetIds);
 
+    /* 한 종류의 처리 대기·숨김 신고 전부 (목록 조회에서 숨긴 대상을 미리 뺄 때, #256) */
+    List<Report> findByTargetTypeAndStatusIn(ReportTargetType targetType, Collection<ReportStatus> statuses);
+
     /* A-13 처리 대기 신고 전부, 오래된 것부터 (대상별로 묶는 것은 Service) */
     List<Report> findByStatusOrderByCreatedAtAscReportIdAsc(ReportStatus status);
 

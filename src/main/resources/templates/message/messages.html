@@ -63,9 +63,11 @@
                 <p class="ms-muted" th:unless="${opened.received()}">받는 사람
                     <a class="ms-link" th:href="@{/users/{id}(id=${opened.receiverMemberId()})}" th:text="${opened.receiverNickname()}">닉네임</a></p>
                 <p class="ms-muted"><time th:datetime="${opened.createdAt()}" th:text="${#temporals.format(opened.createdAt(), 'yyyy.MM.dd HH:mm')}">2026.11.09 10:00</time></p>
+                <!-- 운영자가 숨긴 내 쪽지: 보낸 나에게만 내용이 보인다 (FR-RPT-003, #256) -->
+                <p class="ms-error" role="status" th:if="${opened.hidden() and !opened.received()}">운영 정책에 따라 숨겨졌습니다. 다른 사람에게는 보이지 않습니다</p>
                 <p class="ms-article__body" th:text="${opened.content()}">쪽지 내용</p>
                 <!-- 받은 쪽지만 신고 (API-RPT-01 · M-11, 명세 결정 14) -->
-                <div class="ms-actions" th:if="${opened.received()}">
+                <div class="ms-actions" th:if="${opened.received() and !opened.hidden()}">
                     <button class="ms-btn is-outline is-s" type="button" data-ui-modal-open="report-modal"
                             data-report-type="MESSAGE" th:attr="data-report-id=${opened.messageId()}">신고</button>
                 </div>

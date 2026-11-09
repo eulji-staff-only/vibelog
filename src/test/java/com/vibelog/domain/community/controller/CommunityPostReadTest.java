@@ -102,8 +102,8 @@ class CommunityPostReadTest {
         Page<PostListItem> posts = postService.getPosts(null, prefix, 1);
 
         assertThat(posts.getContent()).hasSize(20).allSatisfy(item -> assertThat(item.nickname()).startsWith("작성자"));
-        // 영구 정지 회원(#215) + 목록 + 전체 개수 + 댓글 수 + 닉네임. 글 수와 상관없이 늘지 않는다
-        assertThat(statistics.getPrepareStatementCount()).isLessThanOrEqualTo(5);
+        // 영구 정지 회원(#215) + 신고 숨김(#256) + 목록 + 전체 개수 + 댓글 수 + 닉네임. 글 수와 상관없이 늘지 않는다
+        assertThat(statistics.getPrepareStatementCount()).isLessThanOrEqualTo(6);
     }
 
     @Test

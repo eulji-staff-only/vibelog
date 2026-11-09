@@ -22,14 +22,15 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
 
     /*
      * 추천 랭킹 (PL-CMT-003·004): since 이후 받은 추천 수가 많은 작품 공유 글 순, 동점이면 그 기간 첫 추천이 빠른 글.
-     * 지운 글은 뺀다. 개수는 pageable 로 자른다.
+     * 지운 글, 영구 정지 회원 글(hiddenMemberIds), 신고로 숨긴 글(hiddenPostIds)은 뺀다. 개수는 pageable 로 자른다.
      */
     @Query("select new com.vibelog.domain.community.model.dto.WeeklyRecommendCount(r.postId, count(r), min(r.createdAt))"
             + " from Recommendation r join Post p on p.postId = r.postId"
             + " where r.createdAt >= :since and p.deletedAt is null"
             + " and p.category = com.vibelog.domain.community.model.entity.PostCategory.SHOWCASE"
-            + " and p.memberId not in :hiddenMemberIds"
+            + " and p.memberId not in :hiddenMemberIds and p.postId not in :hiddenPostIds"
             + " group by r.postId order by count(r) desc, min(r.createdAt) asc, r.postId asc")
     List<WeeklyRecommendCount> findWeeklyCounts(@Param("since") LocalDateTime since,
-                                                @Param("hiddenMemberIds") Collection<Long> hiddenMemberIds, Pageable pageable);
+                                                @Param("hiddenMemberIds") Collection<Long> hiddenMemberIds,
+                                                @Param("hiddenPostIds") Collection<Long> hiddenPostIds, Pageable pageable);
 }

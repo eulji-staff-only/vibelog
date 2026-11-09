@@ -11,6 +11,7 @@ import com.vibelog.domain.contest.model.dto.ContestCurrentView.MyEntry;
 import com.vibelog.domain.contest.model.entity.Contest;
 import com.vibelog.domain.contest.model.entity.ContestEntry;
 import com.vibelog.domain.contest.model.entity.ContestVote;
+import com.vibelog.domain.message.model.service.MessageReader;
 import com.vibelog.domain.portfolio.model.dto.PortfolioBrief;
 import com.vibelog.domain.portfolio.model.service.PortfolioReader;
 import com.vibelog.global.exception.BusinessException;
@@ -47,6 +48,7 @@ public class ContestService {
     private final ContestVoteRepository contestVoteRepository;
     private final PortfolioReader portfolioReader;
     private final MemberReader memberReader;
+    private final MessageReader messageReader;
 
     /* 이번 달(서버 시각 기준) 콘테스트. 없으면 빈 값 → "이번 달 콘테스트를 준비하고 있습니다" */
     public Optional<ContestCurrentView> getCurrent(Long memberId) {
@@ -147,16 +149,20 @@ public class ContestService {
                 entryOpen, voteOpen, contest.isVoteEnded(now), myEntry, myPortfolios, entries, votedToday, emailVerified);
     }
 
-    /* 투표 보드: 취소되지 않은 출품작, 출품순. 비공개·삭제된 작품은 (출품 취소 전이라도) 다른 회원에게 보이지 않게 뺀다 */
+    /*
+     * 투표 보드: 취소되지 않은 출품작, 출품순. 비공개·삭제된 작품은 (출품 취소 전이라도) 다른 회원에게 보이지 않게 뺀다.
+     * 신고로 숨긴 작품도 다른 회원에게는 뺀다. 내 출품작은 그대로 둔다 (FR-RPT-003, #256)
+     */
     private List<EntryCard> entryCards(Long contestId, Long memberId) {
         List<ContestEntry> entries = contestEntryRepository.findByContestIdAndCanceledAtIsNullOrderByContestEntryIdAsc(contestId);
         Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(entries.stream().map(ContestEntry::getPortfolioId).toList());
         Map<Long, String> nicknames = memberReader.getNicknames(entries.stream().map(ContestEntry::getMemberId).toList());
         Set<Long> voted = new HashSet<>(contestVoteRepository.findEntryIdsVotedBy(contestId, memberId));
+        Set<Long> hidden = messageReader.findHiddenTargetIds("PORTFOLIO", portfolios.keySet());
         return entries.stream()
                 .filter(e -> {
                     PortfolioBrief p = portfolios.get(e.getPortfolioId());
-                    return p != null && p.isPublic() && !p.deleted();
+                    return p != null && p.isPublic() && !p.deleted() && (!hidden.contains(p.portfolioId()) || e.getMemberId().equals(memberId));
                 })
                 .map(e -> {
                     PortfolioBrief p = portfolios.get(e.getPortfolioId());

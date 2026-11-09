@@ -18,6 +18,7 @@ import com.vibelog.domain.community.model.entity.ReviewCriterion;
 import com.vibelog.domain.community.model.entity.ReviewRequest;
 import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.message.model.policy.NotificationSender;
+import com.vibelog.domain.message.model.service.MessageReader;
 import com.vibelog.domain.portfolio.model.dto.PortfolioBrief;
 import com.vibelog.domain.portfolio.model.service.PortfolioReader;
 import com.vibelog.global.exception.BusinessException;
@@ -69,6 +70,7 @@ public class PeerReviewService {
     private final PortfolioReader portfolioReader;
     private final CourseReader courseReader;
     private final MemberReader memberReader;
+    private final MessageReader messageReader;
     private final BannedWordPolicy bannedWordPolicy;
     private final NotificationSender notificationSender;
 
@@ -113,10 +115,11 @@ public class PeerReviewService {
 
     /* API-REV-02 열린 요청 카드, 최근 요청순 */
     public Page<ReviewRequestCard> getOpenRequests(int page) {
-        // 영구 정지 회원의 작품 요청은 조회에서 미리 뺀다 (PL-RPT-006, #215). 없으면 IN () 이 되지 않게 0 을 넣는다 (ID 는 1부터)
-        List<Long> hidden = portfolioReader.findIdsOf(memberReader.findAllHiddenMemberIds());
+        // 영구 정지 회원의 작품(PL-RPT-006, #215)과 신고로 숨긴 작품(FR-RPT-003, #256)의 요청은 조회에서 미리 뺀다
+        Set<Long> hidden = new HashSet<>(portfolioReader.findIdsOf(memberReader.findAllHiddenMemberIds()));
+        hidden.addAll(messageReader.findAllHiddenTargetIds("PORTFOLIO"));
         Page<ReviewRequest> requests = reviewRequestRepository.findByClosedAtIsNullAndRequestedAtAfterAndPortfolioIdNotInOrderByRequestedAtDescReviewRequestIdDesc(
-                openSince(), hidden.isEmpty() ? List.of(0L) : hidden, PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
+                openSince(), PostService.orZero(hidden), PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
         Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(requests.map(ReviewRequest::getPortfolioId).toSet());
         Map<Long, String> courseTitles = courseReader.getCourseTitles(
                 portfolios.values().stream().map(PortfolioBrief::courseId).filter(Objects::nonNull).collect(Collectors.toSet()));
@@ -142,10 +145,15 @@ public class PeerReviewService {
                 memberId, PageRequest.of(Math.max(myPage, 1) - 1, PAGE_SIZE));
         Map<Long, ReviewRequest> requests = reviewRequestRepository.findAllById(reviews.map(PeerReview::getReviewRequestId).toSet())
                 .stream().collect(Collectors.toMap(ReviewRequest::getReviewRequestId, Function.identity()));
-        Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(
-                requests.values().stream().map(ReviewRequest::getPortfolioId).collect(Collectors.toSet()));
-        return reviews.map(review -> new MyReviewItem(review.getPeerReviewId(), review.getReviewRequestId(),
-                titleFor(portfolios.get(requests.get(review.getReviewRequestId()).getPortfolioId())), review.getCreatedAt()));
+        Set<Long> portfolioIds = requests.values().stream().map(ReviewRequest::getPortfolioId).collect(Collectors.toSet());
+        Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(portfolioIds);
+        // 신고로 숨긴 작품은 제목 대신 숨김 문구 (FR-RPT-003, message 명세). 내 리뷰 수정·삭제는 그대로 (PL-REV-003)
+        Set<Long> hidden = messageReader.findHiddenTargetIds("PORTFOLIO", portfolioIds);
+        return reviews.map(review -> {
+            Long portfolioId = requests.get(review.getReviewRequestId()).getPortfolioId();
+            return new MyReviewItem(review.getPeerReviewId(), review.getReviewRequestId(),
+                    hidden.contains(portfolioId) ? MessageReader.HIDDEN_TEXT : titleFor(portfolios.get(portfolioId)), review.getCreatedAt());
+        });
     }
 
     /* API-REV-02 reviewRequestId: 쓰기 폼, 내 리뷰가 있으면 (마감됐어도) 수정 폼 */
@@ -273,12 +281,16 @@ public class PeerReviewService {
         Map<Long, String> nicknames = memberReader.getNicknames(reviewerIds);
         // 영구 정지 회원의 리뷰는 자리만 남기고 작성자·내용을 숨긴다 (PL-RPT-006, #215). 화면은 hidden 이면 PL-ERR-006 문구
         Set<Long> hidden = memberReader.findHiddenMemberIds(reviewerIds);
+        // 신고로 숨긴 리뷰도 같지만 쓴 사람에게는 내용 + 숨김 안내 (FR-RPT-003, #256)
+        Set<Long> reportHidden = messageReader.findHiddenTargetIds("REVIEW", reviews.stream().map(PeerReview::getPeerReviewId).toList());
         return reviews.stream().map(review -> {
-            boolean isHidden = hidden.contains(review.getReviewerMemberId());
+            boolean mine = review.isWrittenBy(viewerMemberId);
+            boolean byReport = reportHidden.contains(review.getPeerReviewId());
+            boolean isHidden = hidden.contains(review.getReviewerMemberId()) || byReport && !mine;
             return new ReviewView(review.getPeerReviewId(), review.getReviewerMemberId(),
                     isHidden ? null : nicknames.get(review.getReviewerMemberId()), review.getCreatedAt(), review.getHelpfulAt() != null,
-                    review.isWrittenBy(viewerMemberId), isHidden ? List.of() : commentsByReview.getOrDefault(review.getPeerReviewId(), List.of()),
-                    isHidden);
+                    mine, isHidden ? List.of() : commentsByReview.getOrDefault(review.getPeerReviewId(), List.of()),
+                    isHidden, !isHidden && byReport);
         }).toList();
     }
 

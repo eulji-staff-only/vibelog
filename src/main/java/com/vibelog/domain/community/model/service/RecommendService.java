@@ -17,6 +17,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.vibelog.domain.message.model.service.MessageReader;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,7 +36,7 @@ import java.util.stream.Collectors;
  * 책임 : - 작품 공유 글만 (NOT_SHOWCASE, PL-CMT-001), 내 글은 안 됨 (SELF_RECOMMEND, PL-CMT-002). 추천은 이메일 인증 없이 된다.
  *        - 추가할 때만 글쓴이에게 RECOMMEND 알림 (계약 ⑬). 취소는 알리지 않는다.
  *        - 랭킹은 이번 주 월요일 0시부터 받은 추천 수로 센다 (PL-CMT-003). 동점·삭제 글 처리는 Repository 쿼리 (PL-CMT-004).
- *        - 영구 정지 회원의 글은 랭킹에서 뺀다 (PL-RPT-006).
+ *        - 영구 정지 회원의 글(PL-RPT-006)과 신고로 숨긴 글(FR-RPT-003)은 랭킹에서 뺀다.
  */
 @Service
 @RequiredArgsConstructor
@@ -46,6 +48,7 @@ public class RecommendService {
     private final RecommendationRepository recommendationRepository;
     private final PostRepository postRepository;
     private final MemberReader memberReader;
+    private final MessageReader messageReader;
     private final NotificationSender notificationSender;
 
     @Transactional
@@ -83,10 +86,10 @@ public class RecommendService {
 
     public List<RankingItem> getWeeklyTop(int limit) {
         LocalDateTime monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay();
-        // 영구 정지 회원의 글은 순위에서 뺀다 (PL-RPT-006, #215). 빈 묶음이면 IN () 이 되지 않게 0 (회원 ID 는 1부터)
-        Set<Long> hidden = memberReader.findAllHiddenMemberIds();
+        // 영구 정지 회원의 글(PL-RPT-006, #215)과 신고로 숨긴 글(FR-RPT-003, #256)은 순위에서 뺀다
         List<WeeklyRecommendCount> counts = recommendationRepository.findWeeklyCounts(monday,
-                hidden.isEmpty() ? Set.of(0L) : hidden, PageRequest.of(0, limit));
+                PostService.orZero(memberReader.findAllHiddenMemberIds()),
+                PostService.orZero(messageReader.findAllHiddenTargetIds(PostService.REPORT_TYPE)), PageRequest.of(0, limit));
         List<Long> postIds = counts.stream().map(WeeklyRecommendCount::postId).toList();
         Map<Long, Post> posts = postRepository.findAllById(postIds).stream()
                 .collect(Collectors.toMap(Post::getPostId, Function.identity()));
