@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>템플릿 관리 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/portfolio-admin.css}">
+    <script th:src="@{/js/portfolio-admin.js}" defer></script>
+</head>
+<body>
+<!--
+  A-12 템플릿 관리 (API-PRT-14·15, FR-PRT-015, #258). 개인 작품(U-34) 항목 5개의 이름·안내 문구·순서를 바꾼다.
+  항목은 5개로 고정이라(#168 결정 A) 추가·삭제는 없다. 위아래로 옮기기는 portfolio-admin.js 가 화면 안에서만 하고,
+  저장할 때 목록 순서대로 보낸다. 이름을 바꿔도 저장 칸은 항목 종류로 정해져 이미 등록된 작품은 그대로다.
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('templates')}"></div>
+
+    <main class="vl-admin__content">
+        <h1 class="pa-title">템플릿 관리</h1>
+        <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">템플릿을 저장했습니다</p>
+
+        <section class="vl-ui-panel pa-panel">
+            <form class="pa-form" th:object="${templateForm}" method="post" novalidate th:action="@{/admin/templates}">
+                <p class="pa-error" role="alert" th:if="${#fields.hasGlobalErrors()}" th:errors="*{global}">오류</p>
+
+                <fieldset class="pa-steps">
+                    <legend>개인 작품 템플릿 항목</legend>
+                    <p class="pa-hint">학습자의 개인 작품 추가 화면에 보이는 항목 이름·안내 문구·순서를 바꿉니다. 항목을 더하거나 지울 수는 없고, 이름을 바꿔도 이미 등록된 작품은 그대로입니다.</p>
+                    <ol class="pa-step-list" data-list="items">
+                        <li class="pa-step" data-item th:each="item, s : *{items}">
+                            <input type="hidden" data-field="itemKey" th:field="*{items[__${s.index}__].itemKey}">
+                            <span class="pa-hint" th:text="|기본 항목: ${T(com.vibelog.domain.portfolio.model.entity.TemplateItemKey).defaultLabelOf(item.itemKey)}|">기본 항목: 제목</span>
+                            <input type="text" maxlength="50" aria-label="항목 이름" placeholder="항목 이름" data-field="label"
+                                   th:field="*{items[__${s.index}__].label}">
+                            <p class="pa-error" role="alert" th:if="${#fields.hasErrors('items[__${s.index}__].label')}"
+                               th:errors="*{items[__${s.index}__].label}">이름 오류</p>
+                            <input type="text" maxlength="200" aria-label="안내 문구" placeholder="안내 문구 (선택)" data-field="guide"
+                                   th:field="*{items[__${s.index}__].guide}">
+                            <p class="pa-error" role="alert" th:if="${#fields.hasErrors('items[__${s.index}__].guide')}"
+                               th:errors="*{items[__${s.index}__].guide}">안내 문구 오류</p>
+                            <div class="pa-step-actions">
+                                <button type="button" class="vl-ui-btn is-outline is-s" data-item-up>위로</button>
+                                <button type="button" class="vl-ui-btn is-outline is-s" data-item-down>아래로</button>
+                            </div>
+                        </li>
+                    </ol>
+                </fieldset>
+
+                <div>
+                    <button th:replace="~{common/ui :: btnSubmit('저장', 'navy', '')}"></button>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>

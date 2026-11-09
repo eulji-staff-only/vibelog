@@ -15,7 +15,8 @@
 <div th:replace="~{common/layout :: header}"></div>
 <!-- U-34 개인 작품 추가·수정 (API-PRT-12·13, FR-PRT-011, #199). 항목은 5개로 고정(#168 결정 A)이고 공개 여부를 고른다.
      ?edit={portfolioId} 면 그 작품 값으로 채운 수정 상태이고 기존 수정 API-PRT-06 으로 보낸다.
-     입력 확인·공개 여부 선택·작성 중 내용 보존(FR-PRT-010)은 U-17 과 같은 portfolio.js 가 한다. 에이전트 점검 결과·스크린샷은 받지 않는다. -->
+     입력 확인·공개 여부 선택·작성 중 내용 보존(FR-PRT-010)은 U-17 과 같은 portfolio.js 가 한다. 에이전트 점검 결과·스크린샷은 받지 않는다.
+     항목 이름·안내 문구·순서는 운영자 템플릿 관리(A-12, P3 #258) 값으로 그린다. -->
 <div class="pf-page">
 
     <section class="pf-band">
@@ -46,35 +47,38 @@
                     <p class="pf-msg" role="status" data-draft-notice hidden>임시 저장한 작성 내용을 불러왔습니다. 확인한 뒤 다시 저장해 주세요.</p>
 
                     <div class="pf-form" data-pf-form>
-                        <div class="pf-field">
-                            <label class="pf-label" for="pf-title">제목 <em>*</em></label>
-                            <input class="pf-input" id="pf-title" type="text" maxlength="50" placeholder="작품 제목" aria-describedby="pf-title-msg" data-required data-max="50" data-key-check th:field="*{title}">
+                        <!-- 항목 이름·안내 문구·순서는 템플릿 관리(A-12, P3 #258) 값을 따른다. 저장 칸·검사는 항목 종류로 정해져 그대로다 -->
+                        <th:block th:each="item : ${templateItems}" th:switch="${item.itemKey()}">
+                        <div class="pf-field" th:case="'TITLE'">
+                            <label class="pf-label" for="pf-title"><th:block th:text="${item.label()}">제목</th:block> <em>*</em></label>
+                            <input class="pf-input" id="pf-title" type="text" maxlength="50" th:placeholder="${item.guide()}" aria-describedby="pf-title-msg" data-required data-max="50" data-key-check th:field="*{title}">
                             <span class="pf-msg" id="pf-title-msg">50자 이내 · <span data-count>0</span> / 50자</span>
                             <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">제목 오류</span>
                         </div>
-                        <div class="pf-field">
-                            <label class="pf-label" for="pf-url">링크 <em>*</em></label>
-                            <input class="pf-input" id="pf-url" type="url" placeholder="https://github.com/…" aria-describedby="pf-url-msg" data-url th:field="*{resultUrl}">
+                        <div class="pf-field" th:case="'LINK'">
+                            <label class="pf-label" for="pf-url"><th:block th:text="${item.label()}">링크</th:block> <em>*</em></label>
+                            <input class="pf-input" id="pf-url" type="url" th:placeholder="${item.guide()}" aria-describedby="pf-url-msg" data-url th:field="*{resultUrl}">
                             <span class="pf-msg" id="pf-url-msg" data-url-msg>GitHub, 배포 URL 등. 접속 여부는 확인하지 않습니다.</span>
                             <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('resultUrl')}" th:text="${#fields.errors('resultUrl')[0]}">링크 오류</span>
                         </div>
-                        <div class="pf-field">
-                            <label class="pf-label" for="pf-summary">설명 <em>*</em></label>
-                            <input class="pf-input" id="pf-summary" type="text" maxlength="100" placeholder="이 작품을 한 줄로 소개해 주세요" aria-describedby="pf-summary-msg" data-required data-max="100" data-key-check th:field="*{summary}">
+                        <div class="pf-field" th:case="'DESCRIPTION'">
+                            <label class="pf-label" for="pf-summary"><th:block th:text="${item.label()}">설명</th:block> <em>*</em></label>
+                            <input class="pf-input" id="pf-summary" type="text" maxlength="100" th:placeholder="${item.guide()}" aria-describedby="pf-summary-msg" data-required data-max="100" data-key-check th:field="*{summary}">
                             <span class="pf-msg" id="pf-summary-msg">100자 이내 · <span data-count>0</span> / 100자</span>
                             <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('summary')}" th:errors="*{summary}">설명 오류</span>
                         </div>
-                        <div class="pf-field">
-                            <label class="pf-label" for="pf-tools">사용한 AI 도구 <em>*</em></label>
-                            <input class="pf-input" id="pf-tools" type="text" maxlength="200" placeholder="예: Claude Code, Cursor" data-required data-max="200" data-key-check th:field="*{aiTools}">
+                        <div class="pf-field" th:case="'AI_TOOLS'">
+                            <label class="pf-label" for="pf-tools"><th:block th:text="${item.label()}">사용한 AI 도구</th:block> <em>*</em></label>
+                            <input class="pf-input" id="pf-tools" type="text" maxlength="200" th:placeholder="${item.guide()}" data-required data-max="200" data-key-check th:field="*{aiTools}">
                             <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('aiTools')}" th:errors="*{aiTools}">도구 오류</span>
                         </div>
-                        <div class="pf-field">
-                            <label class="pf-label" for="pf-retro">회고 <em>*</em></label>
-                            <textarea class="pf-input pf-textarea" id="pf-retro" maxlength="2000" placeholder="이 작품을 만들며 배운 점과 아쉬운 점" aria-describedby="pf-retro-msg" data-retro data-key-check th:field="*{retrospective}"></textarea>
+                        <div class="pf-field" th:case="'RETROSPECTIVE'">
+                            <label class="pf-label" for="pf-retro"><th:block th:text="${item.label()}">회고</th:block> <em>*</em></label>
+                            <textarea class="pf-input pf-textarea" id="pf-retro" maxlength="2000" th:placeholder="${item.guide()}" aria-describedby="pf-retro-msg" data-retro data-key-check th:field="*{retrospective}"></textarea>
                             <span class="pf-msg" id="pf-retro-msg" data-retro-msg>100자 이상 2,000자 이하 · 현재 <span data-count>0</span>자. API 키 형식의 문자열이 있으면 저장 전에 경고하고 자동으로 가립니다.</span>
                             <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('retrospective')}" th:errors="*{retrospective}">회고 오류</span>
                         </div>
+                        </th:block>
                         <div class="pf-field">
                             <span class="pf-label" id="pf-vis-label">공개 여부 <em>*</em></span>
                             <!-- 기본값 없이 하나를 고른다 (PL-PRT-006). 고른 값은 portfolio.js 가 숨은 칸 isPublic 에 넣는다 -->

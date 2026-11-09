@@ -13,10 +13,13 @@ import com.vibelog.domain.portfolio.model.dto.PortfolioPageView;
 import com.vibelog.domain.portfolio.model.dto.PortfolioSubmitForm;
 import com.vibelog.domain.portfolio.model.service.PortfolioManageService;
 import com.vibelog.domain.portfolio.model.service.PortfolioService;
+import com.vibelog.domain.portfolio.model.service.PortfolioTemplateService;
+import com.vibelog.domain.portfolio.model.dto.TemplateItemView;
 import com.vibelog.domain.portfolio.model.service.PortfolioSubmitService;
 import com.vibelog.global.exception.BusinessException;
 import com.vibelog.global.exception.CommonErrorCode;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -77,6 +80,15 @@ class PortfolioPageControllerTest {
 
     @MockitoBean
     CommunityReader communityReader;
+
+    @MockitoBean
+    PortfolioTemplateService portfolioTemplateService;
+
+    /* U-34 항목은 템플릿 관리(A-12) 값으로 그린다. 따로 정하지 않은 테스트는 기본 5개 */
+    @BeforeEach
+    void templateDefaults() {
+        given(portfolioTemplateService.getItems()).willReturn(TemplateItemView.defaults());
+    }
 
     private RequestPostProcessor login() {
         LoginMember loginMember = mock(LoginMember.class);
@@ -409,6 +421,26 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("data-draft-key=\"vibelog.portfolio-draft.1.personal\"")))
                 .andExpect(content().string(Matchers.not(Matchers.containsString("name=\"screenshot\""))))
                 .andExpect(content().string(Matchers.not(Matchers.containsString("name=\"agentResult\""))));
+    }
+
+    @Test
+    void 개인_작품_화면은_운영자가_정한_항목_이름_안내_문구_순서로_그린다() throws Exception {
+        given(portfolioManageService.isEmailVerified(1L)).willReturn(true);
+        given(portfolioTemplateService.getItems()).willReturn(List.of(
+                new TemplateItemView("RETROSPECTIVE", "돌아보기", "무엇을 배웠나요?"),
+                new TemplateItemView("TITLE", "작품 이름", null),
+                new TemplateItemView("LINK", "링크", null),
+                new TemplateItemView("DESCRIPTION", "한 줄 소개", null),
+                new TemplateItemView("AI_TOOLS", "AI 도구", null)));
+
+        String html = mockMvc.perform(get("/my/portfolios/new").with(login()))
+                .andExpect(content().string(Matchers.containsString("돌아보기 <em>*</em>")))
+                .andExpect(content().string(Matchers.containsString("placeholder=\"무엇을 배웠나요?\"")))
+                .andReturn().getResponse().getContentAsString();
+
+        // 운영자가 정한 순서: 회고 칸(retrospective)이 제목 칸(title)보다 먼저 나온다. 저장 칸 이름은 그대로다
+        org.assertj.core.api.Assertions.assertThat(html.indexOf("name=\"retrospective\"")).isLessThan(html.indexOf("name=\"title\""));
+        org.assertj.core.api.Assertions.assertThat(html).contains("한 줄 소개 <em>*</em>").contains("name=\"summary\"");
     }
 
     @Test
