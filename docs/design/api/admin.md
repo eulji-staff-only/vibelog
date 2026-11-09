@@ -71,7 +71,7 @@ A-09 `/admin/diagnosis`. 코드는 course 영역에 둔다(진단 테이블이 c
 | ID | 기능 | Method | URL | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | API-ADM-41 | 진단 설정 화면 | GET | `/admin/diagnosis` | - | A-09 + 문항 전체(사용 중지 포함, `sort_order` 순: 내용, 순서, 사용 여부) + 보기(`sort_order` 순: 내용, 트랙, 점수) + 트랙 목록 + (테스트 응답 직후) 미리 보기 결과 | - | FR-DGN-004 |
-| API-ADM-42 | 문항 추가 | POST | `/admin/diagnosis/questions` | form `content`, `sortOrder`, `options[]`(`content`, `trackId`, `score`) | 사용 중으로 저장 → `/admin/diagnosis` + toast | `INVALID_INPUT`(빈 칸, 보기 2개 미만, 없는 트랙, 점수 1 미만) → 같은 폼 다시 | FR-DGN-004, PL-DGN-002 |
+| API-ADM-42 | 문항 추가 | POST | `/admin/diagnosis/questions` | form `content`, `sortOrder`, `options[]`(`content`, `trackId`, `score`) | 사용 중으로 저장 → `/admin/diagnosis` + toast | `INVALID_INPUT`(빈 칸, 문항 500자·보기 255자 초과(`sql/01-schema.sql` 컬럼 길이), 보기 2개 미만, 없는 트랙, 점수 1 미만) → 같은 폼 다시 | FR-DGN-004, PL-DGN-002 |
 | API-ADM-43 | 문항 수정 | POST | `/admin/diagnosis/questions/{diagnosisQuestionId}/edit` | form API-ADM-42와 같음 + `options[].diagnosisOptionId`(있는 보기) | 문항·보기를 그 자리에서 고친다. 폼에 없는 기존 보기는 지운다(응답을 저장하지 않아 가리키는 기록이 없다) → `/admin/diagnosis` + toast | API-ADM-42와 같음 | FR-DGN-004 |
 | API-ADM-44 | 문항 사용·중지 | POST | `/admin/diagnosis/questions/{diagnosisQuestionId}/active` | form `active` | → `/admin/diagnosis` + toast. 중지한 문항은 진단 설문(API-DGN-01)에 나오지 않는다 | `INVALID_INPUT`(마지막 사용 중 문항은 중지할 수 없음) → toast | FR-DGN-004 |
 | API-ADM-45 | 테스트 응답 | POST | `/admin/diagnosis/test` | form `diagnosisOptionIds`(사용 중 문항마다 1개, API-DGN-02와 같음) | 진단 제출과 같은 규칙(PL-DGN-002: 점수 합계, 동점이면 트랙 순서 앞)으로 추천 트랙을 계산만 하고 **저장하지 않는다** → `/admin/diagnosis` + 미리 보기(추천 트랙, 트랙별 점수 합계) | `INVALID_INPUT`(문항 수와 답 수가 다름) | FR-DGN-004, PL-DGN-002 |
