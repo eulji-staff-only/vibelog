@@ -23,7 +23,8 @@ import static org.assertj.core.api.Assertions.tuple;
  * 운영자 모의고사 문항 추가·수정·사용 여부 (API-ADM-29~31, FR-EXM-007, PL-EXM-002). 테스트가 끝나면 롤백된다.
  *
  * 수업 9301: 개념 9301, 퀴즈 9302. 수업 9302: 개념 9303.
- * 문항 9301(수업 9301, 보기 2개뿐인 예전 데이터: 9311 정답, 9312 오답)
+ * 문항 9301(수업 9301, 보기 2개뿐인 예전 데이터: 9311 정답, 9312 오답), 응시 기록 없음.
+ * 문항 9302(수업 9301, 순서 2, 보기 9321) 는 회원 9301 의 응시 기록이 있다.
  */
 @SpringBootTest
 @Transactional
@@ -39,7 +40,13 @@ import static org.assertj.core.api.Assertions.tuple;
         "INSERT INTO exam_question (exam_question_id, lesson_id, concept_activity_id, content, explanation, sort_order, is_active) VALUES "
                 + "(9301, 9301, 9301, '예전 문항', '예전 해설', 1, TRUE)",
         "INSERT INTO exam_choice (exam_choice_id, exam_question_id, content, is_correct, sort_order) VALUES "
-                + "(9311, 9301, '예전 정답', TRUE, 1), (9312, 9301, '예전 오답', FALSE, 2)"
+                + "(9311, 9301, '예전 정답', TRUE, 1), (9312, 9301, '예전 오답', FALSE, 2)",
+        "INSERT INTO member (member_id, email, nickname) VALUES (9301, 'exam-admin@vibelog.test', '응시자')",
+        "INSERT INTO exam_question (exam_question_id, lesson_id, concept_activity_id, content, explanation, sort_order, is_active) VALUES "
+                + "(9302, 9301, 9301, '푼 문항', '푼 해설', 2, TRUE)",
+        "INSERT INTO exam_choice (exam_choice_id, exam_question_id, content, is_correct, sort_order) VALUES (9321, 9302, '푼 보기', TRUE, 1)",
+        "INSERT INTO exam_attempt (exam_attempt_id, member_id, lesson_id, attempt_no, started_at) VALUES (9301, 9301, 9301, 1, NOW())",
+        "INSERT INTO exam_answer (exam_attempt_id, exam_question_id, exam_choice_id) VALUES (9301, 9302, 9321)"
 })
 class ExamAdminServiceTest {
 
@@ -72,7 +79,7 @@ class ExamAdminServiceTest {
         Long id = examAdminService.create(LESSON, form(CONCEPT, 2));
 
         ExamQuestion question = examQuestionRepository.findById(id).orElseThrow();
-        assertThat(question.getSortOrder()).isEqualTo(2);
+        assertThat(question.getSortOrder()).isEqualTo(3);
         assertThat(question.isActive()).isTrue();
         assertThat(question.getConceptActivityId()).isEqualTo(CONCEPT);
         assertThat(choicesOf(id)).extracting(ExamChoice::getContent, ExamChoice::isCorrect, ExamChoice::getSortOrder)
@@ -106,6 +113,35 @@ class ExamAdminServiceTest {
         ExamQuestion question = examQuestionRepository.findById(9301L).orElseThrow();
         assertThat(question.getContent()).isEqualTo("새 문항");
         assertThat(question.getSortOrder()).isEqualTo(1);
+    }
+
+    @Test
+    void 응시_기록이_있으면_고치지_않고_사용_중지한_뒤_같은_자리에_새_문항을_만든다() {
+        Long lessonId = examAdminService.edit(9302L, form(CONCEPT, 0));
+
+        assertThat(lessonId).isEqualTo(LESSON);
+        entityManager.flush();
+        entityManager.clear();
+        ExamQuestion old = examQuestionRepository.findById(9302L).orElseThrow();
+        assertThat(old.getContent()).isEqualTo("푼 문항");   // 지난 응시의 리포트는 푼 그대로
+        assertThat(old.isActive()).isFalse();
+        assertThat(choicesOf(9302L)).extracting(ExamChoice::getContent).containsExactly("푼 보기");
+
+        ExamQuestion created = examQuestionRepository.findByLessonIdOrderBySortOrderAsc(LESSON).stream()
+                .filter(q -> q.isActive() && q.getSortOrder() == 2).findFirst().orElseThrow();
+        assertThat(created.getContent()).isEqualTo("새 문항");
+        assertThat(choicesOf(created.getExamQuestionId())).hasSize(4);
+    }
+
+    @Test
+    void 응시_기록이_없으면_4개를_넘는_예전_보기는_지운다() {
+        examChoiceRepository.save(ExamChoice.create(examQuestionRepository.findById(9301L).orElseThrow(), "셋", false, 3));
+        examChoiceRepository.save(ExamChoice.create(examQuestionRepository.findById(9301L).orElseThrow(), "넷", false, 4));
+        examChoiceRepository.save(ExamChoice.create(examQuestionRepository.findById(9301L).orElseThrow(), "다섯", false, 5));
+
+        examAdminService.edit(9301L, form(CONCEPT, 0));
+
+        assertThat(choicesOf(9301L)).extracting(ExamChoice::getContent).containsExactly("가", "나", "다", "라");
     }
 
     @Test

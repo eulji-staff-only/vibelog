@@ -16,7 +16,7 @@
         <h2 class="al-h2">모의고사 문항</h2>
         <button type="button" class="vl-ui-btn is-outline is-s" data-ui-modal-open="exam-question-add-modal">문항 추가</button>
     </div>
-    <p class="al-hint">문항마다 이 수업의 개념 하나를 연관 개념으로 골라야 저장됩니다. 사용 중지한 문항은 다음 응시부터 나오지 않습니다.</p>
+    <p class="al-hint">문항마다 이 수업의 개념 하나를 연관 개념으로 골라야 저장됩니다. 사용 중지한 문항은 다음 응시부터 나오지 않습니다. 이미 응시한 문항을 고치면 지난 기록을 지키려고 예전 문항은 중지되고 새 문항으로 저장됩니다.</p>
 
     <p class="al-empty" th:if="${lesson.examQuestions().empty}">아직 등록된 모의고사 문항이 없습니다</p>
     <ol class="al-exam-list" th:unless="${lesson.examQuestions().empty}">

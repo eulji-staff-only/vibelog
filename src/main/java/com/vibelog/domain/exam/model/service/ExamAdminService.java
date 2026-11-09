@@ -1,6 +1,7 @@
 package com.vibelog.domain.exam.model.service;
 
 import com.vibelog.domain.exam.exception.ExamErrorCode;
+import com.vibelog.domain.exam.model.dao.ExamAnswerRepository;
 import com.vibelog.domain.exam.model.dao.ExamChoiceRepository;
 import com.vibelog.domain.exam.model.dao.ExamQuestionRepository;
 import com.vibelog.domain.exam.model.dto.ExamQuestionForm;
@@ -19,8 +20,9 @@ import java.util.List;
  * 역할 : 운영자의 모의고사 문항 추가·수정·사용 여부 변경 (A-06 모의고사 탭, API-ADM-29~31, FR-EXM-007).
  * 책임 : - 연관 개념은 그 수업의 개념 활동이어야 한다 (PL-EXM-002). 비었으면 CONCEPT_REQUIRED, 다른 수업·퀴즈 활동이면
  *          INVALID_INPUT. 개념인지는 lesson 영역 LessonReader 로 묻는다.
- *        - 보기는 4개 고정이다. 수정할 때 보기를 지우고 새로 만들지 않고 그 자리에서 고친다
- *          (응시 기록 exam_answer 가 보기를 가리켜 지울 수 없음, FK RESTRICT).
+ *        - 보기는 4개 고정이다 (팀 결정).
+ *        - 수정(DB 설계서 5-4): 응시 기록이 있는 문항은 고치지 않고 사용 중지한 뒤, 같은 순서 자리에 새 문항을 만든다.
+ *          지난 응시의 리포트가 학습자가 실제로 푼 문항·보기 그대로 남게 하려는 것이다. 응시 기록이 없으면 그 자리에서 고친다.
  *        - 문항은 지우지 않고 사용 중지만 한다. 처리 뒤 돌아갈 수업 ID 를 돌려준다.
  */
 @Service
@@ -30,6 +32,7 @@ public class ExamAdminService {
 
     private final ExamQuestionRepository examQuestionRepository;
     private final ExamChoiceRepository examChoiceRepository;
+    private final ExamAnswerRepository examAnswerRepository;
     private final LessonReader lessonReader;
 
     /* API-ADM-29. 새 문항은 그 수업 마지막 문항 뒤에 붙고 사용 중으로 시작한다 */
@@ -39,12 +42,7 @@ public class ExamAdminService {
         int sortOrder = examQuestionRepository.findTopByLessonIdOrderBySortOrderDesc(lessonId)
                 .map(last -> last.getSortOrder() + 1)
                 .orElse(1);
-        ExamQuestion question = examQuestionRepository.save(ExamQuestion.create(lessonId, form.getConceptActivityId(),
-                form.getContent(), form.getExplanation(), sortOrder));
-        for (int i = 0; i < ExamQuestionForm.CHOICE_COUNT; i++) {
-            examChoiceRepository.save(ExamChoice.create(question, form.getChoices().get(i), i == form.getCorrectIndex(), i + 1));
-        }
-        return question.getExamQuestionId();
+        return saveNew(lessonId, sortOrder, form).getExamQuestionId();
     }
 
     /* API-ADM-30. 돌려주는 값은 redirect 할 수업 ID (요청에는 문항 ID 만 있다) */
@@ -52,12 +50,17 @@ public class ExamAdminService {
     public Long edit(Long examQuestionId, ExamQuestionForm form) {
         ExamQuestion question = getQuestion(examQuestionId);
         requireConceptOf(question.getLessonId(), form.getConceptActivityId());
+        if (examAnswerRepository.existsByExamQuestion_ExamQuestionId(examQuestionId)) {
+            question.changeActive(false);
+            saveNew(question.getLessonId(), question.getSortOrder(), form);
+            return question.getLessonId();
+        }
         question.edit(form.getConceptActivityId(), form.getContent(), form.getExplanation());
 
+        // 응시 기록이 없으니 보기를 가리키는 답도 없다. 4개를 넘는 예전 보기는 지운다
         List<ExamChoice> choices = examChoiceRepository.findByExamQuestion_ExamQuestionIdOrderBySortOrderAsc(examQuestionId);
-        // ponytail: 4개보다 많은 보기는 응시 기록 때문에 지울 수 없어 거절한다. 4개 고정 전에 넣은 데이터가 생기면 그때 정리
         if (choices.size() > ExamQuestionForm.CHOICE_COUNT) {
-            throw new BusinessException(ExamErrorCode.INVALID_INPUT);
+            examChoiceRepository.deleteAll(choices.subList(ExamQuestionForm.CHOICE_COUNT, choices.size()));
         }
         for (int i = 0; i < ExamQuestionForm.CHOICE_COUNT; i++) {
             String content = form.getChoices().get(i);
@@ -77,6 +80,16 @@ public class ExamAdminService {
         ExamQuestion question = getQuestion(examQuestionId);
         question.changeActive(active);
         return question.getLessonId();
+    }
+
+    /* 새 문항과 보기 4개를 사용 중으로 만든다 */
+    private ExamQuestion saveNew(Long lessonId, int sortOrder, ExamQuestionForm form) {
+        ExamQuestion question = examQuestionRepository.save(ExamQuestion.create(lessonId, form.getConceptActivityId(),
+                form.getContent(), form.getExplanation(), sortOrder));
+        for (int i = 0; i < ExamQuestionForm.CHOICE_COUNT; i++) {
+            examChoiceRepository.save(ExamChoice.create(question, form.getChoices().get(i), i == form.getCorrectIndex(), i + 1));
+        }
+        return question;
     }
 
     /* 입력 오류로 A-06 에 돌려보낼 때 쓰는 문항의 수업 ID */

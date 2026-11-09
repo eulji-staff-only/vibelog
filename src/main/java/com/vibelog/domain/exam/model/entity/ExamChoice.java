@@ -51,7 +51,7 @@ public class ExamChoice extends BaseTimeEntity {
         return choice;
     }
 
-    /* API-ADM-30. 응시 기록(exam_answer)이 이 보기를 가리킬 수 있어 지우지 않고 그 자리에서 고친다 */
+    /* API-ADM-30. 응시 기록이 없는 문항의 보기만 그 자리에서 고친다 (기록이 있으면 새 문항을 만든다, DB 설계서 5-4) */
     public void edit(String content, boolean correct) {
         this.content = content;
         this.correct = correct;

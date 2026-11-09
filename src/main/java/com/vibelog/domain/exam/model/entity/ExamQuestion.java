@@ -58,7 +58,7 @@ public class ExamQuestion extends BaseTimeEntity {
         return question;
     }
 
-    /* API-ADM-30. 순서·사용 여부는 그대로 둔다 */
+    /* API-ADM-30. 응시 기록이 없는 문항만 고친다 (기록이 있으면 사용 중지 후 새 문항, DB 설계서 5-4). 순서·사용 여부는 그대로 */
     public void edit(Long conceptActivityId, String content, String explanation) {
         this.conceptActivityId = conceptActivityId;
         this.content = content;
