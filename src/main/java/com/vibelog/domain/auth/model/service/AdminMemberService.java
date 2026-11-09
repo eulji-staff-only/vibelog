@@ -112,8 +112,8 @@ public class AdminMemberService {
                 .release(adminMemberId, LocalDateTime.now());
     }
 
-    /* LIKE 검색어의 ! % _ 를 글자 그대로 찾도록 이스케이프한다 (MemberRepository.searchActive 의 escape '!') */
-    private static String escapeLike(String keyword) {
+    /* LIKE 검색어의 ! % _ 를 글자 그대로 찾도록 이스케이프한다 (MemberRepository 의 escape '!'). MemberReader 쪽지 받는 사람 찾기도 쓴다 */
+    static String escapeLike(String keyword) {
         return keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 }
