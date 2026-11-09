@@ -1,0 +1,50 @@
+/*
+ * 백오피스 수업 편집 화면 (A-06, API-ADM-19·20, FR-LSN-011, #100).
+ * 왼쪽 메뉴·본문 틀은 admin.css(#81)를 쓰고, 여기서는 그 안을 채우는 내용만 둔다.
+ * 색·간격은 common.css 토큰만 쓴다 (화면 흐름 설계서 6장).
+ */
+
+.al-breadcrumb { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; color: var(--ink-muted); margin-bottom: var(--space-3); }
+.al-breadcrumb a { color: var(--link); font-weight: 700; }
+
+.al-title { margin: 0 0 var(--space-2); font-size: 26px; font-weight: 900; color: var(--ink); }
+
+/* 공개·비공개 (API-ADM-32·33, FR-LSN-014, #118) */
+.al-visibility { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); }
+.al-visibility + .vl-ui-btn-reason { margin-top: calc(-1 * var(--space-4)); margin-bottom: var(--space-6); }
+
+.al-h2 { margin: 0; font-size: 17px; font-weight: 800; color: var(--ink); }
+
+.al-form-panel { margin-bottom: var(--space-7); display: flex; flex-direction: column; gap: var(--space-5); }
+.al-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.al-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.al-field label { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.al-field input, .al-field textarea {
+  font: inherit; min-height: var(--control-h); padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-strong); border-radius: var(--radius-card); box-sizing: border-box;
+}
+.al-field textarea { min-height: 96px; resize: vertical; }
+.al-field-inline input { max-width: 160px; }
+.al-error { margin: 0; font-size: 13px; color: var(--danger); }
+
+.al-panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
+
+.al-hint { margin: 0 0 var(--space-3); font-size: 13px; color: var(--ink-muted); }
+
+.al-empty { color: var(--ink-muted); font-size: 14px; }
+
+.al-activity-list, .al-exam-list { list-style: none; margin: var(--space-3) 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.al-activity-row, .al-exam-row {
+  display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface);
+}
+.al-activity-row[draggable="true"] { cursor: grab; }
+.al-activity-row.is-dragging { opacity: 0.5; }
+.al-activity-no { flex: 0 0 24px; height: 24px; border-radius: 50%; background: var(--tint); font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; }
+.al-activity-kind { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.al-activity-title, .al-exam-content { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.al-activity-actions { flex: 0 0 auto; display: flex; gap: var(--space-2); }
+
+.al-tag-list { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.al-tag { padding: 4px 12px; border-radius: var(--radius-pill); background: var(--tint); font-size: 13px; font-weight: 700; color: var(--ink); }

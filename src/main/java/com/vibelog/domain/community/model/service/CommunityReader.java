@@ -1,21 +1,27 @@
 package com.vibelog.domain.community.model.service;
 
+import com.vibelog.domain.auth.model.service.MemberReader;
 import com.vibelog.domain.community.model.dao.CommentRepository;
 import com.vibelog.domain.community.model.dao.FavoriteRepository;
+import com.vibelog.domain.community.model.dao.FollowRepository;
 import com.vibelog.domain.community.model.dao.PostCommentCount;
 import com.vibelog.domain.community.model.dao.PostRepository;
 import com.vibelog.domain.community.model.dto.MemberCommentItem;
 import com.vibelog.domain.community.model.dto.MemberPostItem;
+import com.vibelog.domain.community.model.dto.MemberSummary;
 import com.vibelog.domain.community.model.entity.Comment;
+import com.vibelog.domain.community.model.entity.Follow;
 import com.vibelog.domain.community.model.entity.Post;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -34,6 +40,8 @@ public class CommunityReader {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final FavoriteRepository favoriteRepository;
+    private final FollowRepository followRepository;
+    private final MemberReader memberReader;
 
     public Page<MemberPostItem> getPostsOf(Long memberId, int page) {
         return toItems(postRepository.findByMemberIdAndDeletedAtIsNullOrderByCreatedAtDescPostIdDesc(
@@ -44,6 +52,22 @@ public class CommunityReader {
     public Page<MemberPostItem> getFavoritePostsOf(Long memberId, int page) {
         return toItems(favoriteRepository.findLivePostsFavoritedBy(
                 memberId, PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE)));
+    }
+
+    /*
+     * 마이페이지 팔로우 탭 (API-USR-15 P2, FR-CMT-008). 내가 팔로우한 회원, 최근 팔로우 순. 볼 수 없는 회원(탈퇴 등)은 뺀다.
+     * 회원 상태는 auth 테이블이라 쿼리로 거를 수 없어서, 내 팔로우를 모두 읽고 거른 뒤 쪽을 나눈다 (쪽마다 20명·전체 수가 맞게).
+     */
+    // ponytail: 한 회원의 팔로우를 모두 읽는다. 팔로우가 수천 명 규모가 되면 MemberReader 에 볼 수 없는 회원 조회를 두고 쿼리로 나눈다
+    public Page<MemberSummary> getFollowingOf(Long memberId, int page) {
+        List<Long> ids = followRepository.findByFollowerMemberIdOrderByCreatedAtDescFollowIdDesc(memberId).stream()
+                .map(Follow::getFollowingMemberId).toList();
+        Set<Long> visible = memberReader.findVisibleIds(ids);
+        List<Long> shown = ids.stream().filter(visible::contains).toList();
+        PageRequest pageable = PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE);
+        List<Long> pageIds = shown.stream().skip(pageable.getOffset()).limit(pageable.getPageSize()).toList();
+        Map<Long, String> nicknames = memberReader.getNicknames(pageIds);
+        return new PageImpl<>(pageIds.stream().map(id -> new MemberSummary(id, nicknames.get(id))).toList(), pageable, shown.size());
     }
 
     private Page<MemberPostItem> toItems(Page<Post> posts) {

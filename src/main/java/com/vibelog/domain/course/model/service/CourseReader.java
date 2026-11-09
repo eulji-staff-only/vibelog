@@ -1,8 +1,10 @@
 package com.vibelog.domain.course.model.service;
 
+import com.vibelog.domain.course.model.dao.CourseCategoryRepository;
 import com.vibelog.domain.course.model.dao.CourseRepository;
 import com.vibelog.domain.course.model.dao.TrackRepository;
 import com.vibelog.domain.course.model.entity.Course;
+import com.vibelog.domain.course.model.entity.CourseCategory;
 import com.vibelog.domain.course.model.entity.Track;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,11 +28,17 @@ public class CourseReader {
 
     private final CourseRepository courseRepository;
     private final TrackRepository trackRepository;
+    private final CourseCategoryRepository courseCategoryRepository;
 
     /* 코스 ID → 코스 이름. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 수강 코스(auth #119)가 쓴다 */
     public Map<Long, String> getCourseTitles(Collection<Long> courseIds) {
         return courseRepository.findAllById(courseIds).stream()
                 .collect(Collectors.toMap(Course::getCourseId, Course::getTitle));
+    }
+
+    /* 코스 존재 여부(공개 여부는 보지 않음). 운영자 수업 만들기(API-ADM-17, #100)가 COURSE_NOT_FOUND 판단에 쓴다 */
+    public boolean existsById(Long courseId) {
+        return courseRepository.existsById(courseId);
     }
 
     /* 코스 ID → 트랙 ID. 없는 ID 는 결과에 빠진다. 운영자 대시보드(admin #120, FR-ADM-002)가 코스를 트랙별로 묶을 때 쓴다 */
@@ -43,5 +51,11 @@ public class CourseReader {
     public Map<Long, String> getTrackTitles(Collection<Long> trackIds) {
         return trackRepository.findAllById(trackIds).stream()
                 .collect(Collectors.toMap(Track::getTrackId, Track::getName));
+    }
+
+    /* 카테고리 ID → 카테고리 이름. 없는 ID 는 결과에 빠진다 */
+    public Map<Long, String> getCategoryNames(Collection<Long> categoryIds) {
+        return courseCategoryRepository.findAllById(categoryIds).stream()
+                .collect(Collectors.toMap(CourseCategory::getCourseCategoryId, CourseCategory::getName));
     }
 }

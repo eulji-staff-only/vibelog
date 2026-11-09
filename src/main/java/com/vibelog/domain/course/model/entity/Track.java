@@ -11,10 +11,9 @@ import lombok.NoArgsConstructor;
 
 /*
  * [Track]
- * 역할 : 트랙 테이블(track)과 매핑된다. 코스는 트랙 하나에 속한다 (FR-CRS-007).
- * 책임 : 컬럼은 sql/01-schema.sql 의 track 그대로 둔다.
- *        운영자 대시보드(admin #120)가 트랙 이름을 읽으려고 먼저 만들었다. 트랙 관리(#82, A-02)가
- *        만들기(create)·수정 메서드는 쓰는 곳이 생길 때 추가한다.
+ * 역할 : 트랙 테이블(track)과 매핑된다. 코스를 학습 목표별로 묶는 큰 갈래다 (FR-CRS-004).
+ * 책임 : 컬럼은 sql/01-schema.sql 의 track 그대로 둔다. 이름·순서(sort_order)는 각각 UNIQUE 다.
+ *        만들기·수정 메서드는 트랙 관리(운영자, #95)에서 추가한다.
  */
 @Getter
 @Entity

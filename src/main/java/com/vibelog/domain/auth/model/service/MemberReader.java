@@ -55,6 +55,21 @@ public class MemberReader {
                 .orElse(false);
     }
 
+    /*
+     * 공개 프로필을 볼 수 있는 회원 ID만 골라 준다 (API-CMT-14, 작성자 링크). 지금은 탈퇴하지 않은 회원.
+     * 영구 정지 회원(PL-RPT-006)은 이용 정지(#178)에서 더한다.
+     */
+    public Set<Long> findVisibleIds(Collection<Long> memberIds) {
+        return memberRepository.findAllById(memberIds).stream()
+                .filter(member -> member.getStatus() == MemberStatus.ACTIVE)
+                .map(Member::getMemberId)
+                .collect(Collectors.toSet());
+    }
+
+    public boolean isVisible(Long memberId) {
+        return memberId != null && findVisibleIds(List.of(memberId)).contains(memberId);
+    }
+
     /* 회원 ID 1건 → 닉네임. 공통 헤더(#132)처럼 로그인 회원 1명의 닉네임만 필요할 때 쓴다. 없는 ID면 빈 문자열 */
     public String getNickname(Long memberId) {
         return memberRepository.findById(memberId)

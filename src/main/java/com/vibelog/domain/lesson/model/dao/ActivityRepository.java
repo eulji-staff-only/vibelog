@@ -11,6 +11,9 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
     List<Activity> findByLessonIdAndIsActiveTrueOrderBySortOrderAsc(Long lessonId);
 
+    /* 운영자 수업 편집 화면(API-ADM-19, #100): 사용 중지된 활동도 함께 보여준다 */
+    List<Activity> findByLessonIdOrderBySortOrderAsc(Long lessonId);
+
     Optional<Activity> findTopByLessonIdAndIsActiveTrueOrderBySortOrderDesc(Long lessonId);
 
     long countByLessonIdAndActivityTypeAndIsActiveTrue(Long lessonId, ActivityType activityType);
@@ -26,4 +29,7 @@ public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
     Optional<Activity> findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(
             Long lessonId, ActivityType activityType);
+
+    /* 새 활동의 다음 순서 계산(API-ADM-21, #101). uk_activity_lesson_sort 가 사용 중지 활동도 포함해 걸려 있어 전체에서 구한다 */
+    Optional<Activity> findTopByLessonIdOrderBySortOrderDesc(Long lessonId);
 }
