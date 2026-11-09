@@ -90,6 +90,9 @@
 .ls-btn-outline:hover { background: var(--surface); }
 
 /* 잠김 안내 (공통 조각 #46 전까지) */
+/* 운영자 미리보기 안내 (FR-LSN-015) */
+.ls-preview-notice { margin: 0; padding: var(--space-3) var(--space-6); background: var(--surface); color: var(--ink);
+    border-bottom: 1px solid var(--line-strong); font-weight: 600; text-align: center; }
 .ls-notice { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-6) var(--space-5);
     border-radius: var(--radius-md); background: var(--tint); font-size: 15px; line-height: 1.6; }
 .ls-notice p { margin: 0; color: var(--ink-muted); }

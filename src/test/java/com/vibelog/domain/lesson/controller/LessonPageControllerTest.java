@@ -61,7 +61,7 @@ class LessonPageControllerTest {
         LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
                 ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
         LessonPageData data = new LessonPageData(1L, 1L, "수업 1", "목표", List.of(quiz));
-        given(lessonPageService.getPage(1L, 1L, 1L, null)).willReturn(LessonPageResult.ok(data));
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(data));
 
         mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
                 .andExpect(status().isOk())
@@ -74,7 +74,7 @@ class LessonPageControllerTest {
         LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
                 ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
         LessonPageData data = new LessonPageData(1L, 1L, "수업 1", "목표", List.of(quiz));
-        given(lessonPageService.getPage(1L, 1L, 1L, null)).willReturn(LessonPageResult.ok(data));
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(data));
 
         mockMvc.perform(get("/courses/1/lessons/1")
                         .with(authentication(loginAs(1L)))
@@ -84,9 +84,56 @@ class LessonPageControllerTest {
                         "role=\"status\">" + LessonErrorCode.ACTIVITY_LOCKED.getMessage())));
     }
 
+    private UsernamePasswordAuthenticationToken loginAsAdmin(long memberId) {
+        LoginMember loginMember = mock(LoginMember.class);
+        given(loginMember.getMemberId()).willReturn(memberId);
+        given(loginMember.isAdmin()).willReturn(true);
+        return new UsernamePasswordAuthenticationToken(loginMember, "N/A",
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+    }
+
+    private LessonPageData previewData() {
+        LessonActivityCard concept = new LessonActivityCard(1L, LessonActivityCard.CONCEPT, "개념 1",
+                ActivityStatus.IN_PROGRESS, true, "본문", null, List.of(), null, null, null, null, null);
+        LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
+                ActivityStatus.IN_PROGRESS, false, null, null, null, null, null, null, null, null);
+        LessonActivityCard exam = new LessonActivityCard(null, LessonActivityCard.EXAM, "모의고사",
+                ActivityStatus.IN_PROGRESS, false, null, null, null, null, null, null, null, null);
+        return new LessonPageData(1L, 1L, "수업 1", "목표", List.of(concept, quiz, exam), true);
+    }
+
+    @Test
+    void 운영자가_열면_미리보기로_Service에_넘기고_안내를_보여주며_기록_버튼은_숨긴다() throws Exception {
+        given(lessonPageService.getPage(2L, 1L, 1L, null, true)).willReturn(LessonPageResult.ok(previewData()));
+
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAsAdmin(2L))))
+                .andExpect(status().isOk())
+                .andExpect(view().name("lesson/lesson"))
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("운영자 미리보기입니다. 진행 기록이 저장되지 않습니다."),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("읽기 완료 · 퀴즈로")),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("data-bookmark")),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("모의고사 응시하기")),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("퀴즈 풀기")))));
+    }
+
+    @Test
+    void 학습자_화면에는_미리보기_안내가_없다() throws Exception {
+        LessonActivityCard concept = new LessonActivityCard(1L, LessonActivityCard.CONCEPT, "개념 1",
+                ActivityStatus.IN_PROGRESS, true, "본문", null, List.of(), null, null, null, null, null);
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(
+                new LessonPageData(1L, 1L, "수업 1", "목표", List.of(concept))));
+
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("class=\"ls-preview-notice\"")),
+                        org.hamcrest.Matchers.containsString("읽기 완료 · 퀴즈로"))));
+    }
+
     @Test
     void 수강_안_한_코스면_코스_상세로_보낸다() throws Exception {
-        given(lessonPageService.getPage(1L, 1L, 1L, null)).willReturn(LessonPageResult.notEnrolled());
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.notEnrolled());
 
         mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
                 .andExpect(status().is3xxRedirection())
@@ -95,7 +142,7 @@ class LessonPageControllerTest {
 
     @Test
     void 잠긴_수업이면_내_학습으로_토스트와_함께_보낸다() throws Exception {
-        given(lessonPageService.getPage(1L, 1L, 1L, null)).willReturn(LessonPageResult.locked());
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.locked());
 
         MvcResult result = mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
                 .andExpect(status().is3xxRedirection())

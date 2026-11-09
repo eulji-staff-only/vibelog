@@ -170,6 +170,20 @@ class LessonAdminTest {
         org.assertj.core.api.Assertions.assertThat(value).isFalse();
     }
 
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void 편집_화면의_미리보기는_학습자_수업_주소를_새_탭으로_연다() throws Exception {
+        long courseId = courseOf();
+        long lessonId = lessonOf(courseId, "비공개 수업", 1, false);
+
+        mockMvc.perform(get("/admin/lessons/" + lessonId))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("href=\"/courses/" + courseId + "/lessons/" + lessonId + "\""),
+                        containsString("target=\"_blank\""),
+                        containsString("rel=\"noopener noreferrer\""))));
+    }
+
     private long courseOf() {
         jdbcTemplate.update("INSERT INTO track (name, target, description, sort_order) VALUES ('트랙', '대상', '설명', 9901)");
         Long trackId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);

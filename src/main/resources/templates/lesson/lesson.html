@@ -25,6 +25,9 @@
         <p class="ls-lead" th:text="${page.lessonGoal}">[수업 목표]</p>
     </section>
 
+    <!-- 운영자 미리보기 (FR-LSN-015, API-ADM-39). 기록을 남기는 버튼은 아래에서 모두 숨긴다 -->
+    <p class="ls-preview-notice" role="status" th:if="${page.preview}">운영자 미리보기입니다. 진행 기록이 저장되지 않습니다.</p>
+
     <main class="ls-main">
         <div class="ls-layout">
 
@@ -42,7 +45,7 @@
                                 <span class="ls-activity-name" th:text="${card.title}">[활동 제목]</span>
                             </span>
                             <span class="ls-badge" th:classappend="${card.statusBadgeClass()}"
-                                  th:text="${card.statusLabel()}">완료</span>
+                                  th:if="${!page.preview}" th:text="${card.statusLabel()}">완료</span>
                         </button>
                     </li>
                 </ul>
@@ -91,7 +94,7 @@
                            target="_blank" rel="noopener noreferrer">도구 노트 보러 가기 (새 탭)</a>
                         <div class="ls-panel-actions">
                             <!-- 북마크 토글 (API-LSN-08, FR-LSN-004). 누를 때마다 켜짐·꺼짐이 바뀐다 -->
-                            <button type="button" class="ls-btn ls-btn-outline" data-bookmark
+                            <button type="button" class="ls-btn ls-btn-outline" data-bookmark th:if="${!page.preview}"
                                     th:attr="data-url=@{'/api/concepts/' + ${card.activityId} + '/bookmark'},aria-pressed=${card.bookmarked}"
                                     th:text="${card.bookmarked} ? '북마크 해제' : '북마크'">북마크</button>
                             <!-- 완료한 개념: 다시 볼 수 있다 (PL-LSN-009). 퀴즈로는 그냥 이동만 하면 되므로 GET 링크 -->
@@ -99,7 +102,7 @@
                                class="ls-btn ls-btn-outline"
                                th:href="@{'/courses/' + ${page.courseId} + '/lessons/' + ${page.lessonId} + '/quizzes/' + ${card.quizActivityId}}">퀴즈 다시 보기</a>
                             <!-- 진행 중: 읽기 완료 → 처음 한 번만 기록되고 바로 뒤 퀴즈로 이동(API-LSN-02) -->
-                            <form th:if="${card.isInProgress()}" method="post"
+                            <form th:if="${card.isInProgress() and !page.preview}" method="post"
                                   th:action="@{'/courses/' + ${page.courseId} + '/lessons/' + ${page.lessonId} + '/activities/' + ${card.activityId} + '/complete'}">
                                 <button type="submit" class="ls-btn ls-btn-navy">읽기 완료 · 퀴즈로</button>
                             </form>
@@ -113,7 +116,7 @@
                         <p class="ls-panel-desc">개념에서 배운 내용을 확인합니다. 정답률 50% 이상이면 통과합니다.</p>
                         <span class="ls-badge" th:if="${card.bestCorrectRate != null}"
                               th:text="'최고 점수 ' + ${card.bestCorrectRate} + '%'">최고 점수</span>
-                        <div class="ls-panel-actions">
+                        <div class="ls-panel-actions" th:if="${!page.preview}">
                             <a class="ls-btn ls-btn-navy"
                                th:href="@{'/courses/' + ${page.courseId} + '/lessons/' + ${page.lessonId} + '/quizzes/' + ${card.activityId}}"
                                th:text="${card.isCompleted()} ? '퀴즈 다시 풀기' : '퀴즈 풀기'">퀴즈 풀기</a>
@@ -128,7 +131,7 @@
                         <span class="ls-panel-eyebrow">모의고사</span>
                         <h2 class="ls-panel-title">모의고사</h2>
                         <p class="ls-panel-desc">이 수업의 모든 개념에서 출제됩니다. 통과 점수와 제한 시간은 없습니다.</p>
-                        <div class="ls-panel-actions">
+                        <div class="ls-panel-actions" th:if="${!page.preview}">
                             <form method="post" th:action="${card.examUrl}">
                                 <button type="submit" class="ls-btn ls-btn-navy">모의고사 응시하기</button>
                             </form>

@@ -63,7 +63,7 @@ class LessonPageServiceTest {
 
     @Test
     void 수강하지_않았으면_NOT_ENROLLED() {
-        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null);
+        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null, false);
 
         assertThat(result.status()).isEqualTo(LessonPageResult.Status.NOT_ENROLLED);
     }
@@ -75,7 +75,7 @@ class LessonPageServiceTest {
         enrollment.drop();
         enrollmentRepository.saveAndFlush(enrollment);
 
-        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null);
+        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null, false);
 
         assertThat(result.status()).isEqualTo(LessonPageResult.Status.NOT_ENROLLED);
     }
@@ -89,7 +89,7 @@ class LessonPageServiceTest {
         enrollment.restart();
         enrollmentRepository.saveAndFlush(enrollment);
 
-        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null);
+        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null, false);
 
         assertThat(result.status()).isEqualTo(LessonPageResult.Status.OK);
     }
@@ -101,7 +101,7 @@ class LessonPageServiceTest {
         enrollment.complete();
         enrollmentRepository.saveAndFlush(enrollment);
 
-        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null);
+        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null, false);
 
         assertThat(result.status()).isEqualTo(LessonPageResult.Status.OK);
     }
@@ -110,7 +110,7 @@ class LessonPageServiceTest {
     void 수강은_했지만_수업이_안_열렸으면_LOCKED() {
         enroll();
 
-        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null);
+        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null, false);
 
         assertThat(result.status()).isEqualTo(LessonPageResult.Status.LOCKED);
     }
@@ -122,7 +122,7 @@ class LessonPageServiceTest {
         completeActivity(enrollment, CONCEPT_1);
         unlockActivity(enrollment, QUIZ_1); // 진행 중
 
-        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null);
+        LessonPageResult result = lessonPageService.getPage(LEARNER, COURSE, LESSON, null, false);
         LessonPageData data = result.data();
 
         assertThat(result.status()).isEqualTo(LessonPageResult.Status.OK);
@@ -156,7 +156,7 @@ class LessonPageServiceTest {
         completeActivity(enrollment, CONCEPT_1);
         unlockActivity(enrollment, QUIZ_1);
 
-        LessonPageData data = lessonPageService.getPage(LEARNER, COURSE, LESSON, String.valueOf(CONCEPT_1)).data();
+        LessonPageData data = lessonPageService.getPage(LEARNER, COURSE, LESSON, String.valueOf(CONCEPT_1), false).data();
 
         assertThat(cardOf(data, CONCEPT_1).selected()).isTrue();
         assertThat(cardOf(data, QUIZ_1).selected()).isFalse();
@@ -169,7 +169,7 @@ class LessonPageServiceTest {
         completeActivity(enrollment, CONCEPT_1);
         unlockActivity(enrollment, QUIZ_1);
 
-        LessonPageData data = lessonPageService.getPage(LEARNER, COURSE, LESSON, "no-such-activity").data();
+        LessonPageData data = lessonPageService.getPage(LEARNER, COURSE, LESSON, "no-such-activity", false).data();
 
         assertThat(cardOf(data, QUIZ_1).selected()).isTrue();
     }
@@ -183,7 +183,7 @@ class LessonPageServiceTest {
         completeActivity(enrollment, CONCEPT_2);
         completeActivity(enrollment, QUIZ_2); // 마지막 퀴즈 완료 → 모의고사 열림(계약 ②)
 
-        LessonPageData data = lessonPageService.getPage(LEARNER, COURSE, LESSON, null).data();
+        LessonPageData data = lessonPageService.getPage(LEARNER, COURSE, LESSON, null, false).data();
 
         LessonActivityCard exam = examCard(data);
         assertThat(exam.status()).isEqualTo(ActivityStatus.IN_PROGRESS);
@@ -198,7 +198,7 @@ class LessonPageServiceTest {
         completeActivity(enrollment, CONCEPT_1);
         unlockActivity(enrollment, QUIZ_1);
 
-        LessonPageData data = lessonPageService.getPage(LEARNER, COURSE, LESSON, "exam").data();
+        LessonPageData data = lessonPageService.getPage(LEARNER, COURSE, LESSON, "exam", false).data();
 
         assertThat(examCard(data).selected()).isTrue();
     }

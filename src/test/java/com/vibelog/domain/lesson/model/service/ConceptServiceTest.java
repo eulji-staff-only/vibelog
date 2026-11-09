@@ -217,7 +217,7 @@ class ConceptServiceTest {
         conceptService.toggleBookmark(LEARNER, 9201L);
 
         LessonActivityCard card = cardOf(
-                lessonPageService.getPage(LEARNER, 9201L, 9201L, "9201").data(), 9201L);
+                lessonPageService.getPage(LEARNER, 9201L, 9201L, "9201", false).data(), 9201L);
 
         assertThat(card.relatedConcepts()).extracting(RelatedConcept::relatedActivityId).containsExactly(9206L, 9202L);
         assertThat(card.conceptTagIds()).containsExactly(9201L);
@@ -231,7 +231,7 @@ class ConceptServiceTest {
         conceptService.toggleBookmark(ADMIN, 9201L); // 다른 회원의 북마크는 영향이 없다
 
         LessonActivityCard card = cardOf(
-                lessonPageService.getPage(LEARNER, 9201L, 9201L, "9201").data(), 9201L);
+                lessonPageService.getPage(LEARNER, 9201L, 9201L, "9201", false).data(), 9201L);
 
         assertThat(card.bookmarked()).isFalse();
     }
