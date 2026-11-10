@@ -35,7 +35,8 @@ vibelog.example.com {
 
 ## 2. DB 백업 (매일 1회, 7일 보관)
 
-[`scripts/backup-db.sh`](../../scripts/backup-db.sh) 가 `mysqldump` 로 받아 `gzip` 으로 줄이고, 7일보다 오래된 백업을 지운다.
+[`scripts/backup-db.sh`](../../scripts/backup-db.sh) 가 `mysqldump` 로 받아 `gzip` 으로 줄이고, 새것부터 7개(매일 1개라 7일치)만 남긴다.
+날짜가 아니라 개수로 지우므로, 백업이 며칠 실패해도 남아 있던 백업이 사라지지 않는다.
 
 0. 백업을 돌릴 계정(아래 예: 앱을 돌리는 `vibelog` 리눅스 계정)이 백업 폴더와 로그 파일에 쓸 수 있게 만든다.
    cron 은 로그 파일을 열지 못하면 스크립트를 실행하지 않는다.
@@ -64,12 +65,32 @@ vibelog.example.com {
 3. 다음 날 `/var/backups/vibelog/` 에 `vibelog-YYYYMMDD-HHMM.sql.gz` 가 생겼는지, 로그에 "백업 완료" 가 있는지 본다.
 
 4. **서버 밖에도 둔다.** 백업이 같은 서버 디스크에만 있으면 디스크가 망가질 때 DB 와 함께 잃는다.
-   다른 서버(또는 그 서버에 붙인 저장소)에 SSH 키로 들어갈 수 있게 한 뒤, cron 줄 앞에 `BACKUP_REMOTE` 를 붙인다.
-   스크립트가 백업 뒤 같은 7일치를 `rsync` 로 맞춘다. 백업 파일은 스크립트가 `umask 077` 로 만들어 백업 계정만 읽는다.
+   다른 서버(또는 그 서버에 붙인 저장소)에 **암호 없는 SSH 키**로 들어갈 수 있게 한 뒤, cron 줄 앞에 `BACKUP_REMOTE` 를 붙인다.
+   스크립트가 백업할 때마다 새 백업 파일을 `rsync` 로 보낸다 (보내기만 하고 원격 파일은 지우지 않는다).
+   백업 파일은 스크립트가 `umask 077` 로 만들어 백업 계정만 읽는다.
 
    ```
    10 4 * * * BACKUP_REMOTE=backup@10.0.0.5:/backups/vibelog/ /opt/vibelog/scripts/backup-db.sh >> /var/log/vibelog-backup.log 2>&1
    ```
+
+   - 등록 전에 cron 과 같은 조건(백업 계정, 비대화형)으로 접속되는지 본다. "ok" 가 안 나오면 cron 에서도 원격 복사가 실패한다.
+
+     ```
+     sudo -u vibelog ssh -o BatchMode=yes backup@10.0.0.5 true && echo ok
+     ```
+
+   - 원격 서버에서는 새것부터 7개만 남기는 cron 을 따로 둔다 (원격 보관 개수는 원격이 관리).
+
+     ```
+     20 5 * * * cd /backups/vibelog && ls -1 vibelog-*.sql.gz | sort | head -n -7 | xargs -r rm --
+     ```
+
+   - 다음 날 로그에 그날 "원격 복사 완료" 가 있는지, 원격에 그날 파일이 있는지 본다.
+
+     ```
+     grep "원격 복사 완료" /var/log/vibelog-backup.log | tail -1
+     sudo -u vibelog ssh -o BatchMode=yes backup@10.0.0.5 'ls -1 /backups/vibelog | tail -3'
+     ```
 
 ## 3. 복구 (4시간 안에)
 
@@ -83,12 +104,12 @@ vibelog.example.com {
    test -s "$BACKUP" && gzip -t "$BACKUP" && gunzip -c "$BACKUP" | tail -1 | grep -q "Dump completed" && echo "쓸 수 있는 백업"
    ```
 
-3. DB 를 비우고 백업을 넣는다. `pipefail` 이라 압축 풀기가 실패해도 성공으로 보이지 않는다.
+3. DB 를 새로 만들고 백업을 넣는다. 새 서버라 DB 가 없어도 되게 `IF EXISTS` 를 쓰고, DB 를 다시 만든 경우에만 백업을 넣도록 `&&` 로 잇는다.
+   `pipefail` 이라 압축 풀기가 실패해도 성공으로 보이지 않는다.
 
    ```
    set -o pipefail
-   mysql -e "DROP DATABASE vibelog; CREATE DATABASE vibelog CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
-   gunzip -c "$BACKUP" | mysql vibelog && echo "복구 완료"
+   mysql -e "DROP DATABASE IF EXISTS vibelog; CREATE DATABASE vibelog CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;" && gunzip -c "$BACKUP" | mysql vibelog && echo "복구 완료"
    ```
 
 4. "복구 완료" 를 본 뒤에만 앱을 다시 시작하고(`MAINTENANCE` 끄기) 메인·로그인·게시판이 열리는지 확인한다.

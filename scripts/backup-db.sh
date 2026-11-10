@@ -9,7 +9,7 @@
 #   user=vibelog
 #   password=...
 #
-# 환경 변수(선택): DB_NAME(기본 vibelog), DB_USER(~/.my.cnf 대신 쓸 때), BACKUP_DIR(기본 /var/backups/vibelog), KEEP_DAYS(기본 7),
+# 환경 변수(선택): DB_NAME(기본 vibelog), DB_USER(~/.my.cnf 대신 쓸 때), BACKUP_DIR(기본 /var/backups/vibelog), KEEP_DAYS(남길 개수, 기본 7),
 #   BACKUP_REMOTE(다른 서버에도 둘 때 rsync 대상, 예: backup@10.0.0.5:/backups/vibelog/)
 set -euo pipefail
 umask 077   # 백업(회원 정보 포함)은 백업 계정만 읽는다: 폴더 700, 파일 600
@@ -26,12 +26,15 @@ trap 'rm -f "$file.tmp"' EXIT   # 중간에 실패하면 반쯤 쓴 파일을 �
 mysqldump ${DB_USER:+--user="$DB_USER"} --single-transaction --routines --triggers --no-tablespaces "$DB_NAME" | gzip > "$file.tmp"
 mv "$file.tmp" "$file"
 
-# KEEP_DAYS 일보다 오래된 백업을 지운다 (매일 1개씩이라 KEEP_DAYS 개가 남는다)
-find "$BACKUP_DIR" -name "$DB_NAME-*.sql.gz" -mtime +$((KEEP_DAYS - 1)) -delete
-
-# 서버가 통째로 망가져도 복구할 수 있게 다른 곳에도 같은 7일치를 둔다 (보관 기간이 같도록 --delete)
-if [ -n "${BACKUP_REMOTE:-}" ]; then
-    rsync -a --delete --include="$DB_NAME-*.sql.gz" --exclude='*' "$BACKUP_DIR/" "$BACKUP_REMOTE"
-fi
-
 echo "$(date '+%F %T') 백업 완료: $file ($(du -h "$file" | cut -f1))"
+
+# 새것부터 KEEP_DAYS 개만 남긴다 (매일 1개라 KEEP_DAYS 일치). 날짜로 지우면 백업이 며칠 실패했을 때 남은 백업까지 다 지워지므로 개수로 센다.
+# 파일 이름이 날짜·시각 순이라 이름순 = 오래된 순이다
+ls -1 "$BACKUP_DIR/$DB_NAME"-*.sql.gz | sort | head -n -"$KEEP_DAYS" | xargs -r rm --
+
+# 서버가 통째로 망가져도 복구할 수 있게 다른 곳에도 둔다. 보내기만 하고(--delete 없음) 원격 보관 개수는 원격에서 따로 관리한다.
+# BatchMode: 암호 있는 SSH 키 등으로 비대화형 접속이 안 되면 cron 에서 기다리지 않고 바로 실패한다
+if [ -n "${BACKUP_REMOTE:-}" ]; then
+    rsync -a -e "ssh -o BatchMode=yes" "$file" "$BACKUP_REMOTE"
+    echo "$(date '+%F %T') 원격 복사 완료: $BACKUP_REMOTE"
+fi
