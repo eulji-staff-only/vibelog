@@ -66,7 +66,8 @@ class MessageTest {
 
     @Test
     void 쪽지를_보내면_보낸_쪽지함에서_열리고_받는_사람에게_알림이_간다() throws Exception {
-        write(sender, receiverId, "안녕하세요").andExpect(flash().attribute("toast", "쪽지를 보냈습니다"));
+        write(sender, receiverId, "안녕하세요").andExpect(flash().attribute("toast", "쪽지를 보냈습니다"))
+                .andExpect(flash().attribute("draftClear", "message"));   // 작성 중 내용 보관을 지운다 (#366)
         long messageId = lastMessageId();
 
         mockMvc.perform(post("/messages").with(as(sender)).with(csrf()).param("receiverMemberId", String.valueOf(receiverId))

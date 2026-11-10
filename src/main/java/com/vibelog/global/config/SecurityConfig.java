@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,6 +32,7 @@ import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.csrf.CsrfException;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -120,14 +122,37 @@ public class SecurityConfig {
             sendJson(response, HttpStatus.UNAUTHORIZED, "LOGIN_REQUIRED", "로그인이 필요합니다.");
             return;
         }
-        // POST 주소로는 돌아갈 수 없으므로(화면이 아님) 화면(GET) 요청일 때만 원래 주소를 붙인다
-        if (!HttpMethod.GET.matches(request.getMethod())) {
-            response.sendRedirect("/login");
-            return;
+        // POST 주소로는 돌아갈 수 없으므로(화면이 아님) 폼을 보낸 화면(Referer)으로 돌아오게 한다 (#366). 그 화면에서 작성 중 내용이 복원된다
+        String original;
+        if (HttpMethod.GET.matches(request.getMethod())) {
+            String query = request.getQueryString();
+            original = request.getRequestURI() + (query == null ? "" : "?" + query);
+        } else {
+            original = refererPath(request);
         }
-        String query = request.getQueryString();
-        String original = request.getRequestURI() + (query == null ? "" : "?" + query);
-        response.sendRedirect("/login?redirect=" + URLEncoder.encode(original, StandardCharsets.UTF_8));
+        response.sendRedirect(original == null ? "/login" : "/login?redirect=" + URLEncoder.encode(original, StandardCharsets.UTF_8));
+    }
+
+    /*
+     * 폼을 보낸 화면의 주소(경로·쿼리). 우리 사이트(같은 호스트)의 화면이 아니면 null.
+     * "//evil.com" 처럼 다른 사이트로 읽히는 경로도 null (open redirect 방지, LoginSuccessHandler 도 다시 검사한다)
+     */
+    private static String refererPath(HttpServletRequest request) {
+        String referer = request.getHeader(HttpHeaders.REFERER);
+        if (referer == null) {
+            return null;
+        }
+        try {
+            URI uri = URI.create(referer);
+            String path = uri.getRawPath();
+            if (!request.getServerName().equalsIgnoreCase(uri.getHost()) || path == null
+                    || !path.startsWith("/") || path.startsWith("//") || path.startsWith("/\\")) {
+                return null;
+            }
+            return uri.getRawQuery() == null ? path : path + "?" + uri.getRawQuery();
+        } catch (IllegalArgumentException e) {
+            return null;   // 형식이 깨진 Referer
+        }
     }
 
     /*
@@ -149,6 +174,13 @@ public class SecurityConfig {
         }
         if (!csrf && uri.startsWith("/admin")) {
             response.sendRedirect("/");
+            return;
+        }
+        // 세션이 끊긴 뒤 폼을 보내면 CSRF 토큰(세션에 있음)이 맞지 않는다 → 403 대신 폼을 보낸 화면으로 돌려보낸다 (PL-ERR-005, #366).
+        // 회원 화면이면 거기서 다시 로그인 화면으로 가고, 로그인하면 돌아와 작성 중 내용이 복원된다
+        String back = csrf ? refererPath(request) : null;
+        if (back != null) {
+            response.sendRedirect(back);
             return;
         }
         response.sendError(HttpServletResponse.SC_FORBIDDEN);

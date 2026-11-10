@@ -43,6 +43,8 @@ public class CommunityCommentController {
         }
         try {
             Long commentId = commentService.write(postId, loginMember.getMemberId(), request.getContent(), parentId);
+            // 작성 중 내용 보관 지우기 (#366, detail.html·comment.html data-draft)
+            redirectAttributes.addFlashAttribute("draftClear", parentId == null ? "comment." + postId : "reply." + parentId);
             return "redirect:/community/" + postId + "#comment-" + commentId;
         } catch (BusinessException e) {
             // 답글에 답글(REPLY_DEPTH_EXCEEDED)은 화면에 그 입력란이 없으므로 댓글 입력란에 보여 준다 (방식 ③ → 게시글)

@@ -85,12 +85,13 @@ public class CommunityPageController {
     /* API-CMT-04 */
     @PostMapping("/community")
     public String write(@Valid @ModelAttribute PostWriteRequest postWriteRequest, BindingResult bindingResult,
-                        @AuthenticationPrincipal LoginMember loginMember, Model model) {
+                        @AuthenticationPrincipal LoginMember loginMember, Model model, RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             return writeView(model, loginMember, null);
         }
         try {
             Long postId = postWriteService.write(loginMember.getMemberId(), postWriteRequest);
+            redirectAttributes.addFlashAttribute("draftClear", "post");   // 작성 중 내용 보관 지우기 (#366, write.html data-draft)
             return "redirect:/community/" + postId;
         } catch (BusinessException e) {
             rejectOnForm(bindingResult, e);
@@ -108,12 +109,14 @@ public class CommunityPageController {
     /* API-CMT-06 */
     @PostMapping("/community/{postId}/edit")
     public String edit(@PathVariable Long postId, @Valid @ModelAttribute PostWriteRequest postWriteRequest,
-                       BindingResult bindingResult, @AuthenticationPrincipal LoginMember loginMember, Model model) {
+                       BindingResult bindingResult, @AuthenticationPrincipal LoginMember loginMember, Model model,
+                       RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             return writeView(model, loginMember, postId);
         }
         try {
             postWriteService.update(postId, loginMember.getMemberId(), postWriteRequest);
+            redirectAttributes.addFlashAttribute("draftClear", "post." + postId);
             return "redirect:/community/" + postId;
         } catch (BusinessException e) {
             rejectOnForm(bindingResult, e);

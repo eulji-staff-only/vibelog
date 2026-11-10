@@ -91,7 +91,7 @@
                 <a class="cm-link" href="/auth/verify">인증 메일 받기</a>
             </div>
             <form class="cm-form" id="comment-form" method="post" th:if="${canComment}"
-                  th:action="@{/community/{id}/comments(id=${post.postId()})}">
+                  th:action="@{/community/{id}/comments(id=${post.postId()})}" th:attr="data-draft=|comment.${post.postId()}|">
                 <p class="cm-hint is-error" role="alert" th:if="${commentTarget == 'new'}" th:text="${commentError}">오류</p>
                 <textarea class="cm-input cm-textarea is-short" name="content" maxlength="500" required
                           placeholder="댓글을 남겨 보세요" aria-label="댓글"
