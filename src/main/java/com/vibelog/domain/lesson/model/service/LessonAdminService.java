@@ -4,6 +4,7 @@ import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.exam.model.dto.AdminExamQuestionItem;
 import com.vibelog.domain.exam.model.service.ExamReader;
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
+import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityTagRepository;
 import com.vibelog.domain.lesson.model.dao.ConceptTagRepository;
@@ -16,6 +17,7 @@ import com.vibelog.domain.lesson.model.dto.LessonEditView;
 import com.vibelog.domain.lesson.model.dto.LessonFormRequest;
 import com.vibelog.domain.lesson.model.dto.LessonPublishStatus;
 import com.vibelog.domain.lesson.model.entity.Activity;
+import com.vibelog.domain.lesson.model.entity.ActivityProgress;
 import com.vibelog.domain.lesson.model.entity.ActivityType;
 import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.HashSet;
@@ -56,6 +59,7 @@ public class LessonAdminService {
     private final ConceptTagRepository conceptTagRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final ActivityProgressRepository activityProgressRepository;
     private final CourseReader courseReader;
     private final ExamReader examReader;
     private final QuizReader quizReader;
@@ -214,17 +218,50 @@ public class LessonAdminService {
         return activeActivities.size() % 2 == 0;
     }
 
-    /* PL-ENR-005. 아직 진도가 없는 수강에만 잠긴 채로 새로 만든다 (EnrollmentService가 두 번째 이후 수업을 만드는 방식과 같다) */
+    /*
+     * PL-ENR-005. 아직 진도가 없는 수강에만 새로 만든다. 열어 줄지는 수강 상태로 정한다.
+     *  - 이미 완료한 코스: 완료를 유지하고 새 수업은 열어 둔다.
+     *  - 바로 앞 공개 수업을 이미 끝낸 수강: 앞 수업을 끝낸 학습자는 다음 수업이 열려야 하는데, 다음 수업을 여는 곳(계약 ③)은
+     *    앞 수업을 "처음" 끝낼 때뿐이라 지금 열어 주지 않으면 영영 잠긴다. 그래서 새 수업과 첫 개념을 연다.
+     *  - 앞 공개 수업이 없는 경우(이 수업이 첫 공개 수업): 연다.
+     *  - 그 밖(앞 수업을 아직 못 끝낸 수강): 잠긴 채로 만든다. 앞 수업을 끝낼 때 계약 ③이 연다.
+     */
     private void addProgressForExistingEnrollments(Lesson lesson) {
+        Optional<Lesson> previousLesson = lessonRepository
+                .findByCourseIdAndIsPublicTrueOrderBySortOrderAsc(lesson.getCourseId()).stream()
+                .filter(other -> !other.getLessonId().equals(lesson.getLessonId()) && other.getSortOrder() < lesson.getSortOrder())
+                .reduce((first, second) -> second);
         List<Enrollment> enrollments = enrollmentRepository.findByCourseId(lesson.getCourseId());
         for (Enrollment enrollment : enrollments) {
             boolean alreadyExists = lessonProgressRepository
                     .findByEnrollmentIdAndLessonId(enrollment.getEnrollmentId(), lesson.getLessonId())
                     .isPresent();
-            if (!alreadyExists) {
-                lessonProgressRepository.save(LessonProgress.create(enrollment.getEnrollmentId(), lesson.getLessonId(), null));
+            if (alreadyExists) {
+                continue;
+            }
+            boolean open = enrollment.isCompleted() || previousLesson.isEmpty()
+                    || isLessonCompleted(enrollment.getEnrollmentId(), previousLesson.get().getLessonId());
+            lessonProgressRepository.save(LessonProgress.create(
+                    enrollment.getEnrollmentId(), lesson.getLessonId(), open ? LocalDateTime.now() : null));
+            if (open) {
+                unlockFirstActivity(enrollment.getEnrollmentId(), lesson.getLessonId());
             }
         }
+    }
+
+    private boolean isLessonCompleted(Long enrollmentId, Long lessonId) {
+        return lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollmentId, lessonId)
+                .map(LessonProgress::isCompleted)
+                .orElse(false);
+    }
+
+    /* 수업을 열 때 그 수업의 첫 활동(개념)도 함께 연다 (EnrollmentService·계약 ③과 같은 방식) */
+    private void unlockFirstActivity(Long enrollmentId, Long lessonId) {
+        activityRepository.findFirstByLessonIdAndIsActiveTrueOrderBySortOrderAsc(lessonId)
+                .filter(first -> activityProgressRepository
+                        .findByEnrollmentIdAndActivityId(enrollmentId, first.getActivityId()).isEmpty())
+                .ifPresent(first -> activityProgressRepository.save(
+                        ActivityProgress.create(enrollmentId, first.getActivityId(), LocalDateTime.now())));
     }
 
     private AdminActivityItem toAdminActivityItem(Activity activity, Map<Long, String> conceptTagNamesById) {
