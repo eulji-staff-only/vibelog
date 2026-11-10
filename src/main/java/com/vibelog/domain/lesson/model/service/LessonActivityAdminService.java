@@ -1,16 +1,23 @@
 package com.vibelog.domain.lesson.model.service;
 
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
+import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityTagRepository;
 import com.vibelog.domain.lesson.model.dao.ConceptTagRepository;
+import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
+import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
 import com.vibelog.domain.lesson.model.dto.ActivityFormRequest;
 import com.vibelog.domain.lesson.model.entity.Activity;
+import com.vibelog.domain.lesson.model.entity.ActivityProgress;
 import com.vibelog.domain.lesson.model.entity.ActivityTag;
 import com.vibelog.domain.lesson.model.entity.ActivityType;
 import com.vibelog.domain.lesson.model.entity.BodyFormat;
 import com.vibelog.domain.lesson.model.entity.ConceptTag;
+import com.vibelog.domain.lesson.model.entity.Enrollment;
+import com.vibelog.domain.lesson.model.entity.Lesson;
+import com.vibelog.domain.lesson.model.entity.LessonProgress;
 import com.vibelog.global.exception.BusinessException;
 import com.vibelog.global.file.FileStorage;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +25,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -47,14 +56,16 @@ public class LessonActivityAdminService {
     private final ActivityRepository activityRepository;
     private final ActivityTagRepository activityTagRepository;
     private final ConceptTagRepository conceptTagRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final LessonProgressRepository lessonProgressRepository;
+    private final ActivityProgressRepository activityProgressRepository;
     private final FileStorage fileStorage;
 
-    /* API-ADM-21 */
+    /* API-ADM-21. 이미 이 수업을 끝낸 수강자에게는 새 활동을 선택 학습으로 열어 둔다 (PL-ENR-005, #379) */
     @Transactional
     public Long addActivity(Long lessonId, ActivityFormRequest request) {
-        if (!lessonRepository.existsById(lessonId)) {
-            throw new BusinessException(LessonErrorCode.LESSON_NOT_FOUND);
-        }
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new BusinessException(LessonErrorCode.LESSON_NOT_FOUND));
         int nextOrder = activityRepository.findTopByLessonIdOrderBySortOrderDesc(lessonId)
                 .map(activity -> activity.getSortOrder() + 1)
                 .orElse(1);
@@ -63,7 +74,38 @@ public class LessonActivityAdminService {
                 passRateOf(request), nextOrder);
         activity = activityRepository.save(activity);
         applyTags(activity.getActivityId(), request.getTagNames());
+        openForCompletedLessons(lesson, activity);
         return activity.getActivityId();
+    }
+
+    /*
+     * PL-ENR-005 "완료한 수업에 활동이 추가되면 새 활동으로 표시하고 선택 학습으로 둔다".
+     * 이 수업을 이미 끝낸(lesson_progress.completed_at) 수강자는 새 활동에 들어갈 방법이 없으므로(다음 활동을 여는 곳은 앞 활동을 끝낼 때뿐),
+     * 바로 앞 활동을 끝낸 수강자에게는 새 활동을 열린 상태로 만든다. 앞 활동이 아직 안 끝났으면(예: 방금 추가한 개념 뒤에 퀴즈를 더 추가한 경우)
+     * 만들지 않는다. 그 개념을 끝낼 때 기존 흐름이 다음 활동을 연다. 수업을 아직 끝내지 못한 수강자는 순서대로 진행하면 닿으므로 손대지 않는다.
+     * 새 활동은 수업 완료·진행률·모의고사 열림에 영향을 주지 않는다 (수업 완료는 리포트 확인으로만 기록되고, 모의고사 열림은 LessonExamOpenPolicy가
+     * 한 번 열린 것을 다시 잠그지 않는다).
+     */
+    private void openForCompletedLessons(Lesson lesson, Activity activity) {
+        Optional<Activity> previous = activityRepository
+                .findFirstByLessonIdAndIsActiveTrueAndSortOrderLessThanOrderBySortOrderDesc(
+                        lesson.getLessonId(), activity.getSortOrder());
+        for (Enrollment enrollment : enrollmentRepository.findByCourseId(lesson.getCourseId())) {
+            Long enrollmentId = enrollment.getEnrollmentId();
+            boolean lessonCompleted = lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollmentId, lesson.getLessonId())
+                    .map(LessonProgress::isCompleted)
+                    .orElse(false);
+            if (!lessonCompleted) {
+                continue;
+            }
+            boolean previousDone = previous.isEmpty() || activityProgressRepository
+                    .findByEnrollmentIdAndActivityId(enrollmentId, previous.get().getActivityId())
+                    .map(ActivityProgress::isCompleted)
+                    .orElse(false);
+            if (previousDone) {
+                activityProgressRepository.save(ActivityProgress.create(enrollmentId, activity.getActivityId(), LocalDateTime.now()));
+            }
+        }
     }
 
     /* API-ADM-22. 돌려주는 값은 redirect 할 수업 id 다 (요청에는 activityId만 있고 lessonId는 없다) */

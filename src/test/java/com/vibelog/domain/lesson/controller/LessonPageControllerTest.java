@@ -71,6 +71,41 @@ class LessonPageControllerTest {
     }
 
     @Test
+    @WithMockUser
+    void 새_활동은_새_활동_배지와_선택_학습_안내를_그리고_일반_활동은_그리지_않는다() throws Exception {
+        // PL-ENR-005, #379: 완료한 수업에 나중에 추가된 활동
+        LessonActivityCard newConcept = new LessonActivityCard(2L, LessonActivityCard.CONCEPT, "새 개념",
+                ActivityStatus.IN_PROGRESS, true, "본문", null, List.of(), null, null, null, null, null).markNew();
+        LessonActivityCard oldQuiz = new LessonActivityCard(3L, LessonActivityCard.QUIZ, "옛 퀴즈",
+                ActivityStatus.COMPLETED, false, null, null, null, null, null, null, null, null);
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false))
+                .willReturn(LessonPageResult.ok(new LessonPageData(1L, 1L, "수업 1", "목표", List.of(newConcept, oldQuiz))));
+
+        String body = mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("ls-badge ls-badge-new"),
+                        org.hamcrest.Matchers.containsString("선택 학습이라 하지 않아도 수업 진행과 모의고사에는 영향이 없습니다"))))
+                .andReturn().getResponse().getContentAsString();
+
+        // 새 활동 하나만 표시된다 (목록의 배지 1 + 오른쪽 안내의 배지 1)
+        assertThat(body.split("ls-badge ls-badge-new", -1).length - 1).isEqualTo(2);
+    }
+
+    @Test
+    @WithMockUser
+    void 새_활동이_없으면_새_활동_표시가_없다() throws Exception {
+        LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false))
+                .willReturn(LessonPageResult.ok(new LessonPageData(1L, 1L, "수업 1", "목표", List.of(quiz))));
+
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ls-badge-new"))));
+    }
+
+    @Test
     void 잠긴_활동으로_돌아오면_수업_화면에_안내_토스트를_그린다() throws Exception {
         LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
                 ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);

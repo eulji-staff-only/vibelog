@@ -49,6 +49,8 @@
                             </span>
                             <span class="ls-badge" th:classappend="${card.statusBadgeClass()}"
                                   th:if="${!page.preview}" th:text="${card.statusLabel()}">완료</span>
+                            <!-- 완료한 수업에 나중에 추가된 활동 (PL-ENR-005 "새 활동", #379) -->
+                            <span class="ls-badge ls-badge-new" th:if="${card.newActivity}">새 활동</span>
                         </button>
                     </li>
                 </ul>
@@ -69,6 +71,12 @@
                         <button type="button" class="ls-link" th:if="${card.previousActivityId != null}"
                                 th:attr="data-activity-link=${card.previousActivityId}">앞 활동 바로가기</button>
                     </div>
+
+                    <!-- 새 활동은 선택 학습이다 (PL-ENR-005, #379). 열려 있는 새 활동 위에만 안내한다 -->
+                    <p class="ls-new-note" th:if="${card.newActivity and !card.isLocked()}">
+                        <span class="ls-badge ls-badge-new">새 활동</span>
+                        이 수업을 끝낸 뒤에 추가된 활동입니다. 선택 학습이라 하지 않아도 수업 진행과 모의고사에는 영향이 없습니다.
+                    </p>
 
                     <!-- 개념 -->
                     <th:block th:if="${!card.isLocked() and card.isConcept()}">
