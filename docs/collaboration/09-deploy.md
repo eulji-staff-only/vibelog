@@ -37,6 +37,14 @@ vibelog.example.com {
 
 [`scripts/backup-db.sh`](../../scripts/backup-db.sh) 가 `mysqldump` 로 받아 `gzip` 으로 줄이고, 7일보다 오래된 백업을 지운다.
 
+0. 백업을 돌릴 계정(아래 예: 앱을 돌리는 `vibelog` 리눅스 계정)이 백업 폴더와 로그 파일에 쓸 수 있게 만든다.
+   cron 은 로그 파일을 열지 못하면 스크립트를 실행하지 않는다.
+
+   ```
+   sudo install -d -o vibelog -g vibelog -m 700 /var/backups/vibelog
+   sudo install -o vibelog -g vibelog -m 600 /dev/null /var/log/vibelog-backup.log
+   ```
+
 1. 접속 정보는 스크립트·cron 에 적지 않고, 백업을 돌리는 계정의 `~/.my.cnf` 에 둔다.
 
    ```
@@ -47,7 +55,7 @@ vibelog.example.com {
 
    `chmod 600 ~/.my.cnf`
 
-2. cron 에 한 줄 등록한다 (`crontab -e`, 매일 새벽 4시 10분).
+2. 그 계정으로 cron 에 한 줄 등록한다 (`sudo -u vibelog crontab -e`, 매일 새벽 4시 10분).
 
    ```
    10 4 * * * /opt/vibelog/scripts/backup-db.sh >> /var/log/vibelog-backup.log 2>&1
@@ -55,19 +63,34 @@ vibelog.example.com {
 
 3. 다음 날 `/var/backups/vibelog/` 에 `vibelog-YYYYMMDD-HHMM.sql.gz` 가 생겼는지, 로그에 "백업 완료" 가 있는지 본다.
 
-> 백업이 같은 서버 디스크에만 있으면 서버가 통째로 망가졌을 때 함께 잃는다. 여유가 생기면 백업 폴더를 다른 곳(다른 서버·저장소)으로 복사한다.
+4. **서버 밖에도 둔다.** 백업이 같은 서버 디스크에만 있으면 디스크가 망가질 때 DB 와 함께 잃는다.
+   다른 서버(또는 그 서버에 붙인 저장소)에 SSH 키로 들어갈 수 있게 한 뒤, cron 줄 앞에 `BACKUP_REMOTE` 를 붙인다.
+   스크립트가 백업 뒤 같은 7일치를 `rsync` 로 맞춘다. 백업 파일은 스크립트가 `umask 077` 로 만들어 백업 계정만 읽는다.
+
+   ```
+   10 4 * * * BACKUP_REMOTE=backup@10.0.0.5:/backups/vibelog/ /opt/vibelog/scripts/backup-db.sh >> /var/log/vibelog-backup.log 2>&1
+   ```
 
 ## 3. 복구 (4시간 안에)
 
 1. 앱을 멈춘다 (점검 중 화면을 띄우려면 `MAINTENANCE=true` 로 다시 시작한다, #365).
-2. 되돌릴 백업을 고른다: `ls -lt /var/backups/vibelog/`
-3. DB 를 비우고 백업을 넣는다.
+2. 되돌릴 백업을 고르고, **DB 를 지우기 전에** 그 파일이 온전한지 본다. 셋 중 하나라도 실패하면 다른 백업을 고른다
+   (서버 디스크가 망가졌으면 `BACKUP_REMOTE` 쪽에서 가져온다).
 
    ```
+   ls -lt /var/backups/vibelog/
+   BACKUP=/var/backups/vibelog/vibelog-YYYYMMDD-HHMM.sql.gz     # 위에서 고른 파일
+   test -s "$BACKUP" && gzip -t "$BACKUP" && gunzip -c "$BACKUP" | tail -1 | grep -q "Dump completed" && echo "쓸 수 있는 백업"
+   ```
+
+3. DB 를 비우고 백업을 넣는다. `pipefail` 이라 압축 풀기가 실패해도 성공으로 보이지 않는다.
+
+   ```
+   set -o pipefail
    mysql -e "DROP DATABASE vibelog; CREATE DATABASE vibelog CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;"
-   gunzip -c /var/backups/vibelog/vibelog-20261110-0410.sql.gz | mysql vibelog
+   gunzip -c "$BACKUP" | mysql vibelog && echo "복구 완료"
    ```
 
-4. 앱을 다시 시작하고(`MAINTENANCE` 끄기) 메인·로그인·게시판이 열리는지 확인한다.
+4. "복구 완료" 를 본 뒤에만 앱을 다시 시작하고(`MAINTENANCE` 끄기) 메인·로그인·게시판이 열리는지 확인한다.
 
 > 백업 시각 이후에 생긴 데이터(글·쪽지 등)는 되돌아오지 않는다. 업로드 파일(`UPLOAD_DIR`)은 DB 백업에 들어 있지 않다.
