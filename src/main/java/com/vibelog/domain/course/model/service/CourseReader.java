@@ -4,6 +4,7 @@ import com.vibelog.domain.course.model.dao.CourseCategoryRepository;
 import com.vibelog.domain.course.model.dao.CourseRepository;
 import com.vibelog.domain.course.model.dao.DiagnosisResultRepository;
 import com.vibelog.domain.course.model.dao.TrackRepository;
+import com.vibelog.domain.course.model.dto.FeaturedCourse;
 import com.vibelog.domain.course.model.entity.Course;
 import com.vibelog.domain.course.model.entity.CourseCategory;
 import com.vibelog.domain.course.model.entity.DiagnosisResult;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,6 +51,14 @@ public class CourseReader {
                 .filter(Course::isPublic)
                 .map(Course::getCourseId)
                 .collect(Collectors.toSet());
+    }
+
+    /* 메인 화면 대표 코스 (API-USR-01, #409). 공개 코스를 코스 ID 순으로 앞에서 limit 개. 대표 지정 값이 따로 없어 이렇게 정했다 */
+    public List<FeaturedCourse> findFeaturedCourses(int limit) {
+        return courseRepository.findByIsPublicTrueOrderByCourseIdAsc().stream()
+                .limit(limit)
+                .map(FeaturedCourse::from)
+                .toList();
     }
 
     /* 코스 존재 여부(공개 여부는 보지 않음). 운영자 수업 만들기(API-ADM-17, #100)가 COURSE_NOT_FOUND 판단에 쓴다 */

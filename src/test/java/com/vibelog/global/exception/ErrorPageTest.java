@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.vibelog.domain.auth.model.service.MemberReader;
 import com.vibelog.domain.community.model.service.CommunityReader;
 import com.vibelog.domain.contest.model.service.ContestReader;
+import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.message.model.service.MessageReader;
 import com.vibelog.global.controller.MainController;
 import java.util.Locale;
@@ -62,6 +63,9 @@ class ErrorPageTest {
 
     @MockitoBean
     ContestReader contestReader;
+
+    @MockitoBean
+    CourseReader courseReader;
 
     @Test
     void 컨트롤러_흐름에서_생긴_404는_error_error_로_그려진다() throws Exception {
