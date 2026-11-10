@@ -77,7 +77,7 @@ public class SecurityConfig {
                         // 전체: 트랙·코스 소개, 게시판 목록·상세 (PL-USR-008). 보기(GET)만 연다
                         .requestMatchers(HttpMethod.GET, "/tracks/*", "/courses", "/courses/*", "/community", "/community/*").permitAll()
                         // 전체: 업로드 파일 (게시글 사진은 비회원도 본다, #79). 파일 이름이 UUID 라 주소를 알아야만 열린다
-                        // ponytail: 비공개 포트폴리오 스크린샷도 주소를 알면 열린다. 막아야 하면 파일을 내려주는 Controller 에서 권한을 본다
+                        // 비공개 포트폴리오 스크린샷·평가 에이전트 설정 파일은 UploadAccessInterceptor 가 막는다 (#368)
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         // 나머지는 모두 회원
                         .anyRequest().authenticated())
