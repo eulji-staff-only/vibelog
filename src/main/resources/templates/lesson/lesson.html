@@ -42,7 +42,7 @@
                                 th:classappend="${card.isLocked()} ? 'is-locked' : ''"
                                 th:attr="data-activity=${card.activityId != null ? card.activityId : 'exam'},aria-current=${card.selected}">
                             <span class="ls-activity-no" aria-hidden="true"
-                                  th:text="${card.isLocked()} ? '🔒' : (iter.index + 1)">1</span>
+                                  th:text="${card.isLocked() ? '🔒' : iter.count}">1</span>
                             <span class="ls-activity-info">
                                 <span class="ls-activity-kind" th:text="${card.kindLabel()}">개념</span>
                                 <span class="ls-activity-name" th:text="${card.title}">[활동 제목]</span>

@@ -72,6 +72,28 @@ class LessonPageControllerTest {
 
     @Test
     @WithMockUser
+    void 활동_목록에는_열린_활동은_순서_번호_잠긴_활동은_자물쇠가_보인다() throws Exception {
+        // #389: iter.index 가 ${ } 밖에 있어 번호 대신 "iter.index1" 글자가 보이던 문제
+        LessonActivityCard concept = new LessonActivityCard(1L, LessonActivityCard.CONCEPT, "개념 1",
+                ActivityStatus.COMPLETED, false, "본문", null, List.of(), null, null, null, null, null);
+        LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
+        LessonActivityCard locked = new LessonActivityCard(3L, LessonActivityCard.CONCEPT, "개념 2",
+                ActivityStatus.LOCKED, false, null, null, List.of(), null, null, null, null, null);
+        LessonPageData data = new LessonPageData(1L, 1L, "수업 1", "목표", List.of(concept, quiz, locked));
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(data));
+
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("class=\"ls-activity-no\" aria-hidden=\"true\">1</span>"),
+                        org.hamcrest.Matchers.containsString("class=\"ls-activity-no\" aria-hidden=\"true\">2</span>"),
+                        org.hamcrest.Matchers.containsString("class=\"ls-activity-no\" aria-hidden=\"true\">🔒</span>"),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("iter.index")))));
+    }
+
+    @Test
+    @WithMockUser
     void 새_활동은_새_활동_배지와_선택_학습_안내를_그리고_일반_활동은_그리지_않는다() throws Exception {
         // PL-ENR-005, #379: 완료한 수업에 나중에 추가된 활동
         LessonActivityCard newConcept = new LessonActivityCard(2L, LessonActivityCard.CONCEPT, "새 개념",
