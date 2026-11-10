@@ -107,6 +107,11 @@
 .ml-btn-navy:hover { background: var(--navy-800); }
 .ml-btn-outline { background: var(--surface-raised); color: var(--ink); border-color: var(--line-strong); }
 .ml-btn-outline:hover { background: var(--surface); }
+.ml-btn-s { min-height: 36px; padding: 6px 14px; font-size: 14px; }
+.ml-inline-form { margin: 0; }
+
+/* 잠긴 수업 줄 아래 안내 (왜 잠겼는지 + 이전 수업 바로가기) */
+.ml-lesson-lock { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 
 /* 키보드 포커스 (설계서 5-2) */
 .ml-page :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
