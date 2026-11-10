@@ -1,5 +1,7 @@
 package com.vibelog.domain.portfolio.model.service;
 
+import com.vibelog.domain.auth.model.service.MemberReader;
+import com.vibelog.domain.message.model.service.MessageReader;
 import com.vibelog.domain.portfolio.model.dao.PortfolioAssignmentRepository;
 import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
 import com.vibelog.domain.portfolio.model.dto.PortfolioBrief;
@@ -33,6 +35,25 @@ public class PortfolioReader {
 
     private final PortfolioRepository portfolioRepository;
     private final PortfolioAssignmentRepository portfolioAssignmentRepository;
+    private final MemberReader memberReader;
+    private final MessageReader messageReader;
+
+    /*
+     * 업로드 파일(/uploads/...)을 이 회원이 주소로 바로 열 수 있나 (#368, PL-SEC-002). 운영자는 부르기 전에 통과한다.
+     * - 평가 에이전트 설정 파일: 아니다. 학습자는 과제가 열렸는지 보는 API-PRT-03 으로만 받는다.
+     * - 포트폴리오 스크린샷: U-20 상세(PortfolioManageService.getDetail)를 볼 수 있을 때만. 삭제 표시면 아무도 못 본다.
+     * - 그 밖(게시글 사진·개념 이미지): 연다. memberId 는 비회원이면 null.
+     */
+    public boolean canOpenFile(String fileUrl, Long memberId) {
+        if (portfolioAssignmentRepository.existsByAgentFileUrl(fileUrl)) {
+            return false;
+        }
+        return portfolioRepository.findFirstByScreenshotUrl(fileUrl)
+                .map(p -> !p.isDeleted() && (p.isOwnedBy(memberId) || (p.isPublic()
+                        && memberReader.findHiddenMemberIds(List.of(p.getMemberId())).isEmpty()
+                        && messageReader.findHiddenTargetIds("PORTFOLIO", List.of(p.getPortfolioId())).isEmpty())))
+                .orElse(true);
+    }
 
     /* 회원의 포트폴리오 수 (삭제 표시 제외). 운영자 회원 상세(API-ADM-38, FR-USR-009) */
     public long countOf(Long memberId) {
