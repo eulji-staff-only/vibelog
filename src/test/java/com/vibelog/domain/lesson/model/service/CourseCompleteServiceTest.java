@@ -115,6 +115,17 @@ class CourseCompleteServiceTest {
     }
 
     @Test
+    void 실제_트랙_이름과_코스_이름을_보여준다() {
+        // 임시 Fake 가 "샘플 트랙"·"샘플 코스 N"을 돌려주던 문제(#355)가 다시 생기면 실패한다
+        enroll(LEARNER, COURSE);
+
+        CourseCompleteView view = courseCompleteService.getCourseComplete(LEARNER, COURSE).orElseThrow();
+
+        assertThat(view.trackName()).isEqualTo("테스트 트랙");
+        assertThat(view.courseName()).isEqualTo("테스트 코스");
+    }
+
+    @Test
     void 수강하지_않았으면_빈_값을_돌려준다() {
         Optional<CourseCompleteView> view = courseCompleteService.getCourseComplete(LEARNER, COURSE);
 

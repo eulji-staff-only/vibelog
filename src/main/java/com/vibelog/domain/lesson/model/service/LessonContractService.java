@@ -15,6 +15,7 @@ import com.vibelog.domain.lesson.model.entity.Lesson;
 import com.vibelog.domain.lesson.model.entity.LessonProgress;
 import com.vibelog.domain.lesson.model.policy.CourseLessonInfo;
 import com.vibelog.domain.lesson.model.policy.ExamLessonProgress;
+import com.vibelog.domain.lesson.model.policy.LessonExamOpenPolicy;
 import com.vibelog.domain.lesson.model.policy.LessonSummary;
 import com.vibelog.domain.lesson.model.policy.LoginEnrollmentChecker;
 import com.vibelog.domain.lesson.model.policy.NextStep;
@@ -54,6 +55,7 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final ActivityProgressRepository activityProgressRepository;
+    private final LessonExamOpenPolicy lessonExamOpenPolicy;
 
     /* ① unlocked = 수강 중이고 그 활동이 열려 있음 */
     @Override
@@ -96,16 +98,12 @@ public class LessonContractService implements QuizActivityProgress, ExamLessonPr
         return new NextStep(NextStep.NONE, lesson.getCourseId(), lesson.getLessonId(), null);
     }
 
-    /* ② 그 수업 마지막 퀴즈 활동의 completed_at 이 있음 */
+    /* ② 그 수업 마지막 퀴즈 활동의 completed_at 이 있음. 한 번 열린 모의고사는 퀴즈가 추가돼도 다시 잠그지 않는다 (LessonExamOpenPolicy, PL-ENR-006) */
     @Override
     public boolean isExamOpen(Long memberId, Long lessonId) {
         Lesson lesson = getLesson(lessonId);
         return enrollmentRepository.findByMemberIdAndCourseIdAndDroppedAtIsNull(memberId, lesson.getCourseId())
-                .flatMap(enrollment -> activityRepository
-                        .findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(lessonId, ActivityType.QUIZ)
-                        .flatMap(lastQuiz -> activityProgressRepository
-                                .findByEnrollmentIdAndActivityId(enrollment.getEnrollmentId(), lastQuiz.getActivityId())))
-                .map(ActivityProgress::isCompleted)
+                .map(enrollment -> lessonExamOpenPolicy.isOpen(enrollment.getEnrollmentId(), lessonId))
                 .orElse(false);
     }
 

@@ -28,7 +28,8 @@
 
         <!-- th:action 으로 만들어야 CSRF 토큰이 자동으로 들어간다 -->
         <form class="cm-form" th:object="${postWriteRequest}" method="post" enctype="multipart/form-data" novalidate
-              th:action="${editing} ? @{/community/{id}/edit(id=${postId})} : @{/community}">
+              th:action="${editing} ? @{/community/{id}/edit(id=${postId})} : @{/community}"
+              th:attr="data-draft=${editing} ? |post.${postId}| : 'post'">
             <!-- 금칙어·인증 등 칸 하나에 속하지 않는 오류 -->
             <div class="cm-notice is-error" role="alert" th:if="${#fields.hasGlobalErrors()}">
                 <p th:each="message : ${#fields.globalErrors()}" th:text="${message}">오류</p>

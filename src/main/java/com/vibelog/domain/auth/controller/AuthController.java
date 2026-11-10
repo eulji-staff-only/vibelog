@@ -4,11 +4,13 @@ import com.vibelog.domain.auth.exception.AuthErrorCode;
 import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.auth.model.dto.SignupRequest;
 import com.vibelog.domain.auth.model.policy.SocialLoginRegistrations;
+import com.vibelog.domain.auth.model.policy.SocialLoginSuccessHandler;
 import com.vibelog.domain.auth.model.service.EmailVerifyService;
 import com.vibelog.domain.auth.model.service.MemberSignupService;
 import com.vibelog.global.exception.BusinessException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -77,9 +79,18 @@ public class AuthController {
         return "redirect:/signup?done=true";
     }
 
-    /* API-USR-04. 구글·깃허브 버튼은 키가 있는 것만 보여 준다 (#91) */
+    /*
+     * API-USR-04. 구글·깃허브 버튼은 키가 있는 것만 보여 준다 (#91).
+     * 소셜 로그인은 구글·깃허브를 돌아오며 redirect 값을 잃으므로 세션에 두고, 돌아오면 SocialLoginSuccessHandler 가 꺼낸다 (#363).
+     * redirect 없이 열면 지난 값을 지운다 (예전에 열어 둔 로그인 화면의 주소로 가지 않게).
+     */
     @GetMapping("/login")
-    public String loginPage(Model model) {
+    public String loginPage(@RequestParam(required = false) String redirect, HttpSession session, Model model) {
+        if (redirect == null) {
+            session.removeAttribute(SocialLoginSuccessHandler.REDIRECT);
+        } else {
+            session.setAttribute(SocialLoginSuccessHandler.REDIRECT, redirect);
+        }
         model.addAttribute("socialProviders", socialLoginRegistrations.enabledIds());
         return "auth/login";
     }

@@ -1,0 +1,23 @@
+<!--
+  error.html
+  역할: Spring Boot 가 Controller 를 거치지 않은 오류를 "/error" 로 보낼 때, error/404·403·500.html 처럼 상태별 파일이
+        없는 상태(400·405 등)가 마지막으로 찾는 이름. 이 파일이 없으면 Spring 기본 Whitelabel 화면이 나간다 (#365).
+        내용은 error/error.html 의 errorBody(status, message) fragment 를 그대로 쓴다. message 는 Spring 이 감춰서 비어 있다. 5xx 는 E-03(500) 화면으로 그린다.
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>오류 안내 — 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+
+<div th:replace="~{common/layout :: header}"></div>
+<main th:replace="~{error/error :: errorBody(${status >= 500 ? 500 : status}, null)}"></main>
+<div th:replace="~{common/layout :: footer}"></div>
+
+<script th:src="@{/js/ui.js}"></script>
+</body>
+</html>

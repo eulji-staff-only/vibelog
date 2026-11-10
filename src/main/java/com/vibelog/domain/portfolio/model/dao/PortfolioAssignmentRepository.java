@@ -15,6 +15,9 @@ public interface PortfolioAssignmentRepository extends JpaRepository<PortfolioAs
     /* 이 코스에 포트폴리오 과제가 있나 (계약 ⑨) */
     boolean existsByCourseId(Long courseId);
 
+    /* 평가 에이전트 설정 파일 주소인지 (업로드 파일 권한 검사, #368) */
+    boolean existsByAgentFileUrl(String agentFileUrl);
+
     /* 코스 작품의 과제 (PortfolioReader → community 동료 리뷰 평가 기준) */
     List<PortfolioAssignment> findByCourseIdIn(Collection<Long> courseIds);
 }

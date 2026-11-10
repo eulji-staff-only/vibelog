@@ -73,7 +73,7 @@
                 </div>
 
                 <form class="ms-reply" method="post" th:if="${opened.received()}" th:object="${messageContentRequest}" novalidate
-                      th:action="@{/messages/{id}/reply(id=${opened.messageId()})}">
+                      th:action="@{/messages/{id}/reply(id=${opened.messageId()})}" th:attr="data-draft=|message-reply.${opened.messageId()}|">
                     <label for="reply-content">답장</label>
                     <textarea class="ms-input" id="reply-content" maxlength="1000" th:field="*{content}" aria-describedby="reply-error"
                               th:attrappend="aria-invalid=${#fields.hasErrors('content') or #fields.hasGlobalErrors()} ? 'true'"></textarea>
@@ -87,7 +87,7 @@
 
             <!-- 새 쪽지 -->
             <section class="ms-inbox__pane" th:if="${opened == null}" aria-labelledby="compose-h">
-                <form class="ms-reply" method="post" th:action="@{/messages}" th:object="${messageWriteRequest}" novalidate data-compose>
+                <form class="ms-reply" method="post" th:action="@{/messages}" th:object="${messageWriteRequest}" novalidate data-compose data-draft="message">
                     <h2 id="compose-h">새 쪽지</h2>
                     <label for="receiver-search">받는 사람</label>
                     <input class="ms-input" id="receiver-search" type="search" placeholder="닉네임으로 찾기" autocomplete="off"

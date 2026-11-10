@@ -53,10 +53,9 @@
         <div class="vl-ui-btn-group">
             <button type="button" class="vl-ui-btn is-navy" data-ui-reload>다시 시도</button>
         </div>
-        <!-- PL-ERR-003 문의용 오류 번호. 서버 로그와 연결되는 실제 추적 번호(상관관계 ID)는
-             GlobalExceptionHandler 가 아직 만들지 않아서, 지금은 상태·시각으로 만든 화면용 참고 번호다.
-             실제 로그 추적이 필요해지면 백엔드에서 번호를 만들어 모델로 내려주는 방식으로 바꾼다. -->
-        <p class="vl-error__ref" th:text="${'오류 번호: ERR-' + status + '-' + #dates.format(#dates.createNow(), 'yyyyMMddHHmmss')}">오류 번호</p>
+        <!-- PL-ERR-003 문의용 오류 번호 (#365). 서버 로그의 "오류 번호 xxxxxxxx" 와 같은 값이다.
+             GlobalExceptionHandler(Controller 예외)·ErrorIdAttributes(/error 로 온 오류)가 모델에 errorId 로 넣는다 -->
+        <p class="vl-error__ref" th:if="${errorId != null}" th:text="|오류 번호: ${errorId}|">오류 번호</p>
     </th:block>
 
     <!-- 그 밖(400·409 등) -->

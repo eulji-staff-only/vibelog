@@ -32,7 +32,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "INSERT INTO track (track_id, name, target, description, sort_order) VALUES (8001, '테스트 트랙', '대상', '설명', 8001)",
         "INSERT INTO course_category (course_category_id, name, sort_order) VALUES (8001, '테스트 카테고리', 8001)",
         "INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days, is_public) "
-                + "VALUES (8001, 8001, 8001, '코스 8001', '요약', '설명', '대상', '목표', 7, TRUE)",
+                + "VALUES (8001, 8001, 8001, '코스 8001', '요약', '설명', '대상', '목표', 7, TRUE), "
+                + "(8002, 8001, 8001, '비공개 코스 8002', '요약', '설명', '대상', '목표', 7, FALSE)",
         "INSERT INTO lesson (lesson_id, course_id, title, intro, goal, contents, estimated_minutes, sort_order, is_public) VALUES "
                 + "(8001, 8001, '수업 1', '소개', '목표', '본문', 30, 1, TRUE), "
                 + "(8002, 8001, '수업 2', '소개', '목표', '본문', 20, 2, TRUE), "
@@ -76,6 +77,18 @@ class EnrollmentServiceTest {
                 .findByEnrollmentIdAndActivityId(enrollment.getEnrollmentId(), FIRST_ACTIVITY)
                 .orElseThrow();
         assertThat(firstActivityProgress.isUnlocked()).isTrue();
+    }
+
+    @Test
+    void 없는_코스와_비공개_코스는_수강을_시작할_수_없다() {
+        // API-ENR-01: 없음·비공개는 COURSE_NOT_FOUND. 임시 Fake 가 모든 코스를 공개로 보던 때는 이 둘이 통과했다
+        for (long notAvailableCourseId : new long[]{99999L, 8002L}) {
+            assertThatThrownBy(() -> enrollmentService.enroll(LEARNER, notAvailableCourseId))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getErrorCode())
+                    .isEqualTo(LessonErrorCode.COURSE_NOT_FOUND);
+            assertThat(enrollmentRepository.findByMemberIdAndCourseId(LEARNER, notAvailableCourseId)).isEmpty();
+        }
     }
 
     @Test
