@@ -1,5 +1,7 @@
 package com.vibelog.domain.lesson.model.service;
 
+import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
+import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
 import com.vibelog.domain.lesson.model.dto.LessonPublishStatus;
@@ -87,10 +89,15 @@ class LessonVisibilityServiceTest {
     static final long ENROLLMENT_A = 9501L;
     static final long ENROLLMENT_B = 9502L;
     static final long ENROLLMENT_C = 9503L;
+    static final long ENROLLMENT_D = 9504L;
+    static final long ENROLLMENT_E = 9505L;
+    static final long FIRST_CONCEPT = 9511L;   // 수업 2(공개 대상)의 첫 개념
 
     @Autowired LessonAdminService lessonAdminService;
     @Autowired LessonRepository lessonRepository;
     @Autowired LessonProgressRepository lessonProgressRepository;
+    @Autowired ActivityProgressRepository activityProgressRepository;
+    @Autowired EnrollmentRepository enrollmentRepository;
 
     @Test
     void 공개_가능_조건을_모두_채우면_빠진_항목이_없다() {
@@ -117,7 +124,7 @@ class LessonVisibilityServiceTest {
     }
 
     @Test
-    void 공개하면_기존_수강_중_진도가_없는_수강에만_수업_진도가_새로_생기고_기존_진도는_그대로다() {
+    void 공개하면_진도가_없던_수강에만_새로_생기고_이미_있던_진도는_그대로다() {
         lessonAdminService.changeVisibility(LESSON_PUBLISHABLE, true);
 
         assertThat(lessonRepository.findById(LESSON_PUBLISHABLE).orElseThrow().isPublic()).isTrue();
@@ -127,11 +134,38 @@ class LessonVisibilityServiceTest {
                 .orElseThrow();
         assertThat(existing.getUnlockedAt()).isEqualTo(LocalDateTime.of(2026, 1, 1, 0, 0, 0));
 
-        // 진도가 없던 수강(B, C)에는 잠긴 채로 새로 생긴다
-        List.of(ENROLLMENT_B, ENROLLMENT_C).forEach(enrollmentId -> {
-            LessonProgress created = lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollmentId, LESSON_PUBLISHABLE)
-                    .orElseThrow();
-            assertThat(created.isUnlocked()).isFalse();
+        // 나머지 수강(B~E)에는 진도가 새로 생긴다
+        List.of(ENROLLMENT_B, ENROLLMENT_C, ENROLLMENT_D, ENROLLMENT_E).forEach(enrollmentId ->
+                assertThat(lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollmentId, LESSON_PUBLISHABLE)).isPresent());
+    }
+
+    @Test
+    void 이미_완료한_코스에_새_수업을_공개하면_완료는_그대로이고_새_수업과_첫_개념이_열린다() {
+        // PL-ENR-005: 이미 완료한 코스는 새 수업이 추가되어도 완료 상태를 유지하고, 새 수업은 열어 둔다 (수강 B)
+        lessonAdminService.changeVisibility(LESSON_PUBLISHABLE, true);
+
+        assertThat(enrollmentRepository.findById(ENROLLMENT_B).orElseThrow().isCompleted()).isTrue();
+        assertThat(lessonProgressRepository.findByEnrollmentIdAndLessonId(ENROLLMENT_B, LESSON_PUBLISHABLE)
+                .orElseThrow().isUnlocked()).isTrue();
+        assertThat(activityProgressRepository.findByEnrollmentIdAndActivityId(ENROLLMENT_B, FIRST_CONCEPT)
+                .orElseThrow().isUnlocked()).isTrue();
+    }
+
+    @Test
+    void 앞_수업을_이미_끝낸_진행_중_수강은_새_수업이_열리고_아직_못_끝낸_수강은_잠긴_채로_남는다() {
+        // E: 수업 1을 이미 끝냄 → 다음 수업을 여는 계약 ③은 처음 끝낼 때뿐이라 지금 열어 주지 않으면 영영 잠긴다 (#357)
+        // C(포기), D: 수업 1을 아직 못 끝냄 → 끝낼 때 계약 ③이 열어 주므로 잠긴 채로 둔다
+        lessonAdminService.changeVisibility(LESSON_PUBLISHABLE, true);
+
+        assertThat(lessonProgressRepository.findByEnrollmentIdAndLessonId(ENROLLMENT_E, LESSON_PUBLISHABLE)
+                .orElseThrow().isUnlocked()).isTrue();
+        assertThat(activityProgressRepository.findByEnrollmentIdAndActivityId(ENROLLMENT_E, FIRST_CONCEPT)
+                .orElseThrow().isUnlocked()).isTrue();
+
+        List.of(ENROLLMENT_C, ENROLLMENT_D).forEach(enrollmentId -> {
+            assertThat(lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollmentId, LESSON_PUBLISHABLE)
+                    .orElseThrow().isUnlocked()).isFalse();
+            assertThat(activityProgressRepository.findByEnrollmentIdAndActivityId(enrollmentId, FIRST_CONCEPT)).isEmpty();
         });
     }
 

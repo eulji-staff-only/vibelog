@@ -2,8 +2,6 @@ package com.vibelog.domain.lesson.model.service;
 
 import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.exam.model.policy.LessonExamStatusChecker;
-import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
-import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
 import com.vibelog.domain.lesson.model.dao.LessonRepository;
@@ -12,10 +10,10 @@ import com.vibelog.domain.lesson.model.dto.LessonStatus;
 import com.vibelog.domain.lesson.model.dto.MyLearningCourseCard;
 import com.vibelog.domain.lesson.model.dto.MyLearningLessonCard;
 import com.vibelog.domain.lesson.model.dto.PortfolioStatus;
-import com.vibelog.domain.lesson.model.entity.ActivityType;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
 import com.vibelog.domain.lesson.model.entity.LessonProgress;
+import com.vibelog.domain.lesson.model.policy.LessonExamOpenPolicy;
 import com.vibelog.domain.portfolio.model.policy.LessonPortfolioChecker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,8 +40,7 @@ public class MyLearningService {
     private final EnrollmentRepository enrollmentRepository;
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
-    private final ActivityRepository activityRepository;
-    private final ActivityProgressRepository activityProgressRepository;
+    private final LessonExamOpenPolicy lessonExamOpenPolicy;
     private final CourseReader courseReader;
     private final LessonExamStatusChecker lessonExamStatusChecker;
     private final LessonPortfolioChecker lessonPortfolioChecker;
@@ -149,15 +146,11 @@ public class MyLearningService {
         return latestSubmittedAttemptNos.containsKey(lessonId) ? LessonExamStatus.ATTEMPTED : LessonExamStatus.OPEN;
     }
 
-    /* 계약 ②(ExamLessonProgress.isExamOpen)와 같은 계산 — 그 수업 마지막 퀴즈 활동의 completed_at 이 있음.
-       Spring이 주입하는 그 계약 인터페이스를 직접 쓰지 않고 Repository로 계산한다 (lessonContractService가
+    /* 계약 ②(ExamLessonProgress.isExamOpen)와 같은 규칙 — 그 수업 마지막 퀴즈를 통과함 (한 번 열린 모의고사는 퀴즈가 추가돼도 다시 잠그지 않는다).
+       Spring이 주입하는 그 계약 인터페이스를 직접 쓰지 않고 같은 규칙을 가진 LessonExamOpenPolicy 를 쓴다 (lessonContractService가
        여러 계약을 한 빈으로 구현해서, 그 중 하나만 모킹하는 테스트가 있으면 다른 계약도 같이 깨지기 때문, #107). */
     private boolean lastQuizPassed(Long enrollmentId, Long lessonId) {
-        return activityRepository
-                .findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(lessonId, ActivityType.QUIZ)
-                .flatMap(lastQuiz -> activityProgressRepository.findByEnrollmentIdAndActivityId(enrollmentId, lastQuiz.getActivityId()))
-                .map(ap -> ap.isCompleted())
-                .orElse(false);
+        return lessonExamOpenPolicy.isOpen(enrollmentId, lessonId);
     }
 
     private PortfolioStatus toPortfolioStatus(Enrollment enrollment, boolean submitted) {
