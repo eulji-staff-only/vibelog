@@ -21,6 +21,7 @@ import com.vibelog.domain.lesson.model.entity.BodyFormat;
 import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
+import com.vibelog.domain.lesson.model.entity.LessonProgress;
 import com.vibelog.domain.lesson.model.policy.LessonExamOpenPolicy;
 import com.vibelog.domain.quiz.model.policy.LessonQuizScoreChecker;
 import com.vibelog.global.exception.BusinessException;
@@ -84,11 +85,11 @@ public class LessonPageService {
         }
         Enrollment enrollment = enrollmentOpt.get();
 
-        boolean lessonUnlocked = lessonProgressRepository
+        LessonProgress lessonProgress = lessonProgressRepository
                 .findByEnrollmentIdAndLessonId(enrollment.getEnrollmentId(), lessonId)
-                .map(progress -> progress.isUnlocked())
-                .orElse(false);
-        if (!lessonUnlocked) {
+                .filter(LessonProgress::isUnlocked)
+                .orElse(null);
+        if (lessonProgress == null) {
             return LessonPageResult.locked();
         }
 
@@ -102,13 +103,28 @@ public class LessonPageService {
 
         List<LessonActivityCard> cards = new ArrayList<>();
         for (Activity activity : activities) {
-            cards.add(toCard(memberId, activity, progressByActivityId.get(activity.getActivityId())));
+            ActivityProgress progress = progressByActivityId.get(activity.getActivityId());
+            LessonActivityCard card = toCard(memberId, activity, progress);
+            cards.add(isNewActivity(activity, progress, lessonProgress) ? card.markNew() : card);
         }
         cards.add(toExamCard(memberId, enrollment.getEnrollmentId(), lessonId));
 
         cards = applySelection(cards, activityQuery);
 
         return LessonPageResult.ok(new LessonPageData(courseId, lessonId, lesson.getTitle(), lesson.getGoal(), cards));
+    }
+
+    /*
+     * PL-ENR-005 "새 활동": 학습자가 그 수업을 끝낸(lesson_progress.completed_at) 뒤에 만들어진 활동(activity.created_at)이고 아직 끝내지 않았으면
+     * 새 활동이다. 저장하는 값 없이 두 시각을 비교해 계산한다. 끝낸 활동은 더 이상 새 활동으로 보이지 않는다.
+     * 새 활동은 선택 학습이라 수업 완료·진행률·모의고사 열림에 영향을 주지 않는다 (열어 주는 곳: LessonActivityAdminService).
+     */
+    private boolean isNewActivity(Activity activity, ActivityProgress progress, LessonProgress lessonProgress) {
+        if (!lessonProgress.isCompleted() || activity.getCreatedAt() == null) {
+            return false;
+        }
+        boolean completed = progress != null && progress.isCompleted();
+        return !completed && activity.getCreatedAt().isAfter(lessonProgress.getCompletedAt());
     }
 
     /* 운영자 미리보기: 활동을 sort_order 순으로 모두 "열린" 카드로 만든다. 학습자 데이터(진행·점수·북마크)는 읽지 않는다 */

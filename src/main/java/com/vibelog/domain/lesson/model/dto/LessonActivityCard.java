@@ -14,6 +14,7 @@ import java.util.List;
  *  - QUIZ: title, status, bestCorrectRate(계약 ⑤, 없으면 null)
  *  - EXAM: title, status(LOCKED·IN_PROGRESS 만 씀), examUrl(열렸을 때), reportUrl(제출한 회차가 있을 때 "지난 리포트 다시 보기", FR-EXM-006)
  *  - status == LOCKED 면 kind 상관없이 previousActivityId(앞 활동 바로가기, FR-LSN-009)만 쓴다
+ *  - newActivity: 그 수업을 끝낸 뒤에 추가된 활동이고 아직 끝내지 않았다 (PL-ENR-005 "새 활동", 선택 학습, #379)
  */
 public record LessonActivityCard(
         Long activityId,
@@ -32,7 +33,8 @@ public record LessonActivityCard(
         List<Long> conceptTagIds,
         boolean bookmarked,
         List<RelatedConcept> relatedConcepts,
-        String reportUrl
+        String reportUrl,
+        boolean newActivity
 ) {
     public static final String CONCEPT = "CONCEPT";
     public static final String QUIZ = "QUIZ";
@@ -43,7 +45,7 @@ public record LessonActivityCard(
                               String body, BodyFormat bodyFormat, List<String> conceptTags, String toolNoteUrl,
                               Long quizActivityId, BigDecimal bestCorrectRate, String examUrl, Long previousActivityId) {
         this(activityId, kind, title, status, selected, body, bodyFormat, conceptTags, toolNoteUrl, quizActivityId,
-                bestCorrectRate, examUrl, previousActivityId, List.of(), false, List.of(), null);
+                bestCorrectRate, examUrl, previousActivityId, List.of(), false, List.of(), null, false);
     }
 
     /* 지난 리포트 링크가 필요 없는 카드(개념·퀴즈·미리보기)용 */
@@ -52,13 +54,30 @@ public record LessonActivityCard(
                               Long quizActivityId, BigDecimal bestCorrectRate, String examUrl, Long previousActivityId,
                               List<Long> conceptTagIds, boolean bookmarked, List<RelatedConcept> relatedConcepts) {
         this(activityId, kind, title, status, selected, body, bodyFormat, conceptTags, toolNoteUrl, quizActivityId,
-                bestCorrectRate, examUrl, previousActivityId, conceptTagIds, bookmarked, relatedConcepts, null);
+                bestCorrectRate, examUrl, previousActivityId, conceptTagIds, bookmarked, relatedConcepts, null, false);
+    }
+
+    /* 새 활동 표시가 필요 없는 카드(모의고사)용: 지난 리포트 링크까지 받는다 */
+    public LessonActivityCard(Long activityId, String kind, String title, ActivityStatus status, boolean selected,
+                              String body, BodyFormat bodyFormat, List<String> conceptTags, String toolNoteUrl,
+                              Long quizActivityId, BigDecimal bestCorrectRate, String examUrl, Long previousActivityId,
+                              List<Long> conceptTagIds, boolean bookmarked, List<RelatedConcept> relatedConcepts,
+                              String reportUrl) {
+        this(activityId, kind, title, status, selected, body, bodyFormat, conceptTags, toolNoteUrl, quizActivityId,
+                bestCorrectRate, examUrl, previousActivityId, conceptTagIds, bookmarked, relatedConcepts, reportUrl, false);
     }
 
     public LessonActivityCard select() {
         return new LessonActivityCard(activityId, kind, title, status, true, body, bodyFormat, conceptTags,
                 toolNoteUrl, quizActivityId, bestCorrectRate, examUrl, previousActivityId,
-                conceptTagIds, bookmarked, relatedConcepts, reportUrl);
+                conceptTagIds, bookmarked, relatedConcepts, reportUrl, newActivity);
+    }
+
+    /* 완료한 수업에 나중에 추가된 활동이라는 표시 (PL-ENR-005 "새 활동", 선택 학습). 수업 화면이 "새 활동" 배지와 안내를 보여 준다 */
+    public LessonActivityCard markNew() {
+        return new LessonActivityCard(activityId, kind, title, status, selected, body, bodyFormat, conceptTags,
+                toolNoteUrl, quizActivityId, bestCorrectRate, examUrl, previousActivityId,
+                conceptTagIds, bookmarked, relatedConcepts, reportUrl, true);
     }
 
     /* 템플릿에서 복잡한 삼항식을 쓰지 않도록 화면 표시용 값을 미리 계산해 둔다 */
