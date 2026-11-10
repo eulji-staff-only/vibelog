@@ -285,7 +285,7 @@ class PortfolioPageControllerTest {
 
     private PortfolioDetailView detailView(boolean isPublic, boolean mine) {
         return new PortfolioDetailView(7L, "할 일 앱", "https://github.com/me/todo", "요약", "회고", "Claude Code", null, null,
-                3L, "바이브 코스", "작성자", LocalDateTime.of(2026, 11, 9, 10, 0), isPublic, mine, false);
+                3L, "바이브 코스", 2L, "작성자", LocalDateTime.of(2026, 11, 9, 10, 0), isPublic, mine, false);
     }
 
     private ReviewView review(boolean helpful, boolean mine) {
@@ -311,7 +311,29 @@ class PortfolioPageControllerTest {
         given(communityReader.findPortfolioIdsWithOpenRequest(List.of(7L))).willReturn(Set.of(7L));
 
         mockMvc.perform(get("/my/portfolios").with(login()))
-                .andExpect(content().string(Matchers.containsString("리뷰 요청 중")));
+                .andExpect(content().string(Matchers.containsString("리뷰 요청 중")))
+                // 열린 요청이 있으면 리뷰 요청 버튼은 숨긴다 (#361)
+                .andExpect(content().string(Matchers.containsString("data-review-url=\"/portfolios/7/review-requests\" hidden")));
+    }
+
+    @Test
+    void 내_공개_카드에_열린_요청이_없으면_리뷰_요청_버튼을_보이고_비공개_카드는_숨긴다() throws Exception {
+        given(portfolioManageService.getMyPortfolios(1L)).willReturn(List.of(
+                new MyPortfolioCard(7L, 3L, "바이브 코스", "공개 작품", "요약", true, LocalDateTime.of(2026, 11, 9, 10, 0)),
+                new MyPortfolioCard(8L, 3L, "바이브 코스", "비공개 작품", "요약", false, LocalDateTime.of(2026, 11, 9, 10, 0))));
+
+        mockMvc.perform(get("/my/portfolios").with(login()))
+                .andExpect(content().string(Matchers.containsString("data-review-url=\"/portfolios/7/review-requests\">리뷰 요청</button>")))
+                .andExpect(content().string(Matchers.containsString("data-review-url=\"/portfolios/8/review-requests\" hidden")))
+                .andExpect(content().string(Matchers.containsString("리뷰를 요청할까요?")));
+    }
+
+    @Test
+    void 포트폴리오_상세_작성자는_공개_프로필로_간다() throws Exception {
+        given(portfolioManageService.getDetail(1L, 7L)).willReturn(detailView(true, false));
+
+        mockMvc.perform(get("/portfolios/7").with(login()))
+                .andExpect(content().string(Matchers.containsString("href=\"/users/2\"")));
     }
 
     @Test
@@ -366,7 +388,7 @@ class PortfolioPageControllerTest {
     @Test
     void 내_비공개_상세는_안내와_수정을_그린다() throws Exception {
         given(portfolioManageService.getDetail(1L, 7L)).willReturn(new PortfolioDetailView(7L, "할 일 앱",
-                "https://github.com/me/todo", "요약", "회고", "Claude Code", null, null, 3L, "바이브 코스", "나",
+                "https://github.com/me/todo", "요약", "회고", "Claude Code", null, null, 3L, "바이브 코스", 1L, "나",
                 LocalDateTime.of(2026, 11, 9, 10, 0), false, true, false));
 
         mockMvc.perform(get("/portfolios/7").with(login()))
@@ -528,7 +550,7 @@ class PortfolioPageControllerTest {
     @Test
     void 내_개인_작품_상세의_수정은_U34로_간다() throws Exception {
         given(portfolioManageService.getDetail(1L, 9L)).willReturn(new PortfolioDetailView(9L, "개인 작품", "https://github.com/me/app",
-                "설명", "회고", "Claude Code", null, null, null, null, "나", LocalDateTime.of(2026, 11, 9, 10, 0), true, true, false));
+                "설명", "회고", "Claude Code", null, null, null, null, 1L, "나", LocalDateTime.of(2026, 11, 9, 10, 0), true, true, false));
 
         mockMvc.perform(get("/portfolios/9").with(login()))
                 .andExpect(content().string(Matchers.containsString("/my/portfolios/new?edit=9")))

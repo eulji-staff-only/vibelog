@@ -40,7 +40,7 @@
                     <div class="mp-card-meta">
                         <span class="mp-badge" data-vis-badge th:classappend="${card.isPublic()} ? 'mp-badge-strong' : 'mp-badge-neutral'"
                               th:text="${card.isPublic()} ? '공개' : '비공개'">공개</span>
-                        <span class="mp-badge mp-badge-neutral" th:if="${reviewOpenIds.contains(card.portfolioId())}">리뷰 요청 중</span>
+                        <span class="mp-badge mp-badge-neutral" data-review-badge th:if="${reviewOpenIds.contains(card.portfolioId())}">리뷰 요청 중</span>
                         <span class="mp-muted" th:text="${card.courseId() != null} ? ${card.courseTitle()} : '개인 작품'">[코스 이름]</span>
                     </div>
                     <a class="mp-card-title" th:href="@{/portfolios/{id}(id=${card.portfolioId()})}" th:text="${card.title()}">[포트폴리오 제목]</a>
@@ -51,6 +51,10 @@
                     <button type="button" class="mp-btn mp-btn-outline" data-vis-toggle
                             th:attr="data-visibility-url=@{/api/portfolios/{id}/visibility(id=${card.portfolioId()})},data-public=${card.isPublic()}"
                             th:text="${card.isPublic()} ? '비공개로 전환' : '공개로 전환'">비공개로 전환</button>
+                    <!-- 리뷰 요청 → M-08 (API-REV-01, #361). 공개이고 열린 요청이 없을 때만 보인다. 공개 전환 뒤에는 my-portfolio.js 가 보이고 숨긴다 -->
+                    <button type="button" class="mp-btn mp-btn-outline" data-review-request data-ui-modal-open="review-request-modal"
+                            th:attr="data-review-url=@{/portfolios/{id}/review-requests(id=${card.portfolioId()})}"
+                            th:hidden="${!card.isPublic() or reviewOpenIds.contains(card.portfolioId())}">리뷰 요청</button>
                     <!-- 수정: 코스 포트폴리오는 U-17 수정 상태, 개인 작품은 U-34 수정 상태 (FR-PRT-006, #199) -->
                     <a class="mp-btn mp-btn-outline" th:if="${card.courseId() != null}"
                        th:href="@{/courses/{id}/portfolio(id=${card.courseId()},edit=true)}">수정</a>
@@ -81,6 +85,21 @@
         <form class="mp-modal-actions" method="post" th:action="@{/portfolios/0/delete}" data-delete-form>
             <button type="button" class="mp-btn mp-btn-outline" data-close-delete>취소</button>
             <button type="submit" class="mp-btn mp-btn-danger">삭제</button>
+        </form>
+    </div>
+</div>
+
+<!-- M-08 리뷰 요청 확인 (API-REV-01, #361). U-20 과 같은 문구. 누른 카드의 요청 주소를 my-portfolio.js 가 폼 action 에 넣는다 -->
+<div class="vl-ui-modal" id="review-request-modal" hidden role="dialog" aria-modal="true"
+     data-ui-modal="review-request-modal" aria-labelledby="review-request-modal-title"
+     th:unless="${#lists.isEmpty(portfolios)}">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="review-request-modal-title" tabindex="-1">리뷰를 요청할까요?</h2>
+        <p class="vl-ui-modal__body">모든 학습자가 리뷰 요청 목록에서 이 작품을 보고 리뷰를 남길 수 있습니다.
+            리뷰 요청은 동시에 3개까지이고, 14일이 지나거나 작품을 비공개하면 마감됩니다.</p>
+        <form class="vl-ui-modal__actions" method="post" th:action="@{/portfolios/0/review-requests}" data-review-form>
+            <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+            <button type="submit" class="vl-ui-btn is-navy">리뷰 요청</button>
         </form>
     </div>
 </div>
