@@ -107,6 +107,7 @@ flowchart LR
 | 6 | [06. 문제 해결 (실수 복구)](docs/collaboration/06-troubleshooting.md) | 충돌이 났을 때, 실수했을 때, 에러가 날 때 |
 | 7 | [07. 저장소 설정 (관리자용)](docs/collaboration/07-repo-setup.md) | 저장소를 처음 세팅할 때 |
 | 8 | [08. 작업 순서 (P1 · P2)](docs/collaboration/08-task-flow.md) | DB 설계 → API 명세 → P1 구현 → P2 구현 중 지금 무엇을 할지, 다른 팀원 작업을 기다리지 않는 방법이 궁금할 때 |
+| 9 | [09. 운영 서버 (HTTPS · DB 백업)](docs/collaboration/09-deploy.md) | 배포 서버에 HTTPS·매일 DB 백업을 설정하거나, 장애 때 백업에서 복구할 때 (배포 담당자용) |
 
 ---
 

@@ -1,6 +1,7 @@
 package com.vibelog.domain.lesson.model.service;
 
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
+import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityTagRepository;
 import com.vibelog.domain.lesson.model.dao.ConceptBookmarkRepository;
@@ -52,6 +53,7 @@ public class LessonReader {
     private final ActivityRepository activityRepository;
     private final LessonRepository lessonRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final ActivityProgressRepository activityProgressRepository;
     private final ConceptTagRepository conceptTagRepository;
     private final ActivityTagRepository activityTagRepository;
     private final CourseReader courseReader;
@@ -198,6 +200,25 @@ public class LessonReader {
             rates.put((Long) row[0], new DropOffRate(((Long) row[1]).intValue(), ((Number) row[2]).intValue()));
         }
         return rates;
+    }
+
+    /*
+     * 활동 ID → 그 활동이 기간 안에 열린 수와 그중 완료하지 못한 수 (activity_progress.unlocked_at 이 기간 안인 것만, 완료 못 함 = completed_at 없음).
+     * 수업별(getDropOffRateByLesson)과 같은 기준이다. 진행 중인 학습자도 포함하므로 "아직 못 끝낸 비율"이다.
+     * from·to 가 null 이면 그 쪽 제한 없음. 열린 진도가 없는 활동은 결과에 빠진다. 운영자 확장 대시보드(admin #364, FR-ADM-003)의 활동별 이탈률이 쓴다
+     */
+    public Map<Long, DropOffRate> getDropOffRateByActivity(LocalDateTime from, LocalDateTime to) {
+        Map<Long, DropOffRate> rates = new HashMap<>();
+        for (Object[] row : activityProgressRepository.countDropOffByActivityBetween(from, to)) {
+            rates.put((Long) row[0], new DropOffRate(((Long) row[1]).intValue(), ((Number) row[2]).intValue()));
+        }
+        return rates;
+    }
+
+    /* 활동 ID → 속한 수업 ID. 없는 ID 는 결과에 빠진다. 운영자 확장 대시보드(admin #364)가 활동 이름에 수업·코스 이름을 붙일 때 쓴다 */
+    public Map<Long, Long> getLessonIdsByActivity(Collection<Long> activityIds) {
+        return activityRepository.findAllById(activityIds).stream()
+                .collect(Collectors.toMap(Activity::getActivityId, Activity::getLessonId));
     }
 
     /* 수업 ID → 속한 코스 ID. 없는 ID 는 결과에 빠진다. 운영자 확장 대시보드(admin #194)가 수업 제목에 코스 이름을 붙일 때 쓴다 */

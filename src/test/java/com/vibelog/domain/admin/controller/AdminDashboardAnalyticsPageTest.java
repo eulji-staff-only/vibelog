@@ -43,6 +43,7 @@ class AdminDashboardAnalyticsPageTest {
         given(analyticsService.getAnalytics(any(), any())).willReturn(new AdminLearningAnalytics(
                 List.of(new AdminLearningAnalytics.TrackRecommendation(1L, "웹 트랙", 4, 3, 75)),
                 List.of(new AdminLearningAnalytics.LessonDropOff(1L, "웹 코스", "첫 수업", 10, 4, 40)),
+                List.of(new AdminLearningAnalytics.ActivityDropOff(7L, "웹 코스", "첫 수업", "변수 개념", 8, 6, 75)),
                 new AdminLearningAnalytics.QuizPassStat(8, 6, 75),
                 List.of(new AdminLearningAnalytics.ConceptWrongRate(1L, "반복문", 12, 7, 58, true),
                         new AdminLearningAnalytics.ConceptWrongRate(2L, "변수", 10, 4, 40, false)),
@@ -59,6 +60,9 @@ class AdminDashboardAnalyticsPageTest {
                         containsString("수업별 이탈률"),
                         containsString("첫 수업"),
                         containsString("40%"),
+                        // #364: 수업별 표 아래에 활동별 이탈 표가 함께 보인다
+                        containsString("활동별 이탈률"),
+                        containsString("변수 개념"),
                         containsString("퀴즈 통과율 75% (응시 8건 중 통과 6건)"),
                         containsString("반복문"),
                         containsString("58%"),
@@ -74,18 +78,19 @@ class AdminDashboardAnalyticsPageTest {
     @WithMockUser(roles = "ADMIN")
     void 지표가_없으면_구역마다_빈_상태_문구를_보여준다() throws Exception {
         given(analyticsService.getAnalytics(any(), any())).willReturn(new AdminLearningAnalytics(
-                List.of(), List.of(), new AdminLearningAnalytics.QuizPassStat(0, 0, 0), List.of(), List.of()));
+                List.of(), List.of(), List.of(), new AdminLearningAnalytics.QuizPassStat(0, 0, 0), List.of(), List.of()));
 
         String body = mockMvc.perform(get("/admin"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(allOf(
                         containsString("추천 트랙과 실제 수강"),
                         containsString("수업별 이탈률"),
+                        containsString("활동별 이탈률"),
                         containsString("퀴즈 통과율·개념별 오답률"),
                         containsString("모의고사 평균·약한 개념"))))
                 .andReturn().getResponse().getContentAsString();
 
-        // 추천 트랙, 이탈률, 퀴즈 통과율, 개념별 오답률, 모의고사 다섯 곳
-        org.assertj.core.api.Assertions.assertThat(body.split("집계된 데이터가 없습니다", -1).length - 1).isEqualTo(5);
+        // 추천 트랙, 수업별 이탈률, 활동별 이탈률, 퀴즈 통과율, 개념별 오답률, 모의고사 여섯 곳
+        org.assertj.core.api.Assertions.assertThat(body.split("집계된 데이터가 없습니다", -1).length - 1).isEqualTo(6);
     }
 }

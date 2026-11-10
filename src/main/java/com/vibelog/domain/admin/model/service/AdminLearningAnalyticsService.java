@@ -25,7 +25,7 @@ import java.util.Set;
 /*
  * [AdminLearningAnalyticsService]
  * 역할 : 확장 대시보드(A-01, API-ADM-40, FR-ADM-003) 2차 지표를 모은다.
- *        추천 트랙 vs 실제 수강, 수업별 이탈률, 퀴즈 통과율·개념별 오답률, 수업별 모의고사 평균·약한 개념.
+ *        추천 트랙 vs 실제 수강, 수업별·활동별 이탈률, 퀴즈 통과율·개념별 오답률, 수업별 모의고사 평균·약한 개념.
  * 책임 : - 직접 계산하지 않고 Course·Lesson·Quiz·ExamReader 가 준 값에 기간(from~to)만 넘겨 합친다
  *          (다른 영역의 Entity·Repository 는 import 하지 않는다). admin 이 하는 일은 이름 붙이기·비율 계산·정렬이다.
  *        - 추천 트랙의 실제 수강은 회원이 수강한 코스의 트랙(CourseReader)이 추천 트랙과 같은지로 본다.
@@ -43,7 +43,7 @@ public class AdminLearningAnalyticsService {
 
     public AdminLearningAnalytics getAnalytics(LocalDateTime from, LocalDateTime to) {
         return new AdminLearningAnalytics(toTrackRecommendations(from, to), toLessonDropOffs(from, to),
-                toQuizPass(from, to), toConceptWrongRates(from, to), toExamLessons(from, to));
+                toActivityDropOffs(from, to), toQuizPass(from, to), toConceptWrongRates(from, to), toExamLessons(from, to));
     }
 
     /* 추천받은 트랙마다 추천받은 회원 수, 그중 그 트랙의 코스를 수강 시작한 회원 수. 트랙 이름 순 */
@@ -94,6 +94,32 @@ public class AdminLearningAnalyticsService {
                 .sorted(Comparator.comparingInt(AdminLearningAnalytics.LessonDropOff::dropOffRate).reversed()
                         .thenComparing(Comparator.comparingInt(AdminLearningAnalytics.LessonDropOff::eligibleCount).reversed())
                         .thenComparing(AdminLearningAnalytics.LessonDropOff::lessonId))
+                .toList();
+    }
+
+    /* 활동별 이탈률(못 끝낸 비율)이 높은 것부터, 같으면 열린 수가 많은 것부터. 수업별과 같은 기준이고, 활동 이름에 수업·코스 이름을 붙인다 */
+    private List<AdminLearningAnalytics.ActivityDropOff> toActivityDropOffs(LocalDateTime from, LocalDateTime to) {
+        Map<Long, DropOffRate> rates = lessonReader.getDropOffRateByActivity(from, to);
+        if (rates.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, String> activityTitles = lessonReader.getActivityTitles(rates.keySet());
+        Map<Long, Long> lessonIdsByActivity = lessonReader.getLessonIdsByActivity(rates.keySet());
+        Set<Long> lessonIds = new HashSet<>(lessonIdsByActivity.values());
+        Map<Long, String> lessonTitles = lessonReader.getLessonTitles(lessonIds);
+        Map<Long, String> courseTitles = courseTitlesOfLessons(lessonIds);
+        return rates.entrySet().stream()
+                .map(entry -> {
+                    Long lessonId = lessonIdsByActivity.get(entry.getKey());
+                    DropOffRate rate = entry.getValue();
+                    return new AdminLearningAnalytics.ActivityDropOff(entry.getKey(),
+                            courseTitles.getOrDefault(lessonId, ""), lessonTitles.getOrDefault(lessonId, ""),
+                            activityTitles.getOrDefault(entry.getKey(), ""), rate.eligibleCount(), rate.dropOffCount(),
+                            AnalyticsRatePolicy.percent(rate.dropOffCount(), rate.eligibleCount()));
+                })
+                .sorted(Comparator.comparingInt(AdminLearningAnalytics.ActivityDropOff::dropOffRate).reversed()
+                        .thenComparing(Comparator.comparingInt(AdminLearningAnalytics.ActivityDropOff::eligibleCount).reversed())
+                        .thenComparing(AdminLearningAnalytics.ActivityDropOff::activityId))
                 .toList();
     }
 
