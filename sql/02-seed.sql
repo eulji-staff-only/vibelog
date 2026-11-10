@@ -128,6 +128,14 @@ INSERT INTO activity_tag (activity_id, concept_tag_id) VALUES
     (3, 2),
     (5, 3);
 
+-- 연관 개념 (FR-LSN-003, API-LSN-07, #338). 운영자 입력 화면 없이 샘플 데이터로 채운다 (lesson.md 연관 개념).
+-- 개념 활동 1·3(수업 1)과 5(수업 2)를 잇는다. 개념 5는 잠긴 수업에 있어 누르면 잠김 안내가 보인다
+INSERT INTO concept_relation (source_activity_id, related_activity_id, sort_order) VALUES
+    (1, 3, 1),
+    (1, 5, 2),
+    (3, 1, 1),
+    (5, 1, 1);
+
 -- 퀴즈 문항 3개씩 (PL-LSN-003). 3문항이면 2개 이상 맞혀야 통과
 INSERT INTO quiz_question (quiz_question_id, activity_id, concept_tag_id, display_type, content, code_snippet, explanation, sort_order) VALUES
     (1, 2, 1, 'CONCEPT', '"로그인 버튼이 안 눌려요, 고쳐 줘"처럼 범위 없이 요청하면 생기기 쉬운 일은?', NULL,
