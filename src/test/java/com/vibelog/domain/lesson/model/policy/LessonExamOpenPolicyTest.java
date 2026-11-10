@@ -36,7 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         "INSERT INTO lesson (lesson_id, course_id, title, intro, goal, contents, estimated_minutes, sort_order, is_public) VALUES "
                 + "(9601, 9601, '수업 1', '소개', '목표', '본문', 30, 1, TRUE), "
                 + "(9602, 9601, '수업 2', '소개', '목표', '본문', 20, 2, TRUE), "
-                + "(9603, 9601, '수업 3(퀴즈 없음)', '소개', '목표', '본문', 10, 3, TRUE)",
+                + "(9603, 9601, '수업 3(퀴즈 없음)', '소개', '목표', '본문', 10, 3, TRUE), "
+                + "(9604, 9601, '수업 4', '소개', '목표', '본문', 10, 4, TRUE)",
         "INSERT INTO activity (activity_id, lesson_id, activity_type, title, body, body_format, estimated_minutes, sort_order, is_active, created_at) VALUES "
                 + "(9611, 9601, 'CONCEPT', '개념 1-1', '본문', 'MARKDOWN', 10, 1, TRUE, '2026-01-01 00:00:00'), "
                 + "(9612, 9601, 'QUIZ', '퀴즈 1-1', NULL, NULL, 10, 2, TRUE, '2026-01-01 00:00:00'), "
@@ -47,7 +48,10 @@ import static org.assertj.core.api.Assertions.assertThat;
                 + "(9623, 9602, 'CONCEPT', '개념 2-2', '본문', 'MARKDOWN', 10, 3, TRUE, '2026-01-01 00:00:00'), "
                 + "(9624, 9602, 'QUIZ', '퀴즈 2-2', NULL, NULL, 10, 4, TRUE, '2026-01-01 00:00:00'), "
                 + "(9625, 9602, 'CONCEPT', '나중에 추가한 개념', '본문', 'MARKDOWN', 10, 5, TRUE, '2099-01-01 00:00:00'), "
-                + "(9626, 9602, 'QUIZ', '나중에 추가한 퀴즈', NULL, NULL, 10, 6, TRUE, '2099-01-01 00:00:00')"
+                + "(9626, 9602, 'QUIZ', '나중에 추가한 퀴즈', NULL, NULL, 10, 6, TRUE, '2099-01-01 00:00:00'), "
+                + "(9641, 9604, 'QUIZ', '퀴즈 4-1', NULL, NULL, 10, 2, TRUE, '2026-01-01 00:00:00'), "
+                + "(9642, 9604, 'QUIZ', '퀴즈 4-2 (03월에 추가)', NULL, NULL, 10, 4, TRUE, '2026-03-01 00:00:00'), "
+                + "(9643, 9604, 'QUIZ', '퀴즈 4-3 (04월에 추가)', NULL, NULL, 10, 6, TRUE, '2026-04-01 00:00:00')"
 })
 class LessonExamOpenPolicyTest {
 
@@ -57,6 +61,7 @@ class LessonExamOpenPolicyTest {
     @Autowired LessonExamOpenPolicy lessonExamOpenPolicy;
     @Autowired EnrollmentRepository enrollmentRepository;
     @Autowired ActivityProgressRepository activityProgressRepository;
+    @Autowired jakarta.persistence.EntityManager em;
 
     private long enrollmentId;
 
@@ -106,6 +111,31 @@ class LessonExamOpenPolicyTest {
         passQuiz(9622L);
 
         assertThat(lessonExamOpenPolicy.isOpen(enrollmentId, 9602L)).isFalse();
+    }
+
+    @Test
+    void 열린_뒤_추가된_퀴즈를_나중에_통과해도_먼저_추가된_다른_퀴즈가_다시_필수가_되지_않는다() {
+        // 02-01 퀴즈 9641만 있을 때 통과 → 열림. 03-01에 9642, 04-01에 9643이 추가됨. 05-01에 9642만 통과한다.
+        // "마지막 통과 시각(05-01)에 있던 마지막 퀴즈"를 기준으로 삼으면 04-01에 추가된 9643이 필수가 되어 다시 닫힌다 (PL-ENR-006 위반)
+        assertThat(lessonExamOpenPolicy.isOpen(enrollmentId, 9604L)).isFalse();
+
+        passQuizAt(9641L, "2026-02-01 10:00:00");
+        assertThat(lessonExamOpenPolicy.isOpen(enrollmentId, 9604L)).isTrue();
+
+        passQuizAt(9642L, "2026-05-01 10:00:00");
+        assertThat(lessonExamOpenPolicy.isOpen(enrollmentId, 9604L)).isTrue();
+    }
+
+    /* 통과 시각을 정해서 진행 기록을 넣는다 (Entity 의 complete()는 지금 시각만 기록한다) */
+    private void passQuizAt(long activityId, String completedAt) {
+        em.createNativeQuery("INSERT INTO activity_progress (enrollment_id, activity_id, unlocked_at, completed_at) "
+                        + "VALUES (:enrollmentId, :activityId, :at, :at)")
+                .setParameter("enrollmentId", enrollmentId)
+                .setParameter("activityId", activityId)
+                .setParameter("at", java.sql.Timestamp.valueOf(completedAt))
+                .executeUpdate();
+        em.flush();
+        em.clear();
     }
 
     @Test
