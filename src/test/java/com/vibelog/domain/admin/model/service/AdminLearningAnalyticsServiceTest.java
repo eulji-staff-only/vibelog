@@ -70,6 +70,7 @@ class AdminLearningAnalyticsServiceTest {
 
         assertThat(result.trackRecommendations()).isEmpty();
         assertThat(result.lessonDropOffs()).isEmpty();
+        assertThat(result.activityDropOffs()).isEmpty();
         assertThat(result.conceptWrongRates()).isEmpty();
         assertThat(result.examLessons()).isEmpty();
         assertThat(result.quizPass()).isEqualTo(new AdminLearningAnalytics.QuizPassStat(0, 0, 0));
@@ -90,6 +91,27 @@ class AdminLearningAnalyticsServiceTest {
                 new AdminLearningAnalytics.LessonDropOff(2L, "코스100", "수업2", 3, 2, 67),
                 new AdminLearningAnalytics.LessonDropOff(1L, "코스100", "수업1", 10, 2, 20),
                 new AdminLearningAnalytics.LessonDropOff(3L, "코스200", "수업3", 4, 0, 0));
+    }
+
+    @Test
+    void 활동별_이탈률은_활동_수업_코스_이름을_붙이고_못_끝낸_비율이_높은_순으로_정렬한다() {
+        // FR-ADM-003 "수업·활동별 이탈", #364: 수업별과 같은 정렬(비율 → 열린 수 → 번호)
+        givenEmptyReaders();
+        given(lessonReader.getDropOffRateByActivity(FROM, TO)).willReturn(
+                Map.of(10L, new DropOffRate(10, 2), 11L, new DropOffRate(3, 2), 12L, new DropOffRate(6, 4), 13L, new DropOffRate(4, 0)));
+        given(lessonReader.getActivityTitles(any())).willReturn(Map.of(10L, "개념10", 11L, "퀴즈11", 12L, "개념12", 13L, "퀴즈13"));
+        given(lessonReader.getLessonIdsByActivity(any())).willReturn(Map.of(10L, 1L, 11L, 1L, 12L, 2L, 13L, 2L));
+        given(lessonReader.getLessonTitles(any())).willReturn(Map.of(1L, "수업1", 2L, "수업2"));
+        given(lessonReader.getCourseIdsByLesson(any())).willReturn(Map.of(1L, 100L, 2L, 200L));
+        given(courseReader.getCourseTitles(any())).willReturn(Map.of(100L, "코스100", 200L, "코스200"));
+
+        List<AdminLearningAnalytics.ActivityDropOff> result = service.getAnalytics(FROM, TO).activityDropOffs();
+
+        assertThat(result).containsExactly(
+                new AdminLearningAnalytics.ActivityDropOff(12L, "코스200", "수업2", "개념12", 6, 4, 67),
+                new AdminLearningAnalytics.ActivityDropOff(11L, "코스100", "수업1", "퀴즈11", 3, 2, 67),
+                new AdminLearningAnalytics.ActivityDropOff(10L, "코스100", "수업1", "개념10", 10, 2, 20),
+                new AdminLearningAnalytics.ActivityDropOff(13L, "코스200", "수업2", "퀴즈13", 4, 0, 0));
     }
 
     @Test
@@ -142,6 +164,7 @@ class AdminLearningAnalyticsServiceTest {
 
         verify(courseReader).findDiagnosisRecommendedTracks(FROM, TO);
         verify(lessonReader).getDropOffRateByLesson(FROM, TO);
+        verify(lessonReader).getDropOffRateByActivity(FROM, TO);
         verify(quizReader).getWrongRateByConceptTag(FROM, TO);
         verify(examReader).getAverageScoreByLesson(FROM, TO);
     }
