@@ -25,6 +25,9 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     /* 그 코스의 내 포트폴리오, 삭제 표시한 것도 포함 (uk_portfolio_member_course 라 최대 1개). 다시 제출하면 이 행을 되살린다 (API-PRT-04) */
     Optional<Portfolio> findByMemberIdAndCourseId(Long memberId, Long courseId);
 
+    /* 이 스크린샷 주소를 쓰는 포트폴리오 (업로드 파일 권한 검사, #368). 파일 이름이 UUID 라 많아야 1개 */
+    Optional<Portfolio> findFirstByScreenshotUrl(String screenshotUrl);
+
     /* 회원의 삭제 표시 없는 포트폴리오 (계약 ⑩) */
     List<Portfolio> findAllByMemberIdAndDeletedAtIsNull(Long memberId);
 

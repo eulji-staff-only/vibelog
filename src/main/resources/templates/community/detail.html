@@ -51,11 +51,12 @@
             <!-- 신고 (회원, 내 글이 아니면, API-RPT-01 · M-11) -->
             <button class="cm-btn is-outline is-s" type="button" th:if="${loggedIn and !post.mine()}"
                     data-ui-modal-open="report-modal" data-report-type="POST" th:attr="data-report-id=${post.postId()}">신고</button>
-            <!-- 추천 (작품 공유 글만, API-CMT-11). 회원이고 내 글이 아니면 버튼, 그 외에는 수만 보인다 -->
+            <!-- 추천 (작품 공유 글만, API-CMT-11). 회원이고 내 글이 아니면 버튼, 비회원은 로그인으로 보내는 버튼(U-22 예외, #363), 내 글은 수만 보인다 -->
             <p class="cm-recommend" th:if="${recommend != null}">
                 <button class="cm-btn is-outline is-s" type="button" th:if="${loggedIn and !post.mine()}" data-recommend
                         th:attr="data-url=@{/api/posts/{id}/recommend(id=${post.postId()})},aria-pressed=${recommend.recommended()}"
                         th:text="${recommend.recommended()} ? '추천 취소' : '추천'">추천</button>
+                <a class="cm-btn is-outline is-s" th:unless="${loggedIn}" th:href="@{/login(redirect=|/community/${post.postId()}|)}">추천</a>
                 <span class="cm-muted" data-recommend-count th:text="|추천 ${recommend.recommendCount()}|">추천 0</span>
             </p>
             <p class="cm-post__body" th:text="${post.body()}">본문</p>
@@ -90,7 +91,7 @@
                 <a class="cm-link" href="/auth/verify">인증 메일 받기</a>
             </div>
             <form class="cm-form" id="comment-form" method="post" th:if="${canComment}"
-                  th:action="@{/community/{id}/comments(id=${post.postId()})}">
+                  th:action="@{/community/{id}/comments(id=${post.postId()})}" th:attr="data-draft=|comment.${post.postId()}|">
                 <p class="cm-hint is-error" role="alert" th:if="${commentTarget == 'new'}" th:text="${commentError}">오류</p>
                 <textarea class="cm-input cm-textarea is-short" name="content" maxlength="500" required
                           placeholder="댓글을 남겨 보세요" aria-label="댓글"

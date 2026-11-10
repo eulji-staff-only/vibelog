@@ -5,6 +5,18 @@
  * 항목은 /notifications/{id} 링크 하나다 (서버가 읽음을 남기고 도착지로 보낸다).
  * 마지막 묶음은 배지 획득 축하 모달(M-10, #202)의 포커스.
  */
+
+/* 지금 보는 메뉴 강조 (1-5, #362): 주소의 첫 경로가 같은 메뉴. /courses/3/lessons/5 → 코스, /contests/7 → 콘테스트.
+   첫 경로가 메뉴와 다른 아래 화면은 MENU_OF 로 잇는다 (U-31 리뷰 요청 → 커뮤니티, U-09 트랙·U-15 모의고사 → 코스).
+   화면 낭독기에는 그 주소 자체면 "현재 페이지"(page), 아래 화면이면 "현재 메뉴"(true)로 알린다 */
+const MENU_OF = { reviews: 'community', tracks: 'courses', lessons: 'courses' };
+const menuOf = (path) => MENU_OF[path.split('/')[1]] ?? path.split('/')[1];
+document.querySelectorAll('.vl-header__nav a').forEach((link) => {
+    if (menuOf(link.pathname) !== menuOf(location.pathname)) return;
+    link.classList.add('is-active');
+    link.setAttribute('aria-current', link.pathname === location.pathname ? 'page' : 'true');
+});
+
 (() => {
     const header = document.querySelector('[data-header]');
     const toggle = header && header.querySelector('[data-header-toggle]');

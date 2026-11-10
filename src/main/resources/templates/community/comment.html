@@ -30,7 +30,8 @@
             <!-- 답글은 댓글에만 한 단계 (PL-CMT-006) -->
             <details class="cm-inline" th:if="${!isReply and canComment}" th:open="${commentTarget == replyTarget}">
                 <summary class="cm-btn is-text is-s">답글</summary>
-                <form class="cm-inline__form" method="post" th:action="@{/community/{id}/comments(id=${post.postId()})}">
+                <form class="cm-inline__form" method="post" th:action="@{/community/{id}/comments(id=${post.postId()})}"
+                      th:attr="data-draft=|reply.${c.commentId()}|">
                     <input type="hidden" name="parentCommentId" th:value="${c.commentId()}">
                     <p class="cm-hint is-error" role="alert" th:if="${commentTarget == replyTarget}" th:text="${commentError}">오류</p>
                     <textarea class="cm-input cm-textarea is-short" name="content" maxlength="500" required aria-label="답글"

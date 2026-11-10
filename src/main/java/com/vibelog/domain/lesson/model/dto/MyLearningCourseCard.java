@@ -20,4 +20,20 @@ public record MyLearningCourseCard(
         boolean completed,
         LocalDateTime completedAt
 ) {
+    /*
+     * "학습하기"가 보낼 수업 (설계서 U-12 "학습하기 → U-13").
+     * 진행 중인 수업이 있으면 그 수업, 없으면 열린 수업 중 마지막 수업(이미 끝낸 수업 다시 보기), 열린 수업이 없으면 null.
+     * null 이면 화면이 코스 상세로 보낸다.
+     */
+    public Long learningLessonId() {
+        return lessons.stream()
+                .filter(lesson -> lesson.status() == LessonStatus.IN_PROGRESS)
+                .map(MyLearningLessonCard::lessonId)
+                .findFirst()
+                .orElseGet(() -> lessons.stream()
+                        .filter(lesson -> !lesson.status().isLocked())
+                        .map(MyLearningLessonCard::lessonId)
+                        .reduce((first, second) -> second)
+                        .orElse(null));
+    }
 }

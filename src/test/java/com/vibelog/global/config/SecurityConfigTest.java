@@ -76,6 +76,23 @@ class SecurityConfigTest {
                 .andExpect(redirectedUrl("/login?redirect=%2Fcommunity%2Fwrite"));
     }
 
+    // PL-ERR-005 (#366): 세션이 끊긴 뒤 폼을 보내면 폼을 보낸 화면으로 돌아오게 해 작성 중 내용을 복원한다
+    @Test
+    void 세션이_끊긴_뒤_폼을_보내면_폼을_보낸_화면으로_돌아오게_한다() throws Exception {
+        String referer = "http://localhost/community/write";
+        // 비회원(토큰은 맞음) → 로그인한 뒤 폼 화면으로
+        mockMvc.perform(post("/community").with(csrf()).header("Referer", referer))
+                .andExpect(redirectedUrl("/login?redirect=%2Fcommunity%2Fwrite"));
+        // 세션이 바뀌어 CSRF 토큰이 맞지 않음 → 403 대신 폼 화면으로 (회원 화면이라 거기서 다시 로그인으로 간다)
+        mockMvc.perform(post("/community").header("Referer", referer))
+                .andExpect(redirectedUrl("/community/write"));
+        // 다른 사이트의 Referer, 다른 사이트로 읽히는 경로는 쓰지 않는다
+        mockMvc.perform(post("/community").with(csrf()).header("Referer", "http://evil.com/community/write"))
+                .andExpect(redirectedUrl("/login"));
+        mockMvc.perform(post("/community").header("Referer", "http://localhost//evil.com/x"))
+                .andExpect(status().isForbidden());
+    }
+
     @Test
     void 비회원도_전체_화면은_로그인_없이_연다() throws Exception {
         mockMvc.perform(get("/login")).andExpect(status().isOk());

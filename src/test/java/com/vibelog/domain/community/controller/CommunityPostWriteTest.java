@@ -73,6 +73,7 @@ class CommunityPostWriteTest {
     void 인증한_회원이_사진을_붙여_글을_쓰면_상세로_간다() throws Exception {
         String location = write(as(verified), "FREE", "첫 글", "본문입니다", null, image("a.png"), image("b.png"), empty())
                 .andExpect(redirectedUrlPattern("/community/*"))
+                .andExpect(flash().attribute("draftClear", "post"))   // 작성 중 내용 보관을 지운다 (#366)
                 .andReturn().getResponse().getRedirectedUrl();
         long postId = Long.parseLong(location.substring("/community/".length()));
 

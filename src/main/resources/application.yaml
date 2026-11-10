@@ -43,6 +43,8 @@ server:
       timeout: 2h
 
 vibelog:
+  # 점검 중이면 MAINTENANCE=true 로 다시 시작한다. 모든 요청에 503 + E-04 점검 중 화면 (PL-ERR-006, #365)
+  maintenance: ${MAINTENANCE:false}
   # 메일 링크의 앞부분. 요청의 Host 헤더로 만들지 않는다 (재설정 링크를 다른 사이트 주소로 바꾸는 공격 방지)
   base-url: ${APP_BASE_URL:http://localhost:8080}
   mail:

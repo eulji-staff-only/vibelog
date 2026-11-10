@@ -1,7 +1,6 @@
 package com.vibelog.domain.lesson.model.service;
 
-import com.vibelog.domain.course.model.policy.CourseReader;
-import com.vibelog.domain.course.model.policy.CourseSummary;
+import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.exam.model.policy.LessonExamStatusChecker;
 import com.vibelog.domain.lesson.model.dao.EnrollmentRepository;
 import com.vibelog.domain.lesson.model.dao.LessonProgressRepository;
@@ -71,12 +70,14 @@ public class CourseCompleteService {
                 lessonIds.size(), latestSubmittedAttemptNos.size(), reportConfirmedCount, portfolioCondition);
         List<CourseCompleteLessonReport> lessonReports = buildLessonReports(publicLessons, latestSubmittedAttemptNos);
 
-        CourseSummary summary = courseReader.getSummary(courseId);
+        Long trackId = courseReader.getTrackIdsByCourse(List.of(courseId)).get(courseId);
+        String trackName = courseReader.getTrackTitles(List.of(trackId)).get(trackId);
+        String courseName = courseReader.getCourseTitles(List.of(courseId)).get(courseId);
 
         return Optional.of(new CourseCompleteView(
                 courseId,
-                summary.trackName(),
-                summary.courseName(),
+                trackName,
+                courseName,
                 enrollment.isCompleted(),
                 enrollment.getCompletedAt(),
                 conditions,

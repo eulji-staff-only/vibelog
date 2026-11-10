@@ -21,6 +21,7 @@ import com.vibelog.domain.lesson.model.entity.BodyFormat;
 import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
+import com.vibelog.domain.lesson.model.policy.LessonExamOpenPolicy;
 import com.vibelog.domain.quiz.model.policy.LessonQuizScoreChecker;
 import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -67,6 +68,7 @@ public class LessonPageService {
     private final LessonQuizScoreChecker lessonQuizScoreChecker;
     private final ConceptService conceptService;
     private final LessonExamStatusChecker lessonExamStatusChecker;
+    private final LessonExamOpenPolicy lessonExamOpenPolicy;
 
     public LessonPageResult getPage(Long memberId, Long courseId, Long lessonId, String activityQuery, boolean preview) {
         Lesson lesson = getLesson(lessonId, courseId);
@@ -174,16 +176,12 @@ public class LessonPageService {
                 null, null, null, null, null, bestCorrectRate, null, null);
     }
 
-    /* 계약 ②(ExamLessonProgress.isExamOpen)와 같은 계산이지만, 이 데이터를 전부 가진 lesson이
+    /* 계약 ②(ExamLessonProgress.isExamOpen)와 같은 규칙이지만, 이 데이터를 전부 가진 lesson이
        같은 조회 안에서 자기 계약 인터페이스를 다시 불러쓰면 그 인터페이스를 모킹하는 다른 테스트
        (예: SecurityConfigTest)가 lessonContractService 빈을 다른 타입으로 바꿔치기할 때 이 조회가
-       같이 깨진다. 그래서 여기서는 리포지토리로 직접 계산한다. */
+       같이 깨진다. 그래서 계약 인터페이스가 아니라 같은 규칙을 가진 LessonExamOpenPolicy 를 직접 쓴다. */
     private LessonActivityCard toExamCard(Long memberId, Long enrollmentId, Long lessonId) {
-        boolean open = activityRepository
-                .findTopByLessonIdAndActivityTypeAndIsActiveTrueOrderBySortOrderDesc(lessonId, ActivityType.QUIZ)
-                .flatMap(lastQuiz -> activityProgressRepository.findByEnrollmentIdAndActivityId(enrollmentId, lastQuiz.getActivityId()))
-                .map(ActivityProgress::isCompleted)
-                .orElse(false);
+        boolean open = lessonExamOpenPolicy.isOpen(enrollmentId, lessonId);
         if (open) {
             // 제출한 회차가 있으면 "지난 리포트 다시 보기" 링크 (FR-EXM-006, 계약 ④ 최근 제출 회차)
             Integer attemptNo = lessonExamStatusChecker.getLatestSubmittedAttemptNos(memberId, List.of(lessonId)).get(lessonId);
