@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     badge.classList.toggle('mp-badge-neutral', !isPublic);
                     button.dataset.public = String(isPublic);
                     button.textContent = isPublic ? '비공개로 전환' : '공개로 전환';
+                    // 비공개로 바꾸면 서버가 열린 리뷰 요청을 닫는다 (PL-REV-002). 리뷰 요청은 공개 작품만 (#361)
+                    const card = button.closest('.mp-card');
+                    if (!isPublic) card.querySelector('[data-review-badge]')?.remove();
+                    card.querySelector('[data-review-request]').hidden = !isPublic || !!card.querySelector('[data-review-badge]');
                     toast(isPublic ? '공개로 전환했습니다' : '비공개로 전환했습니다');
                 })
                 .catch((err) => {
@@ -47,6 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 .finally(() => { button.disabled = false; });
         });
     });
+
+    // M-08 리뷰 요청 확인: 모달 열기·닫기는 ui.js, 여기서는 누른 카드의 요청 주소만 폼에 넣는다 (#361)
+    const reviewForm = document.querySelector('[data-review-form]');
+    list.querySelectorAll('[data-review-request]').forEach((button) => button.addEventListener('click', () => {
+        reviewForm.action = button.dataset.reviewUrl;
+    }));
+    reviewForm.addEventListener('submit', () => { reviewForm.querySelector('[type="submit"]').disabled = true; });
 
     // M-04 삭제 확인: 누른 카드의 삭제 주소를 폼에 넣는다
     const form = modal.querySelector('[data-delete-form]');
