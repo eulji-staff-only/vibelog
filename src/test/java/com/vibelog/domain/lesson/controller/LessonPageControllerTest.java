@@ -71,6 +71,7 @@ class LessonPageControllerTest {
     }
 
     @Test
+    @WithMockUser
     void 활동_목록에는_열린_활동은_순서_번호_잠긴_활동은_자물쇠가_보인다() throws Exception {
         // #389: iter.index 가 ${ } 밖에 있어 번호 대신 "iter.index1" 글자가 보이던 문제
         LessonActivityCard concept = new LessonActivityCard(1L, LessonActivityCard.CONCEPT, "개념 1",
