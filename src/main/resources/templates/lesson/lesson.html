@@ -8,15 +8,16 @@
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
     <link rel="stylesheet" th:href="@{/css/lesson.css}" href="/css/lesson.css">
-    <!-- 헤더 없는 화면이라 공통 요청 처리(#367)를 직접 불러온다. defer 없이 lesson.js 보다 먼저 -->
-    <script th:src="@{/js/request.js}" src="/js/request.js"></script>
+    <!-- 공통 요청 처리(request.js, #367)는 공통 헤더(common/layout :: header)가 불러온다. 여기서 또 불러오면 폼 제출이 중복으로 보여 막힌다 -->
     <script th:src="@{/js/lesson.js}" src="/js/lesson.js" defer></script>
     <script th:src="@{/js/ui.js}" src="/js/ui.js" defer></script>
 </head>
 <body>
 <!-- U-13 수업 (활동 목록 · 개념, API-LSN-01·02). activity 전환은 서버를 부르지 않는 자바스크립트로만 한다
      (설계서 U-13 "전환") — 모든 활동 패널을 한 번에 그려 두고 lesson.js 가 보이기/숨기기만 한다.
-     공통 헤더·푸터(#13)와 배지·안내 상자 조각(#46)이 머지되면 그것으로 바꾼다. -->
+     공통 헤더·푸터는 다른 화면처럼 common/layout 조각을 쓴다 (#358). 배지·안내 상자 조각(#46)은 아직 쓰지 않는다. -->
+<div th:replace="~{common/layout :: header}"></div>
+
 <!-- 잠긴 활동에 들어오면(ACTIVITY_LOCKED) 컨트롤러가 넘긴 안내. my-learning.html 과 같은 방식 (#275) -->
 <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
 
@@ -63,7 +64,7 @@
                     <!-- 잠김 (FR-LSN-009): 개념·퀴즈·모의고사 모두 같은 안내 문구를 쓴다 (_template.md 7장 ACTIVITY_LOCKED) -->
                     <div class="ls-notice" th:if="${card.isLocked()}">
                         <span class="ls-badge ls-badge-locked">잠김</span>
-                        <strong>앞 퀴즈를 정답률 50% 이상으로 통과하면 열립니다.</strong>
+                        <strong>앞 퀴즈를 통과하면 열립니다.</strong>
                         <p>왼쪽 활동 목록에서 열려 있는 활동부터 차례로 진행해 주세요.</p>
                         <button type="button" class="ls-link" th:if="${card.previousActivityId != null}"
                                 th:attr="data-activity-link=${card.previousActivityId}">앞 활동 바로가기</button>
@@ -115,7 +116,7 @@
                     <th:block th:if="${!card.isLocked() and card.isQuiz()}">
                         <span class="ls-panel-eyebrow">퀴즈</span>
                         <h2 class="ls-panel-title" th:text="${card.title}">[퀴즈] 제목</h2>
-                        <p class="ls-panel-desc">개념에서 배운 내용을 확인합니다. 정답률 50% 이상이면 통과합니다.</p>
+                        <p class="ls-panel-desc">개념에서 배운 내용을 확인합니다.</p>
                         <span class="ls-badge" th:if="${card.bestCorrectRate != null}"
                               th:text="'최고 점수 ' + ${card.bestCorrectRate} + '%'">최고 점수</span>
                         <div class="ls-panel-actions" th:if="${!page.preview}">
@@ -147,6 +148,8 @@
         </div>
     </main>
 </div>
+
+<div th:replace="~{common/layout :: footer}"></div>
 
 <!-- 개념 태그 검색 결과 (API-LSN-09). 공통 모달 꼴(vl-ui-modal)이고, 목록은 lesson.js 가 채운다 -->
 <div class="vl-ui-modal" hidden role="dialog" aria-modal="true" id="concept-search-modal"
