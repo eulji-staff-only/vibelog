@@ -2,6 +2,7 @@ package com.vibelog.domain.auth.model.service;
 
 import com.vibelog.domain.auth.model.dto.LoginMember;
 import com.vibelog.domain.auth.model.entity.SocialProvider;
+import com.vibelog.domain.auth.model.policy.SocialLoginFailureHandler;
 import com.vibelog.domain.auth.model.policy.SocialLoginSuccessHandler;
 import com.vibelog.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +45,9 @@ class SocialLoginTest {
 
     @Autowired
     SocialLoginSuccessHandler socialLoginSuccessHandler;
+
+    @Autowired
+    SocialLoginFailureHandler socialLoginFailureHandler;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -122,6 +127,19 @@ class SocialLoginTest {
         mockMvc.perform(get("/login").param("redirect", "/mypage").session(session));
         mockMvc.perform(get("/login").session(session));
         assertThat(socialRedirect(session, again)).as("redirect 없이 다시 열면 지난 값을 지운다").isEqualTo("/courses");
+    }
+
+    @Test
+    void 소셜_로그인에_실패해도_로그인_화면에_redirect_를_다시_붙인다() throws Exception {
+        MockHttpSession session = (MockHttpSession) mockMvc.perform(get("/login").param("redirect", "/community/7"))
+                .andReturn().getRequest().getSession();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setSession(session);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        socialLoginFailureHandler.onAuthenticationFailure(request, response, new OAuth2AuthenticationException("access_denied"));
+
+        assertThat(response.getRedirectedUrl()).isEqualTo("/login?socialError&redirect=%2Fcommunity%2F7");
     }
 
     private String socialRedirect(MockHttpSession session, LoginMember member) throws Exception {
