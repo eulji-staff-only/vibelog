@@ -99,7 +99,7 @@ admin은 직접 계산하지 않고, 각 지표를 담당 영역의 `<영역>Rea
 | 게시글 수 | community | `CommunityReader.countPosts(from, to)` | - |
 | 리뷰 수 | community | `CommunityReader.countPeerReviews(from, to)` | 동료 리뷰(FR-REV) |
 | 쪽지 수 | message | `MessageReader.countMessages(from, to)` | - |
-| 신고 수 | message | `MessageReader.countReports(from, to)` | README 영역 담당 표에서 "신고"는 `message` 묶음(쪽지·신고·알림)이 담당. `report`는 P3 기능이라 신고 처리 자체는 아직 없고, 지금은 0으로 보여도 된다 |
+| 신고 수 | message | `MessageReader.countReports(from, to)` | README 영역 담당 표에서 "신고"는 `message` 묶음(쪽지·신고·알림)이 담당 |
 | 콘테스트 참여 수 | contest | `ContestReader.countEntries(from, to)` | FR-CTS |
 
 - 계약 표 ①~⑬(08 문서)에는 넣지 않는다. 단순 집계 조회라 "그 밖에 읽기만 하는 값"에 해당해 각 영역 Reader에 메서드만 추가하면 된다 (08 문서 "안 멈추는 규칙" 1번).

@@ -107,7 +107,7 @@ class RecommendTest {
     }
 
     @Test
-    void 상세에는_작품_공유_글만_추천_수가_보이고_버튼은_다른_회원에게만_있다() throws Exception {
+    void 상세에는_작품_공유_글만_추천_수가_보이고_버튼은_다른_회원에게만_있고_비회원은_로그인으로_간다() throws Exception {
         long showcase = postOf(writerId, "SHOWCASE", "작품", null);
         long free = postOf(writerId, "FREE", "자유", null);
         recommendAt(showcase, LocalDateTime.now());
@@ -119,6 +119,10 @@ class RecommendTest {
                 .andExpect(content().string(allOf(not(containsString(api)), containsString("추천 1"))));
         mockMvc.perform(get("/community/{id}", free).with(as(reader)))
                 .andExpect(content().string(not(containsString("cm-recommend"))));
+        // U-22 예외: 비회원이 추천을 누르면 U-03 로그인, 로그인 뒤 이 글로 돌아온다 (#363)
+        mockMvc.perform(get("/community/{id}", showcase))
+                .andExpect(content().string(allOf(not(containsString(api)),
+                        containsString("href=\"/login?redirect=/community/" + showcase + "\">추천</a>"))));
     }
 
     private ResultActions recommend(String email, long postId) throws Exception {
