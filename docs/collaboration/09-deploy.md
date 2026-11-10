@@ -35,8 +35,8 @@ vibelog.example.com {
 
 ## 2. DB 백업 (매일 1회, 7일 보관)
 
-[`scripts/backup-db.sh`](../../scripts/backup-db.sh) 가 `mysqldump` 로 받아 `gzip` 으로 줄이고, 새것부터 7개(매일 1개라 7일치)만 남긴다.
-날짜가 아니라 개수로 지우므로, 백업이 며칠 실패해도 남아 있던 백업이 사라지지 않는다.
+[`scripts/backup-db.sh`](../../scripts/backup-db.sh) 가 `mysqldump` 로 받아 `gzip` 으로 줄이고 오래된 백업을 지운다.
+새것부터 7개는 무조건 남기고, 그 밖에서는 7일이 지난 것만 지운다. 그래서 백업이 며칠 실패해도, 하루에 수동 백업을 더 만들어도 7일 안의 백업이 사라지지 않는다.
 
 0. 백업을 돌릴 계정(아래 예: 앱을 돌리는 `vibelog` 리눅스 계정)이 백업 폴더와 로그 파일에 쓸 수 있게 만든다.
    cron 은 로그 파일을 열지 못하면 스크립트를 실행하지 않는다.
@@ -80,10 +80,10 @@ vibelog.example.com {
      sudo -u vibelog ssh -o BatchMode=yes backup@10.0.0.5 'mkdir -p -m 700 /backups/vibelog' && echo ok
      ```
 
-   - 원격 서버에서는 새것부터 7개만 남기는 cron 을 따로 둔다 (원격 보관 개수는 원격이 관리).
+   - 원격 서버에서도 같은 기준(새것부터 7개는 남기고, 그 밖에서 7일 지난 것만 지움)으로 정리하는 cron 을 따로 둔다.
 
      ```
-     20 5 * * * cd /backups/vibelog && ls -1 vibelog-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9].sql.gz | sort | head -n -7 | xargs -r rm --
+     20 5 * * * cd /backups/vibelog && ls -1 vibelog-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9].sql.gz | sort | head -n -7 | xargs -r -I{} find {} -maxdepth 0 -mtime +6 -delete
      ```
 
    - 다음 날 로그에 그날 "원격 복사 완료" 가 있는지, 원격에 그날 파일이 있는지 본다.
