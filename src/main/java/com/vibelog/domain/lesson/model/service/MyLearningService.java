@@ -1,7 +1,6 @@
 package com.vibelog.domain.lesson.model.service;
 
-import com.vibelog.domain.course.model.policy.CourseReader;
-import com.vibelog.domain.course.model.policy.CourseSummary;
+import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.exam.model.policy.LessonExamStatusChecker;
 import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
@@ -104,12 +103,14 @@ public class MyLearningService {
         addPortfolioRemainingCondition(remainingConditions, portfolioStatus);
 
         String nextStepText = remainingConditions.isEmpty() ? "코스를 완료했습니다" : remainingConditions.get(0);
-        CourseSummary summary = courseReader.getSummary(courseId);
+        Long trackId = courseReader.getTrackIdsByCourse(List.of(courseId)).get(courseId);
+        String trackName = courseReader.getTrackTitles(List.of(trackId)).get(trackId);
+        String courseName = courseReader.getCourseTitles(List.of(courseId)).get(courseId);
 
         return new MyLearningCourseCard(
                 courseId,
-                summary.trackName(),
-                summary.courseName(),
+                trackName,
+                courseName,
                 progressPercent,
                 nextStepText,
                 lessonCards,
