@@ -81,6 +81,17 @@ class MyLearningServiceTest {
     }
 
     @Test
+    void 카드에는_실제_트랙_이름과_코스_이름이_나온다() {
+        // 임시 Fake 가 "샘플 트랙"·"샘플 코스 N"을 돌려주던 문제(#355)가 다시 생기면 실패한다
+        enroll(LEARNER, COURSE_B);
+
+        MyLearningCourseCard card = myLearningService.getActiveCourses(LEARNER).get(0);
+
+        assertThat(card.trackName()).isEqualTo("테스트 트랙");
+        assertThat(card.courseName()).isEqualTo("코스 B");
+    }
+
+    @Test
     void 수업_상태는_진도에_따라_잠김_진행중_완료로_나뉜다() {
         Enrollment enrollment = enroll(LEARNER, COURSE_B);
         completeLesson(enrollment, LESSON_1);

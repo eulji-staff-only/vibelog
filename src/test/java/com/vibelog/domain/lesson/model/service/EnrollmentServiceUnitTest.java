@@ -1,6 +1,6 @@
 package com.vibelog.domain.lesson.model.service;
 
-import com.vibelog.domain.course.model.policy.CourseReader;
+import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.lesson.exception.LessonErrorCode;
 import com.vibelog.domain.lesson.model.dao.ActivityProgressRepository;
 import com.vibelog.domain.lesson.model.dao.ActivityRepository;
@@ -14,7 +14,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,7 +26,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /*
- * CourseReader(계약)·EnrollmentRepository 를 모킹해 수강 시작의 분기 규칙만 빠르게 확인한다 (DB 없이 도는 단위 테스트).
+ * CourseReader·EnrollmentRepository 를 모킹해 수강 시작의 분기 규칙만 빠르게 확인한다 (DB 없이 도는 단위 테스트).
  * 공개 수업별 진도 생성 흐름은 EnrollmentServiceTest(실제 DB)에서 확인한다.
  */
 @ExtendWith(MockitoExtension.class)
@@ -44,7 +46,7 @@ class EnrollmentServiceUnitTest {
 
     @Test
     void 코스가_없거나_비공개면_COURSE_NOT_FOUND를_던지고_수강을_만들지_않는다() {
-        given(courseReader.isPublicCourse(1L)).willReturn(false);
+        given(courseReader.getPublicCourseIds(List.of(1L))).willReturn(Set.of());
 
         assertThatThrownBy(() -> enrollmentService().enroll(1L, 1L))
                 .isInstanceOf(BusinessException.class)
@@ -56,7 +58,7 @@ class EnrollmentServiceUnitTest {
 
     @Test
     void 이미_수강_중이면_그대로_두고_새로_만들지_않는다() {
-        given(courseReader.isPublicCourse(1L)).willReturn(true);
+        given(courseReader.getPublicCourseIds(List.of(1L))).willReturn(Set.of(1L));
         given(enrollmentRepository.findByMemberIdAndCourseId(1L, 1L))
                 .willReturn(Optional.of(mock(Enrollment.class)));
 
