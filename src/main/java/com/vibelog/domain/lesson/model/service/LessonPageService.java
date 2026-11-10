@@ -17,7 +17,6 @@ import com.vibelog.domain.lesson.model.entity.Activity;
 import com.vibelog.domain.lesson.model.entity.ActivityProgress;
 import com.vibelog.domain.lesson.model.entity.ActivityTag;
 import com.vibelog.domain.lesson.model.entity.ActivityType;
-import com.vibelog.domain.lesson.model.entity.BodyFormat;
 import com.vibelog.domain.lesson.model.entity.ConceptTag;
 import com.vibelog.domain.lesson.model.entity.Enrollment;
 import com.vibelog.domain.lesson.model.entity.Lesson;
@@ -27,7 +26,6 @@ import com.vibelog.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.HtmlUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -137,7 +135,7 @@ public class LessonPageService {
         }
         List<Long> tagIds = conceptTagIdsOf(activity.getActivityId());
         return new LessonActivityCard(activity.getActivityId(), LessonActivityCard.CONCEPT, activity.getTitle(), status,
-                false, renderBody(activity.getBody(), activity.getBodyFormat()), activity.getBodyFormat(),
+                false, ConceptBodyRenderer.render(activity.getBody(), activity.getBodyFormat()), activity.getBodyFormat(),
                 conceptTagNamesOf(tagIds), activity.getToolNoteUrl(), null, null, null, null, tagIds, false,
                 conceptService.findRelatedConcepts(activity.getActivityId()));
     }
@@ -164,7 +162,7 @@ public class LessonPageService {
                             activity.getLessonId(), activity.getSortOrder())
                     .map(Activity::getActivityId)
                     .orElse(null);
-            String renderedBody = renderBody(activity.getBody(), activity.getBodyFormat());
+            String renderedBody = ConceptBodyRenderer.render(activity.getBody(), activity.getBodyFormat());
             return new LessonActivityCard(activity.getActivityId(), kind, activity.getTitle(), status, false,
                     renderedBody, activity.getBodyFormat(), tags, activity.getToolNoteUrl(), quizActivityId,
                     null, null, null, tagIds, conceptService.isBookmarked(memberId, activity.getActivityId()),
@@ -196,21 +194,6 @@ public class LessonPageService {
                 .orElse(null);
         return new LessonActivityCard(null, LessonActivityCard.EXAM, "모의고사", ActivityStatus.LOCKED, false,
                 null, null, null, null, null, null, null, previousActivityId);
-    }
-
-    /*
-     * 개념 본문을 안전한 HTML 로 만든다. 마크다운 파서 라이브러리는 추가하지 않는다 (CLAUDE.md "의존성을
-     * 마음대로 추가하지 않는다"). RICH_TEXT 는 이미 HTML 이라고 보고 그대로 쓰고, MARKDOWN 은 태그를
-     * 이스케이프한 뒤 줄바꿈만 <br> 로 바꾸는 최소 처리만 한다.
-     */
-    private String renderBody(String body, BodyFormat bodyFormat) {
-        if (body == null) {
-            return null;
-        }
-        if (bodyFormat == BodyFormat.RICH_TEXT) {
-            return body;
-        }
-        return HtmlUtils.htmlEscape(body).replace("\r\n", "\n").replace("\n", "<br>\n");
     }
 
     private ActivityStatus statusOf(ActivityProgress progress) {
