@@ -109,6 +109,28 @@
             </table>
         </section>
 
+        <h2 class="vl-admin-dash__subtitle">활동별 이탈률</h2>
+
+        <section class="vl-admin-dash__track" id="dashboard-activity-dropoff">
+            <p class="vl-admin-dash__track-summary">기간에 열린 활동(개념·퀴즈) 중 아직 끝내지 못한 비율입니다 (진행 중인 학습자 포함). 어느 활동에서 막히는지 볼 수 있습니다.</p>
+            <p class="vl-ui-notice is-empty" th:if="${dashboard.analytics().activityDropOffs().empty}">집계된 데이터가 없습니다</p>
+            <table class="vl-admin-dash__table" th:unless="${dashboard.analytics().activityDropOffs().empty}">
+                <thead>
+                <tr><th>코스</th><th>수업</th><th>활동</th><th>열린 수</th><th>못 끝낸 수</th><th>비율</th></tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${dashboard.analytics().activityDropOffs()}">
+                    <td th:text="${item.courseTitle()}">코스 이름</td>
+                    <td th:text="${item.lessonTitle()}">수업 이름</td>
+                    <td th:text="${item.activityTitle()}">활동 이름</td>
+                    <td th:text="${item.eligibleCount()}">0</td>
+                    <td th:text="${item.dropOffCount()}">0</td>
+                    <td th:text="|${item.dropOffRate()}%|">0%</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
         <h2 class="vl-admin-dash__subtitle">퀴즈 통과율·개념별 오답률</h2>
 
         <section class="vl-admin-dash__track" id="dashboard-quiz">
