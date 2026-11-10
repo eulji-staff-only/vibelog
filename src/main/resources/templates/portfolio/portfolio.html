@@ -66,17 +66,27 @@
                     <p class="pf-msg is-error" role="alert" data-step-error hidden></p>
                 </section>
 
-                <section class="pf-section" aria-labelledby="pf-agent-h">
+                <!-- 평가 에이전트는 포트폴리오를 제출한 뒤에 열린다 (#404). 수정 상태(editPortfolioId 있음)에서만 안내·설정 파일을 그리고,
+                     최초 제출 화면과 제출 뒤 보기 화면에는 어디서 볼 수 있는지만 알려 준다 -->
+                <section class="pf-section" aria-labelledby="pf-agent-h" th:if="${editPortfolioId != null}">
                     <h2 class="pf-h2" id="pf-agent-h">평가 에이전트 안내</h2>
                     <div class="pf-notice">
                         <strong>실행은 내 환경에서 합니다.</strong>
-                        <p>서비스는 설명과 설정 파일만 제공하고, 실행 결과는 자동으로 받지 않습니다. 점검 결과는 제출 양식의 선택 항목에 직접 적을 수 있습니다.</p>
+                        <p>서비스는 설명과 설정 파일만 제공하고, 실행 결과는 자동으로 받지 않습니다. 점검 결과는 아래 수정 양식의 '에이전트 점검 결과' 칸(선택)에 직접 적을 수 있습니다.</p>
                     </div>
                     <div th:if="${page.hasAgentFile}">
                         <a class="pf-btn pf-btn-outline" th:href="@{/courses/{id}/portfolio/agent-file(id=${page.courseId})}">설정 파일 내려받기</a>
                     </div>
                     <!-- 세팅 방법·평가 기준·실행 방법·"실행이 안 될 때"는 운영자가 한 칸(agent_guide)에 함께 쓴다 (FR-PRT-013) -->
                     <p class="pf-guide pf-pre" th:text="${page.agentGuide}">[세팅 방법 · 평가 기준 · 실행 방법 · 실행이 안 될 때]</p>
+                </section>
+                <section class="pf-section" aria-labelledby="pf-agent-h" th:unless="${editPortfolioId != null}">
+                    <h2 class="pf-h2" id="pf-agent-h">평가 에이전트 안내</h2>
+                    <div class="pf-notice" data-agent-after-submit>
+                        <strong>평가 에이전트는 포트폴리오를 제출한 뒤에 열립니다.</strong>
+                        <p th:if="${page.submittedPortfolioId == null}">제출한 뒤 내 포트폴리오 &gt; 수정에서 확인할 수 있습니다.</p>
+                        <p th:if="${page.submittedPortfolioId != null}">내 포트폴리오 &gt; 수정에서 확인할 수 있습니다. 아래 '수정'을 눌러도 됩니다.</p>
+                    </div>
                 </section>
 
                 <!-- 4번 FAQ (P2 FR-PRT-008): 자주 막히는 문제와 해결 방법. 없으면 그리지 않는다 -->
@@ -164,7 +174,8 @@
 
                         <hr class="pf-divider">
 
-                        <div class="pf-field">
+                        <!-- 점검 결과 칸은 수정 상태에서만 둔다. 최초 제출에서는 에이전트를 아직 볼 수 없다 (#404) -->
+                        <div class="pf-field" th:if="${editPortfolioId != null}">
                             <label class="pf-label" for="pf-agent-result">에이전트 점검 결과 (선택)</label>
                             <textarea class="pf-input pf-textarea" id="pf-agent-result" placeholder="평가 에이전트를 실행한 결과를 직접 적어 주세요" data-key-check th:field="*{agentResult}"></textarea>
                             <span class="pf-msg is-error" role="alert" th:if="${#fields.hasErrors('agentResult')}" th:errors="*{agentResult}">점검 결과 오류</span>

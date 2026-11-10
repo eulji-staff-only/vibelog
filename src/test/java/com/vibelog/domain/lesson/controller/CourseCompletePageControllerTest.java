@@ -61,7 +61,9 @@ class CourseCompletePageControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("lesson/course-complete"))
                 .andExpect(content().string(Matchers.containsString("코스를 완료했습니다")))
-                .andExpect(content().string(Matchers.containsString("완료 조건")));
+                .andExpect(content().string(Matchers.containsString("완료 조건")))
+                // 평가 에이전트는 제출 뒤 내 포트폴리오 > 수정에서 열린다 (#404)
+                .andExpect(content().string(Matchers.containsString("채점 에이전트는 내 포트폴리오 &gt; 수정에 들어가서 확인할 수 있습니다.")));
     }
 
     @Test
@@ -86,6 +88,8 @@ class CourseCompletePageControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("lesson/course-complete"))
                 .andExpect(content().string(Matchers.containsString("한 걸음 남았어요")))
+                // 아직 완료 전이면 에이전트 안내를 보여 주지 않는다 (제출해야 열린다)
+                .andExpect(content().string(Matchers.not(Matchers.containsString("data-agent-hint"))))
                 // 설계서 U-18 예외: 남은 조건 바로가기는 포트폴리오(U-17)로 보낸다 (#360)
                 .andExpect(content().string(Matchers.containsString("href=\"/courses/1/portfolio\">포트폴리오로 가기")));
     }
