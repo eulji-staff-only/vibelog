@@ -6,11 +6,12 @@
  * 마지막 묶음은 배지 획득 축하 모달(M-10, #202)의 포커스.
  */
 
-/* 지금 보는 메뉴 강조 (1-5, #362): 주소의 첫 경로가 같은 메뉴. /courses/3/lessons/5 → 코스, /contests/7 → 콘테스트 */
+/* 지금 보는 메뉴 강조 (1-5, #362): 주소의 첫 경로가 같은 메뉴. /courses/3/lessons/5 → 코스, /contests/7 → 콘테스트.
+   화면 낭독기에는 그 주소 자체면 "현재 페이지"(page), 아래 화면이면 "현재 메뉴"(true)로 알린다 */
 document.querySelectorAll('.vl-header__nav a').forEach((link) => {
     if (link.pathname.split('/')[1] !== location.pathname.split('/')[1]) return;
     link.classList.add('is-active');
-    link.setAttribute('aria-current', 'page');
+    link.setAttribute('aria-current', link.pathname === location.pathname ? 'page' : 'true');
 });
 
 (() => {
