@@ -87,6 +87,22 @@ class LessonPageControllerTest {
 
     @Test
     @WithMockUser
+    void 공통_요청_처리_스크립트는_한_번만_불러온다() throws Exception {
+        // 헤더가 이미 request.js 를 불러온다(#367). 두 번 불러오면 첫 리스너가 단 제출 표시를 두 번째가 중복 제출로 보고 읽기 완료·모의고사 응시 폼이 막힌다
+        LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
+        LessonPageData data = new LessonPageData(1L, 1L, "수업 1", "목표", List.of(quiz));
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(data));
+
+        String body = mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(body.split("/js/request.js", -1).length - 1).isEqualTo(1);
+    }
+
+    @Test
+    @WithMockUser
     void 수업_화면에도_다른_화면과_같은_공통_헤더와_푸터가_그려진다() throws Exception {
         LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
                 ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
