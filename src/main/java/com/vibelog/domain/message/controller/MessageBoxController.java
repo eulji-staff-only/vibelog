@@ -52,6 +52,7 @@ public class MessageBoxController {
             try {
                 Long messageId = messageService.send(memberId, messageWriteRequest.getReceiverMemberId(), messageWriteRequest.getContent());
                 redirectAttributes.addFlashAttribute("toast", "쪽지를 보냈습니다");
+                redirectAttributes.addFlashAttribute("draftClear", "message");   // 작성 중 내용 보관 지우기 (#366, messages.html data-draft)
                 return "redirect:/messages?box=sent&messageId=" + messageId;
             } catch (BusinessException e) {
                 bindingResult.reject(e.getErrorCode().name(), e.getMessage());
@@ -71,6 +72,7 @@ public class MessageBoxController {
             try {
                 messageService.reply(memberId, messageId, messageContentRequest.getContent());
                 redirectAttributes.addFlashAttribute("toast", "답장을 보냈습니다");
+                redirectAttributes.addFlashAttribute("draftClear", "message-reply." + messageId);
                 return "redirect:/messages?box=received&messageId=" + messageId;
             } catch (BusinessException e) {
                 if (e.getErrorCode() == MessageErrorCode.MESSAGE_NOT_FOUND || e.getErrorCode() == CommonErrorCode.NOT_OWNER) {
@@ -95,6 +97,7 @@ public class MessageBoxController {
             try {
                 messageService.send(loginMember.getMemberId(), memberId, messageContentRequest.getContent());
                 redirectAttributes.addFlashAttribute("toast", "쪽지를 보냈습니다");
+                redirectAttributes.addFlashAttribute("draftClear", "message." + memberId);   // profile.html M-13 data-draft
                 return "redirect:/users/" + memberId;
             } catch (BusinessException e) {
                 error = e.getMessage();

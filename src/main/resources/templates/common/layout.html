@@ -9,7 +9,7 @@
   공지 배너(1-5, #186): 기간 안의 배너 공지 1개 "noticeBanner" 를 MessageHeaderAdvice 가 넣는다. 누르면 U-26 (비회원은 로그인으로).
   알림(1-5, #185): 안 읽은 수 "unreadNotificationCount" 는 message 영역 MessageHeaderAdvice 가 모든 화면에 넣는다.
   드롭다운 목록·모두 읽음은 header.js 가 /api/notifications 를 부른다 (CSRF 토큰은 data 속성으로 넘긴다).
-  모든 화면 공통 요청 처리(조회 1회 재시도, 폼 중복 제출 막기, #367)는 static/js/request.js 가 한다. 헤더 없는 수업 화면은 따로 불러온다.
+  모든 화면 공통 요청 처리(조회 1회 재시도, 폼 중복 제출 막기 #367, 작성 중 내용 보관 #366)는 static/js/request.js 가 한다. 헤더 없는 수업 화면은 따로 불러온다.
   배지 획득 축하(M-10, #202): 안 읽은 BADGE 알림 "badgeCelebration" 이 있으면 모달을 띄운다. "확인"은 그 알림 열기
   (읽음 + 마이페이지 배지 탭)라서, 읽기 전까지는 화면마다 다시 뜬다 (contest 명세 결정 10).
 -->
@@ -45,7 +45,9 @@
             <a class="is-primary" href="/signup">회원가입</a>
         </div>
 
-        <div class="vl-header__member" sec:authorize="isAuthenticated()">
+        <div class="vl-header__member" sec:authorize="isAuthenticated()" th:attr="data-draft-owner=${draftOwner}">
+            <!-- 저장에 성공한 폼의 임시 저장을 지운다 (#366). 각 Controller 가 성공할 때 flash 로 draftClear 를 넣는다 -->
+            <span hidden th:if="${draftClear != null}" th:attr="data-draft-clear=${draftClear}"></span>
             <span class="vl-header__nickname" th:text="${loginNickname} ?: '회원'">닉네임</span>
             <a class="is-text" href="/my/learning">내 학습</a>
             <a class="is-text" href="/messages">쪽지</a>
