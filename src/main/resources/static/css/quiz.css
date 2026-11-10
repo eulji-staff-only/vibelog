@@ -120,16 +120,16 @@
 /* 낚시 문제: 연못 위 물고기 4마리. 물고기 자체가 보기 버튼이다 */
 .qz-pond {
     position: relative;
-    height: 320px;
+    height: 360px;
     border-radius: var(--radius-xl);
     background: linear-gradient(var(--tint) 0 22%, var(--link) 22% 100%);
     overflow: hidden;
 }
 .qz-fish {
     position: absolute;
-    width: min(150px, 42%);
+    width: min(210px, 44%);
     min-height: 0;
-    aspect-ratio: 150 / 72;
+    aspect-ratio: 220 / 116;
     padding: 0;
     border: 0;
     background: none;
@@ -142,20 +142,29 @@
 .qz-fish__eye { fill: var(--navy-900); }
 .qz-fish span {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: 26%;
+    right: 30%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-left: 14%;
-    font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
-    font-size: 14px;
+    text-align: center;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.3;
     font-weight: 700;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
     color: var(--navy-900);
 }
-.qz-fish.is-p1 { left: 52%; top: 36%; }
-.qz-fish.is-p2 { left: 6%; top: 28%; }
-.qz-fish.is-p3 { left: 12%; top: 64%; }
-.qz-fish.is-p4 { left: 56%; top: 74%; }
+.qz-fish span.is-long { font-size: 12px; line-height: 1.25; }
+/* 몸통 안(눈·꼬리 사이)에 글자가 들어가는 폭이라 물고기끼리 겹치지 않게 두 줄로 나눠 놓는다 */
+.qz-fish.is-p1 { left: 52%; top: 22%; }
+.qz-fish.is-p2 { left: 4%; top: 10%; }
+.qz-fish.is-p3 { left: 6%; top: 58%; }
+.qz-fish.is-p4 { left: 52%; top: 66%; }
 .qz-fish:hover { filter: brightness(1.06); }
 .qz-fish.is-correct, .qz-fish.is-wrong { background: none; }
 .qz-fish.is-correct .qz-fish__body { fill: var(--success-soft); stroke: var(--success); }
@@ -208,8 +217,13 @@
     .qz-q { font-size: 20px; }
     .qz-choices.is-grid { grid-template-columns: 1fr; }
     .qz-choices.is-grid .qz-choice { min-height: 56px; }
-    .qz-pond { height: 280px; }
-    .qz-fish span { font-size: 12px; }
+    /* 모바일: 물고기를 한 마리씩 위아래로 엇갈려 놓아 글자가 들어갈 폭을 지킨다 */
+    .qz-pond { height: 520px; }
+    .qz-fish { width: min(240px, 64%); }
+    .qz-fish.is-p1 { left: 4%; right: auto; top: 1%; }
+    .qz-fish.is-p2 { left: auto; right: 4%; top: 26%; }
+    .qz-fish.is-p3 { left: 4%; right: auto; top: 51%; }
+    .qz-fish.is-p4 { left: auto; right: 4%; top: 76%; }
     .qz-actions, .qz-result__actions, .qz-result__actions .vl-ui-btn-group { flex-direction: column; align-items: stretch; width: 100%; }
     .qz-actions .vl-ui-btn, .qz-result__actions .vl-ui-btn { width: 100%; }
     .qz-actions .vl-ui-btn-reason { text-align: center; }
