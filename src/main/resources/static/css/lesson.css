@@ -52,6 +52,8 @@
 .ls-panel-desc { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
 .ls-panel-body { display: flex; flex-direction: column; gap: var(--space-4); font-size: 15px; line-height: 1.65; }
 .ls-panel-body p { margin: 0; }
+/* 개념 본문에 넣은 그림 (운영자가 이미지 올리기로 넣은 것). 화면 폭보다 크지 않게 줄인다 */
+.ls-body-img { display: block; max-width: 100%; height: auto; margin: var(--space-3) 0; border-radius: var(--radius-md); }
 .ls-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .ls-tag { padding: 4px 12px; border-radius: var(--radius-pill); background: var(--tint); font-size: 13px; font-weight: 700; color: var(--ink);
     font-family: inherit; border: 1px solid transparent; cursor: pointer; }
