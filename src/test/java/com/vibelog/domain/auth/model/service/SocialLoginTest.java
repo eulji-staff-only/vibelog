@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -105,6 +106,30 @@ class SocialLoginTest {
         response = new MockHttpServletResponse();
         socialLoginSuccessHandler.onAuthenticationSuccess(new MockHttpServletRequest(), response, new TestingAuthenticationToken(again, null));
         assertThat(response.getRedirectedUrl()).isEqualTo("/courses");
+    }
+
+    @Test
+    void 로그인_화면의_redirect_로_소셜_로그인_뒤_돌아가고_한_번_쓰면_지운다() throws Exception {
+        LoginMember member = socialMemberService.login(SocialProvider.GITHUB, "gh-9", "back@vibelog.test", "돌아감");
+        jdbcTemplate.update("INSERT INTO diagnosis_result (member_id, recommended_track_id, status) VALUES (?, NULL, 'SKIPPED')", member.getMemberId());
+        LoginMember again = socialMemberService.login(SocialProvider.GITHUB, "gh-9", "back@vibelog.test", "돌아감");
+        MockHttpSession session = (MockHttpSession) mockMvc.perform(get("/login").param("redirect", "/mypage"))
+                .andReturn().getRequest().getSession();
+
+        assertThat(socialRedirect(session, again)).isEqualTo("/mypage");
+        assertThat(socialRedirect(session, again)).as("한 번 쓰면 지운다").isEqualTo("/courses");
+
+        mockMvc.perform(get("/login").param("redirect", "/mypage").session(session));
+        mockMvc.perform(get("/login").session(session));
+        assertThat(socialRedirect(session, again)).as("redirect 없이 다시 열면 지난 값을 지운다").isEqualTo("/courses");
+    }
+
+    private String socialRedirect(MockHttpSession session, LoginMember member) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setSession(session);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        socialLoginSuccessHandler.onAuthenticationSuccess(request, response, new TestingAuthenticationToken(member, null));
+        return response.getRedirectedUrl();
     }
 
     @Test
