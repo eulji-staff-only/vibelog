@@ -51,7 +51,8 @@
                 <dt>사용한 AI 도구·모델</dt>
                 <dd th:text="${portfolio.aiTools()}">[도구 · 모델]</dd>
                 <dt>작성자</dt>
-                <dd th:text="${portfolio.authorNickname()}">[작성자]</dd>
+                <!-- 작성자 → U-29 공개 프로필 (#361, 게시글 상세와 같은 방식) -->
+                <dd><a class="mp-link" th:href="@{/users/{id}(id=${portfolio.authorId()})}" th:text="${portfolio.authorNickname()}">[작성자]</a></dd>
             </dl>
 
             <section class="mp-section mp-section-first" aria-labelledby="mp-summary-h">

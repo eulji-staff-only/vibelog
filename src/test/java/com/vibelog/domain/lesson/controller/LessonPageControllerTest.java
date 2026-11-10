@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -91,6 +92,41 @@ class LessonPageControllerTest {
     }
 
     @Test
+    @WithMockUser
+    void 새_활동은_새_활동_배지와_선택_학습_안내를_그리고_일반_활동은_그리지_않는다() throws Exception {
+        // PL-ENR-005, #379: 완료한 수업에 나중에 추가된 활동
+        LessonActivityCard newConcept = new LessonActivityCard(2L, LessonActivityCard.CONCEPT, "새 개념",
+                ActivityStatus.IN_PROGRESS, true, "본문", null, List.of(), null, null, null, null, null).markNew();
+        LessonActivityCard oldQuiz = new LessonActivityCard(3L, LessonActivityCard.QUIZ, "옛 퀴즈",
+                ActivityStatus.COMPLETED, false, null, null, null, null, null, null, null, null);
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false))
+                .willReturn(LessonPageResult.ok(new LessonPageData(1L, 1L, "수업 1", "목표", List.of(newConcept, oldQuiz))));
+
+        String body = mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("ls-badge ls-badge-new"),
+                        org.hamcrest.Matchers.containsString("선택 학습이라 하지 않아도 수업 진행과 모의고사에는 영향이 없습니다"))))
+                .andReturn().getResponse().getContentAsString();
+
+        // 새 활동 하나만 표시된다 (목록의 배지 1 + 오른쪽 안내의 배지 1)
+        assertThat(body.split("ls-badge ls-badge-new", -1).length - 1).isEqualTo(2);
+    }
+
+    @Test
+    @WithMockUser
+    void 새_활동이_없으면_새_활동_표시가_없다() throws Exception {
+        LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false))
+                .willReturn(LessonPageResult.ok(new LessonPageData(1L, 1L, "수업 1", "목표", List.of(quiz))));
+
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ls-badge-new"))));
+    }
+
+    @Test
     void 잠긴_활동으로_돌아오면_수업_화면에_안내_토스트를_그린다() throws Exception {
         LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
                 ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
@@ -103,6 +139,57 @@ class LessonPageControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString(
                         "role=\"status\">" + LessonErrorCode.ACTIVITY_LOCKED.getMessage())));
+    }
+
+    @Test
+    @WithMockUser
+    void 공통_요청_처리_스크립트는_한_번만_불러온다() throws Exception {
+        // 헤더가 이미 request.js 를 불러온다(#367). 두 번 불러오면 첫 리스너가 단 제출 표시를 두 번째가 중복 제출로 보고 읽기 완료·모의고사 응시 폼이 막힌다
+        LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
+        LessonPageData data = new LessonPageData(1L, 1L, "수업 1", "목표", List.of(quiz));
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(data));
+
+        String body = mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(body.split("/js/request.js", -1).length - 1).isEqualTo(1);
+    }
+
+    @Test
+    @WithMockUser
+    void 수업_화면에도_다른_화면과_같은_공통_헤더와_푸터가_그려진다() throws Exception {
+        LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
+        LessonPageData data = new LessonPageData(1L, 1L, "수업 1", "목표", List.of(quiz));
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(data));
+
+        // #358: 이 화면만 헤더가 없어 알림·공지 배너·메뉴가 안 보이던 문제
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("vl-header"),
+                        org.hamcrest.Matchers.containsString("vl-footer"))));
+    }
+
+    @Test
+    @WithMockUser
+    void 잠금_안내와_퀴즈_설명에는_고정_통과_비율을_쓰지_않는다() throws Exception {
+        // 통과 기준이 활동마다(activity.pass_rate) 달라서 "정답률 50%" 같은 고정 문구가 남으면 안내가 틀린다 (#277, #358)
+        LessonActivityCard lockedConcept = new LessonActivityCard(1L, LessonActivityCard.CONCEPT, "개념 1",
+                ActivityStatus.LOCKED, false, null, null, List.of(), null, null, null, null, null);
+        LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
+                ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
+        LessonPageData data = new LessonPageData(1L, 1L, "수업 1", "목표", List.of(lockedConcept, quiz));
+        given(lessonPageService.getPage(1L, 1L, 1L, null, false)).willReturn(LessonPageResult.ok(data));
+
+        mockMvc.perform(get("/courses/1/lessons/1").with(authentication(loginAs(1L))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.containsString("앞 퀴즈를 통과하면 열립니다."),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("50%")))));
+        assertThat(LessonErrorCode.ACTIVITY_LOCKED.getMessage()).isEqualTo("앞 퀴즈를 통과하면 열립니다.");
     }
 
     private UsernamePasswordAuthenticationToken loginAsAdmin(long memberId) {

@@ -89,7 +89,7 @@ public class PortfolioManageService {
                 : courseReader.getCourseTitles(List.of(p.getCourseId())).get(p.getCourseId());
         return new PortfolioDetailView(p.getPortfolioId(), p.getTitle(), p.getResultUrl(), p.getSummary(),
                 p.getRetrospective(), p.getAiTools(), p.getAgentResult(), p.getScreenshotUrl(),
-                p.getCourseId(), courseTitle, memberReader.getNickname(p.getMemberId()),
+                p.getCourseId(), courseTitle, p.getMemberId(), memberReader.getNickname(p.getMemberId()),
                 p.getCreatedAt(), p.isPublic(), mine, reportHidden);
     }
 

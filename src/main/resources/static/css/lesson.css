@@ -42,6 +42,9 @@
 .ls-badge-success { background: var(--success-soft); color: var(--success); }
 .ls-badge-strong { background: var(--navy-900); color: var(--on-navy); }
 .ls-badge-locked { background: var(--line-soft); color: var(--ink-muted); }
+/* 완료한 수업에 나중에 추가된 새 활동 표시 (PL-ENR-005) */
+.ls-badge-new { background: var(--surface-raised); color: var(--ink); border: 1px solid var(--line-strong); }
+.ls-new-note { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: 14px; line-height: 1.6; color: var(--ink-muted); }
 
 /* 오른쪽 선택한 활동 */
 .ls-content { flex: 1 1 0; min-width: 0; background: var(--surface-raised); border-radius: var(--radius-xl);

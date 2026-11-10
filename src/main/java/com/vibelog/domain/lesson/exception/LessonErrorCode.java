@@ -37,7 +37,8 @@ public enum LessonErrorCode implements ErrorCode {
      * 던지지 않는다. 메시지만 이 enum 에서 가져오고, 실제 판단·리다이렉트는 LessonPageService·LessonActivityService가 한다.
      */
     LESSON_LOCKED(HttpStatus.FORBIDDEN, "이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다."),
-    ACTIVITY_LOCKED(HttpStatus.FORBIDDEN, "앞 퀴즈를 정답률 50% 이상으로 통과하면 열립니다.");
+    /* 통과 기준이 활동마다(activity.pass_rate) 달라서 문구에 비율을 넣지 않는다 (_template.md 7장, PL-LSN-002, #277) */
+    ACTIVITY_LOCKED(HttpStatus.FORBIDDEN, "앞 퀴즈를 통과하면 열립니다.");
 
     private final HttpStatus status;
     private final String message;
