@@ -29,8 +29,8 @@ mv "$file.tmp" "$file"
 echo "$(date '+%F %T') 백업 완료: $file ($(du -h "$file" | cut -f1))"
 
 # 새것부터 KEEP_DAYS 개만 남긴다 (매일 1개라 KEEP_DAYS 일치). 날짜로 지우면 백업이 며칠 실패했을 때 남은 백업까지 다 지워지므로 개수로 센다.
-# 파일 이름이 날짜·시각 순이라 이름순 = 오래된 순이다
-ls -1 "$BACKUP_DIR/$DB_NAME"-*.sql.gz | sort | head -n -"$KEEP_DAYS" | xargs -r rm --
+# 파일 이름이 날짜·시각 순이라 이름순 = 오래된 순이다. 폴더 경로에 공백이 있어도 되게 NUL 로 나눠 넘긴다
+printf '%s\0' "$BACKUP_DIR/$DB_NAME"-*.sql.gz | sort -z | head -z -n -"$KEEP_DAYS" | xargs -0 -r rm --
 
 # 서버가 통째로 망가져도 복구할 수 있게 다른 곳에도 둔다. 보내기만 하고(--delete 없음) 원격 보관 개수는 원격에서 따로 관리한다.
 # BatchMode: 암호 있는 SSH 키 등으로 비대화형 접속이 안 되면 cron 에서 기다리지 않고 바로 실패한다

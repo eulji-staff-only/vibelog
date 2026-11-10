@@ -73,10 +73,11 @@ vibelog.example.com {
    10 4 * * * BACKUP_REMOTE=backup@10.0.0.5:/backups/vibelog/ /opt/vibelog/scripts/backup-db.sh >> /var/log/vibelog-backup.log 2>&1
    ```
 
-   - 등록 전에 cron 과 같은 조건(백업 계정, 비대화형)으로 접속되는지 본다. "ok" 가 안 나오면 cron 에서도 원격 복사가 실패한다.
+   - 등록 전에 cron 과 같은 조건(백업 계정, 비대화형)으로 접속되는지 보고, 원격 백업 폴더를 만든다.
+     "ok" 가 안 나오면 cron 에서도 원격 복사가 실패한다. 폴더가 없으면 `rsync` 가 만들지 못해 원격 복사가 매일 실패한다.
 
      ```
-     sudo -u vibelog ssh -o BatchMode=yes backup@10.0.0.5 true && echo ok
+     sudo -u vibelog ssh -o BatchMode=yes backup@10.0.0.5 'mkdir -p -m 700 /backups/vibelog' && echo ok
      ```
 
    - 원격 서버에서는 새것부터 7개만 남기는 cron 을 따로 둔다 (원격 보관 개수는 원격이 관리).
