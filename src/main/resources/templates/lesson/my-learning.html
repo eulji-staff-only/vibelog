@@ -108,7 +108,8 @@
                                         <!-- 잠긴 수업: 왜 잠겼는지와 이전 수업 바로가기 (FR-ENR-003, 설계서 U-12 예외) -->
                                         <div class="ml-lesson-lock" th:if="${lesson.status().isLocked()}">
                                             <p class="ml-muted">이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다.</p>
-                                            <a class="ml-link" th:if="${lessonIter.index > 0}"
+                                            <!-- 바로 앞 수업도 잠겼으면 그 수업으로 보내도 잠김 화면으로 돌아오므로 링크를 숨긴다 -->
+                                            <a class="ml-link" th:if="${lessonIter.index > 0 and !course.lessons()[lessonIter.index - 1].status().isLocked()}"
                                                th:href="@{/courses/{courseId}/lessons/{lessonId}(courseId=${course.courseId()},lessonId=${course.lessons()[lessonIter.index - 1].lessonId()})}">이전 수업으로</a>
                                         </div>
                                     </li>

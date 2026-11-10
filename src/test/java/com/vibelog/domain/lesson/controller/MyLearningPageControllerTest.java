@@ -214,14 +214,17 @@ class MyLearningPageControllerTest {
         MyLearningCourseCard course = new MyLearningCourseCard(
                 1L, "트랙", "코스", 0, "다음",
                 List.of(new MyLearningLessonCard(11L, 1, "수업 1", LessonStatus.IN_PROGRESS, LessonExamStatus.OPEN),
-                        new MyLearningLessonCard(12L, 2, "수업 2", LessonStatus.LOCKED, LessonExamStatus.LOCKED)),
+                        new MyLearningLessonCard(12L, 2, "수업 2", LessonStatus.LOCKED, LessonExamStatus.LOCKED),
+                        new MyLearningLessonCard(13L, 3, "수업 3", LessonStatus.LOCKED, LessonExamStatus.LOCKED)),
                 PortfolioStatus.LOCKED, List.of(), false, null);
 
         openMyLearning(List.of(course), List.of())
                 .andExpect(status().isOk())
                 .andExpect(content().string(Matchers.allOf(
                         Matchers.containsString("이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다."),
-                        Matchers.containsString("href=\"/courses/1/lessons/11\">이전 수업으로"))));
+                        Matchers.containsString("href=\"/courses/1/lessons/11\">이전 수업으로"),
+                        // 잠긴 수업이 연속이면 앞의 잠긴 수업(12)으로 보내지 않는다 (가도 잠김 화면으로 돌아온다)
+                        Matchers.not(Matchers.containsString("href=\"/courses/1/lessons/12\">이전 수업으로")))));
     }
 
     @Test
