@@ -83,7 +83,7 @@ vibelog.example.com {
    - 원격 서버에서는 새것부터 7개만 남기는 cron 을 따로 둔다 (원격 보관 개수는 원격이 관리).
 
      ```
-     20 5 * * * cd /backups/vibelog && ls -1 vibelog-*.sql.gz | sort | head -n -7 | xargs -r rm --
+     20 5 * * * cd /backups/vibelog && ls -1 vibelog-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9].sql.gz | sort | head -n -7 | xargs -r rm --
      ```
 
    - 다음 날 로그에 그날 "원격 복사 완료" 가 있는지, 원격에 그날 파일이 있는지 본다.
