@@ -32,8 +32,13 @@ public class LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
+        sendToDestination(response, authentication, request.getParameter("redirect"));
+    }
+
+    /* 소셜 로그인(SocialLoginSuccessHandler)은 redirect 를 요청 값이 아니라 세션에서 꺼내 넘긴다 (#363) */
+    void sendToDestination(HttpServletResponse response, Authentication authentication, String redirect) throws IOException {
         loginLockPolicy.reset(authentication.getName());
-        response.sendRedirect(destination(request.getParameter("redirect"), (LoginMember) authentication.getPrincipal()));
+        response.sendRedirect(destination(redirect, (LoginMember) authentication.getPrincipal()));
     }
 
     private String destination(String redirect, LoginMember member) {
