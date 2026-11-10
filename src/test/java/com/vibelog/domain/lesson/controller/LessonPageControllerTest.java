@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -85,6 +86,7 @@ class LessonPageControllerTest {
     }
 
     @Test
+    @WithMockUser
     void 수업_화면에도_다른_화면과_같은_공통_헤더와_푸터가_그려진다() throws Exception {
         LessonActivityCard quiz = new LessonActivityCard(2L, LessonActivityCard.QUIZ, "퀴즈 1",
                 ActivityStatus.IN_PROGRESS, true, null, null, null, null, null, null, null, null);
@@ -100,6 +102,7 @@ class LessonPageControllerTest {
     }
 
     @Test
+    @WithMockUser
     void 잠금_안내와_퀴즈_설명에는_고정_통과_비율을_쓰지_않는다() throws Exception {
         // 통과 기준이 활동마다(activity.pass_rate) 달라서 "정답률 50%" 같은 고정 문구가 남으면 안내가 틀린다 (#277, #358)
         LessonActivityCard lockedConcept = new LessonActivityCard(1L, LessonActivityCard.CONCEPT, "개념 1",
