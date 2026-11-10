@@ -33,7 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 /* 메인 화면 `/` 이 공통 레이아웃(common/main) 화면 이름을 돌려주는지, 로그인 회원이면 헤더용 닉네임을
-   모델에 담는지 확인한다 (#132). (DB 연결 없이 도는 슬라이스 테스트) */
+   모델에 담는지 확인한다 (#132). 닉네임은 모든 화면에 붙는 HeaderAdvice 가 넣는다 (#362, @WebMvcTest 도 Advice 를 읽는다).
+   (DB 연결 없이 도는 슬라이스 테스트) */
 @WebMvcTest(MainController.class)
 @WithMockUser   // @WebMvcTest 는 SecurityConfig 를 읽지 않고 기본 보안으로 모든 주소를 막는다 (CLAUDE.md 화면 선행 작업)
 class MainControllerTest {
