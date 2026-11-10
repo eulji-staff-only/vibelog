@@ -1,0 +1,21 @@
+<!doctype html>
+<!--
+  E-04 점검 중 (PL-ERR-006, 화면 흐름 1-4, #365). MaintenanceFilter 가 점검 중(MAINTENANCE=true)일 때 모든 화면 요청에 503 으로 보낸다.
+  점검 중에는 DB·로그인을 쓰지 않아도 열리도록 Thymeleaf 가 아닌 정적 파일이다. 모양은 error/error.html 과 같은 클래스를 쓴다.
+-->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>서비스 점검 중 — 바이브로그</title>
+    <link rel="stylesheet" href="/css/common.css">
+</head>
+<body>
+<main class="vl-error">
+    <p class="vl-error__code">503</p>
+    <h1 class="vl-error__title">서비스 점검 중입니다</h1>
+    <p class="vl-error__desc">더 나은 서비스를 위해 점검하고 있어요. 점검이 끝나면 다시 이용할 수 있습니다.</p>
+    <p class="vl-error__desc">문의 <a href="mailto:support@vibelog.example">support@vibelog.example</a></p>
+</main>
+</body>
+</html>

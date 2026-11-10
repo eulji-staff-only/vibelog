@@ -85,7 +85,25 @@ class CourseCompletePageControllerTest {
                                 List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))))))
                 .andExpect(status().isOk())
                 .andExpect(view().name("lesson/course-complete"))
-                .andExpect(content().string(Matchers.containsString("한 걸음 남았어요")));
+                .andExpect(content().string(Matchers.containsString("한 걸음 남았어요")))
+                // 설계서 U-18 예외: 남은 조건 바로가기는 포트폴리오(U-17)로 보낸다 (#360)
+                .andExpect(content().string(Matchers.containsString("href=\"/courses/1/portfolio\">포트폴리오로 가기")));
+    }
+
+    @Test
+    void 완료했으면_남은_조건_바로가기를_보여주지_않는다() throws Exception {
+        LoginMember loginMember = mock(LoginMember.class);
+        given(loginMember.getMemberId()).willReturn(1L);
+        CourseCompleteView view = new CourseCompleteView(
+                1L, "테스트 트랙", "테스트 코스", true, LocalDateTime.of(2026, 10, 20, 14, 32),
+                List.of(new CourseCompleteCondition("포트폴리오 제출", true)), List.of());
+        given(courseCompleteService.getCourseComplete(1L, 1L)).willReturn(Optional.of(view));
+
+        mockMvc.perform(get("/courses/1/complete")
+                        .with(authentication(new UsernamePasswordAuthenticationToken(loginMember, "N/A",
+                                List.of(new SimpleGrantedAuthority("ROLE_LEARNER"))))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.not(Matchers.containsString("포트폴리오로 가기"))));
     }
 
     @Test

@@ -76,7 +76,8 @@
 <!-- M-13 쪽지 작성 (API-MSG-04, #184). 보내기에 실패하면 flash messageContent·messageError 를 받아 연 채로 보여준다 -->
 <div class="vl-ui-modal" id="message-modal" data-ui-modal="message-modal" role="dialog" aria-modal="true"
      aria-labelledby="message-modal-title" th:unless="${profile.me()}" th:hidden="${messageError == null}">
-    <form class="vl-ui-modal__box" method="post" th:action="@{/users/{id}/messages(id=${profile.memberId()})}">
+    <form class="vl-ui-modal__box" method="post" th:action="@{/users/{id}/messages(id=${profile.memberId()})}"
+          th:attr="data-draft=|message.${profile.memberId()}|">
         <h2 class="vl-ui-modal__title" id="message-modal-title" tabindex="-1">쪽지 보내기</h2>
         <p class="vl-ui-modal__body" th:text="|받는 사람: ${profile.nickname()}|">받는 사람: 닉네임</p>
         <div class="cm-field">
