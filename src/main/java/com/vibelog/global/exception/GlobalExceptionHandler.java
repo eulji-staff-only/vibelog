@@ -21,6 +21,8 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
 
+import java.util.UUID;
+
 /*
  * [GlobalExceptionHandler]
  * 역할 : 모든 Controller 에서 발생한 예외를 한 곳에서 받아 응답한다.
@@ -28,6 +30,7 @@ import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
  * 책임 : - Controller / Service 에 try-catch 가 흩어지지 않게 한다. (Controller 는 정상 흐름만 작성)
  *        - 예상하지 못한 예외는 로그를 남기고, 내부 정보(스택트레이스)는 화면·JSON 에 노출하지 않는다.
  *        - 7장 표에 이름이 없는 실패는 SERVER_ERROR(500) 로 보낸다.
+ *        - 500 은 문의용 오류 번호(errorId)를 만들어 로그와 화면에 같은 값으로 남긴다 (PL-ERR-003, #365).
  */
 @Slf4j
 @ControllerAdvice
@@ -49,8 +52,9 @@ public class GlobalExceptionHandler {
         if (fieldError == null) {
             return error(request, HttpStatus.BAD_REQUEST, INVALID_INPUT, "입력 값을 확인해주세요.");
         }
+        // 필드 이름(passRate 등)은 기술 용어라 보여 주지 않는다 (PL-ERR-001, #365)
         String message = fieldError.isBindingFailure()
-                ? fieldError.getField() + "의 형식이 올바르지 않습니다."
+                ? "입력한 값의 형식이 올바르지 않습니다. 다시 확인해 주세요."
                 : fieldError.getDefaultMessage();
         return error(request, HttpStatus.BAD_REQUEST, INVALID_INPUT, message);
     }
@@ -107,8 +111,18 @@ public class GlobalExceptionHandler {
     /* 그 외 모든 예외 */
     @ExceptionHandler(Exception.class)
     public ModelAndView handleException(Exception e, HttpServletRequest request) {
-        log.error("예상하지 못한 예외", e);
-        return error(request, HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_ERROR", "잠시 후 다시 시도해 주세요.");
+        String errorId = newErrorId();
+        log.error("예상하지 못한 예외 [오류 번호 {}] {}", errorId, request.getRequestURI(), e);
+        ModelAndView mv = error(request, HttpStatus.INTERNAL_SERVER_ERROR, "SERVER_ERROR", "잠시 후 다시 시도해 주세요.");
+        if (!ErrorResponse.isApiRequest(request)) {
+            mv.addObject("errorId", errorId);   // JSON 은 {code, message} 그대로 (값이 둘이면 감싸져 모양이 바뀐다)
+        }
+        return mv;
+    }
+
+    /* 문의용 오류 번호: UUID 앞 8자리. 사용자가 알려 주면 로그에서 "오류 번호 xxxxxxxx" 로 찾는다 */
+    static String newErrorId() {
+        return UUID.randomUUID().toString().substring(0, 8);
     }
 
     private ModelAndView error(HttpServletRequest request, HttpStatus status, String code, String message) {
