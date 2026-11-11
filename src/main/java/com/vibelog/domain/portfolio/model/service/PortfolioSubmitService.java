@@ -33,6 +33,8 @@ import static com.vibelog.domain.portfolio.model.policy.ApiKeyMasker.mask;
  *        - API 키는 글 칸(제목·요약·회고·AI 도구·에이전트 점검 결과)에서 가린다. 결과물 링크는 URL 이라 가리지 않는다.
  *        - 에이전트 점검 결과는 명세에 길이가 없어 저장 칸 크기(agent_result TEXT, 65,535바이트)를 가린 뒤의 값으로 검사한다.
  *          넘으면 INVALID_INPUT (Controller 가 그 칸의 메시지로 바꾼다).
+ *        - 코스 포트폴리오의 최초 제출은 에이전트 점검 결과를 받지 않는다 (보내도 버린다). 평가 에이전트는 제출 뒤 수정에서
+ *          열리므로 점검 결과도 그때 적는다 (#404).
  *        - 수정은 제출과 같은 폼·같은 검사(인증·금칙어·API 키·길이)를 하고 최신본으로 덮는다 (PL-PRT-007).
  *          본인 것이 아니면 NOT_OWNER. 스크린샷은 새로 올렸을 때만 바꾼다.
  *          콘테스트 출품 중(투표가 끝나기 전)이면 contest 계약 ⑮ isEntered 로 막는다 (CONTEST_ENTERED, PL-PRT-007, #314).
@@ -66,15 +68,16 @@ public class PortfolioSubmitService {
         if (existing.isPresent() && !existing.get().isDeleted()) {
             throw new BusinessException(PortfolioErrorCode.ALREADY_SUBMITTED);
         }
-        String agentResult = checkAndMaskAgentResult(form);
+        // 최초 제출에는 에이전트 점검 결과를 받지 않는다. 평가 에이전트는 제출 뒤 수정에서 열리므로 값이 와도 버린다 (#404)
+        checkBannedWords(form);
         String screenshotUrl = saveScreenshot(screenshot);
         if (existing.isPresent()) {
             existing.get().resubmit(mask(form.getTitle()), form.getResultUrl(), mask(form.getSummary()),
-                    mask(form.getRetrospective()), mask(form.getAiTools()), form.getIsPublic(), agentResult, screenshotUrl);
+                    mask(form.getRetrospective()), mask(form.getAiTools()), form.getIsPublic(), null, screenshotUrl);
         } else {
             portfolioRepository.save(Portfolio.create(memberId, courseId, mask(form.getTitle()), form.getResultUrl(),
                     mask(form.getSummary()), mask(form.getRetrospective()), mask(form.getAiTools()), form.getIsPublic(),
-                    agentResult, screenshotUrl));
+                    null, screenshotUrl));
         }
         portfolioEnrollmentProgress.recordSubmitted(memberId, courseId);
     }
@@ -83,7 +86,7 @@ public class PortfolioSubmitService {
     @Transactional
     public void submitPersonal(Long memberId, PortfolioSubmitForm form) {
         requireEmailVerified(memberId);
-        checkPersonalBannedWords(form);
+        checkBannedWords(form);
         portfolioRepository.save(Portfolio.createPersonal(memberId, mask(form.getTitle()), form.getResultUrl(),
                 mask(form.getSummary()), mask(form.getRetrospective()), mask(form.getAiTools()), form.getIsPublic()));
     }
@@ -99,7 +102,7 @@ public class PortfolioSubmitService {
         String agentResult = null;
         String screenshotUrl = null;
         if (portfolio.isPersonal()) {
-            checkPersonalBannedWords(form);   // 개인 작품은 에이전트 점검 결과·스크린샷을 받지 않는다
+            checkBannedWords(form);   // 개인 작품은 에이전트 점검 결과·스크린샷을 받지 않는다
         } else {
             agentResult = checkAndMaskAgentResult(form);
             screenshotUrl = saveScreenshot(screenshot);
@@ -129,7 +132,8 @@ public class PortfolioSubmitService {
         return agentResult;
     }
 
-    private void checkPersonalBannedWords(PortfolioSubmitForm form) {
+    /* 에이전트 점검 결과를 받지 않는 제출(개인 작품, 코스 최초 제출)의 금칙어 검사 */
+    private void checkBannedWords(PortfolioSubmitForm form) {
         bannedWordPolicy.check(form.getTitle(), form.getSummary(), form.getRetrospective(), form.getAiTools());
     }
 

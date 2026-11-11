@@ -125,8 +125,56 @@ class PortfolioServiceTest {
                 .extracting("errorCode").isEqualTo(PortfolioErrorCode.PORTFOLIO_NOT_FOUND);
     }
 
+    /* 평가 에이전트는 포트폴리오를 제출한 뒤에 열린다 (#404) */
     @Test
-    void 설정_파일은_열렸고_올려_둔_파일이_있을_때만_내려받는다() {
+    void 제출하기_전에는_에이전트_안내와_설정_파일_값을_주지_않는다() {
+        jdbcTemplate.update("UPDATE portfolio_assignment SET agent_file_url = '/uploads/agent.md' WHERE portfolio_assignment_id = 9201");
+        entityManager.clear();
+
+        PortfolioPageView page = portfolioService.getPage(OPEN, COURSE).orElseThrow();
+
+        assertThat(page.unlocked()).isTrue();
+        assertThat(page.agentGuide()).isNull();
+        assertThat(page.hasAgentFile()).isFalse();
+    }
+
+    @Test
+    void 제출한_뒤에는_에이전트_안내와_설정_파일_값을_준다() {
+        jdbcTemplate.update("UPDATE portfolio_assignment SET agent_file_url = '/uploads/agent.md' WHERE portfolio_assignment_id = 9201");
+        entityManager.clear();
+        submitPortfolio();
+
+        PortfolioPageView page = portfolioService.getPage(OPEN, COURSE).orElseThrow();
+
+        assertThat(page.agentGuide()).isEqualTo("세팅 방법");
+        assertThat(page.hasAgentFile()).isTrue();
+    }
+
+    @Test
+    void 제출하기_전에는_주소를_직접_열어도_설정_파일을_받을_수_없다() {
+        jdbcTemplate.update("UPDATE portfolio_assignment SET agent_file_url = '/uploads/agent.md' WHERE portfolio_assignment_id = 9201");
+        entityManager.clear();
+
+        assertThatThrownBy(() -> portfolioService.getAgentFileUrl(OPEN, COURSE))
+                .extracting("errorCode").isEqualTo(PortfolioErrorCode.AGENT_NOT_OPEN);
+    }
+
+    @Test
+    void 제출한_포트폴리오를_지우면_에이전트는_다시_닫힌다() {
+        jdbcTemplate.update("UPDATE portfolio_assignment SET agent_file_url = '/uploads/agent.md' WHERE portfolio_assignment_id = 9201");
+        entityManager.clear();
+        submitPortfolio();
+        jdbcTemplate.update("UPDATE portfolio SET deleted_at = NOW() WHERE member_id = 9201 AND course_id = 9201");
+        entityManager.clear();
+
+        assertThat(portfolioService.getPage(OPEN, COURSE).orElseThrow().agentGuide()).isNull();
+        assertThatThrownBy(() -> portfolioService.getAgentFileUrl(OPEN, COURSE))
+                .extracting("errorCode").isEqualTo(PortfolioErrorCode.AGENT_NOT_OPEN);
+    }
+
+    @Test
+    void 설정_파일은_제출했고_올려_둔_파일이_있을_때만_내려받는다() {
+        submitPortfolio();
         assertThatThrownBy(() -> portfolioService.getAgentFileUrl(OPEN, COURSE))
                 .extracting("errorCode").isEqualTo(PortfolioErrorCode.FILE_NOT_FOUND);
 
@@ -136,6 +184,13 @@ class PortfolioServiceTest {
         assertThat(portfolioService.getAgentFileUrl(OPEN, COURSE)).isEqualTo("/uploads/agent.md");
         assertThatThrownBy(() -> portfolioService.getAgentFileUrl(LOCKED, COURSE))
                 .extracting("errorCode").isEqualTo(PortfolioErrorCode.PORTFOLIO_LOCKED);
+    }
+
+    /* 회원 9201 이 코스 9201 에 포트폴리오를 낸 상태로 만든다 */
+    private void submitPortfolio() {
+        jdbcTemplate.update("INSERT INTO portfolio (member_id, course_id, title, result_url, summary, retrospective, ai_tools, is_public) "
+                + "VALUES (9201, 9201, '내 작품', 'https://github.com/a/app', '요약', '회고', 'Claude Code', TRUE)");
+        entityManager.clear();
     }
 
     private Integer checkRows() {
