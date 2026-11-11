@@ -1233,6 +1233,90 @@ FROM (
 ) n;
 
 -- =====================================================================
+-- 동료 리뷰 · 금칙어 시연 데이터 (#451, FR-REV-001~005, PL-REV-001~003, PL-SEC-003, NFR-SEC-009)
+-- 직접 적는 ID: 이 블록의 모든 표에서 2201~2299 (#450 쪽지·알림·신고 2101~2199 와 겹치지 않게)
+-- 시각은 NOW() 기준. 열린 요청 = 마감(closed_at) 없음 + 요청 후 14일 안 + 작품 공개 중 (PL-REV-002, ReviewRequestRepository)
+-- 리뷰는 한 요청에 1인 1리뷰, 자기 작품 X. 코멘트는 코스 1 과제의 평가 기준 1~3 마다 하나씩 (PL-REV-003, review_criterion 1~3)
+-- "도움됨"(helpful_at)은 요청자만 표시하므로 요청자가 표시한 것으로 넣는다
+-- =====================================================================
+
+-- 리뷰 요청: 열린 요청 5개(42 코스완주 · 1 테스트학습자 · #431 공개 포트폴리오 3개) + 요청자가 직접 마감 1개 + 14일 지나 자동 마감 1개
+--   #431 포트폴리오는 대량 회원(100001~) 것만 골라 리뷰어(3~6, 42)와 주인이 겹치지 않게 한다
+INSERT INTO review_request (review_request_id, portfolio_id, requested_at, closed_at, created_at, updated_at)
+SELECT r.id, r.portfolio_id, r.requested_at, r.closed_at, r.requested_at, COALESCE(r.closed_at, r.requested_at)
+FROM (
+    SELECT 2201 AS id, 1001 AS portfolio_id, NOW() - INTERVAL 2 DAY AS requested_at, CAST(NULL AS DATETIME) AS closed_at
+    UNION ALL SELECT 2202, 1, NOW() - INTERVAL 1 DAY, NULL
+    UNION ALL SELECT 2203, (SELECT f.portfolio_id FROM portfolio f WHERE f.portfolio_id > 100000 AND f.member_id > 100000 AND f.is_public = TRUE AND f.deleted_at IS NULL ORDER BY f.portfolio_id LIMIT 0, 1),
+                     NOW() - INTERVAL 3 HOUR, NULL
+    UNION ALL SELECT 2204, (SELECT f.portfolio_id FROM portfolio f WHERE f.portfolio_id > 100000 AND f.member_id > 100000 AND f.is_public = TRUE AND f.deleted_at IS NULL ORDER BY f.portfolio_id LIMIT 1, 1),
+                     NOW() - INTERVAL 6 DAY, NULL
+    UNION ALL SELECT 2205, (SELECT f.portfolio_id FROM portfolio f WHERE f.portfolio_id > 100000 AND f.member_id > 100000 AND f.is_public = TRUE AND f.deleted_at IS NULL ORDER BY f.portfolio_id LIMIT 2, 1),
+                     NOW() - INTERVAL 10 DAY, NULL
+    UNION ALL SELECT 2206, (SELECT f.portfolio_id FROM portfolio f WHERE f.portfolio_id > 100000 AND f.member_id > 100000 AND f.is_public = TRUE AND f.deleted_at IS NULL ORDER BY f.portfolio_id LIMIT 3, 1),
+                     NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 5 DAY
+    UNION ALL SELECT 2207, (SELECT f.portfolio_id FROM portfolio f WHERE f.portfolio_id > 100000 AND f.member_id > 100000 AND f.is_public = TRUE AND f.deleted_at IS NULL ORDER BY f.portfolio_id LIMIT 4, 1),
+                     NOW() - INTERVAL 16 DAY, NULL
+) r;
+
+-- 리뷰: 42의 작품에 2개(하나는 42가 "도움됨" 표시), 42가 1 테스트학습자 작품에 1개, #431 작품에 2개, 마감된 요청에 1개
+INSERT INTO peer_review (peer_review_id, review_request_id, reviewer_member_id, helpful_at, created_at, updated_at) VALUES
+    (2201, 2201, 5,  NOW() - INTERVAL 20 HOUR, NOW() - INTERVAL 30 HOUR, NOW() - INTERVAL 20 HOUR),
+    (2202, 2201, 6,  NULL,                     NOW() - INTERVAL 4 HOUR,  NOW() - INTERVAL 4 HOUR),
+    (2203, 2202, 42, NULL,                     NOW() - INTERVAL 6 HOUR,  NOW() - INTERVAL 6 HOUR),
+    (2204, 2204, 3,  NULL,                     NOW() - INTERVAL 5 DAY,   NOW() - INTERVAL 5 DAY),
+    (2205, 2205, 4,  NOW() - INTERVAL 8 DAY,   NOW() - INTERVAL 9 DAY,   NOW() - INTERVAL 8 DAY),
+    (2206, 2206, 5,  NULL,                     NOW() - INTERVAL 7 DAY,   NOW() - INTERVAL 7 DAY);
+
+-- 평가 기준별 코멘트 (기준 1 요청 범위 · 2 요청하지 않은 변경 · 3 되돌리기)
+INSERT INTO review_comment (review_comment_id, peer_review_id, review_criterion_id, content, created_at, updated_at)
+SELECT c.id, c.review_id, c.criterion_id, c.content, p.created_at, p.created_at
+FROM (
+    SELECT 2201 AS id, 2201 AS review_id, 1 AS criterion_id,
+           CAST('요청에 고칠 파일(TodoItem.jsx)과 건드리지 않을 곳(스타일 파일)이 둘 다 적혀 있어서 범위가 아주 분명해요.' AS CHAR(500)) AS content
+    UNION ALL SELECT 2202, 2201, 2, 'diff를 보니 요청하지 않은 파일은 바뀌지 않았어요. 커밋 메시지에 확인한 내용을 적어 둔 것도 좋았습니다.'
+    UNION ALL SELECT 2203, 2201, 3, '스타일 변경을 git restore로 되돌린 과정이 회고에 잘 정리돼 있어요. 되돌리기 전후 diff를 같이 붙이면 더 좋겠어요.'
+    UNION ALL SELECT 2204, 2202, 1, '고칠 함수 이름까지 적은 점이 좋아요. 다만 "다른 파일은 바꾸지 마"를 첫 요청부터 넣었으면 더 깔끔했을 것 같아요.'
+    UNION ALL SELECT 2205, 2202, 2, '두 번째 요청 뒤 diff에는 요청하지 않은 변경이 없었어요.'
+    UNION ALL SELECT 2206, 2202, 3, '되돌린 부분이 어느 줄인지 회고에 적어 주면 다른 사람이 따라 하기 쉬울 것 같아요.'
+    UNION ALL SELECT 2207, 2203, 1, '완료 버튼 하나로 범위를 좁힌 요청이라 결과를 확인하기 쉬웠어요.'
+    UNION ALL SELECT 2208, 2203, 2, '요청하지 않은 CSS가 바뀐 것을 diff에서 바로 찾아낸 점이 좋습니다.'
+    UNION ALL SELECT 2209, 2203, 3, '되돌린 뒤 다시 요청한 문장도 회고에 같이 있으면 좋겠어요.'
+    UNION ALL SELECT 2210, 2204, 1, '요청 범위가 기능 하나로 잘 좁혀져 있어요.'
+    UNION ALL SELECT 2211, 2204, 2, '설정 파일 한 줄이 같이 바뀌었는데 의도한 변경인지 회고에 적혀 있으면 좋겠어요.'
+    UNION ALL SELECT 2212, 2204, 3, '의도와 다른 변경을 되돌린 과정이 순서대로 잘 보여요.'
+    UNION ALL SELECT 2213, 2205, 1, '고칠 곳과 건드리지 않을 곳을 목록으로 적은 방식이 보기 좋아요.'
+    UNION ALL SELECT 2214, 2205, 2, '요청하지 않은 파일 변경이 없었어요. 깔끔합니다!'
+    UNION ALL SELECT 2215, 2205, 3, '되돌릴 일이 없었다는 것도 회고에 적어 두면 좋을 것 같아요.'
+    UNION ALL SELECT 2216, 2206, 1, '요청 문장에 범위가 들어 있어 이해하기 쉬웠어요.'
+    UNION ALL SELECT 2217, 2206, 2, 'diff 확인 결과를 표로 정리한 게 인상적이에요.'
+    UNION ALL SELECT 2218, 2206, 3, '되돌리기 전후를 비교한 스크린샷이 있으면 더 좋겠어요.'
+) c
+JOIN peer_review p ON p.peer_review_id = c.review_id;
+
+-- 리뷰 알림 (요청자에게 REVIEW, 문구는 NotificationContractService 그대로). 42는 받은 리뷰 2개 중 하나는 이미 읽음
+INSERT INTO notification (notification_id, member_id, notification_type, target_type, target_id, content, read_at, created_at, updated_at)
+SELECT n.id, n.member_id, 'REVIEW', 'REVIEW', n.review_id,
+       CONCAT('내 작품 「', (SELECT f.title FROM portfolio f JOIN review_request q ON q.portfolio_id = f.portfolio_id
+                            JOIN peer_review p ON p.review_request_id = q.review_request_id WHERE p.peer_review_id = n.review_id), '」에 리뷰가 달렸습니다'),
+       n.read_at, n.created_at, COALESCE(n.read_at, n.created_at)
+FROM (
+    SELECT 2201 AS id, 42 AS member_id, 2201 AS review_id, NOW() - INTERVAL 20 HOUR AS read_at, NOW() - INTERVAL 30 HOUR AS created_at
+    UNION ALL SELECT 2202, 42, 2202, NULL, NOW() - INTERVAL 4 HOUR
+    UNION ALL SELECT 2203, 1, 2203, NULL, NOW() - INTERVAL 6 HOUR
+) n;
+
+-- 금칙어 (PL-SEC-003, NFR-SEC-009): 닉네임·게시글·포트폴리오·댓글·리뷰·쪽지에 들어가면 저장이 막힌다
+--   검사는 대소문자 무시 + 글 안에 들어 있기만 해도 막는다(BannedWordPolicy). 평소 문장에 섞이지 않고
+--   발표 화면에 띄워도 괜찮은 시연용 단어만 넣는다. 테스트가 넣는 금칙어(금칙어테스트·testbadword 등)와 같거나 그 안에 들어가는 단어는 피한다
+INSERT INTO banned_word (banned_word_id, word) VALUES
+    (2201, '시연금칙어'),
+    (2202, '바보멍청이'),
+    (2203, '불법다운로드'),
+    (2204, '도박사이트'),
+    (2205, '스팸링크모음');
+
+-- =====================================================================
 -- 월간 콘테스트: 지난달(결과 발표) + 이번 달(진행 중) (#430, FR-CTS-001~005, PL-CTS-001~006)
 -- 직접 적는 ID: 101~199 (contest 101·102, portfolio 101~109, contest_entry 101~109, contest_award 101~104, notification 101~104)
 --   투표(contest_vote)는 수가 많아 SELECT 로 만들고 ID 는 DB 가 채운다

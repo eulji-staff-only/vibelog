@@ -172,6 +172,15 @@ document.addEventListener('DOMContentLoaded', () => {
         shot.focus();
     });
 
+    // 올라가 있는 스크린샷 지우기 (수정 상태, #437): X 를 누르면 숨기고 removeScreenshot=true 로 보낸다. 다시 올리려면 이미지 추가
+    const shotCurrent = root.querySelector('[data-shot-current]');
+    const shotRemove = root.querySelector('[data-shot-remove]');
+    if (shotCurrent && shotRemove) shotRemove.addEventListener('click', () => {
+        shotCurrent.querySelector('[data-shot-remove-flag]').value = 'true';
+        shotCurrent.hidden = true;
+        shot.focus();
+    });
+
     form.addEventListener('submit', (e) => {
         if (!ready || submit.disabled) {
             e.preventDefault();

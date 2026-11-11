@@ -123,6 +123,11 @@ public class Portfolio extends BaseTimeEntity {
         }
     }
 
+    /* 올라가 있는 스크린샷을 지운다 (수정 화면 X 버튼, #437) */
+    public void removeScreenshot() {
+        this.screenshotUrl = null;
+    }
+
     /* 공개 전환 (API-PRT-08, PL-PRT-006) */
     public void changeVisibility(boolean isPublic) {
         this.isPublic = isPublic;

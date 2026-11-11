@@ -75,6 +75,14 @@ class ErrorPageTest {
                 .andExpect(content().string(Matchers.containsString("페이지를 찾을 수 없습니다")));
     }
 
+    // #452: 없는 주소는 제목만 보이고, 영역 ErrorCode 404 문구는 그대로 보인다
+    @Test
+    void 없는_주소_404는_찾을_수_없습니다_문구가_한_번만_나온다() throws Exception {
+        String html = mockMvc.perform(get("/no-such-url-xyz")).andReturn().getResponse().getContentAsString();
+        assertThat(html.split("찾을 수 없습니다", -1)).hasSize(2);
+        assertThat(render("error/error", Map.of("status", 404, "message", "수업을 찾을 수 없습니다."))).contains("수업을 찾을 수 없습니다.");
+    }
+
     @Test
     void error_404_템플릿이_문법_오류_없이_그려진다() throws Exception {
         assertThat(render("error/404", Map.of())).contains("페이지를 찾을 수 없습니다");

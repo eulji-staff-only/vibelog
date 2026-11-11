@@ -135,7 +135,11 @@
 .cm-review-card__actions form { display: contents; }
 .cm-actions form { display: contents; }
 .cm-keep { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-3); }
-.cm-keep label { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); font-size: 13px; cursor: pointer; }
+.cm-keep-item { position: relative; }
+.cm-keep-item[hidden] { display: none; }
+.cm-keep-remove { position: absolute; top: var(--space-1); right: var(--space-1); width: 24px; height: 24px; border: 0; border-radius: 50%;
+    background: rgba(0, 0, 0, .65); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
+.cm-keep-remove:hover, .cm-keep-remove:focus-visible { background: #000; }
 
 /* 삭제 확인 모달 (M-05). 브라우저 기본 dialog */
 .cm-dialog { width: min(420px, calc(100% - 32px)); box-sizing: border-box; padding: var(--space-8); border: 0; border-radius: var(--radius-panel); }
