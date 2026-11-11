@@ -334,6 +334,254 @@ INSERT INTO portfolio (portfolio_id, member_id, course_id, portfolio_type, title
      'Claude Code', TRUE, '2026-11-06 15:00:00', '2026-11-06 15:00:00');
 
 -- =====================================================================
+-- 회원 늘리기 + 시연 계정 (#428)
+-- 새 계정 43개(3~45)는 모두 같은 비밀번호다. 평문은 팀 채팅으로 공유한다 (해시만 저장, NFR-SEC-001)
+-- 시각은 NOW() 기준이라 언제 실행해도 "며칠 전" 기록으로 보인다. 발표 직전에 01 → 02 를 다시 실행하면 처음 상태로 돌아간다
+-- 이 블록이 직접 적는 ID: member 3~45, 그 밖의 표 1001~1999
+--
+-- 시연 계정 (이메일 @vibelog.test / 닉네임 / 상태)
+--   33 demo.new         처음왔어요      가입 직후, 진단 전
+--   34 demo.unverified  메일확인전      이메일 인증 전: 학습은 되고 글쓰기는 막힘 (PL-USR-003)
+--   35 demo.diagnosed   트랙고민중      진단 완료(Controller 추천), 수강 전 → 수강 시작 시연
+--   36 demo.started     첫수업시작      수강 시작 직후, 수업 1 첫 개념만 열림
+--   37 demo.quizfail    퀴즈재도전      첫 퀴즈 1/3 불합격 → 다시 풀기
+--   38 demo.examready   모의고사직전    수업 1 퀴즈 모두 통과, 모의고사 열림·응시 전
+--   39 demo.report      리포트대기      수업 1 모의고사 1/3 제출, 리포트 확인 전 (확인하면 수업 2 열림)
+--   40 demo.lesson2     두번째수업      수업 1 완료(모의고사 1/3 → 재응시 3/3), 수업 2 첫 개념 열림
+--   41 demo.portfolio   포트폴리오직전  모든 수업 완료, 포트폴리오 열림·제출 전 (제출하면 코스 완료)
+--   42 demo.completed   코스완주        코스 완료, 공개 포트폴리오 제출
+--   43 demo.dropped     잠시쉬는중      수업 1 중간에 수강 포기 → 다시 시작하면 이어서
+--   44 demo.suspended   정지회원        30일 이용 정지: 로그인하면 정지 안내
+--   45 demo.admin       시연운영자      운영자 (백오피스)
+--
+-- 주의: 수업 안에서 퀴즈 일부만 통과한 상태를 과거 시각으로 넣으면 모의고사가 열린 것으로 보인다.
+-- 샘플 활동의 created_at 이 시드 실행 시각이라 LessonExamOpenPolicy 가 "그때는 그 퀴즈가 마지막이었다"고 보기 때문이다.
+-- 그래서 수업 1 은 퀴즈를 하나도 통과하지 않았거나(36·37·43) 모두 통과한(38~42) 상태만 넣었다
+-- =====================================================================
+
+-- 회원: 3~32 일반 학습자 30명(is_test = FALSE) / 33~45 시연 계정 13개(is_test = TRUE, 평균 점수에서 뺀다)
+INSERT INTO member (member_id, email, password_hash, nickname, role, status, is_test, email_verified_at, created_at) VALUES
+    (3, 'user03@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '코딩하는곰', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 129595 MINUTE, NOW() - INTERVAL 129600 MINUTE),
+    (4, 'user04@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '바이브러너', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 125312 MINUTE, NOW() - INTERVAL 125317 MINUTE),
+    (5, 'user05@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '새벽커밋', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 121029 MINUTE, NOW() - INTERVAL 121034 MINUTE),
+    (6, 'user06@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '프롬프트장인', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 116746 MINUTE, NOW() - INTERVAL 116751 MINUTE),
+    (7, 'user07@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '버그헌터', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 112463 MINUTE, NOW() - INTERVAL 112468 MINUTE),
+    (8, 'user08@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '리팩터링중', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 108180 MINUTE, NOW() - INTERVAL 108185 MINUTE),
+    (9, 'user09@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '커피와코드', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 103897 MINUTE, NOW() - INTERVAL 103902 MINUTE),
+    (10, 'user10@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', 'diffreader', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 99614 MINUTE, NOW() - INTERVAL 99619 MINUTE),
+    (11, 'user11@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '깃초보', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 95331 MINUTE, NOW() - INTERVAL 95336 MINUTE),
+    (12, 'user12@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '주말개발자', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 91048 MINUTE, NOW() - INTERVAL 91053 MINUTE),
+    (13, 'user13@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '부끄뿌끄끄', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 86765 MINUTE, NOW() - INTERVAL 86770 MINUTE),
+    (14, 'user14@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '뿌끄부끄', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 82482 MINUTE, NOW() - INTERVAL 82487 MINUTE),
+    (15, 'user15@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '사이드프로젝트', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 78199 MINUTE, NOW() - INTERVAL 78204 MINUTE),
+    (16, 'user16@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '무한루프탈출', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 73916 MINUTE, NOW() - INTERVAL 73921 MINUTE),
+    (17, 'user17@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '버그안걸림', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 69633 MINUTE, NOW() - INTERVAL 69638 MINUTE),
+    (18, 'user18@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '버그가날걸었다', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 65350 MINUTE, NOW() - INTERVAL 65355 MINUTE),
+    (19, 'user19@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', 'vibecoder', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 61067 MINUTE, NOW() - INTERVAL 61072 MINUTE),
+    (20, 'user20@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '삼점오도류', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 56184 MINUTE, NOW() - INTERVAL 56189 MINUTE),
+    (21, 'user21@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '스프링새싹', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 51901 MINUTE, NOW() - INTERVAL 51906 MINUTE),
+    (22, 'user22@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '이도류였던것', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 47618 MINUTE, NOW() - INTERVAL 47623 MINUTE),
+    (23, 'user23@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '포카칩칩칩', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 43335 MINUTE, NOW() - INTERVAL 43340 MINUTE),
+    (24, 'user24@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '퇴근후코딩', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 39052 MINUTE, NOW() - INTERVAL 39057 MINUTE),
+    (25, 'user25@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '눅눅한포카칩', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 34769 MINUTE, NOW() - INTERVAL 34774 MINUTE),
+    (26, 'user26@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '할일앱장인', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 30486 MINUTE, NOW() - INTERVAL 30491 MINUTE),
+    (27, 'user27@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '관계자만출입금지', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 26203 MINUTE, NOW() - INTERVAL 26208 MINUTE),
+    (28, 'user28@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '코드리뷰어', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 21920 MINUTE, NOW() - INTERVAL 21925 MINUTE),
+    (29, 'user29@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '오늘도배포', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 17637 MINUTE, NOW() - INTERVAL 17642 MINUTE),
+    (30, 'user30@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '모각코러', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 13354 MINUTE, NOW() - INTERVAL 13359 MINUTE),
+    (31, 'user31@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '관계자외출입환영', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 9071 MINUTE, NOW() - INTERVAL 9076 MINUTE),
+    (32, 'user32@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '깃허브잔디', 'LEARNER', 'ACTIVE', FALSE, NOW() - INTERVAL 4788 MINUTE, NOW() - INTERVAL 4793 MINUTE),
+    (33, 'demo.new@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '처음왔어요', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 5 MINUTE, NOW() - INTERVAL 10 MINUTE),
+    (34, 'demo.unverified@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '메일확인전', 'LEARNER', 'ACTIVE', TRUE, NULL, NOW() - INTERVAL 60 MINUTE),
+    (35, 'demo.diagnosed@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '트랙고민중', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 1435 MINUTE, NOW() - INTERVAL 1440 MINUTE),
+    (36, 'demo.started@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '첫수업시작', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 2875 MINUTE, NOW() - INTERVAL 2880 MINUTE),
+    (37, 'demo.quizfail@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '퀴즈재도전', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 4315 MINUTE, NOW() - INTERVAL 4320 MINUTE),
+    (38, 'demo.examready@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '모의고사직전', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 5755 MINUTE, NOW() - INTERVAL 5760 MINUTE),
+    (39, 'demo.report@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '리포트대기', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 7195 MINUTE, NOW() - INTERVAL 7200 MINUTE),
+    (40, 'demo.lesson2@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '두번째수업', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 11515 MINUTE, NOW() - INTERVAL 11520 MINUTE),
+    (41, 'demo.portfolio@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '포트폴리오직전', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 14395 MINUTE, NOW() - INTERVAL 14400 MINUTE),
+    (42, 'demo.completed@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '코스완주', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 20155 MINUTE, NOW() - INTERVAL 20160 MINUTE),
+    (43, 'demo.dropped@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '잠시쉬는중', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 10075 MINUTE, NOW() - INTERVAL 10080 MINUTE),
+    (44, 'demo.suspended@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '정지회원', 'LEARNER', 'ACTIVE', TRUE, NOW() - INTERVAL 28795 MINUTE, NOW() - INTERVAL 28800 MINUTE),
+    (45, 'demo.admin@vibelog.test', '$2a$10$kOoYKTU6AHDxSffQUjSIROIwyvbaprZfCanxWBYbVU.LkTC2Cuofe', '시연운영자', 'ADMIN', 'ACTIVE', TRUE, NOW() - INTERVAL 43195 MINUTE, NOW() - INTERVAL 43200 MINUTE);
+
+-- 진단 결과: 35~43 은 Controller 트랙 추천 (33 처음왔어요·34 메일확인전은 진단 전)
+INSERT INTO diagnosis_result (diagnosis_result_id, member_id, recommended_track_id, status, created_at) VALUES
+    (1035, 35, 2, 'COMPLETED', NOW() - INTERVAL 1410 MINUTE),
+    (1036, 36, 2, 'COMPLETED', NOW() - INTERVAL 2850 MINUTE),
+    (1037, 37, 2, 'COMPLETED', NOW() - INTERVAL 4290 MINUTE),
+    (1038, 38, 2, 'COMPLETED', NOW() - INTERVAL 5730 MINUTE),
+    (1039, 39, 2, 'COMPLETED', NOW() - INTERVAL 7170 MINUTE),
+    (1040, 40, 2, 'COMPLETED', NOW() - INTERVAL 11490 MINUTE),
+    (1041, 41, 2, 'COMPLETED', NOW() - INTERVAL 14370 MINUTE),
+    (1042, 42, 2, 'COMPLETED', NOW() - INTERVAL 20130 MINUTE),
+    (1043, 43, 2, 'COMPLETED', NOW() - INTERVAL 10050 MINUTE);
+
+-- 수강: 36~43 은 샘플 코스 1 (수업 1 = 활동 1~4, 수업 2 = 활동 5~6)
+INSERT INTO enrollment (enrollment_id, member_id, course_id, started_at, portfolio_unlocked_at, completed_at, dropped_at) VALUES
+    (1001, 36, 1, NOW() - INTERVAL 60 MINUTE, NULL, NULL, NULL),
+    (1002, 37, 1, NOW() - INTERVAL 2880 MINUTE, NULL, NULL, NULL),
+    (1003, 38, 1, NOW() - INTERVAL 4320 MINUTE, NULL, NULL, NULL),
+    (1004, 39, 1, NOW() - INTERVAL 5760 MINUTE, NULL, NULL, NULL),
+    (1005, 40, 1, NOW() - INTERVAL 10080 MINUTE, NULL, NULL, NULL),
+    (1006, 41, 1, NOW() - INTERVAL 12960 MINUTE, NOW() - INTERVAL 8640 MINUTE, NULL, NULL),
+    (1007, 42, 1, NOW() - INTERVAL 18720 MINUTE, NOW() - INTERVAL 12960 MINUTE, NOW() - INTERVAL 10080 MINUTE, NULL),
+    (1008, 43, 1, NOW() - INTERVAL 8640 MINUTE, NULL, NULL, NOW() - INTERVAL 7200 MINUTE);
+
+-- 수업 진도: 수업 2 는 수업 1 리포트를 확인한 시각에 열린다 (PL-ENR-002)
+INSERT INTO lesson_progress (lesson_progress_id, enrollment_id, lesson_id, unlocked_at, completed_at) VALUES
+    (1001, 1001, 1, NOW() - INTERVAL 60 MINUTE, NULL),
+    (1002, 1001, 2, NULL, NULL),
+    (1003, 1002, 1, NOW() - INTERVAL 2880 MINUTE, NULL),
+    (1004, 1002, 2, NULL, NULL),
+    (1005, 1003, 1, NOW() - INTERVAL 4320 MINUTE, NULL),
+    (1006, 1003, 2, NULL, NULL),
+    (1007, 1004, 1, NOW() - INTERVAL 5760 MINUTE, NULL),
+    (1008, 1004, 2, NULL, NULL),
+    (1009, 1005, 1, NOW() - INTERVAL 10080 MINUTE, NOW() - INTERVAL 7200 MINUTE),
+    (1010, 1005, 2, NOW() - INTERVAL 7200 MINUTE, NULL),
+    (1011, 1006, 1, NOW() - INTERVAL 12960 MINUTE, NOW() - INTERVAL 11520 MINUTE),
+    (1012, 1006, 2, NOW() - INTERVAL 11520 MINUTE, NOW() - INTERVAL 8640 MINUTE),
+    (1013, 1007, 1, NOW() - INTERVAL 18720 MINUTE, NOW() - INTERVAL 15840 MINUTE),
+    (1014, 1007, 2, NOW() - INTERVAL 15840 MINUTE, NOW() - INTERVAL 12960 MINUTE),
+    (1015, 1008, 1, NOW() - INTERVAL 8640 MINUTE, NULL),
+    (1016, 1008, 2, NULL, NULL);
+
+-- 활동 진도: 열린 활동만 행이 있다
+INSERT INTO activity_progress (activity_progress_id, enrollment_id, activity_id, unlocked_at, completed_at) VALUES
+    (1001, 1001, 1, NOW() - INTERVAL 60 MINUTE, NULL),
+    (1002, 1002, 1, NOW() - INTERVAL 2880 MINUTE, NOW() - INTERVAL 2870 MINUTE),
+    (1003, 1002, 2, NOW() - INTERVAL 2870 MINUTE, NULL),
+    (1004, 1003, 1, NOW() - INTERVAL 4320 MINUTE, NOW() - INTERVAL 4310 MINUTE),
+    (1005, 1003, 2, NOW() - INTERVAL 4310 MINUTE, NOW() - INTERVAL 4295 MINUTE),
+    (1006, 1003, 3, NOW() - INTERVAL 4295 MINUTE, NOW() - INTERVAL 4280 MINUTE),
+    (1007, 1003, 4, NOW() - INTERVAL 4280 MINUTE, NOW() - INTERVAL 4265 MINUTE),
+    (1008, 1004, 1, NOW() - INTERVAL 5760 MINUTE, NOW() - INTERVAL 5750 MINUTE),
+    (1009, 1004, 2, NOW() - INTERVAL 5750 MINUTE, NOW() - INTERVAL 5735 MINUTE),
+    (1010, 1004, 3, NOW() - INTERVAL 5735 MINUTE, NOW() - INTERVAL 5720 MINUTE),
+    (1011, 1004, 4, NOW() - INTERVAL 5720 MINUTE, NOW() - INTERVAL 5705 MINUTE),
+    (1012, 1005, 1, NOW() - INTERVAL 10080 MINUTE, NOW() - INTERVAL 10070 MINUTE),
+    (1013, 1005, 2, NOW() - INTERVAL 10070 MINUTE, NOW() - INTERVAL 10055 MINUTE),
+    (1014, 1005, 3, NOW() - INTERVAL 10055 MINUTE, NOW() - INTERVAL 10040 MINUTE),
+    (1015, 1005, 4, NOW() - INTERVAL 10040 MINUTE, NOW() - INTERVAL 10025 MINUTE),
+    (1016, 1005, 5, NOW() - INTERVAL 7200 MINUTE, NULL),
+    (1017, 1006, 1, NOW() - INTERVAL 12960 MINUTE, NOW() - INTERVAL 12950 MINUTE),
+    (1018, 1006, 2, NOW() - INTERVAL 12950 MINUTE, NOW() - INTERVAL 12935 MINUTE),
+    (1019, 1006, 3, NOW() - INTERVAL 12935 MINUTE, NOW() - INTERVAL 12920 MINUTE),
+    (1020, 1006, 4, NOW() - INTERVAL 12920 MINUTE, NOW() - INTERVAL 12905 MINUTE),
+    (1021, 1006, 5, NOW() - INTERVAL 11520 MINUTE, NOW() - INTERVAL 11505 MINUTE),
+    (1022, 1006, 6, NOW() - INTERVAL 11505 MINUTE, NOW() - INTERVAL 11490 MINUTE),
+    (1023, 1007, 1, NOW() - INTERVAL 18720 MINUTE, NOW() - INTERVAL 18710 MINUTE),
+    (1024, 1007, 2, NOW() - INTERVAL 18710 MINUTE, NOW() - INTERVAL 18695 MINUTE),
+    (1025, 1007, 3, NOW() - INTERVAL 18695 MINUTE, NOW() - INTERVAL 18680 MINUTE),
+    (1026, 1007, 4, NOW() - INTERVAL 18680 MINUTE, NOW() - INTERVAL 18665 MINUTE),
+    (1027, 1007, 5, NOW() - INTERVAL 15840 MINUTE, NOW() - INTERVAL 15825 MINUTE),
+    (1028, 1007, 6, NOW() - INTERVAL 15825 MINUTE, NOW() - INTERVAL 15810 MINUTE),
+    (1029, 1008, 1, NOW() - INTERVAL 8640 MINUTE, NOW() - INTERVAL 8630 MINUTE),
+    (1030, 1008, 2, NOW() - INTERVAL 8630 MINUTE, NULL);
+
+-- 퀴즈 풀이: 3문항, 통과 기준 50% (2/3 이상 통과)
+INSERT INTO quiz_attempt (quiz_attempt_id, member_id, activity_id, started_at, correct_rate, is_passed, submitted_at) VALUES
+    (1001, 37, 2, NOW() - INTERVAL 2865 MINUTE, 33.33, FALSE, NOW() - INTERVAL 2860 MINUTE),
+    (1002, 38, 2, NOW() - INTERVAL 4300 MINUTE, 66.67, TRUE, NOW() - INTERVAL 4295 MINUTE),
+    (1003, 38, 4, NOW() - INTERVAL 4270 MINUTE, 100.00, TRUE, NOW() - INTERVAL 4265 MINUTE),
+    (1004, 39, 2, NOW() - INTERVAL 5740 MINUTE, 66.67, TRUE, NOW() - INTERVAL 5735 MINUTE),
+    (1005, 39, 4, NOW() - INTERVAL 5710 MINUTE, 100.00, TRUE, NOW() - INTERVAL 5705 MINUTE),
+    (1006, 40, 2, NOW() - INTERVAL 10060 MINUTE, 66.67, TRUE, NOW() - INTERVAL 10055 MINUTE),
+    (1007, 40, 4, NOW() - INTERVAL 10030 MINUTE, 100.00, TRUE, NOW() - INTERVAL 10025 MINUTE),
+    (1008, 41, 2, NOW() - INTERVAL 12940 MINUTE, 66.67, TRUE, NOW() - INTERVAL 12935 MINUTE),
+    (1009, 41, 4, NOW() - INTERVAL 12910 MINUTE, 100.00, TRUE, NOW() - INTERVAL 12905 MINUTE),
+    (1010, 41, 6, NOW() - INTERVAL 11495 MINUTE, 66.67, TRUE, NOW() - INTERVAL 11490 MINUTE),
+    (1011, 42, 2, NOW() - INTERVAL 18700 MINUTE, 66.67, TRUE, NOW() - INTERVAL 18695 MINUTE),
+    (1012, 42, 4, NOW() - INTERVAL 18670 MINUTE, 100.00, TRUE, NOW() - INTERVAL 18665 MINUTE),
+    (1013, 42, 6, NOW() - INTERVAL 15815 MINUTE, 100.00, TRUE, NOW() - INTERVAL 15810 MINUTE);
+
+-- 퀴즈 답
+INSERT INTO quiz_answer (quiz_answer_id, quiz_attempt_id, quiz_question_id, quiz_choice_id, is_correct, checked_at) VALUES
+    (1001, 1001, 1, 1, TRUE, NOW() - INTERVAL 2861 MINUTE),
+    (1002, 1001, 2, 5, FALSE, NOW() - INTERVAL 2861 MINUTE),
+    (1003, 1001, 3, 9, FALSE, NOW() - INTERVAL 2861 MINUTE),
+    (1004, 1002, 1, 1, TRUE, NOW() - INTERVAL 4296 MINUTE),
+    (1005, 1002, 2, 6, TRUE, NOW() - INTERVAL 4296 MINUTE),
+    (1006, 1002, 3, 9, FALSE, NOW() - INTERVAL 4296 MINUTE),
+    (1007, 1003, 4, 13, TRUE, NOW() - INTERVAL 4266 MINUTE),
+    (1008, 1003, 5, 19, TRUE, NOW() - INTERVAL 4266 MINUTE),
+    (1009, 1003, 6, 23, TRUE, NOW() - INTERVAL 4266 MINUTE),
+    (1010, 1004, 1, 1, TRUE, NOW() - INTERVAL 5736 MINUTE),
+    (1011, 1004, 2, 6, TRUE, NOW() - INTERVAL 5736 MINUTE),
+    (1012, 1004, 3, 9, FALSE, NOW() - INTERVAL 5736 MINUTE),
+    (1013, 1005, 4, 13, TRUE, NOW() - INTERVAL 5706 MINUTE),
+    (1014, 1005, 5, 19, TRUE, NOW() - INTERVAL 5706 MINUTE),
+    (1015, 1005, 6, 23, TRUE, NOW() - INTERVAL 5706 MINUTE),
+    (1016, 1006, 1, 1, TRUE, NOW() - INTERVAL 10056 MINUTE),
+    (1017, 1006, 2, 6, TRUE, NOW() - INTERVAL 10056 MINUTE),
+    (1018, 1006, 3, 9, FALSE, NOW() - INTERVAL 10056 MINUTE),
+    (1019, 1007, 4, 13, TRUE, NOW() - INTERVAL 10026 MINUTE),
+    (1020, 1007, 5, 19, TRUE, NOW() - INTERVAL 10026 MINUTE),
+    (1021, 1007, 6, 23, TRUE, NOW() - INTERVAL 10026 MINUTE),
+    (1022, 1008, 1, 1, TRUE, NOW() - INTERVAL 12936 MINUTE),
+    (1023, 1008, 2, 6, TRUE, NOW() - INTERVAL 12936 MINUTE),
+    (1024, 1008, 3, 9, FALSE, NOW() - INTERVAL 12936 MINUTE),
+    (1025, 1009, 4, 13, TRUE, NOW() - INTERVAL 12906 MINUTE),
+    (1026, 1009, 5, 19, TRUE, NOW() - INTERVAL 12906 MINUTE),
+    (1027, 1009, 6, 23, TRUE, NOW() - INTERVAL 12906 MINUTE),
+    (1028, 1010, 7, 26, TRUE, NOW() - INTERVAL 11491 MINUTE),
+    (1029, 1010, 8, 31, TRUE, NOW() - INTERVAL 11491 MINUTE),
+    (1030, 1010, 9, 33, FALSE, NOW() - INTERVAL 11491 MINUTE),
+    (1031, 1011, 1, 1, TRUE, NOW() - INTERVAL 18696 MINUTE),
+    (1032, 1011, 2, 6, TRUE, NOW() - INTERVAL 18696 MINUTE),
+    (1033, 1011, 3, 9, FALSE, NOW() - INTERVAL 18696 MINUTE),
+    (1034, 1012, 4, 13, TRUE, NOW() - INTERVAL 18666 MINUTE),
+    (1035, 1012, 5, 19, TRUE, NOW() - INTERVAL 18666 MINUTE),
+    (1036, 1012, 6, 23, TRUE, NOW() - INTERVAL 18666 MINUTE),
+    (1037, 1013, 7, 26, TRUE, NOW() - INTERVAL 15811 MINUTE),
+    (1038, 1013, 8, 31, TRUE, NOW() - INTERVAL 15811 MINUTE),
+    (1039, 1013, 9, 34, TRUE, NOW() - INTERVAL 15811 MINUTE);
+
+-- 모의고사: score = 맞힌 문항 수, report_viewed_at = 오답 분석 리포트 확인
+INSERT INTO exam_attempt (exam_attempt_id, member_id, lesson_id, attempt_no, started_at, score, correct_rate, submitted_at, report_viewed_at) VALUES
+    (1001, 39, 1, 1, NOW() - INTERVAL 5680 MINUTE, 1, 33.33, NOW() - INTERVAL 5670 MINUTE, NULL),
+    (1002, 40, 1, 1, NOW() - INTERVAL 7212 MINUTE, 1, 33.33, NOW() - INTERVAL 7202 MINUTE, NOW() - INTERVAL 7200 MINUTE),
+    (1003, 40, 1, 2, NOW() - INTERVAL 7150 MINUTE, 3, 100.00, NOW() - INTERVAL 7140 MINUTE, NOW() - INTERVAL 7138 MINUTE),
+    (1004, 41, 1, 1, NOW() - INTERVAL 11532 MINUTE, 2, 66.67, NOW() - INTERVAL 11522 MINUTE, NOW() - INTERVAL 11520 MINUTE),
+    (1005, 41, 2, 1, NOW() - INTERVAL 8652 MINUTE, 2, 100.00, NOW() - INTERVAL 8642 MINUTE, NOW() - INTERVAL 8640 MINUTE),
+    (1006, 42, 1, 1, NOW() - INTERVAL 15852 MINUTE, 3, 100.00, NOW() - INTERVAL 15842 MINUTE, NOW() - INTERVAL 15840 MINUTE),
+    (1007, 42, 2, 1, NOW() - INTERVAL 12972 MINUTE, 1, 50.00, NOW() - INTERVAL 12962 MINUTE, NOW() - INTERVAL 12960 MINUTE);
+
+-- 모의고사 답
+INSERT INTO exam_answer (exam_answer_id, exam_attempt_id, exam_question_id, exam_choice_id, is_correct) VALUES
+    (1001, 1001, 1, 1, TRUE),
+    (1002, 1001, 2, 5, FALSE),
+    (1003, 1001, 3, 9, FALSE),
+    (1004, 1002, 1, 1, TRUE),
+    (1005, 1002, 2, 5, FALSE),
+    (1006, 1002, 3, 9, FALSE),
+    (1007, 1003, 1, 1, TRUE),
+    (1008, 1003, 2, 6, TRUE),
+    (1009, 1003, 3, 11, TRUE),
+    (1010, 1004, 1, 1, TRUE),
+    (1011, 1004, 2, 6, TRUE),
+    (1012, 1004, 3, 9, FALSE),
+    (1013, 1005, 4, 13, TRUE),
+    (1014, 1005, 5, 18, TRUE),
+    (1015, 1006, 1, 1, TRUE),
+    (1016, 1006, 2, 6, TRUE),
+    (1017, 1006, 3, 11, TRUE),
+    (1018, 1007, 4, 13, TRUE),
+    (1019, 1007, 5, 17, FALSE);
+
+-- 포트폴리오: 42 코스완주의 코스 포트폴리오 (공개, 제출 시각 = 코스 완료 시각)
+INSERT INTO portfolio (portfolio_id, member_id, course_id, portfolio_type, title, result_url, summary, retrospective, ai_tools, is_public, created_at) VALUES
+    (1001, 42, 1, 'COURSE', '할 일 앱 완료 버튼 고치기', 'https://github.com/vibelog-demo/todo-app/pull/3',
+     '수정 범위를 TodoItem.jsx 한 파일로 정해 AI에게 완료 버튼 버그만 고치게 했다',
+     '처음에는 "버튼 고쳐 줘"라고만 해서 스타일 파일까지 바뀌었다. 고칠 파일과 건드리지 않을 곳을 적어 다시 요청했고, diff에서 요청하지 않은 변경 한 줄을 찾아 되돌렸다.',
+     'Claude Code', TRUE, NOW() - INTERVAL 10080 MINUTE);
+
+-- 이용 정지: 44 정지회원 30일 정지 (처리 운영자 = 2 테스트운영자). 시드를 실행한 날부터 29일 동안 로그인이 막힌다
+INSERT INTO member_suspension (member_suspension_id, member_id, admin_member_id, level, reason, starts_at, ends_at) VALUES
+    (1001, 44, 2, 'DAYS_30', '게시판 도배 (시연용 샘플)', NOW() - INTERVAL 1440 MINUTE, NOW() + INTERVAL 29 DAY);
+
+-- =====================================================================
 -- 실제 같은 대량 데이터: 일반 학습자 1만 명 규모 (#431)
 -- 목적: 목록·페이지 나눔·정렬·평균 점수를 실제 서비스 규모에서 확인한다 (로컬 QA 용)
 -- 규모: 일반 학습자 10,000명 = 3~32 (#428) + 새 회원 9,970명 (member_id 100001~109970, 비밀번호는 #428 새 계정과 같다)
