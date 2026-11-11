@@ -32,9 +32,12 @@ public class AuthAdminMemberController {
 
     /* API-ADM-37 */
     @GetMapping("/admin/members")
-    public String list(@RequestParam(required = false) String q, @RequestParam(defaultValue = "1") int page, Model model) {
-        model.addAttribute("members", adminMemberService.search(q, page));
+    public String list(@RequestParam(required = false) String q, @RequestParam(required = false) String learning,
+                       @RequestParam(required = false) String verified, @RequestParam(defaultValue = "1") int page, Model model) {
+        model.addAttribute("members", adminMemberService.search(q, learning, verified, page));
         model.addAttribute("q", q == null ? "" : q.strip());
+        model.addAttribute("learning", AdminMemberService.normalizeFilter(learning));
+        model.addAttribute("verified", AdminMemberService.normalizeFilter(verified));
         return "auth/admin-members";
     }
 
