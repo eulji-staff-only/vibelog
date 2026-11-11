@@ -61,7 +61,10 @@
 .mp-section-first { padding-top: var(--space-7); border-top: 1px solid var(--line-soft); }
 .mp-text { margin: 0; font-size: 16px; line-height: 1.75; }
 .mp-shot { max-width: 420px; aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center;
-    font-size: 13px; color: var(--ink-muted); background: var(--surface); border: 1px dashed var(--line-strong); border-radius: var(--radius-card); }
+    font-size: 13px; color: var(--ink-muted); background: var(--surface); border: 1px dashed var(--line-strong); border-radius: var(--radius-card);
+    overflow: hidden; }
+/* 올린 스크린샷은 크기와 비율이 제각각이라 칸 안에 비율을 지켜 맞춘다. 규칙이 없으면 원본 크기로 칸 밖까지 나온다 (#397) */
+.mp-shot img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .mp-detail-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-4);
     padding-top: var(--space-7); border-top: 1px solid var(--line-soft); }
 

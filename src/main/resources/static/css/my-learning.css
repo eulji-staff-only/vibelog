@@ -4,7 +4,9 @@
  * 탭·배지·안내 상자 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
  */
 
-.ml-page { min-height: 100vh; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+.ml-page { min-height: 100vh; background: var(--surface); color: var(--ink); font-family: var(--font-sans);
+    /* 좁은 폭에서 한글이 글자 단위로 끊기지 않게 단어 단위로 줄을 바꾼다. 아주 긴 문자열만 강제로 끊는다 (#397) */
+    word-break: keep-all; overflow-wrap: anywhere; }
 /* display 를 준 요소도 hidden 속성이면 숨긴다 (탭 전환·빈 상태) */
 .ml-page [hidden] { display: none; }
 .ml-muted { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-muted); }
@@ -130,5 +132,6 @@
     .ml-course-head { flex-direction: column; align-items: stretch; }
     .ml-course-head .ml-btn { width: 100%; }
     .ml-course-actions .ml-btn { flex: 1 1 auto; }
-    .ml-lesson { flex-direction: column; align-items: flex-start; }
+    /* 수업 이름을 한 줄 전체에 두고, 상태 배지·링크·버튼은 그 아래에 가로로 이어 놓는다 (링크가 한 줄에 하나씩 쌓이지 않게) */
+    .ml-lesson-info { flex-basis: 100%; }
 }
