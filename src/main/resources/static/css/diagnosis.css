@@ -127,6 +127,8 @@
 .dg-other { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-5); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-raised); }
 .dg-other__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
 .dg-other__title { margin: 0; font-size: 18px; font-weight: 900; }
+/* 대상 학습자(target)는 긴 문장이라 공통 배지(한 줄, 알약 모양)를 카드 폭 안에서 줄바꿈한다 (#398). 다른 화면의 배지는 그대로 */
+.dg-other__head .vl-ui-badge { max-width: 100%; white-space: normal; line-height: 1.5; border-radius: var(--radius-md); }
 
 .dg-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); padding-top: var(--space-6); border-top: 1px solid var(--line-soft); }
 
