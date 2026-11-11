@@ -14,6 +14,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -57,5 +58,8 @@ class AuthControllerTest {
     void 로그인한_회원이_로그인_화면을_열면_메인으로_간다() throws Exception {
         mockMvc.perform(get("/login")).andExpect(redirectedUrl("/"));
         mockMvc.perform(get("/login").param("redirect", "/mypage")).andExpect(redirectedUrl("/"));
+        // 로그인한 채 비밀번호를 재설정하면 /login 으로 온 완료 안내를 메인까지 넘긴다
+        mockMvc.perform(get("/login").flashAttr("toast", "비밀번호가 변경되었습니다"))
+                .andExpect(redirectedUrl("/")).andExpect(flash().attribute("toast", "비밀번호가 변경되었습니다"));
     }
 }
