@@ -63,11 +63,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const shotName = root.querySelector('[data-shot-name]');
     const shotClear = root.querySelector('[data-shot-clear]');
     const SHOT_MAX = 5 * 1024 * 1024;   // PL-PRT-005·PL-DAT-004. 서버(FileStorage)도 다시 검사한다
-    const SHOT_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    const SHOT_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
     // U-34 개인 작품 양식에는 스크린샷 칸이 없다 (#199).
-    // 파일 고르는 창에서 "모든 파일"로 다른 형식을 골라도 보내기 전에 막는다. 보내고 나서 막히면 고른 파일이 사라진다 (#403)
+    // 파일 고르는 창에서 "모든 파일"로 다른 형식을 골라도 보내기 전에 막는다. 보내고 나서 막히면 고른 파일이 사라진다 (#403).
+    // 형식은 확장자로 본다: Windows 설정에 따라 File.type 이 비어 있어 멀쩡한 PNG 도 막힐 수 있다. 실제 형식은 서버(FileStorage)가 다시 검사한다.
+    // 0바이트 파일은 서버가 "안 올림"으로 처리해 고른 것과 저장 결과가 달라지므로 같이 막는다
+    const shotExtension = (name) => (name.includes('.') ? name.split('.').pop().toLowerCase() : '');
     const shotOk = () => !shot || !shot.files.length
-        || (shot.files[0].size <= SHOT_MAX && SHOT_TYPES.includes(shot.files[0].type));
+        || (shot.files[0].size > 0 && shot.files[0].size <= SHOT_MAX
+            && SHOT_EXTENSIONS.includes(shotExtension(shot.files[0].name)));
     // 서버(ApiKeyMasker)와 같은 형식 (PL-PRT-008)
     const apiKey = /(^|[^A-Za-z0-9])(sk-|sk_test_|sk_live_|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/;
     let ready = false;
