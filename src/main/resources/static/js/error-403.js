@@ -83,6 +83,7 @@
   function handOff(animated) {
     if (handedOff || !soft) return;
     handedOff = true;
+    ctx.clearRect(0, 0, width, height); // 연출 속 숫자를 지워 말랑 "403"과 겹치지 않게
     soft.classList.add('is-shown');
     if (animated) soft.dispatchEvent(new CustomEvent('soft:enter'));
   }
@@ -334,6 +335,9 @@
   document.fonts.ready.then(() => {
     resize();
     if (reduceMotion) { handOff(false); return; } // 움직임 줄이기: 연출 없이 말랑 "403"만 제자리에
+    // 그림을 기다리는 동안에도 숫자가 보이게 먼저 그려 두고, 대체 번호(data-soft-fallback)를 숨긴다
+    drawDigits(still());
+    document.querySelector('[data-soft-fallback]')?.setAttribute('hidden', '');
     Promise.all([load(hand, HAND.src), load(fox, FOX.src)])
       .then(() => { prepareHand(); play(); }, () => handOff(false)); // 그림을 못 불러오면 말랑 "403"만
   });

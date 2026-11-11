@@ -772,6 +772,21 @@
     walls();
     goHomeAll();
   });
+  // 404 연출: 입체기동 캐릭터(error-odm.js)가 지나가며 닿은 글자를 캐릭터가 가는 쪽(오른쪽)으로 쳐 낸다.
+  //   detail = { x, y, r }: 캐릭터 가운데와 닿는 거리 (이 캔버스 좌표, 두 캔버스는 같은 자리·크기)
+  canvas.addEventListener('soft:hit', (e) => {
+    const { x, y, r } = e.detail;
+    for (const b of bodies) {
+      if (frameNo - (b.knockedAt ?? -Infinity) < KNOCK_COOLDOWN) continue;
+      if (!b.particles.some((p) => Math.hypot(p.x - x, p.y - y) < r)) continue;
+      // 부딪힌 자리에서 글자 쪽 방향 + 캐릭터가 가는 오른쪽, 살짝 위로
+      const d = Math.hypot(b.cx - x, b.cy - y) || 1;
+      const dx = (b.cx - x) / d + 0.8;
+      const dy = (b.cy - y) / d - 0.3;
+      const n = Math.hypot(dx, dy) || 1;
+      knock(b, dx / n, dy / n);
+    }
+  });
   // 입체기동 캐릭터가 나타나면 내려간다. 버티는 중이면 바로 내려가는 컷으로 넘긴다
   canvas.addEventListener('titan:release', () => {
     titan.released = true;
@@ -789,6 +804,8 @@
 
   document.fonts.ready.then(() => {
     build();
+    // 보이는 캔버스가 글자를 그리면 대체 번호를 숨긴다. 403 의 숨겨 둔 캔버스(is-overlay)는 숨기지 않는다 (error-403.js 가 숨긴다)
+    if (!canvas.classList.contains('is-overlay')) document.querySelector('[data-soft-fallback]')?.setAttribute('hidden', '');
     loadTitan();
     requestAnimationFrame(loop);
   });

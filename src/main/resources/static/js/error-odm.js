@@ -5,6 +5,7 @@
  * 순서 (vibelog-soft.js 와 canvas 이벤트로 주고받는다)
  *  1) 거인이 다 올라오면 말랑 글자 캔버스가 titan:up 을 보낸다 → 글자가 날아다니는 걸 잠깐 보여 준 뒤 출발
  *  2) 첫 캐릭터가 거인 가까이(무대 폭의 RELEASE_AT) 오면 titan:release 를 보낸다 → 거인이 내려가고 글자가 제자리로 돌아간다
+ *  2-1) 지나가는 동안 캐릭터 몸에 닿은 글자는 soft:hit 로 오른쪽으로 날아간다
  *  3) 캐릭터가 모두 오른쪽 밖으로 나가면 odm:done 을 보내고(글자가 제자리로 돌아간다) 그리기를 멈춘다
  *
  * 그림: static/images/playground/odm-1~4.png (캐릭터마다 한 장, 가로로 12컷, 한 컷 181×220px, 오른쪽을 본다)
@@ -30,6 +31,7 @@
   const RELEASE_AT = 0.32;      // 첫 캐릭터가 무대 폭의 이 비율까지 오면(거인 가까이) 거인이 내려간다
   const SEGMENT = 230;          // 그네 한 번에 가는 거리(px)
   const LINE = 'rgba(15, 27, 61, 0.35)';
+  const HIT_RADIUS = 0.45;      // 글자와 부딪히는 거리 (그린 캐릭터 폭 대비)
   // 캐릭터마다: 출발 간격(초), 크기, 진하기, 그네 높이(위에서 px)와 깊이
   const CAST = [
     { sheet: 0, delay: 0, scale: 0.42, alpha: 1, top: 40, depth: 80 },
@@ -99,6 +101,12 @@
       f.t += dt;
       if (f.t >= 0) place(f);
       draw(f);
+      // 캐릭터 몸에 닿은 글자를 날린다 (vibelog-soft.js 의 soft:hit)
+      if (f.t >= 0 && f.x > -60 && f.x < width + 60) {
+        stage.dispatchEvent(new CustomEvent('soft:hit', {
+          detail: { x: f.x, y: f.y, r: Math.min(CELL_W, CELL_H) * f.scale * HIT_RADIUS },
+        }));
+      }
       // 첫 캐릭터가 거인 가까이 오면 거인을 내려보낸다 (거인은 무대 가운데에 있다)
       if (!released && f.t >= 0 && f.x > width * RELEASE_AT) {
         released = true;
