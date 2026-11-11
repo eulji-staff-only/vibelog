@@ -107,6 +107,7 @@
 | `EXAM_LOCKED` | 403 | 이 수업의 마지막 퀴즈를 통과하면 열립니다. | ③ → `/my/learning` | FR-EXM-001 |
 | `REPORT_NOT_VIEWED` | 409 | 지난 응시의 리포트를 먼저 확인해 주세요. | ③ → 리포트 | PL-EXM-003 |
 | `EXAM_NOT_SUBMITTED` | 409 | 제출한 뒤에 리포트를 볼 수 있습니다. | ③ → 모의고사 | FR-EXM-003 |
+| `COURSE_NOT_ENROLLED` | 409 | 수강 중인 코스가 아닙니다. 코스 상세에서 다시 시작해 주세요. | ③ → `/courses/{courseId}` (포기한 회원의 리포트, #439) | PL-ENR-004 |
 | `PORTFOLIO_LOCKED` | 403 | 마지막 수업의 오답 분석 리포트를 확인하면 열립니다. | 화면 안 안내 상자 / ⑤ | PL-PRT-001 |
 | `PORTFOLIO_NOT_SUBMITTED` | 403 | 포트폴리오를 제출하면 같은 코스 작품을 볼 수 있습니다. | ③ → 포트폴리오 과제 | PL-PRT-011 (P2) |
 | `AGENT_NOT_OPEN` | 403 | 포트폴리오를 제출하면 평가 에이전트를 볼 수 있습니다. 제출한 뒤 내 포트폴리오에서 수정을 눌러 확인해 주세요. | ① E-02 | PL-PRT-009 (#404) |
