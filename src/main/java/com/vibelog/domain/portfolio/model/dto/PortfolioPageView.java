@@ -8,6 +8,7 @@ import java.util.List;
  * 책임 : - unlocked 가 false 면 잠김 안내만 그린다. 이때 과제 값은 비어 있고, reportLessonId 는 "리포트 보러 가기"가
  *          열 마지막 수업 ID(공개 수업이 없으면 null)다 (PL-PRT-001).
  *        - submittedPortfolioId 는 그 코스에 제출한 내 포트폴리오(삭제 표시 제외), 없으면 null.
+ *        - agentGuide·hasAgentFile 은 제출한 뒤에만 값이 있다. 제출 전(submittedPortfolioId 가 null)에는 null·false (#404).
  *        - emailVerified 가 false 면 제출 영역에 인증 안내를 보여 준다 (PL-USR-003).
  *        - faqs 는 과제 FAQ (P2 FR-PRT-008), sort_order 순. 잠김이거나 FAQ 가 없으면 빈 목록이라 4번 영역을 그리지 않는다.
  */

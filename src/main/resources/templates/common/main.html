@@ -1,7 +1,7 @@
 <!--
   common/main.html (U-01 메인 `/`)
-  역할: 메인(랜딩) 화면. 코스는 아직 해당 영역 기능이 구현되지 않아 화면 흐름 설계서의 "보여줄 데이터"
-        구성대로 샘플 문구로 채운다 (실제 데이터 연결은 각 영역 기능 이슈에서 처리). 트랙 이름은 06 요구사항 112행 그대로 쓴다.
+  역할: 메인(랜딩) 화면. 트랙 카드는 화면 흐름 설계서 구성대로 고정 문구이고, 트랙 이름은 06 요구사항 112행 그대로 쓴다.
+        대표 코스(featuredCourses)는 MainController 가 CourseReader 로 넣는다 (#409).
         이번 주 추천 작품(weeklyTop)과 최근 공지는 MainController 가 각 영역 Reader 로 넣는다 (#203).
         이달의 콘테스트(currentContest, 주제·출품 마감)는 ContestReader 로 넣는다. 없으면 null (API-USR-01).
   참고: 헤더는 common/layout.html 의 header fragment(sec:authorize, #132)를 그대로 쓴다.
@@ -74,13 +74,15 @@
 
         <div id="panel-course" class="vl-panel" role="tabpanel" hidden>
             <h2>대표 코스</h2>
-            <div class="vl-card-grid">
-                <article class="vl-card">
-                    <h3><a href="/courses">바이브코딩으로 시작하는 첫 웹 서비스</a></h3>
-                    <p>처음 코딩을 배우는 분께 추천합니다.</p>
-                    <p class="vl-card__meta">예상 기간 2주</p>
+            <div class="vl-card-grid" th:unless="${featuredCourses.empty}">
+                <article class="vl-card" th:each="c : ${featuredCourses}">
+                    <h3><a th:href="@{/courses/{id}(id=${c.courseId()})}" th:text="${c.title()}">코스 이름</a></h3>
+                    <p th:text="${c.summary()}">코스 한 줄 소개</p>
+                    <p th:text="|학습 대상: ${c.target()}|">학습 대상: 처음 코딩을 배우는 분</p>
+                    <p class="vl-card__meta" th:text="|예상 기간 ${c.planDays()}일|">예상 기간 14일</p>
                 </article>
             </div>
+            <p th:if="${featuredCourses.empty}">아직 공개된 코스가 없습니다</p>
             <p><a href="/courses">전체 코스 보기 →</a></p>
         </div>
 

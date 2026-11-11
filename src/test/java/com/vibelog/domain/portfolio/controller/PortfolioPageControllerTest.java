@@ -117,12 +117,49 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("할 일 앱 만들기")))
                 .andExpect(content().string(Matchers.containsString("둘째 스텝")))
                 .andExpect(content().string(Matchers.containsString("/api/guide-steps/11/check")))
-                .andExpect(content().string(Matchers.containsString("/courses/3/portfolio/agent-file")))
-                .andExpect(content().string(Matchers.containsString("세팅 방법 안내")))
                 .andExpect(content().string(Matchers.containsString("data-pf-form")))
                 .andExpect(content().string(Matchers.containsString("vl-header")))
                 .andExpect(content().string(Matchers.containsString("vl-footer")))
                 .andExpect(content().string(Matchers.not(Matchers.containsString("아직 열리지 않았습니다"))));
+    }
+
+    /* 평가 에이전트는 포트폴리오를 제출한 뒤 수정에서 열린다 (#404). 여기서 만든 openPage 는 값이 있어도 템플릿이 막는지 본다 */
+    @Test
+    void 최초_제출_화면은_에이전트_안내_대신_제출_뒤_수정에서_볼_수_있다고만_알린다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+
+        mockMvc.perform(get("/courses/3/portfolio").with(login()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("data-agent-after-submit")))
+                .andExpect(content().string(Matchers.containsString("제출한 뒤 내 포트폴리오 &gt; 수정에서 확인할 수 있습니다.")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("세팅 방법 안내"))))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("/courses/3/portfolio/agent-file"))))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("id=\"pf-agent-result\""))))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("name=\"agentResult\""))));
+    }
+
+    @Test
+    void 제출한_뒤_수정_상태에서는_에이전트_안내와_설정_파일과_점검_결과_칸을_그린다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(7L, true)));
+        given(portfolioManageService.getEditForm(1L, 7L)).willReturn(new PortfolioSubmitForm());
+
+        mockMvc.perform(get("/courses/3/portfolio").param("edit", "true").with(login()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("세팅 방법 안내")))
+                .andExpect(content().string(Matchers.containsString("/courses/3/portfolio/agent-file")))
+                .andExpect(content().string(Matchers.containsString("id=\"pf-agent-result\"")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("data-agent-after-submit"))));
+    }
+
+    @Test
+    void 제출한_뒤_수정을_누르기_전_화면은_수정에서_볼_수_있다고_알리고_안내는_그리지_않는다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(7L, true)));
+
+        mockMvc.perform(get("/courses/3/portfolio").with(login()))
+                .andExpect(content().string(Matchers.containsString("data-agent-after-submit")))
+                .andExpect(content().string(Matchers.containsString("내 포트폴리오 &gt; 수정에서 확인할 수 있습니다.")))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("세팅 방법 안내"))))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("/courses/3/portfolio/agent-file"))));
     }
 
     @Test
@@ -203,6 +240,16 @@ class PortfolioPageControllerTest {
         mockMvc.perform(get("/courses/3/portfolio/agent-file").with(login()))
                 .andExpect(status().isForbidden())
                 .andExpect(view().name("error/error"));
+    }
+
+    @Test
+    void 제출하기_전의_설정_파일은_주소를_직접_열어도_내려받을_수_없다() throws Exception {
+        given(portfolioService.getAgentFileUrl(1L, 3L)).willThrow(new BusinessException(PortfolioErrorCode.AGENT_NOT_OPEN));
+
+        mockMvc.perform(get("/courses/3/portfolio/agent-file").with(login()))
+                .andExpect(status().isForbidden())
+                .andExpect(view().name("error/error"))
+                .andExpect(content().string(Matchers.containsString("포트폴리오를 제출하면 평가 에이전트를 볼 수 있습니다.")));
     }
 
     @Test
@@ -697,15 +744,18 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("aria-pressed=\"true\">비공개")));
     }
 
+    /* 점검 결과 칸은 수정 상태에만 있다 (#404). 길이 오류도 수정에서 그 칸의 메시지로 보여 준다 */
     @Test
-    void 에이전트_점검_결과가_너무_길면_그_칸에_메시지를_보여_준다() throws Exception {
-        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+    void 수정할_때_에이전트_점검_결과가_너무_길면_그_칸에_메시지를_보여_준다() throws Exception {
+        given(portfolioManageService.getOwnedCourseId(1L, 7L)).willReturn(3L);
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(7L, true)));
         willThrow(new BusinessException(PortfolioErrorCode.INVALID_INPUT))
-                .given(portfolioSubmitService).submit(eq(1L), eq(3L), any(), any());
+                .given(portfolioSubmitService).edit(eq(1L), eq(7L), any(), any());
 
-        mockMvc.perform(submitRequest(RETRO, "true"))
+        mockMvc.perform(editRequest(RETRO))
                 .andExpect(status().isOk())
-                .andExpect(content().string(Matchers.containsString("에이전트 점검 결과가 너무 깁니다.")));
+                .andExpect(content().string(Matchers.containsString("에이전트 점검 결과가 너무 깁니다.")))
+                .andExpect(content().string(Matchers.containsString("id=\"pf-agent-result\"")));
     }
 
     @Test
