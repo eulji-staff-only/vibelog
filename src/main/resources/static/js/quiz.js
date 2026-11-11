@@ -113,8 +113,11 @@
             button.dataset.choiceId = String(choice.quizChoiceId);
             if (type === 'TRICK') {
                 button.classList.add('qz-fish', 'is-p' + (ci + 1));
-                button.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 150 72" aria-hidden="true"><path class="qz-fish__fin" d="M30 38 L4 14 Q14 38 4 62 Z"/><ellipse class="qz-fish__body" cx="82" cy="38" rx="56" ry="27"/><circle class="qz-fish__eye" cx="122" cy="32" r="4"/></svg>');
-                button.appendChild(el('span', null, choice.content));
+                // 몸통(x 42~198) 안, 눈(x 178)과 꼬리(x 46 왼쪽)를 피한 자리에 글자를 놓는다. 긴 보기는 글자를 조금 줄인다 (#399)
+                button.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 220 116" aria-hidden="true"><path class="qz-fish__fin" d="M46 60 L6 20 Q20 60 6 100 Z"/><path class="qz-fish__fin" d="M84 24 C98 -2 134 -2 156 30 Z"/><path class="qz-fish__fin" d="M102 96 C110 118 134 118 142 96 Z"/><ellipse class="qz-fish__body" cx="120" cy="60" rx="78" ry="42"/><circle class="qz-fish__eye" cx="178" cy="46" r="4.5"/></svg>');
+                const label = el('span', null, choice.content);
+                if (choice.content.length > 14) label.classList.add('is-long');
+                button.appendChild(label);
             } else {
                 if (type !== 'CONCEPT') button.classList.add('is-mono');
                 button.textContent = choice.content;
