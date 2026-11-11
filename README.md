@@ -198,7 +198,7 @@ Gradle은 설치하지 않아도 됩니다. 저장소에 들어 있는 `gradlew`
 > SPRING_MAIL_HOST=smtp.gmail.com;SPRING_MAIL_USERNAME=<팀 Gmail>;SPRING_MAIL_PASSWORD=<앱 비밀번호>;MAIL_FROM=<팀 Gmail>
 > ```
 >
-> ⚠️ Windows 시스템 환경 변수(`setx`, 시스템 설정)에는 넣지 마세요. 그러면 `./gradlew build` 테스트가 가짜 주소로 **실제 메일을 보내** 팀 계정의 하루 발송 한도(약 500통)를 쓰고, 계정이 스팸 발송자로 찍힐 수 있습니다.
+> ⚠️ IntelliJ 실행 설정에만 넣고, 컴퓨터 전체 환경 변수(윈도우 `setx`·시스템 설정, 맥·리눅스 `~/.zshrc`·`~/.bashrc`의 `export`)에는 넣지 마세요. 그러면 `./gradlew build` 테스트가 가짜 주소로 **실제 메일을 보내** 팀 계정의 하루 발송 한도(약 500통)를 쓰고, 계정이 스팸 발송자로 찍힐 수 있습니다.
 >
 > | 환경 변수 | 예 |
 > | --- | --- |
