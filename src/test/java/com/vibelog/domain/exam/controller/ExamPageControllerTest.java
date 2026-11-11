@@ -86,7 +86,20 @@ class ExamPageControllerTest {
         given(examService.getCourseId(7L)).willReturn(3L);
 
         mockMvc.perform(get("/lessons/7/exam").with(login()))
-                .andExpect(redirectedUrl("/courses/3/lessons/7?activity=exam"));
+                .andExpect(redirectedUrl("/courses/3/lessons/7?activity=exam"))
+                .andExpect(flash().attributeCount(0));
+    }
+
+    @Test
+    void 받은_안내는_수업_화면까지_넘겨_준다() throws Exception {
+        // 리포트 화면(없는 회차) → 모의고사 화면 → 수업 화면으로 두 번 가도 안내가 남아야 한다 (#402)
+        given(examService.getPage(1L, 7L)).willReturn(Optional.empty());
+        given(examService.getCourseId(7L)).willReturn(3L);
+
+        mockMvc.perform(get("/lessons/7/exam").with(login())
+                        .flashAttr("toast", ExamErrorCode.EXAM_NOT_SUBMITTED.getMessage()))
+                .andExpect(redirectedUrl("/courses/3/lessons/7?activity=exam"))
+                .andExpect(flash().attribute("toast", ExamErrorCode.EXAM_NOT_SUBMITTED.getMessage()));
     }
 
     @Test

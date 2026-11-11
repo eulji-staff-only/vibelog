@@ -120,6 +120,29 @@ class LoginLockPolicyTest {
         assertThat(policy.size()).isEqualTo(1);
     }
 
+    /* 잠금 남은 시간 (#394): 풀리는 시각은 잠긴 때 + 5분이고, 다시 시도해도 늦춰지지 않는다 */
+    @Test
+    void 잠기고_2분_뒤_남은_시간은_3분이다() {
+        assertThat(policy.lockedUntil(EMAIL)).isEmpty();
+        tryFiveTimes(EMAIL);
+        later(Duration.ofMinutes(2));
+        policy.tryAttempt(EMAIL);
+
+        assertThat(Duration.between(now.get(), policy.lockedUntil(EMAIL).orElseThrow())).isEqualTo(Duration.ofMinutes(3));
+
+        later(Duration.ofMinutes(3));
+        assertThat(policy.lockedUntil(EMAIL)).isEmpty();
+    }
+
+    /* 주소로 받은 until 은 바꿀 수 있으므로 0 ~ 5분으로 자른다 (#394) */
+    @Test
+    void 남은_초는_풀리는_시각으로_계산하고_0초에서_5분_사이로_자른다() {
+        long nowSeconds = now.get().getEpochSecond();
+        assertThat(policy.remainingSeconds(nowSeconds + 180)).isEqualTo(180);
+        assertThat(policy.remainingSeconds(nowSeconds + 100_000)).isEqualTo(300);
+        assertThat(policy.remainingSeconds(nowSeconds - 10)).isZero();
+    }
+
     private void tryFiveTimes(String email) {
         for (int i = 0; i < 5; i++) {
             policy.tryAttempt(email);

@@ -49,18 +49,28 @@ public class ExamPageController {
         };
     }
 
-    /* U-15 모의고사 (API-EXM-02). 진행 중인 응시가 없으면 수업 화면의 모의고사 항목으로 */
+    /*
+     * U-15 모의고사 (API-EXM-02). 진행 중인 응시가 없으면 수업 화면의 모의고사 항목으로.
+     * 이 화면으로 오며 받은 안내(예: 리포트 화면의 EXAM_NOT_SUBMITTED)는 수업 화면까지 넘겨 준다.
+     * 다시 redirect 하면 flash 가 한 번 더 넘어가지 않아 안내가 사라지기 때문이다 (#402)
+     */
     @GetMapping("/lessons/{lessonId}/exam")
     public String exam(@PathVariable Long lessonId,
                        @AuthenticationPrincipal LoginMember loginMember,
-                       Model model) {
+                       Model model, RedirectAttributes redirectAttributes) {
         return examService.getPage(loginMember.getMemberId(), lessonId)
                 .map(page -> {
                     model.addAttribute("page", page);
                     return "exam/exam";
                 })
-                .orElseGet(() -> "redirect:/courses/" + examService.getCourseId(lessonId)
-                        + "/lessons/" + lessonId + "?activity=exam");
+                .orElseGet(() -> {
+                    Object toast = model.getAttribute("toast");
+                    if (toast != null) {
+                        redirectAttributes.addFlashAttribute("toast", toast);
+                    }
+                    return "redirect:/courses/" + examService.getCourseId(lessonId)
+                            + "/lessons/" + lessonId + "?activity=exam";
+                });
     }
 
     /* API-EXM-04 제출·채점 → 오답 분석 리포트 */

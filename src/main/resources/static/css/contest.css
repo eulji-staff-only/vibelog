@@ -16,6 +16,7 @@
 textarea.ct-input { min-height: 120px; padding: var(--space-4); resize: vertical; }
 .ct-period { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-5); }
 .ct-error { margin: 0; font-size: 14px; color: var(--danger); }
+.ct-hint { margin: 0; font-size: 13px; color: var(--ink-muted); }
 .ct-muted { margin: 0; font-size: 14px; color: var(--ink-muted); }
 .ct-link { color: var(--link); font-weight: 700; }
 .ct-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }

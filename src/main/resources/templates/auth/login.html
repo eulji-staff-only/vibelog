@@ -6,6 +6,7 @@
     <title>로그인 | 바이브로그</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/auth.css}">
+    <script th:src="@{/js/auth.js}" defer></script>
 </head>
 <body class="au-page">
 <!-- U-03 로그인. 폼은 #12 에서 Spring Security 에 연결했다. 구글·깃허브 로그인 동작은 소셜 로그인 이슈(#91)에서 붙인다. -->
@@ -37,9 +38,18 @@
         <div class="au-notice is-danger" th:if="${param.suspended} and ${suspension == null}">
             <strong>이용이 정지된 계정입니다</strong>
         </div>
+        <!-- 잠금 남은 시간 (#394). lockRemainingSeconds 는 서버가 풀리는 시각(until)으로 계산하고, auth.js 가 1초씩 줄인다.
+             until 이 없는 예전 주소면 고정 안내만 보인다 -->
         <div class="au-notice is-danger" th:if="${param.locked}">
             <strong>잠시 로그인할 수 없습니다</strong>
-            <p>로그인에 5번 실패해 5분 동안 로그인할 수 없습니다. 5분 뒤에 다시 시도해 주세요.</p>
+            <p th:if="${lockRemainingSeconds == null}">로그인에 5번 실패해 5분 동안 로그인할 수 없습니다. 5분 뒤에 다시 시도해 주세요.</p>
+            <th:block th:if="${lockRemainingSeconds != null}">
+                <p data-lock-wait th:hidden="${lockRemainingSeconds == 0}" th:attr="data-lock-seconds=${lockRemainingSeconds}">
+                    로그인에 5번 실패해 5분 동안 로그인할 수 없습니다.
+                    남은 시간 <strong data-lock-left th:text="|${lockRemainingSeconds / 60}:${#numbers.formatInteger(lockRemainingSeconds % 60, 2)}|">4:59</strong>
+                </p>
+                <p role="status" data-lock-done th:hidden="${lockRemainingSeconds > 0}">이제 다시 로그인할 수 있습니다.</p>
+            </th:block>
         </div>
 
         <!-- th:action 으로 만들어야 CSRF 토큰이 자동으로 들어간다 -->

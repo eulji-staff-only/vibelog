@@ -81,6 +81,8 @@
 .au-pager { display: flex; justify-content: center; align-items: center; gap: var(--space-5); padding-top: var(--space-5); font-size: 14px; }
 .au-pager a { color: var(--link); font-weight: 700; }
 .au-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-10) 0; text-align: center; }
+/* 빈 상태의 이동 버튼(커뮤니티 둘러보기 등)은 문구 아래 오른쪽에 둔다 (#400). 모바일은 버튼 폭 100%라 그대로 */
+.au-empty .au-btn { align-self: flex-end; }
 
 /* 회원 탈퇴 확인 모달 (M-06). 브라우저 기본 dialog */
 .au-dialog { width: min(440px, calc(100% - 32px)); box-sizing: border-box; padding: var(--space-8); border: 0; border-radius: var(--radius-panel); }

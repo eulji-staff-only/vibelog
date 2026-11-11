@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /*
@@ -198,9 +199,11 @@ class SecurityConfigTest {
         for (int i = 0; i < 4; i++) {
             login(email, "wrong", null, null).andExpect(redirectedUrl("/login?error"));
         }
-        // 대소문자만 바꾼 이메일도 같은 회원으로 센다
-        login(email.toUpperCase(), "wrong", null, null).andExpect(redirectedUrl("/login?locked"));
-        login(email, password, null, null).andExpect(redirectedUrl("/login?locked"));
+        // 대소문자만 바꾼 이메일도 같은 회원으로 센다. 잠금이 풀리는 시각(until)을 함께 넘긴다 (#394)
+        String locked = login(email.toUpperCase(), "wrong", null, null)
+                .andExpect(redirectedUrlPattern("/login?locked&until=*")).andReturn().getResponse().getRedirectedUrl();
+        // 잠긴 동안 다시 시도해도 풀리는 시각은 그대로다
+        login(email, password, null, null).andExpect(redirectedUrl(locked));
     }
 
     @Test

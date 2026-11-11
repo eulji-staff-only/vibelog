@@ -507,6 +507,7 @@ public class Quiz extends BaseTimeEntity { ... }
 - 공통 파일(`global/`, `templates/common/`, `static/css/common.css` 등)과 `contest`·`message`처럼 담당이 없는 영역은 P1이어도 기본 리뷰어만 봅니다.
 - 묶음 B(`course`·`quiz`)는 영역 담당 승인을 요구하지 않습니다 (#204). 기본 리뷰어만 봅니다.
 - 묶음 담당이 바뀌면 [영역 담당](#영역-담당) 표와 [`.github/scripts/area-review.sh`](.github/scripts/area-review.sh)의 담당 표를 같이 고칩니다.
+- **임시 규칙 (#421):** 저장소 변수 `AREA_REVIEW_OPTIONAL_REVIEWERS`에 적힌 사람(지금은 PM `dyryoo316`, 다른 작업 중)은 리뷰어로 지정만 되고 승인은 요구하지 않습니다. 그동안 P1 PR은 형상관리 승인만으로, 형상관리가 작성한 P1 PR은 기본 승인 없이 머지됩니다 (그 밖의 영역 담당 승인은 그대로). 끝나면 형상관리가 `gh variable delete AREA_REVIEW_OPTIONAL_REVIEWERS`로 지우고 이 줄을 뺍니다.
 - 승인 조건은 **이 표가 전부**입니다. `CLAUDE.md`·`.claude/`·협업 문서 같은 팀 규칙 변경도 같은 조건으로 머지하고, 머지 후 팀 채팅에 공지합니다.
 
 **자동 빌드 검사 (GitHub Actions)**
