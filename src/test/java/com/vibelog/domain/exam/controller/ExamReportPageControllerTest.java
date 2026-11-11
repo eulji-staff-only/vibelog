@@ -18,7 +18,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -93,6 +97,16 @@ class ExamReportPageControllerTest {
         mockMvc.perform(get("/lessons/7/exam/report").with(login()))
                 .andExpect(content().string(Matchers.containsString("포트폴리오 과제가 열렸습니다.")))
                 .andExpect(content().string(Matchers.containsString("/courses/3/portfolio")));
+    }
+
+    @Test
+    void 수강을_포기했으면_리포트를_열지_않고_코스_상세로_보내고_안내한다() throws Exception {
+        given(examReportService.findCourseIdIfNotLearning(1L, 7L)).willReturn(Optional.of(3L));
+
+        mockMvc.perform(get("/lessons/7/exam/report").with(login()))
+                .andExpect(redirectedUrl("/courses/3"))
+                .andExpect(flash().attribute("toast", ExamErrorCode.COURSE_NOT_ENROLLED.getMessage()));
+        verify(examReportService, never()).getReport(anyLong(), anyLong(), any());
     }
 
     @Test
