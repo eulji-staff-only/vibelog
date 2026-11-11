@@ -61,7 +61,9 @@ class ContestAdminTest {
         YearMonth next = YearMonth.now().plusMonths(1);
         mockMvc.perform(get("/admin/contests").with(as(admin)))
                 .andExpect(content().string(allOf(containsString("value=\"" + next + "\""),
-                        containsString("value=\"" + next.atDay(21).atStartOfDay().format(FORM) + "\""))));
+                        containsString("value=\"" + next.atDay(21).atStartOfDay().format(FORM) + "\""),
+                        // 월을 바꾸면 기간을 그 달 기본값으로 바꾸는 화면 동작과 안내 (#401)
+                        containsString("/js/contest-admin.js"), containsString("월을 바꾸면 아래 기간이 그 달 기본값"))));
     }
 
     @Test

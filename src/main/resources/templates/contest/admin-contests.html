@@ -7,6 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/common.css}">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <link rel="stylesheet" th:href="@{/css/contest.css}">
+    <script th:src="@{/js/contest-admin.js}" defer></script>
 </head>
 <body>
 <!--
@@ -27,7 +28,8 @@
             </div>
             <div class="ct-field">
                 <label for="contestMonth">월</label>
-                <input class="ct-input" id="contestMonth" type="month" th:field="*{contestMonth}" aria-describedby="month-error">
+                <input class="ct-input" id="contestMonth" type="month" th:field="*{contestMonth}" aria-describedby="month-hint month-error">
+                <p class="ct-hint" id="month-hint">월을 바꾸면 아래 기간이 그 달 기본값(1일 / 21일 / 21일 / 다음 달 1일 0시)으로 바뀝니다.</p>
                 <p class="ct-error" id="month-error" th:if="${#fields.hasErrors('contestMonth')}" th:errors="*{contestMonth}">월 오류</p>
             </div>
             <div class="ct-field">
