@@ -25,8 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /*
  * 내 학습(U-12, API-ENR-02) 데이터 — 수업 상태 · 모의고사 상태 · 포트폴리오 상태 · 진행률(PL-ENR-006)을
- * 실제 DB(01·02 실행된 로컬 MySQL)로 확인한다. 회원은 02-seed 테스트 계정(1 학습자)을 쓰고,
- * 코스·수업은 테스트 안에서만 넣는다. 끝나면 모두 롤백된다.
+ * 실제 DB(01·02 실행된 로컬 MySQL)로 확인한다. 회원·코스·수업은 테스트 안에서만 넣는다.
+ * (02-seed 학습자 1에는 코스 1 완료 기록이 있어 완료 탭 기대값이 달라지므로 테스트 전용 회원을 쓴다, #429). 끝나면 모두 롤백된다.
  *
  * 테스트 코스 구조 (코스 B, 9101) — 공개 수업 3개
  *  - 수업 1(9101): 완료 (리포트 확인까지 끝남)
@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Transactional
 @Sql(statements = {
+        "INSERT INTO member (member_id, email, nickname) VALUES (9111, 'my-learning@vibelog.test', '내학습테스트')",
         "INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9101, '테스트 트랙', '대상', '설명', 9101)",
         "INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9101, '테스트 카테고리', 9101)",
         "INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days) VALUES "
@@ -52,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 class MyLearningServiceTest {
 
-    static final long LEARNER = 1L;
+    static final long LEARNER = 9111L;
     static final long COURSE_B = 9101L;
     static final long COURSE_C = 9102L;
     static final long LESSON_1 = 9101L;
