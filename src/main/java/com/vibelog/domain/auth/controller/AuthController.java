@@ -83,9 +83,14 @@ public class AuthController {
      * API-USR-04. 구글·깃허브 버튼은 키가 있는 것만 보여 준다 (#91).
      * 소셜 로그인은 구글·깃허브를 돌아오며 redirect 값을 잃으므로 세션에 두고, 돌아오면 SocialLoginSuccessHandler 가 꺼낸다 (#363).
      * redirect 없이 열면 지난 값을 지운다 (예전에 열어 둔 로그인 화면의 주소로 가지 않게).
+     * 로그인한 회원이 오면 회원가입(API-USR-02)과 같게 메인으로 보낸다. 로그인 뒤 뒤로 가기도 이 요청을 다시 보내므로 함께 막힌다 (#393).
      */
     @GetMapping("/login")
-    public String loginPage(@RequestParam(required = false) String redirect, HttpSession session, Model model) {
+    public String loginPage(@RequestParam(required = false) String redirect, Principal principal,
+                            HttpSession session, Model model) {
+        if (principal != null) {
+            return "redirect:/";
+        }
         if (redirect == null) {
             session.removeAttribute(SocialLoginSuccessHandler.REDIRECT);
         } else {
