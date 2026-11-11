@@ -76,7 +76,7 @@ public class PortfolioPageController {
         PortfolioPageView page = (PortfolioPageView) model.getAttribute("page");
         if (edit && page != null && page.submittedPortfolioId() != null) {
             model.addAttribute("portfolioSubmitForm", portfolioManageService.getEditForm(memberId, page.submittedPortfolioId()));
-            model.addAttribute("editPortfolioId", page.submittedPortfolioId());
+            addEditState(memberId, page.submittedPortfolioId(), model);
         } else {
             model.addAttribute("portfolioSubmitForm", new PortfolioSubmitForm());
         }
@@ -161,8 +161,14 @@ public class PortfolioPageController {
         if (courseId == null) {
             return personalView(memberId, portfolioId, model);   // 개인 작품은 U-34 수정 상태로 다시
         }
-        model.addAttribute("editPortfolioId", portfolioId);
+        addEditState(memberId, portfolioId, model);
         return pageView(courseId, memberId, model);
+    }
+
+    /* U-17 수정 상태: 보낼 곳(수정 ID)과 지금 올라가 있는 스크린샷(없으면 null). 새로 고르지 않으면 그대로 두는 그림이다 (#403) */
+    private void addEditState(Long memberId, Long portfolioId, Model model) {
+        model.addAttribute("editPortfolioId", portfolioId);
+        model.addAttribute("currentScreenshotUrl", portfolioManageService.getScreenshotUrl(memberId, portfolioId));
     }
 
     /* API-PRT-07 삭제 (M-04 확인 후) → 내 포트폴리오 + toast */
@@ -185,8 +191,12 @@ public class PortfolioPageController {
             bindingResult.rejectValue("agentResult", e.getErrorCode().toString(), "에이전트 점검 결과가 너무 깁니다. 줄여서 적어 주세요.");
             return;
         }
-        if (e.getErrorCode() != CommonErrorCode.BANNED_WORD && e.getErrorCode() != CommonErrorCode.INVALID_FILE
-                && e.getErrorCode() != PortfolioErrorCode.CONTEST_ENTERED) {
+        if (e.getErrorCode() == CommonErrorCode.INVALID_FILE) {
+            // 이 화면에서 올리는 파일은 스크린샷뿐이라, 설정 파일 안내가 섞인 공통 문구 대신 스크린샷 문구를 보여 준다 (#403)
+            bindingResult.reject(PortfolioErrorCode.INVALID_SCREENSHOT.toString(), PortfolioErrorCode.INVALID_SCREENSHOT.getMessage());
+            return;
+        }
+        if (e.getErrorCode() != CommonErrorCode.BANNED_WORD && e.getErrorCode() != PortfolioErrorCode.CONTEST_ENTERED) {
             throw e;
         }
         bindingResult.reject(e.getErrorCode().toString(), e.getMessage());

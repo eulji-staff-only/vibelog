@@ -24,6 +24,8 @@ public enum PortfolioErrorCode implements ErrorCode {
     PORTFOLIO_NOT_SUBMITTED(HttpStatus.FORBIDDEN, "포트폴리오를 제출하면 같은 코스 작품을 볼 수 있습니다."),
     /* 평가 에이전트는 포트폴리오를 제출한 뒤에 열린다 (#404). 설정 파일 주소를 직접 열었을 때 */
     AGENT_NOT_OPEN(HttpStatus.FORBIDDEN, "포트폴리오를 제출하면 평가 에이전트를 볼 수 있습니다. 제출한 뒤 내 포트폴리오에서 수정을 눌러 확인해 주세요."),
+    /* U-17 스크린샷이 형식·크기에 맞지 않을 때 (PL-PRT-005). 공통 INVALID_FILE 문구는 설정 파일 안내까지 섞여 있어 학습자용으로 따로 둔다 (#403) */
+    INVALID_SCREENSHOT(HttpStatus.BAD_REQUEST, "스크린샷은 JPG·PNG·WebP 이미지 1장, 5MB까지 올릴 수 있습니다. 다른 이미지를 골라 주세요."),
     HIDDEN_CONTENT(HttpStatus.FORBIDDEN, "운영 정책에 따라 숨겨진 콘텐츠입니다."),
     CONTEST_ENTERED(HttpStatus.CONFLICT, "콘테스트에 출품한 작품은 수정할 수 없습니다."),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없습니다.");

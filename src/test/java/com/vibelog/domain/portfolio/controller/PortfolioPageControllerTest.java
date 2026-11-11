@@ -645,6 +645,55 @@ class PortfolioPageControllerTest {
                 .andExpect(content().string(Matchers.containsString("action=\"/portfolios/7/edit\"")));
     }
 
+    /* ---------- #403 스크린샷 칸 ---------- */
+
+    @Test
+    void 스크린샷_형식이_틀리면_설정_파일_안내_없이_스크린샷_문구를_보여_준다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+        willThrow(new BusinessException(CommonErrorCode.INVALID_FILE))
+                .given(portfolioSubmitService).submit(eq(1L), eq(3L), any(), any());
+
+        mockMvc.perform(submitRequest(RETRO, "true"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portfolio/portfolio"))
+                .andExpect(content().string(Matchers.containsString(PortfolioErrorCode.INVALID_SCREENSHOT.getMessage())))
+                .andExpect(content().string(Matchers.not(Matchers.containsString(CommonErrorCode.INVALID_FILE.getMessage()))));
+    }
+
+    @Test
+    void 수정_상태에는_지금_올라가_있는_스크린샷을_보여_준다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(7L, true)));
+        given(portfolioManageService.getEditForm(1L, 7L)).willReturn(new PortfolioSubmitForm());
+        given(portfolioManageService.getScreenshotUrl(1L, 7L)).willReturn("/uploads/shot-7.png");
+
+        mockMvc.perform(get("/courses/3/portfolio").param("edit", "true").with(login()))
+                .andExpect(content().string(Matchers.containsString("src=\"/uploads/shot-7.png\"")))
+                .andExpect(content().string(Matchers.containsString("지금 올라가 있는 스크린샷입니다.")));
+    }
+
+    @Test
+    void 수정에_실패해_다시_그린_폼에도_지금_스크린샷을_보여_준다() throws Exception {
+        given(portfolioManageService.getOwnedCourseId(1L, 7L)).willReturn(3L);
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(7L, true)));
+        given(portfolioManageService.getScreenshotUrl(1L, 7L)).willReturn("/uploads/shot-7.png");
+        willThrow(new BusinessException(CommonErrorCode.INVALID_FILE))
+                .given(portfolioSubmitService).edit(eq(1L), eq(7L), any(), any());
+
+        mockMvc.perform(editRequest(RETRO))
+                .andExpect(content().string(Matchers.containsString(PortfolioErrorCode.INVALID_SCREENSHOT.getMessage())))
+                .andExpect(content().string(Matchers.containsString("src=\"/uploads/shot-7.png\"")));
+    }
+
+    @Test
+    void 처음_제출하는_화면에는_지금_스크린샷_자리가_없고_고른_파일_표시와_빼기가_있다() throws Exception {
+        given(portfolioService.getPage(1L, 3L)).willReturn(Optional.of(openPage(null, true)));
+
+        mockMvc.perform(get("/courses/3/portfolio").with(login()))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("pf-shot-current"))))
+                .andExpect(content().string(Matchers.containsString("data-shot-name")))
+                .andExpect(content().string(Matchers.containsString("data-shot-clear")));
+    }
+
     @Test
     void 영구_정지_회원의_포트폴리오_상세는_숨김_안내_오류_화면으로_보낸다() throws Exception {
         given(portfolioManageService.getDetail(1L, 7L)).willThrow(new BusinessException(PortfolioErrorCode.HIDDEN_CONTENT));

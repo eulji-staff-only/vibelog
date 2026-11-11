@@ -182,12 +182,20 @@
                         </div>
                         <div class="pf-field">
                             <span class="pf-label">스크린샷 (선택)</span>
+                            <!-- 수정 상태: 지금 올라가 있는 스크린샷. 새 이미지를 고를 때만 바뀐다 (#403) -->
+                            <div class="pf-shot-current" th:if="${currentScreenshotUrl != null}">
+                                <img th:src="${currentScreenshotUrl}" alt="지금 올라가 있는 스크린샷">
+                                <span class="pf-msg">지금 올라가 있는 스크린샷입니다. 새 이미지를 고르면 바뀝니다.</span>
+                            </div>
                             <div class="pf-upload">
                                 <label class="pf-btn pf-btn-outline pf-btn-s" for="pf-screenshot">이미지 추가</label>
                                 <input class="pf-sr" id="pf-screenshot" type="file" name="screenshot" accept="image/jpeg,image/png,image/webp" data-shot>
-                                <span class="pf-msg">JPG·PNG·WebP · 1장 · 5MB</span>
+                                <span class="pf-msg" data-shot-hint>JPG·PNG·WebP · 1장 · 5MB</span>
+                                <!-- 고른 파일 이름과 빼기 (portfolio.js). 고르기 전에는 숨긴다 (#403) -->
+                                <span class="pf-shot-name" data-shot-name hidden></span>
+                                <button type="button" class="pf-btn pf-btn-outline pf-btn-s" data-shot-clear hidden>빼기</button>
                             </div>
-                            <span class="pf-msg is-error" role="alert" data-shot-error hidden>스크린샷은 5MB까지 올릴 수 있습니다. 더 작은 이미지를 골라 주세요.</span>
+                            <span class="pf-msg is-error" role="alert" data-shot-error hidden>스크린샷은 JPG·PNG·WebP 이미지 1장, 5MB까지 올릴 수 있습니다. 다른 이미지를 골라 주세요.</span>
                         </div>
                         <p class="pf-msg is-error" role="alert" data-key-warning hidden>API 키 형식의 문자열이 있습니다. 저장할 때 자동으로 가립니다 (예: sk-****).</p>
                     </div>

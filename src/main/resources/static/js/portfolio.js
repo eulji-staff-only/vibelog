@@ -60,9 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const keyWarning = root.querySelector('[data-key-warning]');
     const shot = root.querySelector('[data-shot]');
     const shotError = root.querySelector('[data-shot-error]');
+    const shotName = root.querySelector('[data-shot-name]');
+    const shotClear = root.querySelector('[data-shot-clear]');
     const SHOT_MAX = 5 * 1024 * 1024;   // PL-PRT-005·PL-DAT-004. 서버(FileStorage)도 다시 검사한다
-    // U-34 개인 작품 양식에는 스크린샷 칸이 없다 (#199)
-    const shotOk = () => !shot || !shot.files.length || shot.files[0].size <= SHOT_MAX;
+    const SHOT_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    // U-34 개인 작품 양식에는 스크린샷 칸이 없다 (#199).
+    // 파일 고르는 창에서 "모든 파일"로 다른 형식을 골라도 보내기 전에 막는다. 보내고 나서 막히면 고른 파일이 사라진다 (#403)
+    const shotOk = () => !shot || !shot.files.length
+        || (shot.files[0].size <= SHOT_MAX && SHOT_TYPES.includes(shot.files[0].type));
     // 서버(ApiKeyMasker)와 같은 형식 (PL-PRT-008)
     const apiKey = /(^|[^A-Za-z0-9])(sk-|sk_test_|sk_live_|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/;
     let ready = false;
@@ -125,6 +130,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 스크린샷 크기: 너무 크면 서버 업로드 제한에 걸려 입력한 내용이 사라지므로 보내기 전에 막는다
         if (shotError) shotError.hidden = shotOk();
+        // 고른 파일 이름과 빼기 버튼: 숨은 파일 칸만으로는 골랐는지 알 수 없어서 보여 준다 (#403)
+        if (shot) {
+            const file = shot.files[0];
+            shotName.hidden = !file;
+            shotClear.hidden = !file;
+            shotName.textContent = file ? `선택한 파일: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)` : '';
+        }
 
         ready = shotOk() && isUrl(url.value)
             && required.every((f) => f.value.trim().length > 0 && f.value.length <= Number(f.dataset.max || Infinity))
@@ -149,6 +161,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 준비가 안 됐으면 보내지 않고, 보낼 때는 버튼을 잠가 중복 제출을 막는다 (PL-ERR-003)
     if (shot) shot.addEventListener('change', render);
+    // 빼기: 고른 파일을 비운다. 수정 상태라면 지금 올라가 있는 스크린샷은 그대로 남는다
+    if (shotClear) shotClear.addEventListener('click', () => {
+        shot.value = '';
+        render();
+        shot.focus();
+    });
 
     form.addEventListener('submit', (e) => {
         if (!ready || submit.disabled) {
