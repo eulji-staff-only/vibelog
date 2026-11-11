@@ -120,7 +120,7 @@
 /* 낚시 문제: 연못 위 물고기 4마리. 물고기 자체가 보기 버튼이다 */
 .qz-pond {
     position: relative;
-    height: 360px;
+    height: 380px;
     border-radius: var(--radius-xl);
     background: linear-gradient(var(--tint) 0 22%, var(--link) 22% 100%);
     overflow: hidden;
@@ -160,11 +160,12 @@
     color: var(--navy-900);
 }
 .qz-fish span.is-long { font-size: 12px; line-height: 1.25; }
-/* 몸통 안(눈·꼬리 사이)에 글자가 들어가는 폭이라 물고기끼리 겹치지 않게 두 줄로 나눠 놓는다 */
-.qz-fish.is-p1 { left: 52%; top: 22%; }
-.qz-fish.is-p2 { left: 4%; top: 10%; }
-.qz-fish.is-p3 { left: 6%; top: 58%; }
-.qz-fish.is-p4 { left: 52%; top: 66%; }
+/* 몸통 안(눈·꼬리 사이)에 글자가 들어가는 폭이라 물고기끼리 겹치지 않게 두 줄로 나눠 놓는다.
+   맞힌 물고기는 자기 높이의 40%쯤 위로 올라가며 기울어지므로(qz-catch) 맨 위 물고기 위에 그만큼 여유를 둔다 (#399) */
+.qz-fish.is-p1 { left: 52%; top: 26%; }
+.qz-fish.is-p2 { left: 4%; top: 20%; }
+.qz-fish.is-p3 { left: 6%; top: 62%; }
+.qz-fish.is-p4 { left: 52%; top: 68%; }
 .qz-fish:hover { filter: brightness(1.06); }
 .qz-fish.is-correct, .qz-fish.is-wrong { background: none; }
 .qz-fish.is-correct .qz-fish__body { fill: var(--success-soft); stroke: var(--success); }
@@ -218,11 +219,11 @@
     .qz-choices.is-grid { grid-template-columns: 1fr; }
     .qz-choices.is-grid .qz-choice { min-height: 56px; }
     /* 모바일: 물고기를 한 마리씩 위아래로 엇갈려 놓아 글자가 들어갈 폭을 지킨다 */
-    .qz-pond { height: 520px; }
+    .qz-pond { height: 590px; }
     .qz-fish { width: min(240px, 64%); }
-    .qz-fish.is-p1 { left: 4%; right: auto; top: 1%; }
-    .qz-fish.is-p2 { left: auto; right: 4%; top: 26%; }
-    .qz-fish.is-p3 { left: 4%; right: auto; top: 51%; }
+    .qz-fish.is-p1 { left: 4%; right: auto; top: 13%; }
+    .qz-fish.is-p2 { left: auto; right: 4%; top: 34%; }
+    .qz-fish.is-p3 { left: 4%; right: auto; top: 55%; }
     .qz-fish.is-p4 { left: auto; right: 4%; top: 76%; }
     .qz-actions, .qz-result__actions, .qz-result__actions .vl-ui-btn-group { flex-direction: column; align-items: stretch; width: 100%; }
     .qz-actions .vl-ui-btn, .qz-result__actions .vl-ui-btn { width: 100%; }
