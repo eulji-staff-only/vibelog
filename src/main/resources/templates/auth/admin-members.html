@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>회원 | 바이브로그 백오피스</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
     <link rel="stylesheet" th:href="@{/css/auth-admin.css}">
 </head>
 <body>
-<!-- A-08 회원 목록 (API-ADM-37, #119). 닉네임·이메일 일부로 찾는다. 백오피스 공통 레이아웃(#81)이 머지되면 그 틀로 바꾼다 -->
-<div th:replace="~{common/layout :: header}"></div>
+<!-- A-08 회원 목록 (API-ADM-37, #119). 닉네임·이메일 일부로 찾는다. 백오피스 공통 틀(왼쪽 메뉴, #81)을 쓴다 (#445) -->
+<div class="vl-admin">
+<div th:replace="~{common/admin-layout :: sidebar('members')}"></div>
 
-<main class="am-main">
+<main class="vl-admin__content">
     <h1 class="am-title">회원</h1>
 
     <form class="am-search" action="/admin/members" method="get" role="search">
@@ -43,7 +45,6 @@
         <a th:if="${members.hasNext()}" th:href="@{/admin/members(q=${q}, page=${members.number + 2})}">다음 →</a>
     </nav>
 </main>
-
-<div th:replace="~{common/layout :: footer}"></div>
+</div>
 </body>
 </html>
