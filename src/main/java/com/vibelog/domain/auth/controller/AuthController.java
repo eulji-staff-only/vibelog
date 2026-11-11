@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.security.Principal;
 
@@ -85,12 +86,20 @@ public class AuthController {
      * API-USR-04. 구글·깃허브 버튼은 키가 있는 것만 보여 준다 (#91).
      * 소셜 로그인은 구글·깃허브를 돌아오며 redirect 값을 잃으므로 세션에 두고, 돌아오면 SocialLoginSuccessHandler 가 꺼낸다 (#363).
      * redirect 없이 열면 지난 값을 지운다 (예전에 열어 둔 로그인 화면의 주소로 가지 않게).
+     * 로그인한 회원이 오면 회원가입(API-USR-02)과 같게 메인으로 보낸다. 로그인 뒤 뒤로 가기도 이 요청을 다시 보내므로 함께 막힌다 (#393).
+     * 이때 /login 으로 온 안내(toast, 예: 비밀번호 재설정 완료)는 메인에서 보이게 넘긴다.
      * 잠금(locked)이면 풀리는 시각(until)으로 남은 초를 계산해 넘긴다. 화면은 그 값에서 1초씩 줄인다 (#394).
      * until 은 주소에 있어 바꿀 수 있어서 계산(5분을 넘지 않게 자르기 포함)은 LoginLockPolicy 가 한다.
      */
     @GetMapping("/login")
     public String loginPage(@RequestParam(required = false) String redirect, @RequestParam(required = false) Long until,
-                            HttpSession session, Model model) {
+                            Principal principal, HttpSession session, Model model, RedirectAttributes redirectAttributes) {
+        if (principal != null) {
+            if (model.getAttribute("toast") != null) {
+                redirectAttributes.addFlashAttribute("toast", model.getAttribute("toast"));
+            }
+            return "redirect:/";
+        }
         if (until != null) {
             model.addAttribute("lockRemainingSeconds", loginLockPolicy.remainingSeconds(until));
         }

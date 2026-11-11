@@ -6,6 +6,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -15,6 +16,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -49,6 +52,17 @@ class AuthControllerTest {
         mockMvc.perform(get("/login").param("redirect", "/mypage"))
                 .andExpect(content().string(allOf(containsString("로그인이 필요한 화면입니다. 로그인하면 보던 화면으로 돌아갑니다"),
                         not(containsString("로그아웃되었습니다")))));
+    }
+
+    /* 로그인한 회원은 로그인 폼 대신 메인으로 간다. 로그인 뒤 뒤로 가기도 같은 요청이다 (#393) */
+    @Test
+    @WithMockUser
+    void 로그인한_회원이_로그인_화면을_열면_메인으로_간다() throws Exception {
+        mockMvc.perform(get("/login")).andExpect(redirectedUrl("/"));
+        mockMvc.perform(get("/login").param("redirect", "/mypage")).andExpect(redirectedUrl("/"));
+        // 로그인한 채 비밀번호를 재설정하면 /login 으로 온 완료 안내를 메인까지 넘긴다
+        mockMvc.perform(get("/login").flashAttr("toast", "비밀번호가 변경되었습니다"))
+                .andExpect(redirectedUrl("/")).andExpect(flash().attribute("toast", "비밀번호가 변경되었습니다"));
     }
 
     /* 잠금 남은 시간 (#394). 풀리는 시각(until)으로 계산하고, 주소를 바꿔도 5분을 넘게 보이지 않는다 */
