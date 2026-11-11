@@ -191,14 +191,21 @@ Gradle은 설치하지 않아도 됩니다. 저장소에 들어 있는 `gradlew`
 
 > 💡 **메일 (선택, #89)** — 가입 인증·비밀번호 재설정 메일은 메일 서버 환경 변수가 있을 때만 실제로 보냅니다.
 > 로컬에서 메일 서버 없이 링크를 확인하려면 환경 변수 `MAIL_LOG_BODY=true`를 넣습니다. 그러면 **앱 로그에 메일 내용과 링크**가 찍히니 복사해 열면 됩니다 (배포 서버에는 넣지 않습니다).
-> 실제로 보내려면 실행 설정의 Environment variables 에 아래를 넣습니다 (Gmail 은 앱 비밀번호 사용).
+> 실제로 보내려면 IntelliJ에서 `VibelogApplication` 실행 설정(Edit Configurations…)의 Environment variables 에 아래를 넣습니다.
+> 팀 공용 Gmail 계정을 같이 씁니다 (#425). **주소와 앱 비밀번호는 형상관리 담당에게 개인 메시지로 받고**, 저장소·이슈·팀 채팅에는 적지 않습니다.
+>
+> ```
+> SPRING_MAIL_HOST=smtp.gmail.com;SPRING_MAIL_USERNAME=<팀 Gmail>;SPRING_MAIL_PASSWORD=<앱 비밀번호>;MAIL_FROM=<팀 Gmail>
+> ```
+>
+> ⚠️ Windows 시스템 환경 변수(`setx`, 시스템 설정)에는 넣지 마세요. 그러면 `./gradlew build` 테스트가 가짜 주소로 **실제 메일을 보내** 팀 계정의 하루 발송 한도(약 500통)를 쓰고, 계정이 스팸 발송자로 찍힐 수 있습니다.
 >
 > | 환경 변수 | 예 |
 > | --- | --- |
 > | `SPRING_MAIL_HOST` | `smtp.gmail.com` |
-> | `SPRING_MAIL_USERNAME` | 보내는 계정 |
-> | `SPRING_MAIL_PASSWORD` | 앱 비밀번호 |
-> | `MAIL_FROM` | 보내는 사람 주소 (기본 `no-reply@vibelog.example`) |
+> | `SPRING_MAIL_USERNAME` | 팀 Gmail 주소 |
+> | `SPRING_MAIL_PASSWORD` | 팀 Gmail 앱 비밀번호 (16자리, 공백 없이) |
+> | `MAIL_FROM` | `SPRING_MAIL_USERNAME` 과 같은 주소 (기본 `no-reply@vibelog.example` 이면 Gmail 이 바꾸거나 스팸으로 보낼 수 있음) |
 > | `APP_BASE_URL` | 메일 링크의 사이트 주소 (기본 `http://localhost:8080`, 배포 서버는 실제 주소) |
 
 > 💡 **구글·깃허브 로그인 (선택, #91)** — 키가 없으면 소셜 로그인은 꺼지고 로그인 화면에 버튼도 보이지 않습니다.
