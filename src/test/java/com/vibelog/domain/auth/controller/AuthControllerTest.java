@@ -8,6 +8,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -47,5 +49,19 @@ class AuthControllerTest {
         mockMvc.perform(get("/login").param("redirect", "/mypage"))
                 .andExpect(content().string(allOf(containsString("로그인이 필요한 화면입니다. 로그인하면 보던 화면으로 돌아갑니다"),
                         not(containsString("로그아웃되었습니다")))));
+    }
+
+    /* 잠금 남은 시간 (#394). 풀리는 시각(until)으로 계산하고, 주소를 바꿔도 5분을 넘게 보이지 않는다 */
+    @Test
+    void 잠금_안내는_풀리는_시각으로_남은_시간을_보여준다() throws Exception {
+        long now = Instant.now().getEpochSecond();
+        mockMvc.perform(get("/login").param("locked", "").param("until", String.valueOf(now + 100_000)))
+                .andExpect(content().string(allOf(containsString("data-lock-seconds=\"300\""), containsString("5:00"),
+                        not(containsString("5분 뒤에 다시 시도해 주세요")))));
+        mockMvc.perform(get("/login").param("locked", "").param("until", String.valueOf(now - 10)))
+                .andExpect(content().string(containsString("data-lock-seconds=\"0\"")));
+        // until 이 없는 예전 주소는 고정 안내
+        mockMvc.perform(get("/login").param("locked", ""))
+                .andExpect(content().string(containsString("5분 뒤에 다시 시도해 주세요")));
     }
 }

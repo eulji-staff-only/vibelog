@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -23,7 +24,7 @@ import java.util.function.Supplier;
 public class LoginLockPolicy {
 
     private static final int MAX_FAILURES = 5;
-    private static final Duration LOCK_TIME = Duration.ofMinutes(5);
+    public static final Duration LOCK_TIME = Duration.ofMinutes(5);
     private static final Duration SWEEP_INTERVAL = Duration.ofMinutes(1);
 
     // ponytail: 서버 메모리에 센다. 재시작하면 초기화되고, 서버를 여러 대 띄우면 서버마다 따로 센다.
@@ -44,6 +45,12 @@ public class LoginLockPolicy {
     public boolean isLocked(String email) {
         Attempt attempt = attempts.get(email);
         return attempt != null && attempt.lockedAt(now.get());
+    }
+
+    /* 잠금이 풀리는 시각 (#394). 잠기지 않았으면 empty. 잠긴 동안의 시도는 세지 않으므로 다시 시도해도 늦춰지지 않는다 */
+    public Optional<Instant> lockedUntil(String email) {
+        Attempt attempt = attempts.get(email);
+        return attempt != null && attempt.lockedAt(now.get()) ? Optional.of(attempt.lockedUntil()) : Optional.empty();
     }
 
     /* 비밀번호를 비교하기 전에 부른다. 잠겨 있으면 세지 않고 false, 아니면 시도를 하나 세고 true (5번째 시도부터 잠긴다) */
