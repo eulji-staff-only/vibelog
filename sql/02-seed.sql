@@ -1317,6 +1317,145 @@ INSERT INTO banned_word (banned_word_id, word) VALUES
     (2205, '스팸링크모음');
 
 -- =====================================================================
+-- 월간 콘테스트: 지난달(결과 발표) + 이번 달(진행 중) (#430, FR-CTS-001~005, PL-CTS-001~006)
+-- 직접 적는 ID: 101~199 (contest 101·102, portfolio 101~109, contest_entry 101~109, contest_award 101~104, notification 101~104)
+--   투표(contest_vote)는 수가 많아 SELECT 로 만들고 ID 는 DB 가 채운다
+-- 날짜는 NOW() 기준 → 언제 01 → 02 를 실행해도 "지난달 결과 + 이번 달 진행 중"이 보인다
+-- 기간은 운영자 화면 기본값과 같다 (ContestForm): 1일 0시 ~ 21일 0시 출품, 21일 0시 ~ 다음 달 1일 0시 투표 (PL-CTS-001)
+--
+-- 지난달 "스크롤 액션 애니메이션 페이지": 출품 5개, 득표 4,820 · 3,150 · 3,150 · 2,040 · 980
+--   수상은 시상 배치(ContestAwardService)와 같은 규칙: 표 많은 순, 같은 표면 같은 순위(1·1·2), 순위마다 2명까지, 3등까지
+--   → 1등 1명, 2등 공동 2명 (PL-CTS-006), 3등 1명. 수상 기록이 있으니 배치가 다시 집계하지 않는다
+-- 이번 달 "AI로 만든 미니게임": 출품 4개, 표 없음 (21일 이후에 실행하면 투표 중으로 보이고 0표에서 시작한다)
+--
+-- 출품작은 모두 공개 개인 작품 (PL-CTS-002). 출품자: 지난달 회원 3~7, 이번 달 회원 8~10·12 (1인 1작품)
+--   두 달 모두 이 회원들이 가입한 뒤라(가입 63~90일 전) 언제 실행해도 시간 순서가 맞는다
+-- 투표자: #431 대량 회원(100001~109970, 이메일 인증, 테스트 계정 아님 PL-CTS-004) 중 먼저 가입한 순서대로
+--   작품마다 투표 날짜를 하루씩 다르게 둬서(21·22·23·24·25일) 계정당 하루 1표·같은 작품 1번을 지킨다 (PL-CTS-003,
+--   uk_contest_vote_daily·uk_contest_vote_entry_voter). 출품자(3~7)는 투표자에 없어 자기 작품 투표도 없다
+-- 실행 순서: #431 블록(대량 회원) 다음에 있어야 한다
+-- =====================================================================
+
+INSERT INTO contest (contest_id, contest_month, topic, description, entry_starts_at, entry_ends_at, vote_starts_at, vote_ends_at, created_at, updated_at)
+SELECT 101, DATE_FORMAT(lm, '%Y-%m'), '스크롤 액션 애니메이션 페이지',
+       '스크롤을 내리면 요소가 나타나고 움직이는 한 페이지를 만들어 보세요. AI에게 애니메이션을 요청할 때 고칠 곳과 건드리지 않을 곳을 정해 두면 다른 섹션이 깨지지 않습니다.',
+       lm, lm + INTERVAL 20 DAY, lm + INTERVAL 20 DAY, cm, lm - INTERVAL 5 DAY, lm - INTERVAL 5 DAY
+FROM (SELECT CAST(DATE_FORMAT(NOW() - INTERVAL 1 MONTH, '%Y-%m-01') AS DATETIME) AS lm,
+             CAST(DATE_FORMAT(NOW(), '%Y-%m-01') AS DATETIME) AS cm) d
+UNION ALL
+SELECT 102, DATE_FORMAT(cm, '%Y-%m'), 'AI로 만든 미니게임',
+       'AI와 함께 브라우저에서 바로 해 볼 수 있는 작은 게임을 만들어 보세요. 규칙 하나, 화면 하나여도 좋습니다. 기능을 작게 나눠 요청하고 바뀐 부분을 확인하는 과정도 함께 남겨 주세요.',
+       cm, cm + INTERVAL 20 DAY, cm + INTERVAL 20 DAY, cm + INTERVAL 1 MONTH, cm - INTERVAL 5 DAY, cm - INTERVAL 5 DAY
+FROM (SELECT CAST(DATE_FORMAT(NOW() - INTERVAL 1 MONTH, '%Y-%m-01') AS DATETIME) AS lm,
+             CAST(DATE_FORMAT(NOW(), '%Y-%m-01') AS DATETIME) AS cm) d;
+
+-- 출품용 공개 개인 작품 9개 (PERSONAL 은 course_id NULL, ck_portfolio_type_course). 회고는 100자 이상 (PL-PRT-003)
+--   지난달 작품은 지난달 출품 기간 안에, 이번 달 작품은 이번 달이 되기 직전에 만든 것으로 한다
+INSERT INTO portfolio (portfolio_id, member_id, course_id, portfolio_type, title, result_url, summary, retrospective, ai_tools, is_public, created_at, updated_at)
+SELECT p.id, p.member_id, NULL, 'PERSONAL', p.title, p.url, p.summary, p.retro, p.tools, TRUE,
+       IF(p.last_month, d.lm, d.cm) + INTERVAL p.off_hour HOUR,
+       IF(p.last_month, d.lm, d.cm) + INTERVAL p.off_hour HOUR
+FROM (
+    SELECT 101 AS id, 3 AS member_id, TRUE AS last_month, 58 AS off_hour,
+           '스크롤하면 피어나는 꽃 랜딩 페이지' AS title,
+           'https://github.com/vibelog-sample/scroll-bloom' AS url,
+           '스크롤 위치에 따라 꽃잎이 하나씩 피어나는 한 페이지 랜딩이다' AS summary,
+           '처음에는 "스크롤 애니메이션 넣어 줘"라고만 했더니 헤더와 버튼 스타일까지 바뀌었다. 꽃 섹션의 CSS 파일 하나만 고치고 나머지는 그대로 두라고 범위를 적어 다시 요청했고, diff에서 요청하지 않은 폰트 변경 한 줄을 찾아 되돌렸다.' AS retro,
+           'Claude Code' AS tools
+    UNION ALL SELECT 102, 4, TRUE, 117, '패럴랙스 우주 여행 페이지', 'https://github.com/vibelog-sample/parallax-space',
+           '배경 별과 행성이 서로 다른 속도로 움직이는 패럴랙스 스크롤 페이지',
+           '레이어마다 속도를 다르게 주는 부분을 한 번에 요청하니 코드가 길어져 확인이 어려웠다. 별 레이어, 행성 레이어, 글자 레이어 순서로 나눠 요청하고 매번 커밋해 두었더니 어느 단계에서 깨졌는지 바로 찾을 수 있었다.',
+           'Cursor'
+    UNION ALL SELECT 103, 5, TRUE, 158, '스크롤로 넘기는 그림책', 'https://github.com/vibelog-sample/scroll-picture-book',
+           '스크롤할 때마다 그림책 한 장면씩 넘어가고 글자가 타이핑되듯 나온다',
+           '장면 전환은 잘 됐지만 모바일에서 글자가 겹치는 문제가 있었다. 장면 컴포넌트는 건드리지 말고 글자 스타일 파일만 고치라고 요청해 해결했다. 테스트는 없었지만 화면 폭을 바꿔 가며 직접 확인하는 체크리스트를 만들었다.',
+           'Claude Code, Git'
+    UNION ALL SELECT 104, 6, TRUE, 225, '숫자가 올라가는 회사 소개 페이지', 'https://github.com/vibelog-sample/count-up-intro',
+           '보이는 순간 통계 숫자가 0부터 올라가는 스크롤 연출을 넣은 소개 페이지',
+           '숫자가 보이기 전에 미리 올라가 버리는 버그가 있었다. 감지 함수 하나만 고쳐 달라고 범위를 정해 요청했더니 다른 섹션은 그대로 두고 그 부분만 바뀌었다. diff를 읽는 습관 덕분에 요청하지 않은 변경이 없는지 빠르게 확인했다.',
+           'GitHub Copilot'
+    UNION ALL SELECT 105, 7, TRUE, 306, '스크롤 따라 달리는 고양이', 'https://github.com/vibelog-sample/running-cat',
+           '스크롤 진행률에 맞춰 고양이가 화면 아래를 달리고 도착하면 인사한다',
+           '고양이 이미지가 스크롤 속도보다 늦게 따라오는 문제가 있었다. 처음에는 AI가 전체 구조를 바꾸려 해서 되돌렸고, 위치 계산 함수만 고치라고 다시 요청했다. 작은 범위로 나눠 요청하니 원하는 부분만 바뀌었다.',
+           'Cursor, Claude Code'
+    UNION ALL SELECT 106, 8, FALSE, -72, '단어 맞히기 미니게임', 'https://github.com/vibelog-sample/word-guess',
+           '다섯 글자 영어 단어를 여섯 번 안에 맞히는 브라우저 게임',
+           '게임 규칙과 화면을 한 번에 만들어 달라고 했다가 코드가 엉켰다. 규칙 검사 함수, 키보드 입력, 결과 표시 순서로 나눠 요청하고 단계마다 커밋했다. 규칙 함수에 테스트를 먼저 만들어 달라고 한 것이 가장 도움이 됐다.',
+           'Claude Code'
+    UNION ALL SELECT 107, 9, FALSE, -48, '두더지 잡기 타이머 게임', 'https://github.com/vibelog-sample/whack-a-mole',
+           '30초 동안 나타나는 두더지를 눌러 점수를 모으는 게임',
+           '두더지가 나타나는 간격을 바꿔 달라고 했더니 점수 계산 코드까지 바뀌었다. 간격을 정하는 상수만 바꾸고 점수 함수는 건드리지 말라고 적어 다시 요청했다. 바뀐 부분이 짧아져 확인이 훨씬 쉬웠다.',
+           'Cursor'
+    UNION ALL SELECT 108, 10, FALSE, -24, '숫자 합치기 퍼즐 게임', 'https://github.com/vibelog-sample/merge-numbers',
+           '같은 숫자 타일을 합쳐 큰 수를 만드는 퍼즐을 방향키로 즐긴다',
+           '타일이 합쳐지는 규칙이 가끔 두 번 적용되는 버그가 있었다. 합치기 함수 하나만 보라고 요청하고, 버그가 나는 상황을 그대로 적어 줬더니 원인을 바로 찾았다. 다음에는 처음부터 테스트할 상황을 함께 적어 요청하겠다.',
+           'Claude Code, Git'
+    UNION ALL SELECT 109, 12, FALSE, -18, '리듬 맞춰 누르기 게임', 'https://github.com/vibelog-sample/rhythm-tap',
+           '내려오는 노트에 맞춰 키를 누르면 판정이 뜨는 간단한 리듬 게임',
+           '판정 범위를 넓혀 달라고 했을 뿐인데 노트 속도까지 바뀌었다. 판정 함수만 고치고 속도 설정은 그대로 두라고 범위를 적어 다시 요청했고, diff로 요청하지 않은 변경이 없는지 확인했다. 작은 요청이 결국 더 빨랐다.',
+           'GitHub Copilot'
+) p
+CROSS JOIN (SELECT CAST(DATE_FORMAT(NOW() - INTERVAL 1 MONTH, '%Y-%m-01') AS DATETIME) AS lm,
+                   CAST(DATE_FORMAT(NOW(), '%Y-%m-01') AS DATETIME) AS cm) d;
+
+-- 출품: 지난달은 작품을 만든 지 1시간 뒤, 이번 달은 출품 기간 첫날 9시부터 하루씩 (단 지금보다 미래가 되지 않게)
+INSERT INTO contest_entry (contest_entry_id, contest_id, member_id, portfolio_id, canceled_at, created_at, updated_at)
+SELECT x.id, x.contest_id, p.member_id, p.portfolio_id, NULL, t.t, t.t
+FROM (SELECT 101 AS id, 101 AS contest_id, 101 AS portfolio_id UNION ALL
+      SELECT 102, 101, 102 UNION ALL
+      SELECT 103, 101, 103 UNION ALL
+      SELECT 104, 101, 104 UNION ALL
+      SELECT 105, 101, 105 UNION ALL
+      SELECT 106, 102, 106 UNION ALL
+      SELECT 107, 102, 107 UNION ALL
+      SELECT 108, 102, 108 UNION ALL
+      SELECT 109, 102, 109) x
+JOIN portfolio p ON p.portfolio_id = x.portfolio_id
+CROSS JOIN LATERAL (
+    SELECT IF(x.contest_id = 101, p.created_at + INTERVAL 1 HOUR,
+              GREATEST(d.cm, LEAST(d.cm + INTERVAL (x.id - 106) DAY + INTERVAL 9 HOUR,
+                                   NOW() - INTERVAL ((110 - x.id) * 7) MINUTE))) AS t
+    FROM (SELECT CAST(DATE_FORMAT(NOW(), '%Y-%m-01') AS DATETIME) AS cm) d
+) t;
+
+-- 투표 (지난달): 작품마다 정한 표 수만큼, 먼저 가입한 대량 회원부터. 작품 순서 d 에 따라 21+d 일에 투표한다
+INSERT INTO contest_vote (contest_id, contest_entry_id, voter_member_id, vote_date, created_at, updated_at)
+SELECT 101, e.entry_id, v.member_id, DATE(e.day),
+       e.day + INTERVAL (v.member_id % 1380) MINUTE, e.day + INTERVAL (v.member_id % 1380) MINUTE
+FROM (
+    SELECT entry_id, votes, CAST(DATE_FORMAT(NOW() - INTERVAL 1 MONTH, '%Y-%m-01') AS DATETIME) + INTERVAL (20 + d) DAY AS day
+    FROM (SELECT 101 AS entry_id, 4820 AS votes, 0 AS d UNION ALL
+          SELECT 102, 3150, 1 UNION ALL
+          SELECT 103, 3150, 2 UNION ALL
+          SELECT 104, 2040, 3 UNION ALL
+          SELECT 105, 980, 4) t
+) e
+JOIN (SELECT member_id, created_at, ROW_NUMBER() OVER (ORDER BY member_id) AS rn
+      FROM member WHERE member_id BETWEEN 100001 AND 109970) v
+  ON v.rn <= e.votes AND v.created_at < e.day;
+
+-- 수상 (지난달): 투표가 끝난 이번 달 1일 0시 직후 시상 배치가 남긴 것으로 한다. 수상 1건 = 배지 1개 (FR-RWD-001)
+INSERT INTO contest_award (contest_award_id, contest_id, contest_entry_id, award_rank, created_at, updated_at)
+SELECT a.id, 101, a.entry_id, a.award_rank, d.t, d.t
+FROM (SELECT 101 AS id, 101 AS entry_id, 1 AS award_rank UNION ALL
+      SELECT 102, 102, 2 UNION ALL
+      SELECT 103, 103, 2 UNION ALL
+      SELECT 104, 104, 3) a
+CROSS JOIN (SELECT CAST(DATE_FORMAT(NOW(), '%Y-%m-01') AS DATETIME) + INTERVAL 10 MINUTE AS t) d;
+
+-- 배지 알림 (지난달 수상자 4명): 시상 배치가 수상과 함께 보내는 알림과 같은 모양 (NotificationContractService.badgeAwarded,
+--   내용 "배지를 받았습니다: {yyyy}년 {M}월 {순위}등" = ContestAward.badgeName). 안 읽은 상태라 수상자로 로그인하면
+--   배지 획득 축하(M-10)가 뜬다. 직접 적는 ID 101~104 (#459 블록 주석: 배지 알림은 수상 데이터가 생기는 #430 에서 넣는다)
+INSERT INTO notification (notification_id, member_id, notification_type, target_type, target_id, content, read_at, created_at, updated_at)
+SELECT a.contest_award_id, e.member_id, 'BADGE', 'CONTEST_AWARD', a.contest_award_id,
+       CONCAT('배지를 받았습니다: ', LEFT(c.contest_month, 4), '년 ', CAST(SUBSTRING(c.contest_month, 6, 2) AS UNSIGNED), '월 ', a.award_rank, '등'),
+       NULL, a.created_at, a.created_at
+FROM contest_award a
+JOIN contest_entry e ON e.contest_entry_id = a.contest_entry_id
+JOIN contest c ON c.contest_id = a.contest_id
+WHERE a.contest_award_id BETWEEN 101 AND 104;
+
+-- =====================================================================
 -- Starter 트랙 공개 코스 2개 (#455, FR-CRS-001~003, FR-LSN-001~009, FR-EXM-001·002, PL-LSN-002·003, PL-EXM-002)
 -- 직접 적는 ID: 모든 표에서 3000~3999 (Controller 4000~ · Builder 5000~ · Explorer 6000~ 블록과 나눔)
 -- 구조는 코스 1과 같다: 수업 1 = 개념 → 퀴즈 → 개념 → 퀴즈 → 모의고사 / 수업 2 = 개념 → 퀴즈 → 모의고사 → 포트폴리오
