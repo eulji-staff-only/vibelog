@@ -39,6 +39,18 @@ class AdminMemberTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void 회원_목록과_상세는_백오피스_왼쪽_메뉴_안에서_보인다() throws Exception {
+        Long memberId = memberOf("틀확인회원", "frame@vibelog.test", "ACTIVE");
+
+        for (String url : new String[]{"/admin/members", "/admin/members/" + memberId}) {
+            mockMvc.perform(get(url))
+                    .andExpect(content().string(allOf(containsString("vl-admin__sidebar"), containsString("href=\"/admin\""),
+                            containsString("vl-admin__link is-active"), not(containsString("vl-header")))));
+        }
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void 닉네임이나_이메일_일부로_찾고_탈퇴_회원은_뺀다() throws Exception {
         memberOf("찾을회원가", "find-a@vibelog.test", "ACTIVE");
         memberOf("다른사람", "find-target@vibelog.test", "ACTIVE");

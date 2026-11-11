@@ -1128,6 +1128,111 @@ INSERT INTO notice (notice_id, admin_member_id, title, body, is_banner_shown, ba
      TRUE, NOW() - INTERVAL 1 DAY, NOW() + INTERVAL 14 DAY, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY);
 
 -- =====================================================================
+-- 쪽지 · 알림 · 신고 시연 데이터 (#450, FR-MSG-001·002, FR-NTF-001, FR-RPT-001~004, PL-RPT-002·003)
+-- 직접 적는 ID: 이 블록의 모든 표에서 2101~2199 (#440 공지 2001~2099 · #451 2201~2299 와 겹치지 않게)
+-- 시각은 NOW() 기준. 알림·쪽지는 시연 계정 42 코스완주 중심 (README "발표 시연 계정")
+-- 알림이 가리키는 글·댓글이 실제로 그 회원의 것이 되도록, 42의 작품 공유 글 1개와 댓글·추천을 이 블록에서 함께 넣는다
+-- 알림 문구는 앱이 만드는 문구 그대로 쓴다 (NotificationContractService · MessageService · NoticeService · ReportAdminService)
+-- 신고자는 대량 데이터(#431) 작성자가 아닌 시연 계정으로 골라 자기 글을 신고하는 일이 없게 했다
+-- =====================================================================
+
+-- 42 코스완주의 작품 공유 글 + 추천 3개 + 댓글 1개 (RECOMMEND · COMMENT 알림 대상)
+INSERT INTO post (post_id, member_id, category, title, body, work_url, tools, created_at, updated_at) VALUES
+    (2101, 42, 'SHOWCASE', '범위를 정해 요청해서 할 일 앱 버그 고친 후기',
+     '코스에서 배운 대로 "TodoItem.jsx의 handleToggle만 고치고 다른 파일은 바꾸지 마"라고 요청했더니 diff가 한 파일로 끝났어요.\n요청하지 않은 CSS 변경은 git restore로 되돌렸습니다. 처음 해 보시는 분들께 추천해요!',
+     'https://example.com/todo-app', 'Claude Code', NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 3 DAY);
+
+INSERT INTO recommendation (recommendation_id, member_id, post_id, created_at, updated_at) VALUES
+    (2101, 3, 2101, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY),
+    (2102, 4, 2101, NOW() - INTERVAL 30 HOUR, NOW() - INTERVAL 30 HOUR),
+    (2103, 5, 2101, NOW() - INTERVAL 3 HOUR, NOW() - INTERVAL 3 HOUR);
+
+INSERT INTO comment (comment_id, post_id, member_id, parent_comment_id, content, created_at, updated_at) VALUES
+    (2101, 2101, 3, NULL, '건드리지 않을 곳까지 적는 게 핵심이네요. 저도 다음 요청부터 따라 해 볼게요!', NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 2 HOUR);
+
+-- 42가 다른 사람 글(#431 게시글 100010)에 단 댓글 + 그 댓글에 달린 답글 (REPLY 알림 대상)
+INSERT INTO comment (comment_id, post_id, member_id, parent_comment_id, content, created_at, updated_at) VALUES
+    (2102, 100010, 42, NULL, '저도 같은 고민이었는데 수정 범위를 먼저 적으니 훨씬 나아졌어요.', NOW() - INTERVAL 26 HOUR, NOW() - INTERVAL 26 HOUR),
+    (2103, 100010, 6, 2102, '오 좋은 방법이네요. 혹시 요청 문장 예시도 공유해 주실 수 있나요?', NOW() - INTERVAL 90 MINUTE, NOW() - INTERVAL 90 MINUTE);
+
+-- 쪽지: 42가 받은 쪽지(안 읽음·읽음), 42 ↔ 4 답장으로 이어진 대화, 신고할 광고 쪽지, 35 트랙고민중이 받은 환영 쪽지
+INSERT INTO message (message_id, sender_member_id, receiver_member_id, parent_message_id, content, read_at, created_at, updated_at) VALUES
+    (2101, 3, 42, NULL, '안녕하세요! 포트폴리오 잘 봤어요. diff 확인하는 부분이 특히 도움이 됐습니다. 혹시 평가 기준 체크리스트도 공유해 주실 수 있을까요?',
+     NULL, NOW() - INTERVAL 5 HOUR, NOW() - INTERVAL 5 HOUR),
+    (2102, 7, 42, NULL, '코스 완주 축하드려요! 저도 이번 주 안에 포트폴리오 제출하려고 합니다.',
+     NOW() - INTERVAL 47 HOUR, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 47 HOUR),
+    (2103, 42, 4, NULL, '모의고사 2회차에서 만점 받으셨던데, 약한 개념은 어떻게 다시 보셨어요?',
+     NOW() - INTERVAL 70 HOUR, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 70 HOUR),
+    (2104, 4, 42, 2103, '리포트에서 약한 부분으로 표시된 개념을 다시 읽고 틀린 문제 모아보기로 한 번 더 풀었어요!',
+     NULL, NOW() - INTERVAL 66 HOUR, NOW() - INTERVAL 66 HOUR),
+    (2105, 9, 42, NULL, '[광고] 단 하루! AI 코딩 강의 전 과정 90% 할인. 지금 바로 링크로 신청하세요',
+     NOW() - INTERVAL 20 HOUR, NOW() - INTERVAL 22 HOUR, NOW() - INTERVAL 20 HOUR),
+    (2106, 8, 35, NULL, '바이브로그에 오신 걸 환영해요! Controller 트랙 첫 코스 같이 들어요 :)',
+     NULL, NOW() - INTERVAL 1 HOUR, NOW() - INTERVAL 1 HOUR);
+
+-- 신고 (A-13 은 처리 대기 PENDING 을 대상별로 묶어 보여 준다)
+--   게시글 100020: 서로 다른 3명 신고 → 자동 숨김 상태로 운영자 확인 대기 (PL-RPT-002)
+--   게시글 100035 기타(내용 필수) · 댓글 1개(#431 첫 댓글) · 포트폴리오 1개(#431 첫 공개 포트폴리오) · 쪽지 2105(받은 사람 42만 신고 가능) → 각각 1건 대기
+--   게시글 100060: 2명 신고 → 운영자 숨김 처리 HIDDEN (작성자에게 숨김 알림) / 게시글 100070: 기각 REJECTED
+--   신고당한 회원(target_member_id)은 대상의 작성자를 찾아 넣는다
+INSERT INTO report (report_id, reporter_member_id, target_type, target_id, target_member_id, reason, reason_detail, status, handler_member_id, handled_at, created_at, updated_at)
+SELECT r.id, r.reporter, r.target_type, r.target_id,
+       CASE r.target_type
+         WHEN 'POST' THEN (SELECT p.member_id FROM post p WHERE p.post_id = r.target_id)
+         WHEN 'COMMENT' THEN (SELECT c.member_id FROM comment c WHERE c.comment_id = r.target_id)
+         WHEN 'PORTFOLIO' THEN (SELECT f.member_id FROM portfolio f WHERE f.portfolio_id = r.target_id)
+         WHEN 'MESSAGE' THEN (SELECT m.sender_member_id FROM message m WHERE m.message_id = r.target_id)
+       END,
+       r.reason, r.detail, r.status, IF(r.status = 'PENDING', NULL, 2), r.handled_at, r.created_at, COALESCE(r.handled_at, r.created_at)
+FROM (
+    SELECT 2101 AS id, 35 AS reporter, 'POST' AS target_type, 100020 AS target_id, 'SPAM' AS reason, CAST(NULL AS CHAR(200)) AS detail,
+           'PENDING' AS status, CAST(NULL AS DATETIME) AS handled_at, NOW() - INTERVAL 30 HOUR AS created_at
+    UNION ALL SELECT 2102, 36, 'POST', 100020, 'SPAM', NULL, 'PENDING', NULL, NOW() - INTERVAL 20 HOUR
+    UNION ALL SELECT 2103, 37, 'POST', 100020, 'ABUSE', NULL, 'PENDING', NULL, NOW() - INTERVAL 4 HOUR
+    UNION ALL SELECT 2104, 38, 'POST', 100035, 'ETC', '본문과 상관없는 외부 링크를 여러 글에 반복해서 올려요', 'PENDING', NULL, NOW() - INTERVAL 10 HOUR
+    UNION ALL SELECT 2105, 39, 'COMMENT', (SELECT MIN(c.comment_id) FROM comment c WHERE c.comment_id > 100000 AND c.deleted_at IS NULL),
+                     'ABUSE', NULL, 'PENDING', NULL, NOW() - INTERVAL 7 HOUR
+    UNION ALL SELECT 2106, 40, 'PORTFOLIO', (SELECT MIN(f.portfolio_id) FROM portfolio f WHERE f.portfolio_id > 100000 AND f.is_public = TRUE AND f.deleted_at IS NULL),
+                     'PLAGIARISM', NULL, 'PENDING', NULL, NOW() - INTERVAL 15 HOUR
+    UNION ALL SELECT 2107, 42, 'MESSAGE', 2105, 'SPAM', NULL, 'PENDING', NULL, NOW() - INTERVAL 19 HOUR
+    UNION ALL SELECT 2108, 41, 'POST', 100060, 'ABUSE', NULL, 'HIDDEN', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 3 DAY
+    UNION ALL SELECT 2109, 43, 'POST', 100060, 'ABUSE', NULL, 'HIDDEN', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 2 DAY
+    UNION ALL SELECT 2110, 33, 'POST', 100070, 'PRIVACY', NULL, 'REJECTED', NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 4 DAY
+) r;
+
+-- 알림: 42 코스완주 (안 읽음 6 · 읽음 3, 추천·댓글·답글·쪽지·공지 종류 골고루), 35 트랙고민중 쪽지 1, 숨김 처리된 글의 작성자 1
+-- 리뷰 알림은 리뷰 데이터가 생기는 #451 에서, 배지 알림은 수상 데이터가 생기는 #430 에서 넣는다
+INSERT INTO notification (notification_id, member_id, notification_type, target_type, target_id, content, read_at, created_at, updated_at)
+SELECT n.id, n.member_id, n.type, n.target_type, n.target_id, n.content, n.read_at, n.created_at, COALESCE(n.read_at, n.created_at)
+FROM (
+    SELECT 2101 AS id, 42 AS member_id, 'RECOMMEND' AS type, 'POST' AS target_type, 2101 AS target_id,
+           CAST('내 글 「범위를 정해 요청해서 할 일 앱 버그 고친 후기」이 추천을 받았습니다' AS CHAR(255)) AS content,
+           NOW() - INTERVAL 40 HOUR AS read_at, NOW() - INTERVAL 2 DAY AS created_at
+    UNION ALL SELECT 2102, 42, 'RECOMMEND', 'POST', 2101, '내 글 「범위를 정해 요청해서 할 일 앱 버그 고친 후기」이 추천을 받았습니다',
+                     NULL, NOW() - INTERVAL 3 HOUR
+    UNION ALL SELECT 2103, 42, 'COMMENT', 'COMMENT', 2101, '내 글 「범위를 정해 요청해서 할 일 앱 버그 고친 후기」에 댓글이 달렸습니다',
+                     NULL, NOW() - INTERVAL 2 HOUR
+    UNION ALL SELECT 2104, 42, 'REPLY', 'COMMENT', 2103,
+                     CONCAT('내 댓글에 답글이 달렸습니다: 「', (SELECT p.title FROM post p WHERE p.post_id = 100010), '」'),
+                     NULL, NOW() - INTERVAL 90 MINUTE
+    UNION ALL SELECT 2105, 42, 'MESSAGE', 'MESSAGE', 2101, CONCAT((SELECT m.nickname FROM member m WHERE m.member_id = 3), '님이 쪽지를 보냈습니다'),
+                     NULL, NOW() - INTERVAL 5 HOUR
+    UNION ALL SELECT 2106, 42, 'MESSAGE', 'MESSAGE', 2104, CONCAT((SELECT m.nickname FROM member m WHERE m.member_id = 4), '님이 쪽지를 보냈습니다'),
+                     NULL, NOW() - INTERVAL 66 HOUR
+    UNION ALL SELECT 2107, 42, 'MESSAGE', 'MESSAGE', 2102, CONCAT((SELECT m.nickname FROM member m WHERE m.member_id = 7), '님이 쪽지를 보냈습니다'),
+                     NOW() - INTERVAL 47 HOUR, NOW() - INTERVAL 2 DAY
+    UNION ALL SELECT 2108, 42, 'NOTICE', 'NOTICE', 2012, CONCAT('새 공지사항: ', (SELECT t.title FROM notice t WHERE t.notice_id = 2012)),
+                     NULL, NOW() - INTERVAL 1 DAY
+    UNION ALL SELECT 2109, 42, 'NOTICE', 'NOTICE', 2011, '새 공지사항: 정기 점검 안내',
+                     NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 4 DAY
+    UNION ALL SELECT 2110, 35, 'MESSAGE', 'MESSAGE', 2106, CONCAT((SELECT m.nickname FROM member m WHERE m.member_id = 8), '님이 쪽지를 보냈습니다'),
+                     NULL, NOW() - INTERVAL 1 HOUR
+    UNION ALL SELECT 2111, (SELECT p.member_id FROM post p WHERE p.post_id = 100060), 'HIDDEN', 'POST', 100060,
+                     CONCAT('운영 정책에 따라 내 게시글 「', (SELECT p.title FROM post p WHERE p.post_id = 100060), '」이(가) 숨겨졌습니다. 사유: 욕설/비방'),
+                     NULL, NOW() - INTERVAL 1 DAY
+) n;
+
+-- =====================================================================
 -- 월간 콘테스트: 지난달(결과 발표) + 이번 달(진행 중) (#430, FR-CTS-001~005, PL-CTS-001~006)
 -- 직접 적는 ID: 101~199 (contest 101·102, portfolio 101~109, contest_entry 101~109, contest_award 101~104, notification 101~104)
 --   투표(contest_vote)는 수가 많아 SELECT 로 만들고 ID 는 DB 가 채운다
