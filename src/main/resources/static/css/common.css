@@ -31,6 +31,8 @@
   --success-soft: #e0f2f7;
   --danger: #c2410c;
   --danger-soft: #fdede4;
+  --notice: #ffd43b;        /* 공지 배너 바탕 (#442) */
+  --notice-light: #fff3b0;  /* 공지 배너 그라데이션의 밝은 쪽 */
 
   /* 6-3. 여백 · 모양 (문서에 적힌 값만) */
   --space-1: 4px;
@@ -241,16 +243,54 @@ img {
   cursor: pointer;
 }
 
-/* 공지 배너 (1-5, #186). 상단 바 위 한 줄, 누르면 공지 상세(U-26) */
+/*
+ * 공지 배너 (1-5, #186). 상단 바 위 한 줄, 누르면 공지 상세(U-26)
+ * 노랑 그라데이션이 천천히 흐르고(6초) 빛줄기(::after)가 3초마다 지나간다 (#442).
+ * 애니메이션 줄이기 설정이면 멈춘 노랑만 보인다 (아래 prefers-reduced-motion)
+ */
 .vl-banner {
+  position: relative;
+  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-5);
-  background: var(--glow);
+  background: linear-gradient(110deg, var(--notice) 0%, var(--notice-light) 50%, var(--notice) 100%);
+  background-size: 250% 100%;
   color: var(--navy-900);
   font-weight: 700;
+  animation: vl-banner-flow 6s linear infinite;
+}
+
+.vl-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.8) 50%, transparent 60%);
+  transform: translateX(-100%);
+  animation: vl-banner-shine 3s ease-in-out infinite;
+}
+
+.vl-banner > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes vl-banner-flow {
+  from { background-position: 0% 50%; }
+  to { background-position: 250% 50%; }
+}
+
+@keyframes vl-banner-shine {
+  0% { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vl-banner { animation: none; background: var(--notice); }
+  .vl-banner::after { display: none; }
 }
 
 .vl-banner:hover .vl-banner__title {
