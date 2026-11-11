@@ -33,6 +33,11 @@
   touch-action: none; /* 휴대폰에서 끌 때 화면이 스크롤되지 않게 */
 }
 
+.vl-soft__canvas:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 .vl-soft__canvas.is-dragging {
   cursor: grabbing;
 }
@@ -183,6 +188,10 @@
 @media (max-width: 1023px) {
   .vl-hero {
     padding-bottom: 0;
+  }
+
+  .vl-soft__canvas {
+    touch-action: pan-y; /* 좁은 화면은 캔버스가 폭을 다 차지하므로 세로 스와이프는 페이지 스크롤로 둔다 */
   }
 
   .vl-soft {

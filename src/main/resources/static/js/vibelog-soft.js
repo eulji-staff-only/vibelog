@@ -218,6 +218,7 @@
   }
 
   function build() {
+    release(); // 끄는 중에 다시 만들면 이전 점을 붙잡고 있게 되므로 끌기를 끝낸다
     const rect = canvas.getBoundingClientRect();
     width = rect.width;
     height = rect.height;
@@ -488,6 +489,7 @@
   }
 
   canvas.addEventListener('pointerdown', (e) => {
+    if (reduceMotion || drag) return; // 움직임 줄이기면 끌지 않는다. 이미 끄는 중이면 다른 손가락은 무시한다
     const { x, y } = pointer(e);
     const radius = 40;
     const grab = [];
@@ -499,33 +501,55 @@
     }
     if (!grab.length) return;
     for (const g of grab) { g.p.ox = g.p.x - x; g.p.oy = g.p.y - y; }
-    drag = { x, y, grab };
+    drag = { id: e.pointerId, x, y, grab };
     canvas.setPointerCapture(e.pointerId);
     canvas.classList.add('is-dragging');
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!drag) return;
-    Object.assign(drag, pointer(e));
+    if (!drag || e.pointerId !== drag.id) return; // 끌기를 시작한 포인터만 따라간다
+    const { x, y } = pointer(e);
+    drag.x = x;
+    drag.y = y;
   });
-  const release = () => {
+  function release() {
     drag = null;
     canvas.classList.remove('is-dragging');
-  };
-  canvas.addEventListener('pointerup', release);
-  canvas.addEventListener('pointercancel', release);
-  canvas.addEventListener('dblclick', () => { // 두 번 누르면 제자리로 (애니메이션)
-    drag = null;
+  }
+  const releaseOwn = (e) => { if (drag && e.pointerId === drag.id) release(); };
+  canvas.addEventListener('pointerup', releaseOwn);
+  canvas.addEventListener('pointercancel', releaseOwn);
+  const resetWord = () => { // 제자리로 (애니메이션)
+    if (reduceMotion) return;
+    release();
     resetLeft = RESET_FRAMES;
+  };
+  canvas.addEventListener('dblclick', resetWord);
+
+  // 키보드: 방향키로 글자 전체를 그쪽으로 밀고, Enter·Esc 로 제자리로
+  const PUSH = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  canvas.addEventListener('keydown', (e) => {
+    if (reduceMotion) return;
+    if (e.key === 'Enter' || e.key === 'Escape') { resetWord(); e.preventDefault(); return; }
+    const dir = PUSH[e.key];
+    if (!dir) return;
+    e.preventDefault(); // 방향키로 페이지가 스크롤되지 않게
+    for (const b of bodies) {
+      for (const p of b.particles) { // Verlet 이라 직전 위치를 옮겨 속도를 준다
+        p.px -= dir[0] * MAX_SPEED;
+        p.py -= dir[1] * MAX_SPEED;
+      }
+    }
   });
 
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(build, 150);
+    resizeTimer = setTimeout(() => { build(); if (reduceMotion) draw(); }, 150);
   });
 
   document.fonts.ready.then(() => {
     build();
+    if (reduceMotion) { draw(); return; } // 움직임 줄이기: 한 번만 그리고 물리 계산을 돌리지 않는다
     requestAnimationFrame(loop);
   });
 })();
