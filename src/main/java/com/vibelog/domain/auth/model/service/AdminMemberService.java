@@ -35,7 +35,7 @@ import java.util.Map;
 /*
  * [AdminMemberService]
  * 역할 : 운영자의 회원 조회 (FR-USR-009, API-ADM-37·38). 운영자만 부른다 (SecurityConfig /admin/**).
- * 책임 : - 목록은 닉네임·이메일 일부로 찾고 20명씩 보여 준다. 탈퇴 회원은 목록에서 뺀다 (상세는 ID 로 열 수 있다).
+ * 책임 : - 목록은 닉네임·이메일 일부로 찾고, 수강 중·이메일 인증 여부로 거르고(#446), 20명씩 보여 준다. 탈퇴 회원은 목록에서 뺀다 (상세는 ID 로 열 수 있다).
  *        - 상세의 수강·진행률은 LessonReader, 코스 이름은 CourseReader, 퀴즈 결과는 QuizReader, 모의고사 결과는 ExamReader,
  *          포트폴리오 수는 PortfolioReader 로 받는다 (08 문서 규칙 1). 퀴즈·수업 제목은 LessonReader 로 받는다.
  */
@@ -56,11 +56,33 @@ public class AdminMemberService {
     private final PortfolioReader portfolioReader;
     private final MessageReader messageReader;
 
-    /* page 는 화면 그대로 1부터 센다 */
-    public Page<AdminMemberItem> search(String q, int page) {
+    /*
+     * page 는 화면 그대로 1부터 센다. learning·verified 는 "yes"·"no"·그 밖(전체) (API-ADM-37, #446).
+     * 수강 중 여부는 LessonReader 가 준 회원 ID 로 거른다 (수강 영역 테이블을 직접 보지 않는다)
+     */
+    public Page<AdminMemberItem> search(String q, String learning, String verified, int page) {
         String keyword = q == null || q.isBlank() ? null : escapeLike(q.strip());
-        return memberRepository.searchActive(keyword, PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE))
+        int learningMode = filterMode(learning);
+        List<Long> learningIds = learningMode == 0 ? List.of() : lessonReader.getLearningMemberIds();
+        return memberRepository.searchActive(keyword, filterMode(verified), learningMode,
+                        learningIds.isEmpty() ? List.of(-1L) : learningIds, PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE))
                 .map(AdminMemberItem::from);
+    }
+
+    /* 화면에 다시 보여 줄 값: 정해진 값(yes·no)만 남기고 나머지는 전체("") */
+    public static String normalizeFilter(String value) {
+        return filterMode(value) == 0 ? "" : value.strip();
+    }
+
+    private static int filterMode(String value) {
+        if (value == null) {
+            return 0;
+        }
+        return switch (value.strip()) {
+            case "yes" -> 1;
+            case "no" -> 2;
+            default -> 0;
+        };
     }
 
     public AdminMemberDetail getDetail(Long memberId) {
