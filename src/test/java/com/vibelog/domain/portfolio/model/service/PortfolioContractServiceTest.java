@@ -18,11 +18,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /*
  * portfolio 계약 ⑧⑨⑩과 PortfolioReader 를 실제 DB(01·02 실행된 로컬 MySQL)로 확인한다.
- * 회원은 02-seed 테스트 계정(1 학습자, 2 운영자)을 쓰고, 코스는 테스트 안에서만 넣는다. 끝나면 모두 롤백된다.
+ * 회원·코스는 테스트 안에서만 넣는다 (02-seed 학습자 1에는 포트폴리오가 있어 개수 기대값이 달라지므로, #429). 끝나면 모두 롤백된다.
  */
 @SpringBootTest
 @Transactional
 @Sql(statements = {
+        "INSERT INTO member (member_id, email, nickname) VALUES "
+                + "(9011, 'pf-contract-a@vibelog.test', '포트폴리오A'), (9012, 'pf-contract-b@vibelog.test', '포트폴리오B')",
         "INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9001, '테스트 트랙', '대상', '설명', 9001)",
         "INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9001, '테스트 카테고리', 9001)",
         "INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days) "
@@ -31,8 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 class PortfolioContractServiceTest {
 
-    static final long LEARNER = 1L;
-    static final long OTHER = 2L;
+    static final long LEARNER = 9011L;
+    static final long OTHER = 9012L;
     static final long COURSE_A = 9001L;
     static final long COURSE_B = 9002L;
 
