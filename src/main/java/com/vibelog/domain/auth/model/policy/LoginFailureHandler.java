@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
  * 책임 : - 잠겼으면(5번째 실패부터, LoginAuthenticationProvider) /login?locked (LOGIN_LOCKED),
  *          소셜 가입 이메일이면 /login?social (SOCIAL_ACCOUNT_EMAIL, #91),
  *          그 전에는 /login?error (LOGIN_FAILED). 돌아갈 주소(redirect)는 유지한다.
+ *        - 잠금은 풀리는 시각(until, epoch 초)을 함께 넘긴다. 남은 초가 아니라 시각이라 새로고침해도 실제 남은 시간이 보인다 (#394).
  */
 @Component
 @RequiredArgsConstructor
@@ -32,7 +33,9 @@ public class LoginFailureHandler implements AuthenticationFailureHandler {
             suspendedLoginResponder.respond(request, response, null, suspended.getNotice());
             return;
         }
-        String url = e instanceof LockedException ? "/login?locked"
+        String url = e instanceof LoginAuthenticationProvider.LoginLockedException locked && locked.getLockedUntil() != null
+                ? "/login?locked&until=" + locked.getLockedUntil().getEpochSecond()
+                : e instanceof LockedException ? "/login?locked"
                 : e instanceof LoginAuthenticationProvider.SocialAccountLoginException ? "/login?social"
                 : "/login?error";
         String redirect = request.getParameter("redirect");

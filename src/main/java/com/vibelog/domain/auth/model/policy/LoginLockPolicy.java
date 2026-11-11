@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -46,6 +47,12 @@ public class LoginLockPolicy {
         return attempt != null && attempt.lockedAt(now.get());
     }
 
+    /* 잠금이 풀리는 시각 (#394). 잠기지 않았으면 empty. 잠긴 동안의 시도는 세지 않으므로 다시 시도해도 늦춰지지 않는다 */
+    public Optional<Instant> lockedUntil(String email) {
+        Attempt attempt = attempts.get(email);
+        return attempt != null && attempt.lockedAt(now.get()) ? Optional.of(attempt.lockedUntil()) : Optional.empty();
+    }
+
     /* 비밀번호를 비교하기 전에 부른다. 잠겨 있으면 세지 않고 false, 아니면 시도를 하나 세고 true (5번째 시도부터 잠긴다) */
     public boolean tryAttempt(String email) {
         Instant time = now.get();
@@ -63,6 +70,14 @@ public class LoginLockPolicy {
             return new Attempt(failures, time, failures >= MAX_FAILURES ? time.plus(LOCK_TIME) : null);
         });
         return allowed.get();
+    }
+
+    /*
+     * 잠금 안내의 남은 초 (#394). until 은 로그인 화면 주소로 받은 풀리는 시각(epoch 초)이라 사용자가 바꿀 수 있다.
+     * 안내 표시에만 쓰고 실제 잠금은 isLocked 가 판단하므로, 0 ~ 잠금 시간(5분) 안으로만 자른다.
+     */
+    public long remainingSeconds(long until) {
+        return Math.clamp(until - now.get().getEpochSecond(), 0, LOCK_TIME.toSeconds());
     }
 
     public void reset(String email) {

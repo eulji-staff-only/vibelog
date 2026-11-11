@@ -16,11 +16,14 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.util.Optional;
+
 /*
  * [LoginAuthenticationProvider]
  * 역할 : 폼 로그인에서 비밀번호를 비교하기 전에 5회 연속 실패 잠금을 적용한다. (PL-USR-007, NFR-SEC-005)
  * 책임 : - 비교 전에 시도를 센다(LoginLockPolicy). 같은 이메일로 동시에 보내도 5번까지만 비교한다.
- *        - 잠겨 있거나 이번 실패로 잠기면 LockedException → LoginFailureHandler 가 /login?locked 로 보낸다.
+ *        - 잠겨 있거나 이번 실패로 잠기면 LoginLockedException(잠금이 풀리는 시각을 담음) → LoginFailureHandler 가 /login?locked 로 보낸다 (#394).
  *        - 없는 이메일도 똑같이 세고 잠근다. 그래야 잠금 안내로 가입 여부가 드러나지 않는다.
  *        - 로그인 유지(remember-me) 자동 로그인은 비밀번호를 비교하지 않으므로 여기를 거치지 않는다.
  */
@@ -45,7 +48,7 @@ public class LoginAuthenticationProvider extends DaoAuthenticationProvider {
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String key = lockKey(authentication.getName());
         if (!loginLockPolicy.tryAttempt(key)) {
-            throw new LockedException("로그인 잠김");
+            throw new LoginLockedException(loginLockPolicy.lockedUntil(key).orElse(null), null);
         }
         try {
             return super.authenticate(authentication);
@@ -53,8 +56,9 @@ public class LoginAuthenticationProvider extends DaoAuthenticationProvider {
             loginLockPolicy.reset(key);     // 비밀번호는 맞았으므로 실패로 세지 않는다
             throw e;
         } catch (AuthenticationException e) {
-            if (loginLockPolicy.isLocked(key)) {
-                throw new LockedException("로그인 잠김", e);
+            Optional<Instant> lockedUntil = loginLockPolicy.lockedUntil(key);
+            if (lockedUntil.isPresent()) {
+                throw new LoginLockedException(lockedUntil.get(), e);
             }
             throw e;
         }
@@ -81,6 +85,17 @@ public class LoginAuthenticationProvider extends DaoAuthenticationProvider {
         public SuspendedLoginException(SuspensionNotice notice) {
             super("이용 정지");
             this.notice = notice;
+        }
+    }
+
+    /* 5회 연속 실패 잠금 (LOGIN_LOCKED). lockedUntil 은 잠금이 풀리는 시각, 그 사이에 풀렸으면 null (#394) */
+    @Getter
+    public static class LoginLockedException extends LockedException {
+        private final transient Instant lockedUntil;
+
+        public LoginLockedException(Instant lockedUntil, Throwable cause) {
+            super("로그인 잠김", cause);
+            this.lockedUntil = lockedUntil;
         }
     }
 
