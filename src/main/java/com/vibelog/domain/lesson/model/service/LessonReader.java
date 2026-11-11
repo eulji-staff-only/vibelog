@@ -107,6 +107,14 @@ public class LessonReader {
         return lessons.isEmpty() ? null : lessons.get(lessons.size() - 1).getLessonId();
     }
 
+    /*
+     * 이 코스를 지금 수강 중인지 (포기하지 않은 수강이 있음. 완료한 코스는 복습이라 true). 수강 기록이 없거나 포기했으면 false.
+     * 포기한 회원이 리포트를 열 때 코스 상세로 보내려고 묻는다 (exam #439, API-EXM-05)
+     */
+    public boolean hasActiveEnrollment(Long memberId, Long courseId) {
+        return enrollmentRepository.findByMemberIdAndCourseIdAndDroppedAtIsNull(memberId, courseId).isPresent();
+    }
+
     /* 수업 ID → 수업 제목. 없는 ID 는 결과에 빠진다. 운영자 회원 상세의 모의고사 결과(auth #119)가 쓴다 */
     public Map<Long, String> getLessonTitles(Collection<Long> lessonIds) {
         return lessonRepository.findAllById(lessonIds).stream()

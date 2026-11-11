@@ -51,6 +51,17 @@ public class ExamReportService {
     private final LessonReader lessonReader;
     private final MemberReader memberReader;
 
+    /*
+     * 지금 수강 중인 코스가 아니면(포기했거나 수강 기록 없음) 그 수업의 코스 ID, 수강 중이면 비어 있다 (#439).
+     * 계약 ③ recordReportViewed 는 포기하지 않은 수강만 찾아 404 를 던지므로, 리포트를 열기 전에 먼저 걸러
+     * 컨트롤러가 코스 상세 + toast 로 보내게 한다 (다른 학습 화면과 같은 동작)
+     */
+    @Transactional(readOnly = true)
+    public Optional<Long> findCourseIdIfNotLearning(Long memberId, Long lessonId) {
+        Long courseId = lessonReader.getCourseId(lessonId);
+        return lessonReader.hasActiveEnrollment(memberId, courseId) ? Optional.empty() : Optional.of(courseId);
+    }
+
     public Optional<ExamReportView> getReport(Long memberId, Long lessonId, Integer attemptNo) {
         Optional<ExamAttempt> found = attemptNo == null
                 ? examAttemptRepository.findFirstByMemberIdAndLessonIdAndSubmittedAtIsNotNullOrderByAttemptNoDesc(memberId, lessonId)
