@@ -1,8 +1,7 @@
 /*
  * 백오피스 회원 목록·상세 (A-08, #119). 색·간격은 common.css 토큰만 쓴다.
- * 백오피스 공통 레이아웃(#81, 왼쪽 메뉴)이 머지되면 그 틀 안으로 옮기고 겹치는 규칙은 지운다.
+ * 바깥 틀(왼쪽 메뉴·본문 여백)은 admin.css 의 vl-admin 이 맡는다 (#445).
  */
-.am-main { max-width: 1080px; margin: 0 auto; padding: var(--space-8) var(--space-5) var(--space-10); }
 .am-title { margin: 0 0 var(--space-6); font-size: 24px; color: var(--ink); }
 .am-h2 { margin: var(--space-8) 0 var(--space-3); font-size: 18px; color: var(--ink); }
 .am-search { display: flex; gap: var(--space-2); margin-bottom: var(--space-5); }

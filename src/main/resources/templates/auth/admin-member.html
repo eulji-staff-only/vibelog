@@ -5,16 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${member.nickname()} + ' | 바이브로그 백오피스'">회원 상세 | 바이브로그 백오피스</title>
     <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
     <link rel="stylesheet" th:href="@{/css/auth-admin.css}">
     <link rel="stylesheet" th:href="@{/css/auth.css}">
     <script th:src="@{/js/auth.js}" defer></script>
 </head>
 <body>
 <!-- A-08 회원 상세 (API-ADM-38, #119). 수강 코스·진행률, 퀴즈·모의고사 결과, 포트폴리오 수.
-     이용 정지·해제(P2, API-USR-19·20, #178)는 아래 "이용 제재". 신고 이력(P3)은 없다. -->
-<div th:replace="~{common/layout :: header}"></div>
+     이용 정지·해제(P2, API-USR-19·20, #178)는 아래 "이용 제재". 신고 이력(P3)은 없다. 백오피스 공통 틀(왼쪽 메뉴)을 쓴다 (#445) -->
+<div class="vl-admin">
+<div th:replace="~{common/admin-layout :: sidebar('members')}"></div>
 
-<main class="am-main">
+<main class="vl-admin__content">
     <a class="am-muted" href="/admin/members">← 회원 목록</a>
     <h1 class="am-title" th:text="${member.nickname()}">닉네임</h1>
 
@@ -101,6 +103,7 @@
         </table>
     </div>
 </main>
+</div>
 
 <!-- 사유·기간 모달 (A-08 P2). 기본 선택은 지난 제재의 다음 단계 (경고 → 7일 → 30일 → 영구) -->
 <dialog class="au-dialog" id="suspend" aria-labelledby="suspend-h" th:if="${member.sanction().suspendable()}">
@@ -117,7 +120,5 @@
     </form>
     <form method="dialog"><button class="au-btn is-outline" value="cancel">취소</button></form>
 </dialog>
-
-<div th:replace="~{common/layout :: footer}"></div>
 </body>
 </html>
