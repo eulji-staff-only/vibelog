@@ -61,7 +61,7 @@
 | API-ADM-34 | 과제 편집 화면 | GET | `/admin/courses/{courseId}/portfolio` | query `tab`(assignment, agent) | A-07 + 과제(주제, 목표), 스텝 목록, 평가 에이전트 안내, 설정 파일 | `COURSE_NOT_FOUND` | FR-PRT-012, 013 |
 | API-ADM-35 | 과제·스텝 저장 | POST | `/admin/courses/{courseId}/portfolio` | form `topic`, `goal`, `steps[]`(`guideStepId`, `content`, 순서) | 체크 기록이 있는 스텝은 지우지 않고 비활성 → `/admin/courses/{courseId}` | `INVALID_INPUT` | FR-PRT-012 |
 | API-ADM-36 | 평가 에이전트 저장 | POST | `/admin/courses/{courseId}/portfolio/agent` | form `agentGuide`, file `agentFile`(선택, 저장 컬럼: `agent_file_url`) | → `/admin/courses/{courseId}/portfolio?tab=agent` | `INVALID_FILE`(md·json·yaml·txt, 5MB, 실행 파일 불가, PL-PRT-010) | FR-PRT-013 |
-| API-ADM-37 | 회원 목록 | GET | `/admin/members` | query `q`(닉네임·이메일), `page` | A-08 목록 | - | FR-USR-009 |
+| API-ADM-37 | 회원 목록 | GET | `/admin/members` | query `q`(닉네임·이메일, 선택), `learning`(선택, `yes`=수강 중인 코스가 1개 이상, `no`=수강 중인 코스 없음, 없으면 전체), `verified`(선택, `yes`=이메일 인증, `no`=미인증, 없으면 전체), `page`. 필터는 같이 걸 수 있고(AND) 검색어와도 같이 쓴다. "수강 중"은 포기·완료하지 않은 수강이다. 정해진 값이 아니면 전체로 본다 | A-08 목록 + 필터 칸(지금 걸린 값 표시). 필터는 주소(`?learning=&verified=`)에 남고 페이지를 넘겨도 유지된다 | - | FR-USR-009 |
 | API-ADM-38 | 회원 상세 | GET | `/admin/members/{memberId}` | path `memberId` | A-08 상세 + 수강 코스, 진행률, 퀴즈·모의고사 결과, 포트폴리오 수 | `USER_NOT_FOUND` | FR-USR-009 |
 
 ## 진단 설정 (P2, FR-DGN-004)

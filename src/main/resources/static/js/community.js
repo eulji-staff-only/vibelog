@@ -8,6 +8,16 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => document.getElementById(button.dataset.openDialog).showModal());
     });
 
+    // 글 수정: 기존 사진 위 X 를 누르면 그 사진을 지운다 (keepPostImageIds 체크를 풀고 숨김, API-CMT-06)
+    document.querySelectorAll('[data-keep-remove]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const item = button.closest('[data-keep-item]');
+            item.querySelector('input[name="keepPostImageIds"]').checked = false;
+            item.hidden = true;
+            document.getElementById('images')?.focus();
+        });
+    });
+
     document.querySelectorAll('[data-count]').forEach((input) => {
         const count = document.querySelector(`[data-count-for="${input.id}"]`);
         const render = () => { count.textContent = input.value.length.toLocaleString(); };

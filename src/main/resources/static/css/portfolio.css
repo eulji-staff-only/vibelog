@@ -90,6 +90,11 @@
 .pf-shot-name { flex: 1 1 200px; min-width: 0; font-size: 14px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
 /* 수정 상태의 지금 스크린샷 (#403) */
 .pf-shot-current { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.pf-shot-current[hidden] { display: none; }
+.pf-shot-frame { position: relative; display: inline-block; }
+.pf-shot-remove { position: absolute; top: var(--space-1); right: var(--space-1); width: 24px; height: 24px; border: 0; border-radius: 50%;
+    background: rgba(0, 0, 0, .65); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
+.pf-shot-remove:hover, .pf-shot-remove:focus-visible { background: #000; }
 .pf-shot-current img { width: 160px; max-width: 100%; height: auto; border: 1px solid var(--line-soft); border-radius: var(--radius-md); }
 .pf-submit { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); }
 
