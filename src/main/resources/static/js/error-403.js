@@ -79,11 +79,13 @@
   const soft = document.querySelector('[data-soft-wordmark]'); // 마지막 장면의 말랑 "403"
   let handedOff = false;
 
-  // 연출 속 숫자를 지우고 말랑 "403"을 꺼낸다. 이후로는 이 캔버스에 숫자를 그리지 않는다
+  // 연출 속 숫자를 지우고 말랑 "403"을 꺼낸다. 이후로는 이 캔버스에 숫자를 그리지 않는다.
+  // 말랑 엔진(vibelog-soft.js)이 준비되지 않았으면(softLayout 없음, 스크립트 로드 실패 등) 연출 속 숫자를 그대로 둔다
   function handOff(animated) {
-    if (handedOff || !soft) return;
+    if (handedOff) return;
     handedOff = true;
-    ctx.clearRect(0, 0, width, height); // 연출 속 숫자를 지워 말랑 "403"과 겹치지 않게
+    ctx.clearRect(0, 0, width, height);
+    if (!soft?.softLayout) { drawDigits(still()); return; }
     soft.classList.add('is-shown');
     if (animated) soft.dispatchEvent(new CustomEvent('soft:enter'));
   }
@@ -334,10 +336,10 @@
 
   document.fonts.ready.then(() => {
     resize();
-    if (reduceMotion) { handOff(false); return; } // 움직임 줄이기: 연출 없이 말랑 "403"만 제자리에
     // 그림을 기다리는 동안에도 숫자가 보이게 먼저 그려 두고, 대체 번호(data-soft-fallback)를 숨긴다
     drawDigits(still());
     document.querySelector('[data-soft-fallback]')?.setAttribute('hidden', '');
+    if (reduceMotion) { handOff(false); return; } // 움직임 줄이기: 연출 없이 말랑 "403"만 제자리에
     Promise.all([load(hand, HAND.src), load(fox, FOX.src)])
       .then(() => { prepareHand(); play(); }, () => handOff(false)); // 그림을 못 불러오면 말랑 "403"만
   });

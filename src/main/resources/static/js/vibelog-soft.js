@@ -682,10 +682,19 @@
     }
   }
 
+  // 물리는 1/60초 고정 간격으로 계산한다. 화면 주사율(60·144Hz)이 달라도 움직이는 빠르기·복원 시간이 같다
+  const STEP_MS = 1000 / 60;
+  let lastNow = 0;
+  let stepAcc = 0;
   function loop(now) {
-    frameNo++;
+    stepAcc += lastNow ? Math.min(now - lastNow, 100) : STEP_MS; // 탭을 오래 비웠다 와도 한꺼번에 몰아 계산하지 않게
+    lastNow = now;
     updateTitan(now);
-    step();
+    while (stepAcc >= STEP_MS) {
+      frameNo++;
+      step();
+      stepAcc -= STEP_MS;
+    }
     draw();
     requestAnimationFrame(loop);
   }
