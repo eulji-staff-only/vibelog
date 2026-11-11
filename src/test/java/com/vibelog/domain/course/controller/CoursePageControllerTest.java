@@ -132,6 +132,17 @@ class CoursePageControllerTest {
     }
 
     @Test
+    void 다른_화면이_넘긴_안내가_있으면_코스_상세에_보여_준다() throws Exception {
+        given(courseBrowseService.getCourseDetail(any(), eq(1L))).willReturn(detail("NONE"));
+
+        mockMvc.perform(get("/courses/1").flashAttr("toast", "수강 중인 코스가 아닙니다. 코스 상세에서 다시 시작해 주세요."))
+                .andExpect(content().string(Matchers.containsString("class=\"vl-flash\"")))
+                .andExpect(content().string(Matchers.containsString("수강 중인 코스가 아닙니다. 코스 상세에서 다시 시작해 주세요.")));
+        mockMvc.perform(get("/courses/1"))
+                .andExpect(content().string(Matchers.not(Matchers.containsString("class=\"vl-flash\""))));
+    }
+
+    @Test
     void 수강_중인_회원은_내_학습으로_가기를_본다() throws Exception {
         given(courseBrowseService.getCourseDetail(any(), eq(1L))).willReturn(detail("ENROLLED"));
 
