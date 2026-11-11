@@ -58,6 +58,8 @@ class CourseReaderTest {
 
         assertThat(ids).containsExactly(9503L, 9505L, 9506L);   // 비공개 9504 는 빠진다
         assertThat(courseReader.findFeaturedCourses(1)).hasSize(1);
+        assertThat(courseReader.findFeaturedCourses(0)).isEmpty();
+        assertThat(courseReader.findFeaturedCourses(-1)).isEmpty();
         assertThat(courseReader.findFeaturedCourses(Integer.MAX_VALUE).stream().filter(f -> f.courseId() == 9503L).findFirst().orElseThrow())
                 .satisfies(f -> {
                     assertThat(f.title()).isEqualTo("대표 9503");

@@ -11,6 +11,7 @@ import com.vibelog.domain.course.model.entity.DiagnosisResult;
 import com.vibelog.domain.course.model.entity.DiagnosisStatus;
 import com.vibelog.domain.course.model.entity.Track;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,8 +56,11 @@ public class CourseReader {
 
     /* 메인 화면 대표 코스 (API-USR-01, #409). 공개 코스를 코스 ID 순으로 앞에서 limit 개. 대표 지정 값이 따로 없어 이렇게 정했다 */
     public List<FeaturedCourse> findFeaturedCourses(int limit) {
-        return courseRepository.findByIsPublicTrueOrderByCourseIdAsc().stream()
-                .limit(limit)
+        if (limit <= 0) {
+            return List.of();
+        }
+        // 공개 코스 전체를 읽지 않고 DB 에서 앞의 limit 개만 가져온다
+        return courseRepository.findByIsPublicTrueOrderByCourseIdAsc(PageRequest.of(0, limit)).stream()
                 .map(FeaturedCourse::from)
                 .toList();
     }
