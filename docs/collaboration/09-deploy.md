@@ -30,6 +30,16 @@ vibelog.example.com {
 | `SERVER_FORWARD_HEADERS_STRATEGY` | `native` | Caddy 가 보낸 `X-Forwarded-Proto: https` 를 믿어 앱이 HTTPS 요청으로 본다 (로그인 이동 주소, HSTS, 로그인 유지 쿠키) |
 | `SERVER_SERVLET_SESSION_COOKIE_SECURE` | `true` | 세션 쿠키를 HTTPS 에서만 보낸다 |
 | `APP_BASE_URL` | `https://vibelog.example.com` | 메일 링크 주소 (README 최초 세팅 참고) |
+| `SPRING_MAIL_HOST` | `smtp.gmail.com` | 인증·비밀번호 재설정 메일을 실제로 보낸다 (#425). 없으면 메일을 보내지 않고 오류 로그만 남긴다 |
+| `SPRING_MAIL_USERNAME` | 팀 전용 Gmail 주소 | 개인 계정을 쓰지 않는다 |
+| `SPRING_MAIL_PASSWORD` | Gmail 앱 비밀번호 (16자리, 공백 없이) | 2단계 인증을 켜야 발급된다. 저장소·이슈·팀 채팅에 적지 않는다 |
+| `MAIL_FROM` | `SPRING_MAIL_USERNAME` 과 같은 주소 | 기본값(`no-reply@vibelog.example`)이면 Gmail 이 바꾸거나 스팸으로 보낼 수 있다 |
+
+- `MAIL_LOG_BODY` 는 넣지 않는다 (로컬 전용).
+- 메일 발송에 실패해도 화면은 "보냈다"고 나온다. 확인은 앱 로그로 한다.
+  - `메일 서버 설정(SPRING_MAIL_HOST)이 없어…` → 환경 변수가 안 들어감 (넣은 뒤 앱 재시작)
+  - `메일을 보내지 못했습니다` → 바로 아래 예외 로그에서 원인을 본다. 앱 비밀번호 오류(`AuthenticationFailedException`), 연결 차단, STARTTLS 실패 등이다. `nc -vz smtp.gmail.com 587` 은 연결만 확인하므로, 연결돼도 예외 로그를 본다
+  - 비밀번호 찾기에서 **오류 로그도 없이** 메일이 안 오면 → 보내지 않은 것이 정상인 경우다. 그 이메일로 가입한 활성 회원이 없거나, 1분 안에 다시 요청했다 (PL-CST-002)
 
 로컬에서 확인한 것 (2026-11-10): 위 값으로 띄우고 `X-Forwarded-Proto: https` 로 요청하면 세션 쿠키에 `Secure`, `Strict-Transport-Security` 헤더가 붙고, 로그인 이동 주소가 `https://…` 이며, 앱은 `127.0.0.1:8080` 에서만 받는다.
 
