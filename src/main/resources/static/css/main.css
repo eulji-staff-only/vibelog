@@ -5,9 +5,48 @@
  */
 
 .vl-hero {
+  position: relative;
   background: linear-gradient(180deg, var(--navy-900), var(--navy-800));
   color: var(--on-navy);
   padding: var(--space-10) 0;
+}
+
+/* 말랑한 vibelog 글자 (vibelog-soft.js). 데스크톱은 히어로 오른쪽, 좁은 화면은 글 아래.
+   색은 아래 변수로 JS 에 넘긴다 */
+.vl-soft {
+  --soft-ink: var(--on-navy);
+  --soft-fill: var(--navy-800);
+  --soft-accent: var(--glow);
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40%;
+  margin: 0;
+}
+
+.vl-soft__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none; /* 휴대폰에서 끌 때 화면이 스크롤되지 않게 */
+}
+
+.vl-soft__canvas.is-dragging {
+  cursor: grabbing;
+}
+
+@media (min-width: 1024px) {
+  /* 오른쪽에 글자 도형 자리를 비우려고 글 묶음을 왼쪽 정렬하고 폭을 줄인다 */
+  .vl-hero .vl-hero__inner {
+    max-width: var(--content-max);
+  }
+
+  .vl-hero__inner > * {
+    max-width: 55%;
+    word-break: keep-all;
+  }
 }
 
 .vl-hero__inner {
@@ -142,6 +181,17 @@
 }
 
 @media (max-width: 1023px) {
+  .vl-hero {
+    padding-bottom: 0;
+  }
+
+  .vl-soft {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    margin-top: var(--space-7);
+  }
+
   .vl-card-grid {
     grid-template-columns: repeat(2, 1fr);
   }
