@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // U-34 개인 작품 양식에는 스크린샷 칸이 없다 (#199)
     const shotOk = () => !shot || !shot.files.length || shot.files[0].size <= SHOT_MAX;
     // 서버(ApiKeyMasker)와 같은 형식 (PL-PRT-008)
-    const apiKey = /(^|[^A-Za-z0-9])(sk-|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/;
+    const apiKey = /(^|[^A-Za-z0-9])(sk-|sk_test_|sk_live_|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/;
     let ready = false;
 
     // 작성 중 내용 보존 (FR-PRT-010, PL-ERR-003·004·005): 입력할 때마다와 제출을 누를 때 입력 값을 회원·코스별 키로
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const draftKey = form.dataset.draftKey;
     // 양식에 있는 칸만 보관한다 (U-34 개인 작품에는 에이전트 점검 결과가 없다)
     const draftFields = ['resultUrl', 'title', 'summary', 'retrospective', 'aiTools', 'agentResult'].filter((name) => form.elements[name]);
-    const maskKeys = (value) => value.replace(/(?<![A-Za-z0-9])(sk-|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/g, '$1****');
+    const maskKeys = (value) => value.replace(/(?<![A-Za-z0-9])(sk-|sk_test_|sk_live_|ghp_|github_pat_|AKIA|AIza)[A-Za-z0-9_-]+/g, '$1****');
     const readDraft = () => {
         try {
             const draft = JSON.parse(localStorage.getItem(draftKey));
