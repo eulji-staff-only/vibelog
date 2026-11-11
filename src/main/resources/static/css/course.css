@@ -121,14 +121,34 @@ a.crs-eyebrow:hover { border-color: var(--glow); }
 .crs-empty[hidden] { display: none; }
 
 /* 코스 상세: 요약 + 수강 시작 */
-.crs-summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-6); }
-.crs-stats { margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-3); }
+/*
+ * 데스크톱 (#396): 왼쪽에 정보 상자(학습 대상·플랜·수업), 오른쪽 빈 자리에 수강 버튼을 정보 상자 높이에 맞춘 파란 칸으로 둔다.
+ * 수강 상태 배지는 그 칸 위 가운데, 안내 문구는 정보 상자 아래 왼쪽. 템플릿 순서는 그대로 두고
+ * .crs-enroll·form 을 display: contents 로 풀어 배지·버튼·문구를 .crs-summary 그리드 칸에 바로 놓는다.
+ */
+.crs-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 1fr auto auto;
+    grid-template-areas: "stats btn" "stats badge" "hint .";   /* 버튼 위, 수강 상태 배지는 버튼 아래 가운데 */
+    column-gap: var(--space-4);
+}
+.crs-stats { grid-area: stats; margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .crs-stat { min-width: 120px; padding: var(--space-3) var(--space-5); border-radius: var(--radius-md); background: var(--surface); }
+.crs-stat:first-child { flex: 1 1 320px; }   /* 학습 대상은 글이 길어 남는 폭을 쓴다 */
 .crs-stat dt { font-size: 13px; color: var(--ink-muted); }
 .crs-stat dd { margin: 0; font-size: 17px; font-weight: 700; }
-.crs-enroll { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); }
-.crs-enroll__hint { margin: 0; font-size: 13px; color: var(--ink-muted); }
-.crs-enroll__form { margin: 0; display: flex; flex-direction: column; align-items: inherit; gap: var(--space-2); }
+.crs-enroll, .crs-enroll__form { display: contents; }
+/* 줄 간격(row-gap)은 쓰지 않고 배지 쪽 margin 으로 띄운다: 비회원은 배지가 없어 빈 줄에도 간격이 생기기 때문 */
+/* 수강 상태 배지는 버튼과 같은 폭으로 늘리고 글자는 가운데 */
+.crs-enroll .vl-ui-badge { grid-area: badge; justify-self: stretch; justify-content: center; margin-top: var(--space-2); }
+.crs-enroll .vl-ui-btn { grid-area: btn; min-width: 200px; border-radius: var(--radius-md); }
+/* 데스크톱 비회원은 배지가 없어 버튼이 정보 상자 높이로 늘어나 덩어리처럼 보이므로, 원래 높이로 두고 세로 가운데 */
+@media (min-width: 1024px) {
+    .crs-enroll:not(:has(.vl-ui-badge)) .vl-ui-btn { grid-row: 1 / 3; align-self: center; }
+}
+/* 안내 문구는 정보 상자 안 글자("학습 대상")와 시작 위치를 맞춘다 */
+.crs-enroll__hint { grid-area: hint; margin: var(--space-2) 0 0; padding: 0 var(--space-5); font-size: 13px; color: var(--ink-muted); }
 .crs-h3 { margin: var(--space-2) 0 0; font-size: 17px; line-height: 1.45; font-weight: 700; }
 
 /* 수업 목록 아코디언 (Accordion) */
@@ -166,6 +186,11 @@ a.crs-eyebrow:hover { border-color: var(--glow); }
 /* 태블릿 (7장: 코스 카드 2열) */
 @media (max-width: 1023px) {
     .crs-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* 태블릿: 옆 자리가 좁아 버튼이 세로로 길어지므로 정보 상자를 위에 한 줄로, 그 아래 왼쪽 안내 문구 · 오른쪽 배지와 버튼 (#396) */
+    .crs-summary { grid-template-rows: auto auto auto; grid-template-areas: "stats stats" "hint btn" ". badge"; }
+    .crs-enroll .vl-ui-badge { margin: var(--space-2) 0 0; }
+    .crs-enroll .vl-ui-btn { margin-top: var(--space-3); }
+    .crs-enroll__hint { margin-top: var(--space-3); align-self: center; }
 }
 
 /* 모바일 (7장: 카드 1열, 좌우 여백 16px, 페이지 제목 26px, 버튼 폭 100%) */
@@ -178,11 +203,16 @@ a.crs-eyebrow:hover { border-color: var(--glow); }
     .crs-cards { grid-template-columns: 1fr; }
     .crs-facts { grid-template-columns: 1fr; }
     .crs-section__head { align-items: flex-start; flex-direction: column; }
-    .crs-summary, .crs-enroll { align-items: stretch; width: 100%; }
+    /* 모바일은 위아래로 쌓는다: 정보 상자 → 배지 → 버튼(폭 100%) → 안내 문구 */
+    .crs-summary { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-4); }
+    .crs-enroll, .crs-enroll__form { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); margin: 0; }
     .crs-stats { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
     .crs-stat { min-width: 0; }
     .crs-stat:first-child { grid-column: 1 / -1; }   /* 학습 대상은 글이 길어 한 줄을 다 쓴다 */
     .crs-enroll .vl-ui-badge { align-self: flex-start; }
+    .crs-enroll .vl-ui-btn { min-width: 0; border-radius: var(--radius-pill); }
+    .crs-enroll .vl-ui-badge, .crs-enroll .vl-ui-btn, .crs-enroll__hint { margin: 0; }   /* 간격은 위 gap 으로 */
+    .crs-enroll__hint { padding: 0; align-self: stretch; }
     .crs-lesson__title { flex: 1 1 auto; min-width: 0; font-size: 15px; }
     .crs-panel .vl-ui-btn { width: 100%; }
     .crs-actions { flex-direction: column; }
