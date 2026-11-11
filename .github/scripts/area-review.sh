@@ -10,11 +10,15 @@
 # 책임 : - P1 판단: PR 자체의 마일스톤과 본문의 Closes·Fixes·Resolves·Part of·Refs #번호 이슈의 마일스톤 중
 #          하나라도 제목에 "P1" 이 있으면 P1 이다 (마일스톤 "3. P1 구현"). 이슈를 읽지 못하면 통과시키지 않는다.
 #        - 영역 ↔ 담당 표는 README "영역 담당" 표와 같게 유지한다. (담당이 바뀌면 이 파일도 고친다)
+#        - 임시 (#421): OPTIONAL_REVIEWERS(저장소 변수 AREA_REVIEW_OPTIONAL_REVIEWERS)에 적힌 사람은 리뷰어로 지정만 하고
+#          승인은 요구하지 않는다 (예: PM 부재 중). 기본 승인에 남는 사람이 없으면(작성자 본인뿐) 기본 승인은 건너뛴다.
 # 사용 : PR=<번호> REPO=<owner/name> GH_TOKEN=<토큰> bash .github/scripts/area-review.sh
 #        DRY_RUN=1 이면 리뷰어 추가 없이 결과만 출력한다.
 set -euo pipefail
 
 BASE_REVIEWERS="dyryoo316 SeungBinYang"   # PM · 형상관리
+OPTIONAL_REVIEWERS="${OPTIONAL_REVIEWERS:-}"
+is_optional() { case " $OPTIONAL_REVIEWERS " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
 owner_of() {
   case "$1" in
@@ -59,12 +63,20 @@ approved=$(gh api --paginate "repos/$REPO/pulls/$PR/reviews" \
   | awk '{s[$1]=$2} END {for (u in s) if (s[u]=="APPROVED") print u}')
 is_approved() { printf '%s\n' "$approved" | grep -qx "$1"; }
 
-need=""
+need=""   # 승인해야 통과하는 사람
+ask=""    # 리뷰어로 지정할 사람 (아직 승인 안 함). 승인을 요구하지 않는 OPTIONAL_REVIEWERS 도 지정은 한다 (#421)
 
-# 기본 승인: PM·형상관리 중 작성자가 아닌 사람 1명
+if [ -n "$OPTIONAL_REVIEWERS" ]; then
+  report+="- 임시 (#421): $OPTIONAL_REVIEWERS 은(는) 리뷰어로만 지정하고 승인은 요구하지 않음"$'\n'
+fi
+
+# 기본 승인: PM·형상관리 중 작성자가 아닌 사람 1명 (OPTIONAL_REVIEWERS 는 승인 대상에서 빠진다)
 base=""
+required_base=""
 for r in $BASE_REVIEWERS; do
-  if [ "$r" != "$author" ]; then base="$base $r"; fi
+  [ "$r" = "$author" ] && continue
+  base="$base $r"
+  is_optional "$r" || required_base="$required_base $r"
 done
 base_ok=""
 for r in $base; do
@@ -72,9 +84,13 @@ for r in $base; do
 done
 if [ -n "$base_ok" ]; then
   report+="- 기본 승인 (PM·형상관리 중 1명): ✅ 승인됨 ($base_ok)"$'\n'
+elif [ -z "$required_base" ]; then
+  report+="- 기본 승인 (PM·형상관리 중 1명): ✅ 임시로 생략 (#421)"$'\n'
+  ask="$ask $base"
 else
-  report+="- 기본 승인 (PM·형상관리 중 1명): ❌ 승인 필요"$'\n'
-  need="$need $base"
+  report+="- 기본 승인 (PM·형상관리 중 1명): ❌ 승인 필요 (${required_base# })"$'\n'
+  need="$need $required_base"
+  ask="$ask $base"
 fi
 
 # 바뀐 파일 → 영역 이름. 파일을 옮긴(rename) 경우 원래 위치(previous_filename)도 본다.
@@ -97,21 +113,26 @@ for area in $areas; do
   for o in $owners; do
     if is_approved "$o"; then ok="✅ 승인됨 ($o)"; fi
   done
+  if [ "$ok" = "❌ 승인 필요" ]; then
+    ask="$ask $owners"
+    required=""
+    for o in $owners; do is_optional "$o" || required="$required $o"; done
+    if [ -z "$required" ]; then ok="✅ 임시로 생략 (#421)"; else need="$need $required"; fi
+  fi
   report+="- 영역 \`$area\` → ${owners// /, }: $ok"$'\n'
-  if [ "$ok" = "❌ 승인 필요" ]; then need="$need $owners"; fi
 done
 
 printf '%s' "$report"
 [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '%s' "$report" >> "$GITHUB_STEP_SUMMARY"
 
-[ -z "$need" ] && exit 0
-
-# 아직 승인 안 한 사람을 리뷰어로 추가 (이미 요청돼 있으면 그대로)
-if [ -z "${DRY_RUN:-}" ]; then
-  for o in $(printf '%s\n' $need | sort -u); do
+# 아직 승인 안 한 사람을 리뷰어로 추가 (이미 요청돼 있으면 그대로). 승인을 요구하지 않는 사람도 지정은 한다 (#421)
+if [ -z "${DRY_RUN:-}" ] && [ -n "$ask" ]; then
+  for o in $(printf '%s\n' $ask | sort -u); do
     gh api -X POST "repos/$REPO/pulls/$PR/requested_reviewers" -f "reviewers[]=$o" >/dev/null 2>&1 \
       && echo "리뷰어 추가: $o" || echo "리뷰어 추가 실패(권한 없음 등): $o"
   done
 fi
+
+[ -z "$need" ] && exit 0
 echo "P1 PR(또는 main 릴리스 PR)이라 승인이 필요합니다. 승인되면 이 검사가 다시 돌아 통과합니다."
 exit 1
