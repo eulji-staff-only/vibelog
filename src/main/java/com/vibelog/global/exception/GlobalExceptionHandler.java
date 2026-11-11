@@ -102,10 +102,10 @@ public class GlobalExceptionHandler {
         return error(request, HttpStatus.BAD_REQUEST, CommonErrorCode.INVALID_FILE.name(), CommonErrorCode.INVALID_FILE.getMessage());
     }
 
-    /* 존재하지 않는 URL */
+    /* 존재하지 않는 URL. 문구는 error.html 404 숨김 조건과 같아야 제목과 두 번 나오지 않는다 (#452) */
     @ExceptionHandler(NoResourceFoundException.class)
     public ModelAndView handleNoResource(NoResourceFoundException e, HttpServletRequest request) {
-        return error(request, HttpStatus.NOT_FOUND, "NOT_FOUND", "요청하신 페이지를 찾을 수 없습니다.");
+        return error(request, HttpStatus.NOT_FOUND, "NOT_FOUND", "페이지를 찾을 수 없습니다.");
     }
 
     /* 그 외 모든 예외 */
