@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 public class LoginLockPolicy {
 
     private static final int MAX_FAILURES = 5;
-    public static final Duration LOCK_TIME = Duration.ofMinutes(5);
+    private static final Duration LOCK_TIME = Duration.ofMinutes(5);
     private static final Duration SWEEP_INTERVAL = Duration.ofMinutes(1);
 
     // ponytail: 서버 메모리에 센다. 재시작하면 초기화되고, 서버를 여러 대 띄우면 서버마다 따로 센다.
@@ -70,6 +70,14 @@ public class LoginLockPolicy {
             return new Attempt(failures, time, failures >= MAX_FAILURES ? time.plus(LOCK_TIME) : null);
         });
         return allowed.get();
+    }
+
+    /*
+     * 잠금 안내의 남은 초 (#394). until 은 로그인 화면 주소로 받은 풀리는 시각(epoch 초)이라 사용자가 바꿀 수 있다.
+     * 안내 표시에만 쓰고 실제 잠금은 isLocked 가 판단하므로, 0 ~ 잠금 시간(5분) 안으로만 자른다.
+     */
+    public long remainingSeconds(long until) {
+        return Math.clamp(until - now.get().getEpochSecond(), 0, LOCK_TIME.toSeconds());
     }
 
     public void reset(String email) {

@@ -134,6 +134,15 @@ class LoginLockPolicyTest {
         assertThat(policy.lockedUntil(EMAIL)).isEmpty();
     }
 
+    /* 주소로 받은 until 은 바꿀 수 있으므로 0 ~ 5분으로 자른다 (#394) */
+    @Test
+    void 남은_초는_풀리는_시각으로_계산하고_0초에서_5분_사이로_자른다() {
+        long nowSeconds = now.get().getEpochSecond();
+        assertThat(policy.remainingSeconds(nowSeconds + 180)).isEqualTo(180);
+        assertThat(policy.remainingSeconds(nowSeconds + 100_000)).isEqualTo(300);
+        assertThat(policy.remainingSeconds(nowSeconds - 10)).isZero();
+    }
+
     private void tryFiveTimes(String email) {
         for (int i = 0; i < 5; i++) {
             policy.tryAttempt(email);

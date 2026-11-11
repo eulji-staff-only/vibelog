@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.security.Principal;
-import java.time.Instant;
 
 /*
  * [AuthController]
@@ -45,6 +44,7 @@ public class AuthController {
     private final MemberSignupService memberSignupService;
     private final EmailVerifyService emailVerifyService;
     private final SocialLoginRegistrations socialLoginRegistrations;
+    private final LoginLockPolicy loginLockPolicy;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     /* API-USR-02. 로그인한 회원이 가입 완료(done) 없이 오면 메인으로 */
@@ -86,14 +86,13 @@ public class AuthController {
      * 소셜 로그인은 구글·깃허브를 돌아오며 redirect 값을 잃으므로 세션에 두고, 돌아오면 SocialLoginSuccessHandler 가 꺼낸다 (#363).
      * redirect 없이 열면 지난 값을 지운다 (예전에 열어 둔 로그인 화면의 주소로 가지 않게).
      * 잠금(locked)이면 풀리는 시각(until)으로 남은 초를 계산해 넘긴다. 화면은 그 값에서 1초씩 줄인다 (#394).
-     * until 은 주소에 있어 바꿀 수 있지만 안내 표시에만 쓰고, 실제 잠금은 LoginLockPolicy 가 판단한다. 그래서 5분을 넘지 않게만 자른다.
+     * until 은 주소에 있어 바꿀 수 있어서 계산(5분을 넘지 않게 자르기 포함)은 LoginLockPolicy 가 한다.
      */
     @GetMapping("/login")
     public String loginPage(@RequestParam(required = false) String redirect, @RequestParam(required = false) Long until,
                             HttpSession session, Model model) {
         if (until != null) {
-            long remaining = until - Instant.now().getEpochSecond();
-            model.addAttribute("lockRemainingSeconds", Math.clamp(remaining, 0, LoginLockPolicy.LOCK_TIME.toSeconds()));
+            model.addAttribute("lockRemainingSeconds", loginLockPolicy.remainingSeconds(until));
         }
         if (redirect == null) {
             session.removeAttribute(SocialLoginSuccessHandler.REDIRECT);
