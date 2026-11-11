@@ -280,7 +280,7 @@ img {
 
 @keyframes vl-banner-flow {
   from { background-position: 0% 50%; }
-  to { background-position: 250% 50%; }
+  to { background-position: 166.6667% 50%; } /* 250% 크기 이미지를 정확히 한 장만큼 옮겨 반복 지점이 이어진다 */
 }
 
 @keyframes vl-banner-shine {
