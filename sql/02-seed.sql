@@ -1047,3 +1047,31 @@ CROSS JOIN LATERAL (
              + INTERVAL FLOOR(TIMESTAMPDIFF(MINUTE, GREATEST(a.created_at, b.created_at), NOW())
                               * (CRC32(CONCAT('fwt', x.k, '-', x.j)) % 1000) / 1000) MINUTE AS t
 ) tt;
+
+-- =====================================================================
+-- 대량 회원의 진단 결과 (#438)
+-- 목적: 대시보드 "진단 완료·건너뜀", "추천 트랙과 실제 수강"을 1만 명 규모로 보고, 대량 회원이 로그인할 때 진단 화면을 거치지 않게 한다
+-- 대상: #431 블록의 회원 순번 k (k 1~30 → member_id 3~32, k 31~10000 → 100001~109970). 시연 계정 33~45 는 #428 그대로 둔다
+-- 직접 적는 ID: diagnosis_result_id = 100000 + k
+-- 상태 (h = 순번으로 계산한 0~99):
+--   수강하지 않은 회원 h 0~7  → 진단 전 (행 없음, 로그인하면 진단 화면으로 간다)
+--   수강한 회원 h 0~7 · 모든 회원 h 8~17 → 건너뜀 SKIPPED (추천 트랙 NULL, ck_diagnosis_result_track)
+--   나머지 → 완료 COMPLETED. 추천 트랙은 수강한 회원이면 Controller(코스 1의 트랙) 70% · Starter 10% · Builder 15% · Explorer 5%,
+--            수강하지 않은 회원이면 Starter 35% · Controller 30% · Builder 25% · Explorer 10% (PL-DGN-002 결과만 저장, PL-DGN-001)
+-- 시각: 가입 2~6분 뒤. #431 수강 시작은 가입 10분 뒤 이후라 항상 진단이 먼저다
+-- =====================================================================
+
+INSERT INTO diagnosis_result (diagnosis_result_id, member_id, recommended_track_id, status, created_at, updated_at)
+WITH RECURSIVE n (k) AS (SELECT 1 UNION ALL SELECT k + 1 FROM n WHERE k < 10000)
+SELECT 100000 + x.k, m.member_id,
+       CASE WHEN x.h < 18 THEN NULL
+            WHEN e.enrollment_id IS NOT NULL THEN CASE WHEN x.t < 70 THEN 2 WHEN x.t < 80 THEN 1 WHEN x.t < 95 THEN 3 ELSE 4 END
+            ELSE CASE WHEN x.t < 35 THEN 1 WHEN x.t < 65 THEN 2 WHEN x.t < 90 THEN 3 ELSE 4 END
+       END,
+       IF(x.h < 18, 'SKIPPED', 'COMPLETED'),
+       m.created_at + INTERVAL (2 + x.k % 5) MINUTE,
+       m.created_at + INTERVAL (2 + x.k % 5) MINUTE
+FROM (SELECT k, CRC32(CONCAT('dg', k)) % 100 AS h, CRC32(CONCAT('dt', k)) % 100 AS t FROM n) x
+JOIN member m ON m.member_id = IF(x.k <= 30, x.k + 2, x.k + 99970)
+LEFT JOIN enrollment e ON e.member_id = m.member_id AND e.course_id = 1
+WHERE e.enrollment_id IS NOT NULL OR x.h >= 8;
