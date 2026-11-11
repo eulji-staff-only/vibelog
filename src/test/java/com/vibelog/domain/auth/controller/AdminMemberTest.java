@@ -109,6 +109,68 @@ class AdminMemberTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    void 수강_중_필터는_완료_포기_수강_없는_회원을_뺀다() throws Exception {
+        learnerWithEnrollments();
+
+        mockMvc.perform(get("/admin/members").param("q", "fq-").param("learning", "yes"))
+                .andExpect(content().string(allOf(containsString("fq-learning"), not(containsString("fq-done")),
+                        not(containsString("fq-drop")), not(containsString("fq-none")))));
+        mockMvc.perform(get("/admin/members").param("q", "fq-").param("learning", "no"))
+                .andExpect(content().string(allOf(not(containsString("fq-learning")), containsString("fq-done"),
+                        containsString("fq-drop"), containsString("fq-none"))));
+        mockMvc.perform(get("/admin/members").param("q", "fq-"))
+                .andExpect(content().string(allOf(containsString("fq-learning"), containsString("fq-done"),
+                        containsString("fq-drop"), containsString("fq-none"))));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void 이메일_인증_필터와_수강_필터는_같이_걸린다() throws Exception {
+        learnerWithEnrollments();
+        jdbcTemplate.update("UPDATE member SET email_verified_at = NOW() WHERE nickname IN ('fq-learning', 'fq-none')");
+
+        mockMvc.perform(get("/admin/members").param("q", "fq-").param("verified", "yes"))
+                .andExpect(content().string(allOf(containsString("fq-learning"), containsString("fq-none"),
+                        not(containsString("fq-done")), not(containsString("fq-drop")))));
+        mockMvc.perform(get("/admin/members").param("q", "fq-").param("verified", "no"))
+                .andExpect(content().string(allOf(not(containsString("fq-learning")), containsString("fq-done"),
+                        containsString("fq-drop"), not(containsString("fq-none")))));
+        mockMvc.perform(get("/admin/members").param("q", "fq-").param("learning", "yes").param("verified", "no"))
+                .andExpect(content().string(allOf(not(containsString("fq-learning")), not(containsString("fq-done")),
+                        not(containsString("fq-drop")), not(containsString("fq-none")), containsString("조건에 맞는 회원이 없습니다"))));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void 정해진_값이_아닌_필터는_전체로_보고_필터_링크는_다른_조건을_유지한다() throws Exception {
+        learnerWithEnrollments();
+
+        mockMvc.perform(get("/admin/members").param("q", "fq-").param("learning", "abc").param("verified", "xyz"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(containsString("fq-learning"), containsString("fq-done"),
+                        containsString("fq-drop"), containsString("fq-none"))));
+        mockMvc.perform(get("/admin/members").param("q", "fq-").param("learning", "yes"))
+                .andExpect(content().string(allOf(containsString("learning=yes&amp;verified=yes"),
+                        containsString("aria-current=\"true\""))));
+    }
+
+    /* 수강 중·완료·포기·수강 없음 회원 4명 (닉네임 fq-*). 모두 이메일 미인증 */
+    private void learnerWithEnrollments() {
+        jdbcTemplate.update("INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9401, '트랙', '대상', '설명', 9401)");
+        jdbcTemplate.update("INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9401, '카테고리', 9401)");
+        jdbcTemplate.update("INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days, is_public) "
+                + "VALUES (9401, 9401, 9401, '필터 코스', '요약', '설명', '대상', '목표', 7, TRUE)");
+        long learning = memberOf("fq-learning", "fq-learning@vibelog.test", "ACTIVE");
+        long done = memberOf("fq-done", "fq-done@vibelog.test", "ACTIVE");
+        long drop = memberOf("fq-drop", "fq-drop@vibelog.test", "ACTIVE");
+        memberOf("fq-none", "fq-none@vibelog.test", "ACTIVE");
+        jdbcTemplate.update("INSERT INTO enrollment (member_id, course_id, started_at) VALUES (?, 9401, NOW())", learning);
+        jdbcTemplate.update("INSERT INTO enrollment (member_id, course_id, started_at, completed_at) VALUES (?, 9401, NOW(), NOW())", done);
+        jdbcTemplate.update("INSERT INTO enrollment (member_id, course_id, started_at, dropped_at) VALUES (?, 9401, NOW(), NOW())", drop);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     void 없는_회원은_찾을_수_없다() throws Exception {
         mockMvc.perform(get("/admin/members/999999999")).andExpect(status().isNotFound());
     }
