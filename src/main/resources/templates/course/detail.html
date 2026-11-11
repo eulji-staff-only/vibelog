@@ -13,6 +13,9 @@
      / ENROLLED·COMPLETED → 내 학습으로 가기. 없거나 비공개 코스는 COURSE_NOT_FOUND → E-01. -->
 <div th:replace="~{common/layout :: header}"></div>
 
+<!-- 다른 화면에서 코스 상세로 보내며 넘긴 안내 (예: 수강을 포기한 회원이 리포트를 열 때, exam #439). lesson.html 과 같은 방식 -->
+<p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
+
 <section class="crs-band">
     <a class="crs-back" href="/courses">← 코스 목록으로</a>
     <p class="crs-band__meta">

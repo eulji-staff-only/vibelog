@@ -133,4 +133,16 @@ class ExamReportServiceTest {
         assertThat(examReportService.getReport(9602L, LESSON, null)).isEmpty();
         assertThat(reportViewedAt()).isNull();
     }
+
+    @Test
+    void 수강_중이면_걸러지지_않고_포기하거나_수강_기록이_없으면_코스_ID를_돌려준다() {
+        assertThat(examReportService.findCourseIdIfNotLearning(MEMBER, LESSON)).isEmpty();
+
+        jdbcTemplate.update("UPDATE enrollment SET completed_at = NOW() WHERE enrollment_id = 9601");
+        assertThat(examReportService.findCourseIdIfNotLearning(MEMBER, LESSON)).as("완료한 코스는 복습이라 열린다").isEmpty();
+
+        jdbcTemplate.update("UPDATE enrollment SET dropped_at = NOW() WHERE enrollment_id = 9601");
+        assertThat(examReportService.findCourseIdIfNotLearning(MEMBER, LESSON)).as("포기하면 코스 상세로").contains(9601L);
+        assertThat(examReportService.findCourseIdIfNotLearning(9602L, LESSON)).as("수강 기록이 없어도").contains(9601L);
+    }
 }
