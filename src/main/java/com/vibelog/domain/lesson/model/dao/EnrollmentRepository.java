@@ -21,6 +21,10 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     boolean existsByMemberIdAndCompletedAtIsNullAndDroppedAtIsNull(Long memberId);
 
+    /* 지금 수강 중인 회원 ID: 완료·포기하지 않은 수강이 1개 이상 (LessonReader.getLearningMemberIds, 운영자 회원 목록 필터 #446) */
+    @Query("select distinct e.memberId from Enrollment e where e.completedAt is null and e.droppedAt is null")
+    List<Long> findLearningMemberIds();
+
     /* 내 학습(API-ENR-02) "수강 중" 탭: 완료·포기하지 않은 수강 */
     List<Enrollment> findByMemberIdAndCompletedAtIsNullAndDroppedAtIsNull(Long memberId);
 

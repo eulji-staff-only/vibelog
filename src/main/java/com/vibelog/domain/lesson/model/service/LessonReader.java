@@ -93,6 +93,14 @@ public class LessonReader {
                 .toList();
     }
 
+    /*
+     * 지금 수강 중인 회원 ID (완료·포기하지 않은 수강이 1개 이상). 운영자 회원 목록의 "수강 중" 필터(API-ADM-37, auth #446)가 쓴다.
+     * "수강 중"은 상세 화면의 수강 상태(수강 중·완료·포기)와 같은 기준이다
+     */
+    public List<Long> getLearningMemberIds() {
+        return enrollmentRepository.findLearningMemberIds();
+    }
+
     /* 코스의 마지막 공개 수업 ID, 공개 수업이 없으면 null. 포트폴리오 잠김 안내의 "리포트 보러 가기"(portfolio #112)가 쓴다 */
     public Long getLastLessonId(Long courseId) {
         List<Lesson> lessons = lessonRepository.findByCourseIdAndIsPublicTrueOrderBySortOrderAsc(courseId);
