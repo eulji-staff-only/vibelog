@@ -1075,3 +1075,54 @@ FROM (SELECT k, CRC32(CONCAT('dg', k)) % 100 AS h, CRC32(CONCAT('dt', k)) % 100 
 JOIN member m ON m.member_id = IF(x.k <= 30, x.k + 2, x.k + 99970)
 LEFT JOIN enrollment e ON e.member_id = m.member_id AND e.course_id = 1
 WHERE e.enrollment_id IS NOT NULL OR x.h >= 8;
+
+-- =====================================================================
+-- 공지사항 + 상단 배너 (#440, FR-NTF-003·004, PL-NTF-003)
+-- 직접 적는 ID: notice 2001~2099 (#429 1~99 · #430 101~199 · #428 1001~1999 · #431 100000 이상과 겹치지 않게)
+-- 작성자는 운영자(회원 2). 목록이 10개씩이라(NoticeService.PAGE_SIZE) 12개를 넣어 2페이지까지 보이게 한다
+-- 시각은 NOW() 기준이라 언제 01 → 02 를 실행해도 "며칠 전 공지"로 보이고, 배너는 실행한 날부터 2주 동안 뜬다
+-- 배너는 동시에 1개만 뜬다(PL-NTF-003): 지금 뜨는 배너는 2012 하나, 2001 은 기간이 지난 배너(목록에서만 보임)
+-- 배너가 아니면 기간을 비운다 (ck_notice_banner)
+-- 본문의 규칙은 정책 문서에 있는 값만 쓴다 (PL-CTS-001·003, PL-USR-003, PL-REV-002, PL-RPT-002, PL-MSG-001)
+-- =====================================================================
+
+INSERT INTO notice (notice_id, admin_member_id, title, body, is_banner_shown, banner_starts_at, banner_ends_at, created_at, updated_at) VALUES
+    (2001, 2, '바이브로그를 시작합니다',
+     '바이브코딩 학습 플랫폼 바이브로그를 열었습니다.\n\n진단으로 내 트랙을 찾고, 수업과 퀴즈로 실력을 쌓고, 포트폴리오로 결과물을 남겨 보세요.\n이용하다가 불편한 점은 화면 아래 문의 이메일로 알려 주세요.',
+     TRUE, NOW() - INTERVAL 42 DAY, NOW() - INTERVAL 28 DAY, NOW() - INTERVAL 42 DAY, NOW() - INTERVAL 42 DAY),
+    (2002, 2, '처음 오셨다면 진단부터 해 보세요',
+     '처음 로그인하면 5문항 진단이 열립니다. 고른 답을 바탕으로 Starter·Controller·Builder·Explorer 중 나에게 맞는 트랙을 추천해 드려요.\n\n진단은 건너뛸 수 있고, 마이페이지에서 언제든 다시 할 수 있습니다.',
+     FALSE, NULL, NULL, NOW() - INTERVAL 40 DAY, NOW() - INTERVAL 40 DAY),
+    (2003, 2, '이메일 인증 안내',
+     '이메일 인증 전에도 로그인과 학습은 할 수 있습니다.\n게시글·댓글·포트폴리오·쪽지·리뷰를 쓰려면 가입할 때 받은 메일의 인증 링크를 눌러 주세요.\n\n메일이 오지 않았다면 스팸함을 먼저 확인해 주세요.',
+     FALSE, NULL, NULL, NOW() - INTERVAL 37 DAY, NOW() - INTERVAL 37 DAY),
+    (2004, 2, '커뮤니티 이용 규칙',
+     '서로 배우는 공간이 되도록 아래 규칙을 지켜 주세요.\n\n- 다른 사람을 비난하거나 광고하는 글은 쓰지 않습니다\n- 코드와 함께 API 키·비밀번호를 올리지 않습니다\n\n규칙에 맞지 않는 글은 신고해 주세요. 서로 다른 3명이 신고하면 자동으로 숨겨지고 운영자가 확인합니다.',
+     FALSE, NULL, NULL, NOW() - INTERVAL 33 DAY, NOW() - INTERVAL 33 DAY),
+    (2005, 2, '틀린 문제 모아보기를 추가했습니다',
+     '퀴즈에서 틀렸던 문항을 한곳에서 다시 볼 수 있습니다.\n내 학습 또는 수업 화면의 "틀린 문제 모아보기"에서 코스·수업별로 거르고, 문항마다 내 답·정답·해설과 관련 개념을 확인해 보세요.',
+     FALSE, NULL, NULL, NOW() - INTERVAL 29 DAY, NOW() - INTERVAL 29 DAY),
+    (2006, 2, '포트폴리오 동료 리뷰를 열었습니다',
+     '제출한 포트폴리오에 다른 학습자의 리뷰를 받을 수 있습니다.\n리뷰 요청은 동시에 3개까지 할 수 있고, 요청 후 14일이 지나면 자동으로 마감됩니다.\n\n내 포트폴리오에서 "리뷰 요청"을 눌러 시작해 보세요.',
+     FALSE, NULL, NULL, NOW() - INTERVAL 25 DAY, NOW() - INTERVAL 25 DAY),
+    (2007, 2, '쪽지 기능 안내',
+     '공개 프로필에서 다른 학습자에게 쪽지를 보낼 수 있습니다.\n쪽지는 주고받은 두 사람만 볼 수 있고, 운영자는 신고된 쪽지만 확인합니다.\n불쾌한 쪽지를 받았다면 쪽지 화면에서 신고해 주세요.',
+     FALSE, NULL, NULL, NOW() - INTERVAL 21 DAY, NOW() - INTERVAL 21 DAY),
+    (2008, 2, '월간 콘테스트 일정 안내',
+     '매달 한 가지 주제로 작품을 겨루는 월간 콘테스트를 엽니다.\n\n- 1일 ~ 20일: 출품 (1인 1작품, 공개 포트폴리오만)\n- 21일 ~ 말일: 투표 (계정당 하루 1표, 자기 작품에는 투표할 수 없음)\n- 다음 달 1일: 결과 발표, 1·2·3등에게 배지 지급',
+     FALSE, NULL, NULL, NOW() - INTERVAL 17 DAY, NOW() - INTERVAL 17 DAY),
+    (2009, 2, '모바일 화면을 개선했습니다',
+     '휴대폰에서 코스 상세, 진단 결과, 퀴즈 화면이 화면 폭에 맞게 보이도록 고쳤습니다.\n여전히 화면이 잘리거나 겹치는 곳이 있다면 화면 이름과 함께 알려 주세요.',
+     FALSE, NULL, NULL, NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 12 DAY),
+    (2010, 2, '수강 포기와 다시 시작 안내',
+     '내 학습에서 수강 중인 코스를 포기할 수 있습니다. 포기한 코스는 목록에서 내려갑니다.\n같은 코스를 다시 시작하면 이전에 하던 곳부터 이어서 학습합니다.',
+     FALSE, NULL, NULL, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 8 DAY),
+    (2011, 2, '정기 점검 안내',
+     '더 안정적인 서비스를 위해 정기 점검을 합니다.\n점검 중에는 모든 화면 대신 점검 안내가 보이며, 점검이 끝나면 바로 다시 이용할 수 있습니다.\n학습 기록은 그대로 유지됩니다.',
+     FALSE, NULL, NULL, NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 4 DAY),
+    (2012, 2, CONCAT(MONTH(NOW()), '월 콘테스트가 진행 중입니다'),
+     CONCAT('이번 달 콘테스트가 열렸습니다. 콘테스트 탭에서 이달의 주제를 확인해 보세요.\n\n',
+            '- 1일 ~ 20일: 출품 (1인 1작품, 공개 포트폴리오만)\n',
+            '- 21일 ~ 말일: 투표 (계정당 하루 1표)\n\n',
+            '코스 포트폴리오뿐 아니라 개인 작품도 출품할 수 있습니다.'),
+     TRUE, NOW() - INTERVAL 1 DAY, NOW() + INTERVAL 14 DAY, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY);
