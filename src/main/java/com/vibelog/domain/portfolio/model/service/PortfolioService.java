@@ -35,6 +35,8 @@ import java.util.stream.Collectors;
  *        - 스텝은 사용 중(is_active)인 것만 보여 주고 센다. 꺼진 스텝은 체크할 수 없다.
  *        - 코스 이름·마지막 수업·이메일 인증 여부는 각 영역 Reader 로 읽는다.
  *        - 과제 FAQ(P2 FR-PRT-008)는 과제가 열렸을 때만 보낸다.
+ *        - 평가 에이전트 안내·설정 파일은 포트폴리오를 제출한 뒤에만 준다 (#404). 제출 전 화면 값에는 비워 두고,
+ *          설정 파일 내려받기(API-PRT-03)도 제출 전이면 AGENT_NOT_OPEN 으로 막는다.
  */
 @Service
 @RequiredArgsConstructor
@@ -73,8 +75,12 @@ public class PortfolioService {
                 .map(Portfolio::getPortfolioId)
                 .orElse(null);
 
+        // 평가 에이전트는 제출한 뒤에 열린다 (#404). 제출 전에는 안내·설정 파일 값을 화면에 아예 주지 않는다
+        boolean agentOpen = submittedPortfolioId != null;
+
         return Optional.of(new PortfolioPageView(courseId, courseTitle, true, null,
-                assignment.getTopic(), assignment.getGoal(), assignment.getAgentGuide(), assignment.getAgentFileUrl() != null,
+                assignment.getTopic(), assignment.getGoal(),
+                agentOpen ? assignment.getAgentGuide() : null, agentOpen && assignment.getAgentFileUrl() != null,
                 stepViews, checked.size(), submittedPortfolioId, memberReader.isEmailVerified(memberId),
                 portfolioFaqRepository.findByPortfolioAssignmentIdOrderBySortOrderAsc(assignment.getPortfolioAssignmentId()).stream()
                         .map(faq -> new PortfolioPageView.Faq(faq.getQuestion(), faq.getAnswer()))
@@ -104,6 +110,10 @@ public class PortfolioService {
     /* API-PRT-03 내려받을 설정 파일 주소 (FileStorage 가 돌려준 /uploads/...) */
     public String getAgentFileUrl(Long memberId, Long courseId) {
         requireUnlocked(memberId, courseId);
+        // 제출 전에는 주소를 직접 열어도 받을 수 없다 (화면에서만 숨기지 않는다, NFR-SEC-003)
+        if (portfolioRepository.findFirstByMemberIdAndCourseIdAndDeletedAtIsNull(memberId, courseId).isEmpty()) {
+            throw new BusinessException(PortfolioErrorCode.AGENT_NOT_OPEN);
+        }
         String url = getAssignment(courseId).getAgentFileUrl();
         if (url == null) {
             throw new BusinessException(PortfolioErrorCode.FILE_NOT_FOUND);

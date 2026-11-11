@@ -118,12 +118,48 @@ class PortfolioSubmitServiceTest {
         assertThat(portfolio.isDeleted()).isFalse();
     }
 
+    /* 평가 에이전트는 제출 뒤 수정에서 열린다 (#404). 최초 제출에서는 점검 결과를 받지 않는다 */
     @Test
-    void 에이전트_점검_결과가_저장_칸보다_길면_INVALID_INPUT() {
+    void 최초_제출은_에이전트_점검_결과가_와도_버린다() {
+        portfolioSubmitService.submit(MEMBER, COURSE, form(RETRO), null);   // form() 은 agentResult "통과" 를 담고 있다
+
+        assertThat(saved().getAgentResult()).isNull();
+    }
+
+    @Test
+    void 삭제_뒤_다시_제출해도_이전_점검_결과는_남지_않는다() {
+        portfolioSubmitService.submit(MEMBER, COURSE, form(RETRO), null);
+        Long id = saved().getPortfolioId();
+        portfolioSubmitService.edit(MEMBER, id, form(RETRO), null);
+        assertThat(saved().getAgentResult()).isEqualTo("통과");
+        jdbcTemplate.update("UPDATE portfolio SET deleted_at = NOW() WHERE portfolio_id = ?", id);
+        entityManager.clear();
+
+        portfolioSubmitService.submit(MEMBER, COURSE, form(RETRO), null);
+
+        assertThat(saved().getAgentResult()).isNull();
+    }
+
+    @Test
+    void 수정에서는_에이전트_점검_결과를_저장한다() {
+        portfolioSubmitService.submit(MEMBER, COURSE, form(RETRO), null);
+        Long id = saved().getPortfolioId();
+
+        PortfolioSubmitForm edited = form(RETRO);
+        edited.setAgentResult("에이전트 점검 통과 sk-abc123XYZ");
+        portfolioSubmitService.edit(MEMBER, id, edited, null);
+
+        assertThat(saved().getAgentResult()).contains("sk-****").doesNotContain("abc123XYZ");
+    }
+
+    @Test
+    void 수정할_때_에이전트_점검_결과가_저장_칸보다_길면_INVALID_INPUT() {
+        portfolioSubmitService.submit(MEMBER, COURSE, form(RETRO), null);
+        Long id = saved().getPortfolioId();
         PortfolioSubmitForm form = form(RETRO);
         form.setAgentResult("가".repeat(21_846));   // 한글 3바이트 × 21,846 = 65,538바이트 > TEXT 65,535
 
-        assertThatThrownBy(() -> portfolioSubmitService.submit(MEMBER, COURSE, form, null))
+        assertThatThrownBy(() -> portfolioSubmitService.edit(MEMBER, id, form, null))
                 .extracting("errorCode").isEqualTo(PortfolioErrorCode.INVALID_INPUT);
     }
 
