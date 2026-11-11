@@ -1129,7 +1129,7 @@ INSERT INTO notice (notice_id, admin_member_id, title, body, is_banner_shown, ba
 
 -- =====================================================================
 -- 월간 콘테스트: 지난달(결과 발표) + 이번 달(진행 중) (#430, FR-CTS-001~005, PL-CTS-001~006)
--- 직접 적는 ID: 101~199 (contest 101·102, portfolio 101~109, contest_entry 101~109, contest_award 101~104)
+-- 직접 적는 ID: 101~199 (contest 101·102, portfolio 101~109, contest_entry 101~109, contest_award 101~104, notification 101~104)
 --   투표(contest_vote)는 수가 많아 SELECT 로 만들고 ID 는 DB 가 채운다
 -- 날짜는 NOW() 기준 → 언제 01 → 02 를 실행해도 "지난달 결과 + 이번 달 진행 중"이 보인다
 -- 기간은 운영자 화면 기본값과 같다 (ContestForm): 1일 0시 ~ 21일 0시 출품, 21일 0시 ~ 다음 달 1일 0시 투표 (PL-CTS-001)
@@ -1253,3 +1253,15 @@ FROM (SELECT 101 AS id, 101 AS entry_id, 1 AS award_rank UNION ALL
       SELECT 103, 103, 2 UNION ALL
       SELECT 104, 104, 3) a
 CROSS JOIN (SELECT CAST(DATE_FORMAT(NOW(), '%Y-%m-01') AS DATETIME) + INTERVAL 10 MINUTE AS t) d;
+
+-- 배지 알림 (지난달 수상자 4명): 시상 배치가 수상과 함께 보내는 알림과 같은 모양 (NotificationContractService.badgeAwarded,
+--   내용 "배지를 받았습니다: {yyyy}년 {M}월 {순위}등" = ContestAward.badgeName). 안 읽은 상태라 수상자로 로그인하면
+--   배지 획득 축하(M-10)가 뜬다. 직접 적는 ID 101~104 (#459 블록 주석: 배지 알림은 수상 데이터가 생기는 #430 에서 넣는다)
+INSERT INTO notification (notification_id, member_id, notification_type, target_type, target_id, content, read_at, created_at, updated_at)
+SELECT a.contest_award_id, e.member_id, 'BADGE', 'CONTEST_AWARD', a.contest_award_id,
+       CONCAT('배지를 받았습니다: ', LEFT(c.contest_month, 4), '년 ', CAST(SUBSTRING(c.contest_month, 6, 2) AS UNSIGNED), '월 ', a.award_rank, '등'),
+       NULL, a.created_at, a.created_at
+FROM contest_award a
+JOIN contest_entry e ON e.contest_entry_id = a.contest_entry_id
+JOIN contest c ON c.contest_id = a.contest_id
+WHERE a.contest_award_id BETWEEN 101 AND 104;
