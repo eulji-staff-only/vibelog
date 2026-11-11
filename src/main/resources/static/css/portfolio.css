@@ -84,7 +84,13 @@
 .pf-divider { width: 100%; margin: 0; border: 0; border-top: 1px solid var(--line-soft); }
 .pf-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 10px var(--space-4); padding: var(--space-4) 18px;
     border: 1px dashed var(--line-strong); border-radius: var(--radius-md); background: var(--surface-raised); }
-.pf-upload:focus-within .pf-btn { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+/* 숨은 파일 칸에 초점이 오면 "이미지 추가" 라벨에 테두리를 그린다 ("빼기" 버튼은 자기 초점 표시를 쓴다) */
+.pf-upload:has(.pf-sr:focus-visible) label.pf-btn { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+/* 고른 파일 이름 (#403). 긴 이름은 줄을 넘겨 감싼다 */
+.pf-shot-name { flex: 1 1 200px; min-width: 0; font-size: 14px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+/* 수정 상태의 지금 스크린샷 (#403) */
+.pf-shot-current { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.pf-shot-current img { width: 160px; max-width: 100%; height: auto; border: 1px solid var(--line-soft); border-radius: var(--radius-md); }
 .pf-submit { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); }
 
 /* 키보드 포커스 (설계서 5-2) */

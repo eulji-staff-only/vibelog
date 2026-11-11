@@ -119,6 +119,11 @@ public class PortfolioManageService {
         return PortfolioSubmitForm.from(getOwned(memberId, portfolioId));
     }
 
+    /* U-17 수정 상태에 보여 줄 지금 스크린샷 주소. 본인 것이 아니면 NOT_OWNER, 없으면 null (#403) */
+    public String getScreenshotUrl(Long memberId, Long portfolioId) {
+        return getOwned(memberId, portfolioId).getScreenshotUrl();
+    }
+
     /* U-34 개인 작품 수정 상태(?edit=) 값. 코스 포트폴리오는 U-17 에서 고치므로 여기서는 없는 것으로 본다 */
     public PortfolioSubmitForm getPersonalEditForm(Long memberId, Long portfolioId) {
         Portfolio p = getOwned(memberId, portfolioId);
