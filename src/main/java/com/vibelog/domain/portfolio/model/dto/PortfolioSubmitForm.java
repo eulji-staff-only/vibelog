@@ -49,6 +49,9 @@ public class PortfolioSubmitForm {
 
     private String agentResult;
 
+    /* 수정(API-PRT-06)에서 올라가 있는 스크린샷을 지우려고 보낸다. 새 스크린샷이 같이 오면 새 파일이 우선이다 (#437) */
+    private boolean removeScreenshot;
+
     /* U-17 수정 상태(edit=true)를 저장된 값으로 채운다 */
     public static PortfolioSubmitForm from(Portfolio portfolio) {
         PortfolioSubmitForm form = new PortfolioSubmitForm();

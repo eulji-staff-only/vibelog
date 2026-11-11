@@ -109,6 +109,9 @@ public class PortfolioSubmitService {
         }
         portfolio.edit(mask(form.getTitle()), form.getResultUrl(), mask(form.getSummary()), mask(form.getRetrospective()),
                 mask(form.getAiTools()), form.getIsPublic(), agentResult, screenshotUrl);
+        if (!portfolio.isPersonal() && form.isRemoveScreenshot() && screenshotUrl == null) {
+            portfolio.removeScreenshot();   // 새 파일을 같이 올렸으면 위 edit 이 바꿨으므로 지우지 않는다
+        }
         if (!form.getIsPublic()) {
             reviewRequestCloser.closeOpenRequests(portfolioId);
         }
