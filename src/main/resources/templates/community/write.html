@@ -61,15 +61,13 @@
 
             <div class="cm-field">
                 <label class="cm-label" for="images">사진</label>
-                <!-- 수정: 체크를 풀면 그 사진을 지운다 (keepPostImageIds) -->
+                <!-- 수정: 사진 위 X를 누르면 그 사진을 지운다 (community.js가 keepPostImageIds 체크를 푼다) -->
                 <ul class="cm-keep" th:unless="${existingImages.empty}">
-                    <li th:each="image : ${existingImages}">
-                        <label>
-                            <input type="checkbox" name="keepPostImageIds" th:value="${image.postImageId()}"
-                                   th:checked="${postWriteRequest.keepPostImageIds.contains(image.postImageId())}">
-                            <img th:src="${image.imageUrl()}" alt="기존 사진" class="cm-photo">
-                            <span>남기기</span>
-                        </label>
+                    <li class="cm-keep-item" th:each="image : ${existingImages}" data-keep-item>
+                        <input type="checkbox" name="keepPostImageIds" th:value="${image.postImageId()}" hidden
+                               th:checked="${postWriteRequest.keepPostImageIds.contains(image.postImageId())}">
+                        <img th:src="${image.imageUrl()}" alt="기존 사진" class="cm-photo">
+                        <button type="button" class="cm-keep-remove" aria-label="이 사진 지우기" data-keep-remove>×</button>
                     </li>
                 </ul>
                 <input id="images" type="file" name="images" accept=".jpg,.jpeg,.png,.webp" multiple>

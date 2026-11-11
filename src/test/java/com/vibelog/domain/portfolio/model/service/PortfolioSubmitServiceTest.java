@@ -153,6 +153,24 @@ class PortfolioSubmitServiceTest {
     }
 
     @Test
+    void 수정에서_removeScreenshot이_true면_올라간_스크린샷을_지운다() {
+        portfolioSubmitService.submit(MEMBER, COURSE, form(RETRO), null);
+        Portfolio first = saved();
+        Long id = first.getPortfolioId();
+        jdbcTemplate.update("UPDATE portfolio SET screenshot_url = '/uploads/old.png' WHERE portfolio_id = ?", id);
+        entityManager.clear();
+
+        PortfolioSubmitForm keep = form(RETRO);
+        portfolioSubmitService.edit(MEMBER, id, keep, null);
+        assertThat(saved().getScreenshotUrl()).isEqualTo("/uploads/old.png");   // 보내지 않으면 그대로
+
+        PortfolioSubmitForm remove = form(RETRO);
+        remove.setRemoveScreenshot(true);
+        portfolioSubmitService.edit(MEMBER, id, remove, null);
+        assertThat(saved().getScreenshotUrl()).isNull();
+    }
+
+    @Test
     void 수정할_때_에이전트_점검_결과가_저장_칸보다_길면_INVALID_INPUT() {
         portfolioSubmitService.submit(MEMBER, COURSE, form(RETRO), null);
         Long id = saved().getPortfolioId();
