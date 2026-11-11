@@ -25,7 +25,7 @@ import java.time.YearMonth;
 public class ContestForm {
 
     public static final String DATETIME_PATTERN = "yyyy-MM-dd'T'HH:mm";
-    static final int VOTE_START_DAY = 21;
+    static final int VOTE_START_DAY = 21;   // 화면 contest-admin.js 도 같은 기본값을 쓴다 (#401)
     static final String MONTH_REGEX = "\\d{4}-(0[1-9]|1[0-2])";
 
     @NotBlank(message = "월을 골라 주세요")
