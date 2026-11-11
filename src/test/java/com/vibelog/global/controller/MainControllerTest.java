@@ -6,6 +6,8 @@ import com.vibelog.domain.community.model.dto.RankingItem;
 import com.vibelog.domain.community.model.service.CommunityReader;
 import com.vibelog.domain.contest.model.dto.ContestSummary;
 import com.vibelog.domain.contest.model.service.ContestReader;
+import com.vibelog.domain.course.model.dto.FeaturedCourse;
+import com.vibelog.domain.course.model.service.CourseReader;
 import com.vibelog.domain.message.model.dto.NoticeSummary;
 import com.vibelog.domain.message.model.service.MessageReader;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ import java.util.Optional;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -54,6 +57,9 @@ class MainControllerTest {
     @MockitoBean
     private ContestReader contestReader;
 
+    @MockitoBean
+    private CourseReader courseReader;
+
     @Test
     void 메인_화면_요청하면_공통_메인_뷰를_돌려준다() throws Exception {
         mockMvc.perform(get("/"))
@@ -70,6 +76,23 @@ class MainControllerTest {
         mockMvc.perform(get("/"))
                 .andExpect(content().string(allOf(containsString("/notices/7"), containsString("11월 점검 안내"),
                         containsString("2026-11-09"), containsString("/community/42"), containsString("할 일 앱 — 코딩곰 (추천 5)"))));
+    }
+
+    @Test
+    void 대표_코스는_실제_공개_코스를_보여주고_코스_상세로_연결한다() throws Exception {
+        given(courseReader.findFeaturedCourses(3)).willReturn(List.of(
+                new FeaturedCourse(5L, "웹 기초 코스", "HTML부터 배포까지", "처음 코딩을 배우는 분", 14)));
+
+        mockMvc.perform(get("/"))
+                .andExpect(content().string(allOf(containsString("href=\"/courses/5\""), containsString("웹 기초 코스"),
+                        containsString("HTML부터 배포까지"), containsString("학습 대상: 처음 코딩을 배우는 분"),
+                        containsString("예상 기간 14일"), not(containsString("바이브코딩으로 시작하는 첫 웹 서비스")))));
+    }
+
+    @Test
+    void 공개_코스가_없으면_대표_코스_안내_문구를_보여준다() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(content().string(containsString("아직 공개된 코스가 없습니다")));
     }
 
     @Test

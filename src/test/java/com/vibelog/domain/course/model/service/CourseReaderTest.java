@@ -45,6 +45,30 @@ class CourseReaderTest {
     }
 
     @Test
+    void 대표_코스는_공개_코스만_코스_ID_순으로_limit_개_돌려준다() {
+        jdbcTemplate.update("INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9503, '대표 트랙', '대상', '설명', 9503)");
+        jdbcTemplate.update("INSERT INTO course_category (course_category_id, name, sort_order) VALUES (9503, '대표 카테고리', 9503)");
+        for (long id = 9503; id <= 9506; id++) {
+            jdbcTemplate.update("INSERT INTO course (course_id, track_id, course_category_id, title, summary, description, target, goal, plan_days, is_public) "
+                    + "VALUES (?, 9503, 9503, ?, '한 줄', '소개', '학습 대상', '목표', 14, ?)", id, "대표 " + id, id != 9504);
+        }
+
+        List<Long> ids = courseReader.findFeaturedCourses(Integer.MAX_VALUE).stream()
+                .map(featured -> featured.courseId()).filter(id -> id >= 9503).toList();
+
+        assertThat(ids).containsExactly(9503L, 9505L, 9506L);   // 비공개 9504 는 빠진다
+        assertThat(courseReader.findFeaturedCourses(1)).hasSize(1);
+        assertThat(courseReader.findFeaturedCourses(0)).isEmpty();
+        assertThat(courseReader.findFeaturedCourses(-1)).isEmpty();
+        assertThat(courseReader.findFeaturedCourses(Integer.MAX_VALUE).stream().filter(f -> f.courseId() == 9503L).findFirst().orElseThrow())
+                .satisfies(f -> {
+                    assertThat(f.title()).isEqualTo("대표 9503");
+                    assertThat(f.target()).isEqualTo("학습 대상");
+                    assertThat(f.planDays()).isEqualTo(14);
+                });
+    }
+
+    @Test
     void 진단_설문에는_사용_중인_문항만_순서대로_나오고_보기가_문항에_묶인다() {
         jdbcTemplate.update("INSERT INTO track (track_id, name, target, description, sort_order) VALUES (9502, '진단 트랙', '대상', '설명', 9502)");
         jdbcTemplate.update("INSERT INTO diagnosis_question (diagnosis_question_id, content, sort_order, is_active) VALUES (9502, '둘째 문항', 9502, TRUE)");

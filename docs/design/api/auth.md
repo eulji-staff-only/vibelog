@@ -8,7 +8,7 @@
 
 | ID | 기능 | Method | URL | 접근 | 요청 값 | 성공 응답 | 실패 | 관련 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| API-USR-01 | 메인 | GET | `/` | 전체 | - | U-01 + 로그인 여부(헤더), 트랙 4개, 대표 코스 카드, 최근 공지 N개·이번 주 추천 작품 상위 3개·이달의 콘테스트(P2 전엔 빈 값) | - | FR-USR-006 |
+| API-USR-01 | 메인 | GET | `/` | 전체 | - | U-01 + 로그인 여부(헤더), 트랙 4개, 대표 코스 카드(공개 코스를 코스 ID 순으로 앞에서 3개, `CourseReader.findFeaturedCourses(3)`, #409), 최근 공지 N개·이번 주 추천 작품 상위 3개·이달의 콘테스트(P2 전엔 빈 값) | - | FR-USR-006 |
 | API-USR-02 | 회원가입 화면 | GET | `/signup` | 전체 | query `done`(선택) | U-02. `done=true`면 가입 완료 상태(인증 메일 안내 + 첫 진단 시작하기 → `/diagnosis`) | 로그인 상태이고 `done` 없으면 → `/` | FR-USR-001 |
 | API-USR-03 | 회원가입 | POST | `/signup` | 전체 | form `nickname`, `email`, `password` | 계정 생성 → 인증 메일 발송 → 로그인 상태로 → `/signup?done=true` | `INVALID_INPUT`(PL-USR-001·002), `DUPLICATE_EMAIL`(로그인으로 이동 링크), `DUPLICATE_NICKNAME`, `BANNED_WORD`(PL-SEC-003) → 같은 폼 다시 | FR-USR-001, 002 |
 | API-USR-04 | 로그인 화면 | GET | `/login` | 전체 | query `redirect`(선택) | U-03 + 진입 안내 문구(redirect가 있을 때) | 로그인 상태면 → `/` (API-USR-02와 같음, #393) | FR-USR-004 |
