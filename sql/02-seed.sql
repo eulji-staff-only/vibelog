@@ -258,6 +258,82 @@ INSERT INTO portfolio_template_item (portfolio_template_item_id, item_key, label
     (5, 'RETROSPECTIVE', '회고', '이 작품을 만들며 배운 점과 아쉬운 점', 5);
 
 -- =====================================================================
+-- 개발용 샘플: 테스트 학습자(회원 1)가 코스 1을 완료한 학습 기록 (#429)
+-- 직접 적는 ID 는 1~99 만 쓴다 (#428 회원 3~32 · #430 101~199 · #431 201~999 와 나눔)
+-- 완료 여부·진행률은 저장하지 않고 학습 기록에서 계산하므로(PL-ENR-006) 앱이 남기는 순서 그대로 넣는다:
+--   수강 시작 → 개념 읽기·퀴즈 통과로 활동이 차례로 열림 → 마지막 퀴즈 통과로 모의고사 열림 → 모의고사 제출
+--   → 리포트 확인 시각에 수업 완료·다음 수업 열림(PL-ENR-002) → 마지막 수업 리포트 확인으로 포트폴리오 열림
+--   → 포트폴리오 제출 시각에 코스 완료 (PL-ENR-003)
+-- 시각은 모두 과거(2026-11-02 ~ 11-06)이고 앞 단계보다 뒤다.
+-- 퀴즈 1(활동 2)·모의고사 1(수업 1)은 한 문항씩 틀려 틀린 문제 모아보기(U-28)·약한 개념 리포트(U-16)에도 보이게 했다.
+-- 이 뒤로 learner@vibelog.test 는 "수강 시작·진행 중"을 볼 수 없다 → #428 의 새 계정으로 확인한다
+-- =====================================================================
+
+INSERT INTO enrollment (enrollment_id, member_id, course_id, started_at, portfolio_unlocked_at, completed_at, created_at, updated_at) VALUES
+    (1, 1, 1, '2026-11-02 10:00:00', '2026-11-05 11:00:00', '2026-11-06 15:00:00', '2026-11-02 10:00:00', '2026-11-06 15:00:00');
+
+-- 수업 진도: completed_at = 그 수업 모의고사 리포트를 확인한 시각, 다음 수업은 그때 열린다
+INSERT INTO lesson_progress (lesson_progress_id, enrollment_id, lesson_id, unlocked_at, completed_at, created_at, updated_at) VALUES
+    (1, 1, 1, '2026-11-02 10:00:00', '2026-11-03 10:40:00', '2026-11-02 10:00:00', '2026-11-03 10:40:00'),
+    (2, 1, 2, '2026-11-03 10:40:00', '2026-11-05 11:00:00', '2026-11-03 10:40:00', '2026-11-05 11:00:00');
+
+-- 활동 진도: 개념은 읽기 완료, 퀴즈는 통과한 시각에 완료. 다음 활동은 앞 활동이 끝난 시각에 열린다
+INSERT INTO activity_progress (activity_progress_id, enrollment_id, activity_id, unlocked_at, completed_at, created_at, updated_at) VALUES
+    (1, 1, 1, '2026-11-02 10:00:00', '2026-11-02 10:10:00', '2026-11-02 10:00:00', '2026-11-02 10:10:00'),
+    (2, 1, 2, '2026-11-02 10:10:00', '2026-11-02 10:20:00', '2026-11-02 10:10:00', '2026-11-02 10:20:00'),
+    (3, 1, 3, '2026-11-02 10:20:00', '2026-11-02 10:35:00', '2026-11-02 10:20:00', '2026-11-02 10:35:00'),
+    (4, 1, 4, '2026-11-02 10:35:00', '2026-11-02 10:45:00', '2026-11-02 10:35:00', '2026-11-02 10:45:00'),
+    (5, 1, 5, '2026-11-03 10:40:00', '2026-11-04 20:10:00', '2026-11-03 10:40:00', '2026-11-04 20:10:00'),
+    (6, 1, 6, '2026-11-04 20:10:00', '2026-11-04 20:20:00', '2026-11-04 20:10:00', '2026-11-04 20:20:00');
+
+-- 퀴즈 응시: 3문항 중 2개 이상 맞히면 통과(통과 기준 50%, PL-LSN-002). correct_rate 는 %(소수 둘째 자리)
+INSERT INTO quiz_attempt (quiz_attempt_id, member_id, activity_id, started_at, correct_rate, is_passed, submitted_at, created_at, updated_at) VALUES
+    (1, 1, 2, '2026-11-02 10:12:00',  66.67, TRUE, '2026-11-02 10:20:00', '2026-11-02 10:12:00', '2026-11-02 10:20:00'),
+    (2, 1, 4, '2026-11-02 10:37:00', 100.00, TRUE, '2026-11-02 10:45:00', '2026-11-02 10:37:00', '2026-11-02 10:45:00'),
+    (3, 1, 6, '2026-11-04 20:12:00', 100.00, TRUE, '2026-11-04 20:20:00', '2026-11-04 20:12:00', '2026-11-04 20:20:00');
+
+-- 퀴즈 답: 보기는 위 quiz_choice 의 (문항, sort_order) 로 찾는다. 문항 3만 오답(보기 1)
+INSERT INTO quiz_answer (quiz_answer_id, quiz_attempt_id, quiz_question_id, quiz_choice_id, is_correct, checked_at, created_at, updated_at)
+SELECT a.id, a.attempt_id, a.question_id, c.quiz_choice_id, c.is_correct, a.checked_at, a.checked_at, a.checked_at
+FROM (
+    SELECT 1 AS id, 1 AS attempt_id, 1 AS question_id, 1 AS choice_order, CAST('2026-11-02 10:14:00' AS DATETIME) AS checked_at
+    UNION ALL SELECT 2, 1, 2, 2, '2026-11-02 10:16:00'
+    UNION ALL SELECT 3, 1, 3, 1, '2026-11-02 10:18:00'
+    UNION ALL SELECT 4, 2, 4, 1, '2026-11-02 10:39:00'
+    UNION ALL SELECT 5, 2, 5, 3, '2026-11-02 10:41:00'
+    UNION ALL SELECT 6, 2, 6, 3, '2026-11-02 10:43:00'
+    UNION ALL SELECT 7, 3, 7, 2, '2026-11-04 20:14:00'
+    UNION ALL SELECT 8, 3, 8, 3, '2026-11-04 20:16:00'
+    UNION ALL SELECT 9, 3, 9, 2, '2026-11-04 20:18:00'
+) a
+JOIN quiz_choice c ON c.quiz_question_id = a.question_id AND c.sort_order = a.choice_order;
+
+-- 모의고사 응시: score = 맞힌 문항 수, correct_rate = 정답률(%). report_viewed_at = 리포트 확인(수업 완료) 시각
+INSERT INTO exam_attempt (exam_attempt_id, member_id, lesson_id, attempt_no, started_at, score, correct_rate, submitted_at, report_viewed_at, created_at, updated_at) VALUES
+    (1, 1, 1, 1, '2026-11-02 21:00:00', 2,  66.67, '2026-11-02 21:10:00', '2026-11-03 10:40:00', '2026-11-02 21:00:00', '2026-11-03 10:40:00'),
+    (2, 1, 2, 1, '2026-11-05 10:30:00', 2, 100.00, '2026-11-05 10:40:00', '2026-11-05 11:00:00', '2026-11-05 10:30:00', '2026-11-05 11:00:00');
+
+-- 모의고사 답: 보기는 위 exam_choice 의 (문항, sort_order) 로 찾는다. 수업 1의 문항 3만 오답(보기 1)
+INSERT INTO exam_answer (exam_answer_id, exam_attempt_id, exam_question_id, exam_choice_id, is_correct, created_at, updated_at)
+SELECT a.id, a.attempt_id, a.question_id, c.exam_choice_id, c.is_correct, a.answered_at, a.answered_at
+FROM (
+    SELECT 1 AS id, 1 AS attempt_id, 1 AS question_id, 1 AS choice_order, CAST('2026-11-02 21:10:00' AS DATETIME) AS answered_at
+    UNION ALL SELECT 2, 1, 2, 2, '2026-11-02 21:10:00'
+    UNION ALL SELECT 3, 1, 3, 1, '2026-11-02 21:10:00'
+    UNION ALL SELECT 4, 2, 4, 1, '2026-11-05 10:40:00'
+    UNION ALL SELECT 5, 2, 5, 2, '2026-11-05 10:40:00'
+) a
+JOIN exam_choice c ON c.exam_question_id = a.question_id AND c.sort_order = a.choice_order;
+
+-- 코스 포트폴리오 제출 (PL-PRT-002 필수 항목 모두, 공개). 제출 시각 = 코스 완료 시각
+INSERT INTO portfolio (portfolio_id, member_id, course_id, portfolio_type, title, result_url, summary, retrospective, ai_tools, is_public, created_at, updated_at) VALUES
+    (1, 1, 1, 'COURSE', '할 일 앱 완료 버튼 범위 지정 수정',
+     'https://example.com/todo-app',
+     '할 일 앱의 완료 버튼만 고치도록 범위를 정해 요청하고, diff로 바뀐 부분을 확인했습니다.',
+     '처음에는 "완료 버튼 고쳐 줘"라고만 했더니 목록 스타일까지 바뀌었습니다. TodoItem.jsx의 handleToggle만 고치고 다른 파일은 바꾸지 말라고 범위를 적어 다시 요청했고, diff에서 요청하지 않은 CSS 변경을 git restore로 되돌렸습니다. 요청 문장에 건드리지 않을 곳을 함께 적는 습관이 생겼습니다.',
+     'Claude Code', TRUE, '2026-11-06 15:00:00', '2026-11-06 15:00:00');
+
+-- =====================================================================
 -- 회원 늘리기 + 시연 계정 (#428)
 -- 새 계정 43개(3~45)는 모두 같은 비밀번호다. 평문은 팀 채팅으로 공유한다 (해시만 저장, NFR-SEC-001)
 -- 시각은 NOW() 기준이라 언제 실행해도 "며칠 전" 기록으로 보인다. 발표 직전에 01 → 02 를 다시 실행하면 처음 상태로 돌아간다
