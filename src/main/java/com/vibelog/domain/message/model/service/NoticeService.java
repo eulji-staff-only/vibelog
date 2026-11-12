@@ -3,12 +3,11 @@ package com.vibelog.domain.message.model.service;
 import com.vibelog.domain.auth.model.service.MemberReader;
 import com.vibelog.domain.message.exception.MessageErrorCode;
 import com.vibelog.domain.message.model.dao.NoticeRepository;
-import com.vibelog.domain.message.model.dao.NotificationRepository;
+import com.vibelog.domain.message.model.dao.NotificationBulkWriter;
 import com.vibelog.domain.message.model.dto.NoticeBanner;
 import com.vibelog.domain.message.model.dto.NoticeForm;
 import com.vibelog.domain.message.model.dto.NoticeView;
 import com.vibelog.domain.message.model.entity.Notice;
-import com.vibelog.domain.message.model.entity.Notification;
 import com.vibelog.domain.message.model.entity.NotificationTargetType;
 import com.vibelog.domain.message.model.entity.NotificationType;
 import com.vibelog.global.exception.BusinessException;
@@ -36,7 +35,7 @@ public class NoticeService {
     static final int PAGE_SIZE = 10;
 
     private final NoticeRepository noticeRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationBulkWriter notificationBulkWriter;
     private final MemberReader memberReader;
 
     public Page<NoticeView> getPage(int page) {
@@ -66,11 +65,9 @@ public class NoticeService {
         Notice notice = noticeRepository.save(Notice.create(adminMemberId, form.getTitle().strip(), form.getBody().strip(),
                 form.bannerShown(), bannerStartsAt(form), bannerEndsAt(form)));
         String content = NotificationContractService.fit("새 공지사항: %s", notice.getTitle());
-        // ponytail: 회원 수만큼 INSERT 를 한 줄씩 보낸다 (IDENTITY 라 묶이지 않음). 회원이 수천 명을 넘으면 INSERT … SELECT 한 번으로 바꾼다
-        notificationRepository.saveAll(memberReader.findActiveMemberIds().stream()
-                .map(memberId -> Notification.create(memberId, NotificationType.NOTICE, NotificationTargetType.NOTICE,
-                        notice.getNoticeId(), content))
-                .toList());
+        // 회원이 1만 명이면 한 줄씩 INSERT 1만 번이라, 1,000명씩 묶어 넣는다 (#482)
+        notificationBulkWriter.insertAll(memberReader.findActiveMemberIds(), NotificationType.NOTICE,
+                NotificationTargetType.NOTICE, notice.getNoticeId(), content);
         return notice.getNoticeId();
     }
 
