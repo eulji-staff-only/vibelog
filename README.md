@@ -302,9 +302,28 @@ sql/                                  ← DB 스크립트 (00-create-database.sq
 > 테이블마다 Entity·Repository를 하나씩 둡니다. 대신 다른 영역과는 **ID(`Long`)로만** 연결하고(연관관계 매핑은 같은 영역 안에서만),
 > 상태 변경은 Entity 메서드로 해서 경계를 지킵니다. 처음부터 다시 짠다면 `ExamChoice`·`QuizChoice`처럼 부모와 함께만 쓰이는 테이블은 부모 Entity에 묶는 것을 검토합니다.
 
+> **왜 Reader가 주는 쪽 DTO를 그대로 돌려주나요? (점검표 I-4)** 4명이 영역을 나눠 동시에 개발해서, 받는 쪽마다 같은 값을 옮겨 담는 모델을 따로 두지 않았습니다.
+> 대신 Entity는 절대 넘기지 않고 기본형·DTO만, 읽기 전용으로만 주고받습니다.
+
+> **왜 리포트를 열면 두 영역이 함께 바뀌나요? (점검표 D-7)** 모의고사 리포트를 처음 열면 exam의 `report_viewed_at`과 lesson의 수업 완료·다음 수업 열기를
+> 같은 트랜잭션에서 처리합니다 (PL-EXM-007, 계약 ③ `recordReportViewed`). 리포트 확인이 수업 완료 조건이라, 따로 처리하면 "리포트는 봤는데 다음 수업이 안 열린" 상태가 생길 수 있기 때문입니다.
+
+> **영역끼리 서로 부르는 곳이 있나요? (점검표 I-7)** exam↔lesson, course↔lesson처럼 양쪽으로 부르는 영역이 있습니다. 모두 계약 인터페이스(`model/policy`)와 `<영역>Reader`로만 부르고,
+> 다른 영역의 Entity·Repository import는 0건입니다. 영역을 별도 서비스로 나누게 되면 한쪽 방향을 도메인 이벤트로 바꾸는 것이 다음 단계입니다.
+
+**알려진 한계** (코드 점검표 기준, 팀 결정으로 지금은 구현하지 않음)
+
+| 항목 | 지금 상태 | 다음에 한다면 |
+|---|---|---|
+| R-4 느린 쿼리 찾기 | 슬로우 쿼리 로그 설정 없음. `EXPLAIN` 개선은 1건 (#487) | MySQL `slow_query_log`를 켜고 `EXPLAIN` 전후를 기록 |
+| R-7 캐시 | 트랙·카테고리·금칙어를 요청마다 `findAll()`로 읽음 | `@Cacheable` + 수정할 때 `@CacheEvict` |
+| R-9 비동기 | 인증 메일을 요청 안에서 바로 보냄 (`AuthMailSender`) | `@Async` + 실패 기록 |
+| R-13 서버 지표 | Actuator 없음 (의존성 추가 필요) | `/actuator/health`만 노출 |
+
 **예외 처리 약속**
 
 - 규칙 위반은 `throw new BusinessException(QuizErrorCode.QUIZ_NOT_FOUND)` 처럼 던지기만 합니다. `try-catch`로 잡아서 화면을 직접 만들지 않습니다. 화면 처리는 `GlobalExceptionHandler`가 합니다.
+  - 단, **폼 입력값을 그대로 두고 같은 화면에 칸별 오류를 보여 줘야 할 때만** Controller에서 `BusinessException`을 잡아 `BindingResult`에 넣고 같은 폼을 다시 보여 줍니다 (예: 회원가입 이메일 중복, 글쓰기 금칙어). 오류 화면 한 장으로 보내면 입력값이 사라지기 때문입니다 (코드 점검표 L-6, 팀 결정).
 - 에러 목록은 **내 영역 패키지의 enum**에 추가합니다. 모든 영역이 파일 하나를 같이 고치면 PR마다 충돌이 나기 때문입니다.
 
 ```java
