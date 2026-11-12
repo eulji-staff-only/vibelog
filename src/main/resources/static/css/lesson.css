@@ -55,6 +55,19 @@
 .ls-panel-desc { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
 .ls-panel-body { display: flex; flex-direction: column; gap: var(--space-4); font-size: 15px; line-height: 1.65; }
 .ls-panel-body p { margin: 0; }
+/* 마크다운 본문 서식 (#473). 블록 사이 간격은 .ls-panel-body 의 gap 으로 준다 */
+.ls-panel-body h1, .ls-panel-body h2, .ls-panel-body h3, .ls-panel-body h4 { margin: 0; line-height: 1.4; font-weight: 800; }
+.ls-panel-body h1, .ls-panel-body h2 { font-size: 20px; }
+.ls-panel-body h3, .ls-panel-body h4 { font-size: 17px; }
+.ls-panel-body ul, .ls-panel-body ol { margin: 0; padding-left: var(--space-6); display: flex; flex-direction: column; gap: var(--space-1); }
+.ls-panel-body strong { font-weight: 800; }
+.ls-panel-body a { color: var(--link); }
+.ls-panel-body code { padding: 1px 6px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line);
+    font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: 0.92em; }
+.ls-panel-body pre { margin: 0; padding: var(--space-4) var(--space-5); border-radius: var(--radius-card); background: var(--surface);
+    border: 1px solid var(--line); overflow-x: auto; white-space: pre-wrap; }
+.ls-panel-body pre code { padding: 0; border: 0; background: none; }
+.ls-panel-body blockquote { margin: 0; padding-left: var(--space-4); border-left: 3px solid var(--line-strong); color: var(--ink-muted); }
 /* 개념 본문에 넣은 그림 (운영자가 이미지 올리기로 넣은 것). 화면 폭보다 크지 않게 줄인다 */
 .ls-body-img { display: block; max-width: 100%; height: auto; margin: var(--space-3) 0; border-radius: var(--radius-md); }
 .ls-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
