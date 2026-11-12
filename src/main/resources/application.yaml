@@ -8,7 +8,6 @@ spring:
     username: ${DB_USERNAME:vibelog}
     password: ${DB_PASSWORD:vibelog}
   jpa:
-    show-sql: true
     open-in-view: false
     hibernate:
       # 테이블은 DB 팀의 테이블 정의서를 기준으로 SQL 스크립트로 만든다. (Entity로 테이블을 만들지 않는다)
@@ -60,3 +59,11 @@ vibelog:
   upload:
     # 업로드 파일 저장 폴더 (#79). 배포 서버에서는 환경 변수 UPLOAD_DIR 로 바꾼다
     dir: ${UPLOAD_DIR:uploads}
+
+logging:
+  pattern:
+    # 로그 줄마다 요청 ID를 붙인다 (RequestLogFilter). 요청 밖(시작·스케줄러)에서 찍힌 줄은 빈칸
+    level: "%5p [%X{requestId:-}]"
+  level:
+    # 실행되는 SQL 을 로거로 남긴다 (예전 show-sql: true 와 같은 내용). 끄려면 info 로 바꾼다
+    org.hibernate.SQL: debug
