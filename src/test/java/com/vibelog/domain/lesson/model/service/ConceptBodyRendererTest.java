@@ -85,6 +85,15 @@ class ConceptBodyRendererTest {
     }
 
     @Test
+    void HTML_태그로_시작하는_여러_줄도_글자로_보이고_줄바꿈이_남는다() {
+        String html = markdown("<div>\n첫 줄\n둘째 줄\n</div>");
+
+        assertThat(html)
+                .isEqualTo("<p>&lt;div&gt;<br>\n첫 줄<br>\n둘째 줄<br>\n&lt;/div&gt;</p>\n")
+                .doesNotContain("<div>");
+    }
+
+    @Test
     void 링크의_javascript_주소는_지워진다() {
         assertThat(markdown("[눌러 보기](javascript:alert(1))"))
                 .contains("눌러 보기")

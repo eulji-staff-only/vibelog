@@ -4,6 +4,7 @@ import com.vibelog.domain.lesson.model.entity.BodyFormat;
 import org.commonmark.node.AbstractVisitor;
 import org.commonmark.node.Code;
 import org.commonmark.node.HardLineBreak;
+import org.commonmark.node.HtmlBlock;
 import org.commonmark.node.Image;
 import org.commonmark.node.Node;
 import org.commonmark.node.SoftLineBreak;
@@ -56,7 +57,12 @@ public final class ConceptBodyRenderer {
         return RENDERER.render(PARSER.parse(body));
     }
 
-    /* 그림 노드만 맡는다. 업로드 파일이면 <img>, 아니면 원래 글자 그대로 (속성·글자는 HtmlWriter 가 이스케이프한다) */
+    /*
+     * 그림·HTML 블록 노드를 맡는다 (속성·글자는 HtmlWriter 가 이스케이프한다).
+     * - 그림: 업로드 파일이면 <img>, 아니면 원래 글자 그대로
+     * - HTML 블록(<div> 로 시작하는 줄 묶음 등): 글자로 보이게 하고 안쪽 줄바꿈도 <br> 로 남긴다.
+     *   기본 렌더러는 이스케이프만 하고 softbreak 를 적용하지 않아 줄이 공백으로 합쳐지기 때문이다
+     */
     private static final class UploadImageRenderer implements NodeRenderer {
 
         private final HtmlWriter html;
@@ -67,11 +73,15 @@ public final class ConceptBodyRenderer {
 
         @Override
         public Set<Class<? extends Node>> getNodeTypes() {
-            return Set.of(Image.class);
+            return Set.of(Image.class, HtmlBlock.class);
         }
 
         @Override
         public void render(Node node) {
+            if (node instanceof HtmlBlock block) {
+                renderAsText(block);
+                return;
+            }
             Image image = (Image) node;
             String alt = altText(image);
             String src = image.getDestination();
@@ -84,6 +94,20 @@ public final class ConceptBodyRenderer {
             attrs.put("src", src);
             attrs.put("alt", alt);
             html.tag("img", attrs, true);
+        }
+
+        private void renderAsText(HtmlBlock block) {
+            html.line();
+            html.tag("p");
+            String[] lines = block.getLiteral().stripTrailing().split("\\r?\\n", -1);
+            for (int i = 0; i < lines.length; i++) {
+                if (i > 0) {
+                    html.raw("<br>\n");
+                }
+                html.text(lines[i]);
+            }
+            html.tag("/p");
+            html.line();
         }
 
         private static String altText(Image image) {
