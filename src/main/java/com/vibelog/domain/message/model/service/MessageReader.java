@@ -38,6 +38,16 @@ public class MessageReader {
     /* 신고로 숨겨진 콘텐츠 자리에 보여 주는 문구 (FR-RPT-003, PL-ERR-006). 각 영역 화면·DTO 가 같이 쓴다 */
     public static final String HIDDEN_TEXT = "운영 정책에 따라 숨겨진 콘텐츠입니다";
 
+    /*
+     * 신고 대상 종류 (report.target_type). 다른 영역은 ReportTargetType(entity)을 import 할 수 없으므로 이 상수로 넘긴다 (#484).
+     * switch case 에도 쓰도록 문자열로 적고, ReportTargetType 이름과 같은지는 ReportTargetConstantsTest 가 확인한다.
+     */
+    public static final String TARGET_POST = "POST";
+    public static final String TARGET_COMMENT = "COMMENT";
+    public static final String TARGET_REVIEW = "REVIEW";
+    public static final String TARGET_PORTFOLIO = "PORTFOLIO";
+    public static final String TARGET_MESSAGE = "MESSAGE";
+
     private static final Predicate<List<Report>> HIDDEN_RULE = reports -> hasHidden(reports) || pendingCount(reports) >= AUTO_HIDE_COUNT;
 
     private final MessageRepository messageRepository;

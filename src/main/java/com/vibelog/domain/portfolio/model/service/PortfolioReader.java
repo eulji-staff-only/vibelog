@@ -51,7 +51,7 @@ public class PortfolioReader {
         return portfolioRepository.findFirstByScreenshotUrl(fileUrl)
                 .map(p -> !p.isDeleted() && (p.isOwnedBy(memberId) || (p.isPublic()
                         && memberReader.findHiddenMemberIds(List.of(p.getMemberId())).isEmpty()
-                        && messageReader.findHiddenTargetIds("PORTFOLIO", List.of(p.getPortfolioId())).isEmpty())))
+                        && messageReader.findHiddenTargetIds(MessageReader.TARGET_PORTFOLIO, List.of(p.getPortfolioId())).isEmpty())))
                 .orElse(true);
     }
 

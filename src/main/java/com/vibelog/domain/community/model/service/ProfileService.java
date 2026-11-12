@@ -44,7 +44,7 @@ public class ProfileService {
         boolean me = memberId.equals(viewerMemberId);
         List<PublicPortfolioCard> portfolios = portfolioReader.findPublicOf(memberId);
         if (!me) {
-            Set<Long> hidden = messageReader.findHiddenTargetIds("PORTFOLIO",
+            Set<Long> hidden = messageReader.findHiddenTargetIds(MessageReader.TARGET_PORTFOLIO,
                     portfolios.stream().map(PublicPortfolioCard::portfolioId).toList());
             portfolios = portfolios.stream().filter(p -> !hidden.contains(p.portfolioId())).toList();
         }

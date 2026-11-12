@@ -78,7 +78,7 @@ public class PortfolioManageService {
             throw new BusinessException(PortfolioErrorCode.HIDDEN_CONTENT);
         }
         // 신고로 숨긴 작품은 작성자에게만 내용 + 숨김 안내 (FR-RPT-003, message 명세 결정 19, #256). 영구 정지처럼 비공개 검사보다 먼저 본다
-        boolean reportHidden = !messageReader.findHiddenTargetIds("PORTFOLIO", List.of(portfolioId)).isEmpty();
+        boolean reportHidden = !messageReader.findHiddenTargetIds(MessageReader.TARGET_PORTFOLIO, List.of(portfolioId)).isEmpty();
         if (reportHidden && !mine) {
             throw new BusinessException(PortfolioErrorCode.HIDDEN_CONTENT);
         }
@@ -102,7 +102,7 @@ public class PortfolioManageService {
             throw new BusinessException(PortfolioErrorCode.PORTFOLIO_NOT_SUBMITTED);
         }
         Set<Long> hidden = memberReader.findAllHiddenMemberIds();
-        Set<Long> hiddenPortfolios = messageReader.findAllHiddenTargetIds("PORTFOLIO");
+        Set<Long> hiddenPortfolios = messageReader.findAllHiddenTargetIds(MessageReader.TARGET_PORTFOLIO);
         // 영구 정지 회원 작품(#215)과 신고로 숨긴 작품(#256)은 뺀다. 없으면 NOT IN () 이 되지 않게 0 (ID 는 1부터)
         Page<Portfolio> portfolios = portfolioRepository.findByCourseIdAndIsPublicTrueAndDeletedAtIsNullAndMemberIdNotInAndPortfolioIdNotIn(
                 courseId, hidden.isEmpty() ? Set.of(0L) : hidden, hiddenPortfolios.isEmpty() ? Set.of(0L) : hiddenPortfolios,

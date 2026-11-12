@@ -158,7 +158,7 @@ public class ContestService {
         Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(entries.stream().map(ContestEntry::getPortfolioId).toList());
         Map<Long, String> nicknames = memberReader.getNicknames(entries.stream().map(ContestEntry::getMemberId).toList());
         Set<Long> voted = new HashSet<>(contestVoteRepository.findEntryIdsVotedBy(contestId, memberId));
-        Set<Long> hidden = messageReader.findHiddenTargetIds("PORTFOLIO", portfolios.keySet());
+        Set<Long> hidden = messageReader.findHiddenTargetIds(MessageReader.TARGET_PORTFOLIO, portfolios.keySet());
         return entries.stream()
                 .filter(e -> {
                     PortfolioBrief p = portfolios.get(e.getPortfolioId());

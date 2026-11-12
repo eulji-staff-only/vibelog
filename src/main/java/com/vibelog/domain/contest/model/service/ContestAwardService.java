@@ -46,7 +46,6 @@ public class ContestAwardService {
     static final int MAX_PER_RANK = 2;
     /* 투표가 끝난 때부터 시상을 미룰 수 있는 기한 (PL-CTS-006) */
     static final int HOLD_DAYS = 3;
-    private static final String PORTFOLIO = "PORTFOLIO";
 
     private final ContestRepository contestRepository;
     private final ContestEntryRepository contestEntryRepository;
@@ -90,7 +89,7 @@ public class ContestAwardService {
         excluded.addAll(memberReader.findWithdrawnMemberIds(memberIds, contest.getVoteEndsAt()));
         LocalDateTime deadline = deadlineOf(contest);
         boolean beforeDeadline = now.isBefore(deadline);
-        Set<Long> confirmedHidden = messageReader.findConfirmedHiddenTargetIds(PORTFOLIO,
+        Set<Long> confirmedHidden = messageReader.findConfirmedHiddenTargetIds(MessageReader.TARGET_PORTFOLIO,
                 voted.stream().map(ContestEntry::getPortfolioId).toList(), beforeDeadline ? now : deadline);
         Map<Long, ContestEntry> candidates = voted.stream()
                 .filter(e -> !excluded.contains(e.getMemberId()) && !confirmedHidden.contains(e.getPortfolioId()))
@@ -98,7 +97,7 @@ public class ContestAwardService {
 
         Map<ContestEntry, Integer> ranks = new LinkedHashMap<>();
         rank(List.copyOf(candidates.keySet()), votes).forEach((entryId, rank) -> ranks.put(candidates.get(entryId), rank));
-        if (beforeDeadline && !messageReader.findAutoHiddenTargetIds(PORTFOLIO,
+        if (beforeDeadline && !messageReader.findAutoHiddenTargetIds(MessageReader.TARGET_PORTFOLIO,
                 ranks.keySet().stream().map(ContestEntry::getPortfolioId).toList()).isEmpty()) {
             return Optional.empty();
         }
