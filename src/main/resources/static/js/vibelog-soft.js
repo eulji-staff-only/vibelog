@@ -781,11 +781,13 @@
       for (const p of b.particles) {
         p.x += dir[0] * KEY_STEP;
         p.y += dir[1] * KEY_STEP;
-        p.px = p.x;
-        p.py = p.y;
       }
     }
     walls();
+    // 경계 처리까지 마친 뒤 직전 위치를 맞춘다. 먼저 맞추면 경계에서 되돌린 만큼 반대 속도가 생겨 튕긴다
+    for (const b of bodies) {
+      for (const p of b.particles) { p.px = p.x; p.py = p.y; }
+    }
   });
   canvas.addEventListener('odm:done', goHomeAll);
   canvas.addEventListener('soft:reset', goHomeAll); // 그 밖 오류 화면: 흩어진 뒤 정해진 시간이 지나면 제자리로
