@@ -413,7 +413,8 @@ CREATE TABLE portfolio_assignment (
     updated_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT pk_portfolio_assignment PRIMARY KEY (portfolio_assignment_id),
     CONSTRAINT fk_portfolio_assignment_course_id FOREIGN KEY (course_id) REFERENCES course (course_id) ON DELETE RESTRICT,
-    CONSTRAINT uk_portfolio_assignment_course_id UNIQUE (course_id)
+    CONSTRAINT uk_portfolio_assignment_course_id UNIQUE (course_id),
+    INDEX idx_portfolio_assignment_agent_file_url (agent_file_url)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '포트폴리오 과제';
 
 CREATE TABLE guide_step (
