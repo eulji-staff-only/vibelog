@@ -35,10 +35,12 @@ public class RequestLogFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         MDC.put(REQUEST_ID, UUID.randomUUID().toString().substring(0, 8));
         long start = System.nanoTime();
+        String status = "FAILED";   // 예외가 그대로 올라오면 응답 상태가 아직 200 이라 FAILED 로 남긴다
         try {
             chain.doFilter(request, response);
+            status = String.valueOf(response.getStatus());
         } finally {
-            log.info("{} {} {} {}ms", request.getMethod(), request.getRequestURI(), response.getStatus(),
+            log.info("{} {} {} {}ms", request.getMethod(), request.getRequestURI(), status,
                     (System.nanoTime() - start) / 1_000_000);
             MDC.clear();
         }
