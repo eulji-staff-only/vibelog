@@ -21,6 +21,11 @@
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 움직임 줄이기면 조작을 받지 않으므로 Tab 진입과 조작 안내도 뺀다 (메인 화면 캔버스만 tabindex 가 있다)
+  if (reduceMotion && canvas.hasAttribute('tabindex')) {
+    canvas.removeAttribute('tabindex');
+    canvas.setAttribute('aria-label', 'vibelog 글자 도형');
+  }
 
   const WORD = canvas.dataset.softWord || 'vibelog'; // 404 화면은 data-soft-word="404"
   // 두 동강 모드 (그 밖 오류 화면, data-soft-split="true"): 글자마다 가운데 가로줄 하나를 비워 위·아래 반쪽 도형으로 만든다.
@@ -635,7 +640,8 @@
       for (const b of bodies) { shapeMatch(b); keepEdges(b); }
       walls();
       // 충돌을 마지막에 푼다. 벽을 나중에 하면 벽에 눌린 글자가 이웃 글자 안으로 다시 들어간다
-      if (!resetting) { collide(); collide(); collide(); }
+      // 충돌이 점을 캔버스 밖으로 밀 수 있어 마지막에 경계를 한 번 더 지킨다
+      if (!resetting) { collide(); collide(); collide(); walls(); }
     }
     if (resetting) resetLeft--;
   }
@@ -719,6 +725,7 @@
       }
     }
     if (!grab.length) return;
+    resetLeft = 0; // 제자리로 돌아가는 중이면 멈추고 새 조작을 받는다
     for (const g of grab) { g.p.ox = g.p.x - x; g.p.oy = g.p.y - y; }
     drag = { id: e.pointerId, x, y, grab };
     canvas.setPointerCapture(e.pointerId);
@@ -760,6 +767,7 @@
   canvas.addEventListener('dblclick', goHomeAll); // 두 번 누르면 제자리로 (애니메이션)
 
   // 키보드: 방향키로 글자 전체를 그쪽으로 밀고, Enter·Esc 로 제자리로 (메인 화면 캔버스는 tabindex="0")
+  const KEY_STEP = 10; // 방향키 한 번에 옮기는 거리(px)
   const PUSH = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   canvas.addEventListener('keydown', (e) => {
     if (reduceMotion) return;
@@ -767,12 +775,17 @@
     const dir = PUSH[e.key];
     if (!dir) return;
     e.preventDefault(); // 방향키로 페이지가 스크롤되지 않게
+    resetLeft = 0;
+    // 한 번 누르면 한 번만 옮긴다. 직전 위치도 같이 옮겨 속도가 남지 않게 (속도를 주면 수백 px 미끄러진다)
     for (const b of bodies) {
-      for (const p of b.particles) { // Verlet 이라 직전 위치를 옮겨 속도를 준다
-        p.px -= dir[0] * MAX_SPEED;
-        p.py -= dir[1] * MAX_SPEED;
+      for (const p of b.particles) {
+        p.x += dir[0] * KEY_STEP;
+        p.y += dir[1] * KEY_STEP;
+        p.px = p.x;
+        p.py = p.y;
       }
     }
+    walls();
   });
   canvas.addEventListener('odm:done', goHomeAll);
   canvas.addEventListener('soft:reset', goHomeAll); // 그 밖 오류 화면: 흩어진 뒤 정해진 시간이 지나면 제자리로
