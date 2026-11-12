@@ -72,6 +72,10 @@ class NoticeTest {
         assertThat(noticeAlerts(idOf(learner), noticeId)).isEqualTo(1);
         assertThat(noticeAlerts(adminId, noticeId)).isEqualTo(1);
         assertThat(noticeAlerts(withdrawnId, noticeId)).isZero();
+        // 1,000명씩 묶어 넣어도 빠지거나 겹치는 회원 없이 이용 중인 회원 수만큼 간다 (#482, 로컬 시드는 1만 명)
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notification WHERE notification_type = 'NOTICE' AND target_id = ?",
+                Long.class, noticeId))
+                .isEqualTo(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM member WHERE status = 'ACTIVE'", Long.class));
         mockMvc.perform(get("/notices").with(as(learner)))
                 .andExpect(content().string(allOf(containsString("11월 점검 안내"), containsString("/notices/" + noticeId))));
         mockMvc.perform(get("/notices/{id}", noticeId).with(as(learner)))
