@@ -298,6 +298,10 @@ src/main/resources/
 sql/                                  ← DB 스크립트 (00-create-database.sql, 확정 후 01-schema.sql …)
 ```
 
+> **왜 테이블마다 Repository가 있나요?** DDD에서는 애그리거트 루트에만 Repository를 두지만, 우리는 `sql/01-schema.sql`(테이블)을 먼저 정하고 Entity를 맞추는 방식이라
+> 테이블마다 Entity·Repository를 하나씩 둡니다. 대신 다른 영역과는 **ID(`Long`)로만** 연결하고(연관관계 매핑은 같은 영역 안에서만),
+> 상태 변경은 Entity 메서드로 해서 경계를 지킵니다. 처음부터 다시 짠다면 `ExamChoice`·`QuizChoice`처럼 부모와 함께만 쓰이는 테이블은 부모 Entity에 묶는 것을 검토합니다.
+
 **예외 처리 약속**
 
 - 규칙 위반은 `throw new BusinessException(QuizErrorCode.QUIZ_NOT_FOUND)` 처럼 던지기만 합니다. `try-catch`로 잡아서 화면을 직접 만들지 않습니다. 화면 처리는 `GlobalExceptionHandler`가 합니다.
