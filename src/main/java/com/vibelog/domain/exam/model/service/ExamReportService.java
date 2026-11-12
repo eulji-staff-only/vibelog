@@ -92,15 +92,15 @@ public class ExamReportService {
                 averageFirstScore(lessonId)));
     }
 
-    /* 같은 수업 응시자의 1회차 점수 평균 (소수 첫째 자리 반올림). 넣은 응시자가 5명 미만이면 null */
+    /*
+     * 같은 수업 응시자의 1회차 점수 평균 (소수 첫째 자리 반올림). 넣은 응시자가 5명 미만이면 null.
+     * 응시·회원을 모두 불러오지 않고, 뺄 회원(운영자·테스트 계정, 몇 명)만 받아 DB 에서 인원수·합계를 센다 (#481)
+     */
     private Double averageFirstScore(Long lessonId) {
-        List<ExamAttempt> firstAttempts = examAttemptRepository.findByLessonIdAndAttemptNoAndSubmittedAtIsNotNull(lessonId, 1);
-        Set<Long> excluded = memberReader.findStatExcludedIds(firstAttempts.stream().map(ExamAttempt::getMemberId).toList());
-        List<Integer> scores = firstAttempts.stream()
-                .filter(attempt -> !excluded.contains(attempt.getMemberId()))
-                .map(ExamAttempt::getScore)
-                .toList();
-        return ExamStatPolicy.average(scores);   // 5명 미만이면 null, 소수 첫째 자리 (PL-EXM-008, 운영자 대시보드와 같은 기준)
+        Set<Long> excluded = memberReader.findAllStatExcludedIds();
+        Object[] row = examAttemptRepository.countAndSumFirstScores(lessonId, excluded.isEmpty() ? Set.of(-1L) : excluded).get(0);
+        // 5명 미만이면 null, 소수 첫째 자리 (PL-EXM-008, 운영자 대시보드와 같은 기준)
+        return ExamStatPolicy.average(((Number) row[1]).longValue(), ((Number) row[0]).longValue());
     }
 
     /* 문항 순서대로 처음 나온 개념부터. 정답률 = 맞힌 수 ÷ 그 개념 문항 수 × 100 (ExamReportView.Concept.of) */

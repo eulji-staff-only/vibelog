@@ -23,10 +23,14 @@ public final class ExamStatPolicy {
 
     /* 점수 평균(소수 첫째 자리). 응시자가 5명 미만이면 null */
     public static Double average(List<Integer> scores) {
-        if (!hasEnoughRespondents(scores.size())) {
+        return average(scores.stream().mapToLong(Integer::longValue).sum(), scores.size());
+    }
+
+    /* 점수 합계·인원수로 평균(소수 첫째 자리). 응시자가 5명 미만이면 null. DB 에서 합계·인원수만 센 경우에 쓴다 (#481) */
+    public static Double average(long scoreSum, long respondentCount) {
+        if (respondentCount < MIN_RESPONDENT_COUNT) {
             return null;
         }
-        double average = scores.stream().mapToInt(Integer::intValue).average().orElseThrow();
-        return Math.round(average * 10) / 10.0;
+        return Math.round((double) scoreSum / respondentCount * 10) / 10.0;
     }
 }
