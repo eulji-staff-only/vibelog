@@ -195,6 +195,7 @@ DB 설계·API 명세가 확정되기 전에도, 그 문서가 바뀌어도 다�
 ## 예외 처리
 
 - 규칙 위반은 `throw new BusinessException(QuizErrorCode.XXX)`로 **던지기만** 한다. Controller·Service에서 `try-catch`로 에러 화면을 만들지 않는다. 화면은 `GlobalExceptionHandler`가 만든다.
+  - 예외: 폼 입력값을 그대로 두고 같은 화면에 칸별 오류를 보여야 할 때만 Controller에서 `BusinessException`을 잡아 `BindingResult`에 넣고 같은 폼을 다시 보여 준다 (코드 점검표 L-6, 팀 결정).
 - 에러 목록은 **내 영역의 enum**에 추가한다. 다른 영역의 enum이나 `global/exception`에 추가하지 않는다.
 - 오류 문구는 PL-ERR-001을 따른다: 원인과 다음 행동을 알리고, 기술 용어·서버 내부 정보는 보여 주지 않는다.
 
