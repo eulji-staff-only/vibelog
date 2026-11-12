@@ -51,15 +51,12 @@ public class PostService {
     private final MemberReader memberReader;
     private final MessageReader messageReader;
 
-    /* report.target_type 의 게시글 값 */
-    static final String REPORT_TYPE = "POST";
-
     /* page 는 화면 그대로 1부터 센다. q 는 제목에 들어 있는 글을 찾는다 */
     public Page<PostListItem> getPosts(PostCategory category, String q, int page) {
         String keyword = (q == null || q.isBlank()) ? null : q.strip();
         // 영구 정지 회원의 글(PL-RPT-006, #215)과 신고로 숨긴 글(FR-RPT-003, #256)은 목록에서 뺀다
         Page<Post> posts = postRepository.search(category, keyword, orZero(memberReader.findAllHiddenMemberIds()),
-                orZero(messageReader.findAllHiddenTargetIds(REPORT_TYPE)), PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
+                orZero(messageReader.findAllHiddenTargetIds(MessageReader.TARGET_POST)), PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
         if (posts.isEmpty()) {
             return posts.map(post -> null);
         }
@@ -80,7 +77,7 @@ public class PostService {
         }
         // 신고로 숨긴 글은 작성자에게만 내용 + 숨김 안내를 보여 준다 (FR-RPT-003, message 명세 결정 19)
         boolean mine = Objects.equals(post.getMemberId(), loginMemberId);
-        boolean reportHidden = !messageReader.findHiddenTargetIds(REPORT_TYPE, Set.of(postId)).isEmpty();
+        boolean reportHidden = !messageReader.findHiddenTargetIds(MessageReader.TARGET_POST, Set.of(postId)).isEmpty();
         if (reportHidden && !mine) {
             throw new BusinessException(CommunityErrorCode.HIDDEN_CONTENT);
         }
@@ -97,7 +94,7 @@ public class PostService {
         long commentCount = comments.stream().filter(comment -> !comment.isDeleted()).count();
         return PostDetail.of(post, nicknames.get(post.getMemberId()), imageUrls, commentCount,
                 CommentView.tree(comments, nicknames, loginMemberId, memberReader.findHiddenMemberIds(memberIds),
-                        messageReader.findHiddenTargetIds("COMMENT", comments.stream().map(Comment::getCommentId).toList())), mine,
+                        messageReader.findHiddenTargetIds(MessageReader.TARGET_COMMENT, comments.stream().map(Comment::getCommentId).toList())), mine,
                 loginMemberId != null && favoriteRepository.existsByMemberIdAndPostId(loginMemberId, postId),
                 memberReader.isVisible(post.getMemberId()), reportHidden);
     }

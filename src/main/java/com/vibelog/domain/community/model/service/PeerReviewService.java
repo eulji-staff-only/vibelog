@@ -117,7 +117,7 @@ public class PeerReviewService {
     public Page<ReviewRequestCard> getOpenRequests(int page) {
         // 영구 정지 회원의 작품(PL-RPT-006, #215)과 신고로 숨긴 작품(FR-RPT-003, #256)의 요청은 조회에서 미리 뺀다
         Set<Long> hidden = new HashSet<>(portfolioReader.findIdsOf(memberReader.findAllHiddenMemberIds()));
-        hidden.addAll(messageReader.findAllHiddenTargetIds("PORTFOLIO"));
+        hidden.addAll(messageReader.findAllHiddenTargetIds(MessageReader.TARGET_PORTFOLIO));
         Page<ReviewRequest> requests = reviewRequestRepository.findByClosedAtIsNullAndRequestedAtAfterAndPortfolioIdNotInOrderByRequestedAtDescReviewRequestIdDesc(
                 openSince(), PostService.orZero(hidden), PageRequest.of(Math.max(page, 1) - 1, PAGE_SIZE));
         Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(requests.map(ReviewRequest::getPortfolioId).toSet());
@@ -148,7 +148,7 @@ public class PeerReviewService {
         Set<Long> portfolioIds = requests.values().stream().map(ReviewRequest::getPortfolioId).collect(Collectors.toSet());
         Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(portfolioIds);
         // 신고로 숨긴 작품은 제목 대신 숨김 문구 (FR-RPT-003, message 명세). 내 리뷰 수정·삭제는 그대로 (PL-REV-003)
-        Set<Long> hidden = messageReader.findHiddenTargetIds("PORTFOLIO", portfolioIds);
+        Set<Long> hidden = messageReader.findHiddenTargetIds(MessageReader.TARGET_PORTFOLIO, portfolioIds);
         return reviews.map(review -> {
             Long portfolioId = requests.get(review.getReviewRequestId()).getPortfolioId();
             return new MyReviewItem(review.getPeerReviewId(), review.getReviewRequestId(),
@@ -282,7 +282,7 @@ public class PeerReviewService {
         // 영구 정지 회원의 리뷰는 자리만 남기고 작성자·내용을 숨긴다 (PL-RPT-006, #215). 화면은 hidden 이면 PL-ERR-006 문구
         Set<Long> hidden = memberReader.findHiddenMemberIds(reviewerIds);
         // 신고로 숨긴 리뷰도 같지만 쓴 사람에게는 내용 + 숨김 안내 (FR-RPT-003, #256)
-        Set<Long> reportHidden = messageReader.findHiddenTargetIds("REVIEW", reviews.stream().map(PeerReview::getPeerReviewId).toList());
+        Set<Long> reportHidden = messageReader.findHiddenTargetIds(MessageReader.TARGET_REVIEW, reviews.stream().map(PeerReview::getPeerReviewId).toList());
         return reviews.stream().map(review -> {
             boolean mine = review.isWrittenBy(viewerMemberId);
             boolean byReport = reportHidden.contains(review.getPeerReviewId());

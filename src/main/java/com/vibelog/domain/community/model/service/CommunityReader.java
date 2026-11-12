@@ -67,7 +67,7 @@ public class CommunityReader {
     /* 공개 프로필 게시글 (API-CMT-14). 신고로 숨긴 글은 뺀다 (FR-RPT-003, #256). 내 프로필이면 getPostsOf */
     public Page<MemberPostItem> getPublicPostsOf(Long memberId, int page) {
         return toItems(postRepository.findByMemberIdAndDeletedAtIsNullAndPostIdNotInOrderByCreatedAtDescPostIdDesc(memberId,
-                PostService.orZero(messageReader.findAllHiddenTargetIds(PostService.REPORT_TYPE)),
+                PostService.orZero(messageReader.findAllHiddenTargetIds(MessageReader.TARGET_POST)),
                 PageRequest.of(Math.max(page, 1) - 1, PostService.PAGE_SIZE)));
     }
 
@@ -157,10 +157,10 @@ public class CommunityReader {
             return Map.of();
         }
         return switch (targetType) {
-            case "POST" -> postRepository.findAllById(targetIds).stream().filter(post -> post.getDeletedAt() == null)
+            case MessageReader.TARGET_POST -> postRepository.findAllById(targetIds).stream().filter(post -> post.getDeletedAt() == null)
                     .collect(Collectors.toMap(Post::getPostId, post -> new ReportTarget(post.getMemberId(), post.getTitle(), post.getBody())));
-            case "COMMENT" -> commentTargets(targetIds);
-            case "REVIEW" -> reviewTargets(targetIds);
+            case MessageReader.TARGET_COMMENT -> commentTargets(targetIds);
+            case MessageReader.TARGET_REVIEW -> reviewTargets(targetIds);
             default -> Map.of();
         };
     }
@@ -174,11 +174,11 @@ public class CommunityReader {
             return Map.of();
         }
         return switch (targetType) {
-            case "POST" -> postRepository.findAllById(targetIds).stream()
+            case MessageReader.TARGET_POST -> postRepository.findAllById(targetIds).stream()
                     .collect(Collectors.toMap(Post::getPostId, post -> new ReportTarget(post.getMemberId(), post.getTitle(), post.getBody())));
-            case "COMMENT" -> commentRepository.findAllById(targetIds).stream()
+            case MessageReader.TARGET_COMMENT -> commentRepository.findAllById(targetIds).stream()
                     .collect(Collectors.toMap(Comment::getCommentId, comment -> ReportTarget.ofText(comment.getMemberId(), comment.getContent())));
-            case "REVIEW" -> reviewTargets(peerReviewRepository.findAllById(targetIds));
+            case MessageReader.TARGET_REVIEW -> reviewTargets(peerReviewRepository.findAllById(targetIds));
             default -> Map.of();
         };
     }

@@ -89,7 +89,7 @@ public class RecommendService {
         // 영구 정지 회원의 글(PL-RPT-006, #215)과 신고로 숨긴 글(FR-RPT-003, #256)은 순위에서 뺀다
         List<WeeklyRecommendCount> counts = recommendationRepository.findWeeklyCounts(monday,
                 PostService.orZero(memberReader.findAllHiddenMemberIds()),
-                PostService.orZero(messageReader.findAllHiddenTargetIds(PostService.REPORT_TYPE)), PageRequest.of(0, limit));
+                PostService.orZero(messageReader.findAllHiddenTargetIds(MessageReader.TARGET_POST)), PageRequest.of(0, limit));
         List<Long> postIds = counts.stream().map(WeeklyRecommendCount::postId).toList();
         Map<Long, Post> posts = postRepository.findAllById(postIds).stream()
                 .collect(Collectors.toMap(Post::getPostId, Function.identity()));

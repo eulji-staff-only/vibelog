@@ -44,8 +44,6 @@ public class MessageService {
 
     public static final String BOX_RECEIVED = "received";
     public static final String BOX_SENT = "sent";
-    /* report.target_type 의 쪽지 값 */
-    static final String REPORT_TYPE = "MESSAGE";
     static final int PAGE_SIZE = 20;
     static final int RECEIVER_SEARCH_LIMIT = 10;
     static final int DAILY_LIMIT = 20;
@@ -68,7 +66,7 @@ public class MessageService {
         Map<Long, String> nicknames = memberReader.getNicknames(
                 messages.map(m -> sent ? m.getReceiverMemberId() : m.getSenderMemberId()).toSet());
         // 받은 쪽지함에서 숨긴 쪽지는 내용 대신 숨김 문구 (FR-RPT-003). 보낸 사람은 그대로 본다
-        Set<Long> hidden = sent ? Set.of() : messageReader.findHiddenTargetIds(REPORT_TYPE, messages.map(Message::getMessageId).toList());
+        Set<Long> hidden = sent ? Set.of() : messageReader.findHiddenTargetIds(MessageReader.TARGET_MESSAGE, messages.map(Message::getMessageId).toList());
         return messages.map(m -> {
             Long other = sent ? m.getReceiverMemberId() : m.getSenderMemberId();
             String preview = hidden.contains(m.getMessageId()) ? MessageReader.HIDDEN_TEXT : MessageItem.preview(m.getContent());
@@ -90,7 +88,7 @@ public class MessageService {
         }
         Map<Long, String> nicknames = memberReader.getNicknames(List.of(message.getSenderMemberId(), message.getReceiverMemberId()));
         boolean received = message.isReceivedBy(memberId);
-        boolean hidden = !messageReader.findHiddenTargetIds(REPORT_TYPE, List.of(messageId)).isEmpty();
+        boolean hidden = !messageReader.findHiddenTargetIds(MessageReader.TARGET_MESSAGE, List.of(messageId)).isEmpty();
         return new MessageView(message.getMessageId(), message.getSenderMemberId(), nicknames.get(message.getSenderMemberId()),
                 message.getReceiverMemberId(), nicknames.get(message.getReceiverMemberId()),
                 hidden && received ? MessageReader.HIDDEN_TEXT : message.getContent(), message.getCreatedAt(), received, hidden);

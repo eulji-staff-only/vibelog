@@ -82,7 +82,7 @@ public class ContestResultService {
         Map<Long, ContestEntry> entries = entriesOf(firsts);
         List<Long> portfolioIds = entries.values().stream().map(ContestEntry::getPortfolioId).toList();
         Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(portfolioIds);
-        Set<Long> hidden = messageReader.findHiddenTargetIds("PORTFOLIO", portfolioIds);
+        Set<Long> hidden = messageReader.findHiddenTargetIds(MessageReader.TARGET_PORTFOLIO, portfolioIds);
         Map<Long, String> firstPlace = firsts.stream().collect(Collectors.groupingBy(ContestAward::getContestId,
                 Collectors.mapping(a -> {
                     Long portfolioId = entries.get(a.getContestEntryId()).getPortfolioId();
@@ -102,7 +102,7 @@ public class ContestResultService {
         List<Long> portfolioIds = entries.values().stream().map(ContestEntry::getPortfolioId).toList();
         Map<Long, PortfolioBrief> portfolios = portfolioReader.findBriefs(portfolioIds);
         // 신고로 숨긴 수상작은 순위·작성자는 두고 제목 대신 숨김 문구, 링크 없음 (FR-RPT-003, message 명세)
-        Set<Long> hidden = messageReader.findHiddenTargetIds("PORTFOLIO", portfolioIds);
+        Set<Long> hidden = messageReader.findHiddenTargetIds(MessageReader.TARGET_PORTFOLIO, portfolioIds);
         Map<Long, String> nicknames = memberReader.getNicknames(entries.values().stream().map(ContestEntry::getMemberId).toList());
         Map<Long, Long> votes = awards.isEmpty() ? Map.of() : contestVoteRepository.countByEntry(contest.getContestId()).stream()
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
