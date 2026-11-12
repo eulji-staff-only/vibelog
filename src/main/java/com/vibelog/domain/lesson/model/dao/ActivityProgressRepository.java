@@ -17,6 +17,9 @@ public interface ActivityProgressRepository extends JpaRepository<ActivityProgre
     /* 수업 화면(API-LSN-01)에서 활동 목록의 열림·완료 상태를 한 번에 읽는다 */
     List<ActivityProgress> findByEnrollmentIdAndActivityIdIn(Long enrollmentId, Collection<Long> activityIds);
 
+    /* 활동 추가 때 앞 활동을 끝낸 수강자 찾기(PL-ENR-005) — 수강자마다 조회하지 않고 한 번에 가져온다 (N+1 방지, #476) */
+    List<ActivityProgress> findByActivityIdAndEnrollmentIdIn(Long activityId, Collection<Long> enrollmentIds);
+
     /*
      * 기간 내 열린(unlocked_at 있음, unlocked_at 기준) 활동 진도를 활동별로 센 것: [activityId, 열린 수, 완료 못 한 수].
      * 완료 못 한 수 = 기간이 끝난 시점까지도 completed_at 이 없는 수다 (명세 API-ADM-40). 그래서 종료 시각(to) 뒤에 완료한 것도 센다.

@@ -85,27 +85,39 @@ public class LessonActivityAdminService {
      * 만들지 않는다. 그 개념을 끝낼 때 기존 흐름이 다음 활동을 연다. 수업을 아직 끝내지 못한 수강자는 순서대로 진행하면 닿으므로 손대지 않는다.
      * 새 활동은 수업 완료·진행률·모의고사 열림에 영향을 주지 않는다 (수업 완료는 리포트 확인으로만 기록되고, 모의고사 열림은 LessonExamOpenPolicy가
      * 한 번 열린 것을 다시 잠그지 않는다).
+     * 진도는 수강 ID 묶음으로 한 번에 읽고 반복문 안에서는 Repository를 부르지 않는다 (수강자 수만큼 조회하던 N+1 제거, #476).
      */
     private void openForCompletedLessons(Lesson lesson, Activity activity) {
+        List<Long> enrollmentIds = enrollmentRepository.findByCourseId(lesson.getCourseId()).stream()
+                .map(Enrollment::getEnrollmentId)
+                .toList();
+        if (enrollmentIds.isEmpty()) {
+            return;
+        }
+        List<Long> lessonCompleted = lessonProgressRepository
+                .findByLessonIdAndEnrollmentIdIn(lesson.getLessonId(), enrollmentIds).stream()
+                .filter(LessonProgress::isCompleted)
+                .map(LessonProgress::getEnrollmentId)
+                .toList();
+        if (lessonCompleted.isEmpty()) {
+            return;
+        }
         Optional<Activity> previous = activityRepository
                 .findFirstByLessonIdAndIsActiveTrueAndSortOrderLessThanOrderBySortOrderDesc(
                         lesson.getLessonId(), activity.getSortOrder());
-        for (Enrollment enrollment : enrollmentRepository.findByCourseId(lesson.getCourseId())) {
-            Long enrollmentId = enrollment.getEnrollmentId();
-            boolean lessonCompleted = lessonProgressRepository.findByEnrollmentIdAndLessonId(enrollmentId, lesson.getLessonId())
-                    .map(LessonProgress::isCompleted)
-                    .orElse(false);
-            if (!lessonCompleted) {
-                continue;
-            }
-            boolean previousDone = previous.isEmpty() || activityProgressRepository
-                    .findByEnrollmentIdAndActivityId(enrollmentId, previous.get().getActivityId())
-                    .map(ActivityProgress::isCompleted)
-                    .orElse(false);
-            if (previousDone) {
-                activityProgressRepository.save(ActivityProgress.create(enrollmentId, activity.getActivityId(), LocalDateTime.now()));
-            }
-        }
+        // 앞 활동이 없으면(수업의 첫 활동) 수업을 끝낸 수강자 모두에게 연다
+        List<Long> toOpen = previous
+                .map(prev -> activityProgressRepository
+                        .findByActivityIdAndEnrollmentIdIn(prev.getActivityId(), lessonCompleted).stream()
+                        .filter(ActivityProgress::isCompleted)
+                        .map(ActivityProgress::getEnrollmentId)
+                        .toList())
+                .orElse(lessonCompleted);
+
+        LocalDateTime now = LocalDateTime.now();
+        activityProgressRepository.saveAll(toOpen.stream()
+                .map(enrollmentId -> ActivityProgress.create(enrollmentId, activity.getActivityId(), now))
+                .toList());
     }
 
     /* API-ADM-22. 돌려주는 값은 redirect 할 수업 id 다 (요청에는 activityId만 있고 lessonId는 없다) */
