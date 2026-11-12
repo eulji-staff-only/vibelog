@@ -35,6 +35,10 @@
                 <a class="vl-cta is-outline" href="/courses">코스 둘러보기</a>
             </div>
         </div>
+        <!-- 말랑한 vibelog 글자 (vibelog-soft.js) -->
+        <figure class="vl-soft">
+            <canvas class="vl-soft__canvas" data-soft-wordmark role="img" aria-label="vibelog 글자 도형"></canvas>
+        </figure>
     </section>
 
     <section class="vl-content vl-segment">
@@ -124,5 +128,6 @@
 <div th:replace="~{common/layout :: footer}"></div>
 
 <script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/vibelog-soft.js}"></script>
 </body>
 </html>

@@ -270,6 +270,7 @@
   }
 
   function build() {
+    release(); // 끄는 중에 다시 만들면 이전 점을 붙잡고 있게 되므로 끌기를 끝낸다
     const rect = canvas.getBoundingClientRect();
     width = rect.width;
     height = rect.height;
@@ -634,7 +635,8 @@
       for (const b of bodies) { shapeMatch(b); keepEdges(b); }
       walls();
       // 충돌을 마지막에 푼다. 벽을 나중에 하면 벽에 눌린 글자가 이웃 글자 안으로 다시 들어간다
-      if (!resetting) { collide(); collide(); collide(); }
+      // 충돌이 점을 캔버스 밖으로 밀 수 있어 마지막에 경계를 한 번 더 지킨다
+      if (!resetting) { collide(); collide(); collide(); walls(); }
     }
     if (resetting) resetLeft--;
   }
@@ -707,6 +709,7 @@
   }
 
   canvas.addEventListener('pointerdown', (e) => {
+    if (reduceMotion || drag) return; // 움직임 줄이기면 끌지 않는다. 이미 끄는 중이면 다른 손가락은 무시한다
     const { x, y } = pointer(e);
     const radius = 40;
     const grab = [];
@@ -717,24 +720,28 @@
       }
     }
     if (!grab.length) return;
+    resetLeft = 0; // 제자리로 돌아가는 중이면 멈추고 새 조작을 받는다
     for (const g of grab) { g.p.ox = g.p.x - x; g.p.oy = g.p.y - y; }
-    drag = { x, y, grab };
+    drag = { id: e.pointerId, x, y, grab };
     canvas.setPointerCapture(e.pointerId);
     canvas.classList.add('is-dragging');
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!drag) return;
-    Object.assign(drag, pointer(e));
+    if (!drag || e.pointerId !== drag.id) return; // 끌기를 시작한 포인터만 따라간다
+    const { x, y } = pointer(e);
+    drag.x = x;
+    drag.y = y;
   });
-  const release = () => {
+  function release() {
     drag = null;
     canvas.classList.remove('is-dragging');
-  };
-  canvas.addEventListener('pointerup', release);
-  canvas.addEventListener('pointercancel', release);
+  }
+  const releaseOwn = (e) => { if (drag && e.pointerId === drag.id) release(); };
+  canvas.addEventListener('pointerup', releaseOwn);
+  canvas.addEventListener('pointercancel', releaseOwn);
   // 날아간 글자까지 모두 출렁이며 제자리로
   function goHomeAll() {
-    drag = null;
+    release();
     resetLeft = RESET_FRAMES;
     splitOpen = false; // 제자리로 돌아가면 반쪽끼리 다시 한 글자로 붙는다
     for (const b of bodies) b.flying = false;
@@ -753,6 +760,7 @@
   }
 
   canvas.addEventListener('dblclick', goHomeAll); // 두 번 누르면 제자리로 (애니메이션)
+
   canvas.addEventListener('odm:done', goHomeAll);
   canvas.addEventListener('soft:reset', goHomeAll); // 그 밖 오류 화면: 흩어진 뒤 정해진 시간이 지나면 제자리로
   // 그 밖 오류 화면: 가로 번개에 맞아 글자가 위·아래 반쪽으로 갈라져 흩어진다 (위쪽은 위로, 아래쪽은 아래로, 옆으로 조금씩)
@@ -808,13 +816,14 @@
   let resizeTimer;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(build, 150);
+    resizeTimer = setTimeout(() => { build(); if (reduceMotion) draw(); }, 150);
   });
 
   document.fonts.ready.then(() => {
     build();
     // 보이는 캔버스가 글자를 그리면 대체 번호를 숨긴다. 403 의 숨겨 둔 캔버스(is-overlay)는 숨기지 않는다 (error-403.js 가 숨긴다)
     if (!canvas.classList.contains('is-overlay')) document.querySelector('[data-soft-fallback]')?.setAttribute('hidden', '');
+    if (reduceMotion) { draw(); return; } // 움직임 줄이기: 한 번만 그리고 물리 계산·거인 연출을 돌리지 않는다
     loadTitan();
     requestAnimationFrame(loop);
   });
