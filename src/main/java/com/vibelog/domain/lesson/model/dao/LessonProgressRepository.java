@@ -30,6 +30,9 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
     /* 내 학습(API-ENR-02) 수업별 상태 계산용 — 한 번의 쿼리로 가져온다 (N+1 방지) */
     List<LessonProgress> findByEnrollmentIdAndLessonIdIn(Long enrollmentId, Collection<Long> lessonIds);
 
+    /* 활동 추가 때 수업을 끝낸 수강자 찾기(PL-ENR-005) — 수강자마다 조회하지 않고 한 번에 가져온다 (N+1 방지, #476) */
+    List<LessonProgress> findByLessonIdAndEnrollmentIdIn(Long lessonId, Collection<Long> enrollmentIds);
+
     /*
      * 수업 비공개 영향 확인(API-ADM-32, FR-LSN-014, #118): "학습자가 진행 중인 수업"만 센다 — 이 수업을
      * 열었지만(unlocked_at 있음) 아직 끝내지 않았고(completed_at 없음), 수강 자체도 끝나지 않은(완료·포기
