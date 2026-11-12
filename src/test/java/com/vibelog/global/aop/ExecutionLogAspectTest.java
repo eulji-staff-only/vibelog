@@ -65,16 +65,19 @@ class ExecutionLogAspectTest {
     }
 
     @Test
-    void 기준보다_빠르면_로그를_남기지_않는다() throws Throwable {
+    void 기준보다_빠르게_정상으로_끝나면_완료를_INFO로_한_줄_남긴다() throws Throwable {
         ProceedingJoinPoint joinPoint = joinPoint("QuizSolveService", "submit");
 
         new ExecutionLogAspect(HOUR_MILLIS).logExecution(joinPoint);
 
-        assertThat(logs.list).isEmpty();
+        // 주요 업무 흐름은 info (코드 점검표 C-2, #485)
+        assertThat(logs.list).hasSize(1);
+        assertThat(logs.list.get(0).getLevel()).isEqualTo(Level.INFO);
+        assertThat(logs.list.get(0).getFormattedMessage()).contains("[완료]", "QuizSolveService.submit", "ms");
     }
 
     @Test
-    void 기준_이상으로_걸리면_메서드_이름과_시간을_경고로_남긴다() throws Throwable {
+    void 기준_이상으로_걸리면_완료_대신_메서드_이름과_시간을_경고로_한_줄만_남긴다() throws Throwable {
         ProceedingJoinPoint joinPoint = joinPoint("ExamService", "submit");
 
         new ExecutionLogAspect(0).logExecution(joinPoint);
