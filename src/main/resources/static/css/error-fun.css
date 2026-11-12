@@ -1,0 +1,82 @@
+/*
+ * error-fun.css  (오류 화면 연출, #470)
+ * 404 화면 연출 무대: 말랑한 "404" 글자 + 아래에서 올라오는 거인(vibelog-soft.js) 위로 입체기동 캐릭터(error-odm.js)가 지나간다.
+ * 오류 화면 본문(.vl-error, 560px)보다 넓게 써서 캐릭터가 지나갈 자리를 만든다.
+ */
+.vl-error-scene {
+  /* 말랑 글자 색 (vibelog-soft.js 가 읽는다) */
+  --soft-ink: var(--navy-900);
+  --soft-fill: var(--surface-raised);
+  --soft-accent: var(--link);
+  position: relative;
+  width: min(880px, calc(100vw - 32px));
+  height: 280px;
+  margin: 0;
+}
+
+.vl-error-scene__soft {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none; /* 휴대폰에서 끌 때 화면이 스크롤되지 않게 */
+}
+
+.vl-error-scene__soft.is-dragging {
+  cursor: grabbing;
+}
+
+/* 403 무대: 마지막 말랑 "403"을 연출 속 숫자처럼 꽉 찬 남색으로 칠한다 */
+.vl-error-scene--403 {
+  --soft-fill: var(--navy-900);
+}
+
+/* 그 밖 오류 무대: 말랑 상태 번호를 꽉 찬 남색으로 (두 동강 모드의 반쪽 이음매가 안 보이게 테두리와 같은 색) */
+.vl-error-scene--solid {
+  --soft-fill: var(--navy-900);
+}
+
+/* 그 밖 오류 무대의 캐릭터·번개 캔버스 (error-400.js). 글자 위에 그리고, 클릭은 아래 글자 캔버스로 지나간다 */
+.vl-error-scene__fx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* 연출 위에 겹친 말랑 글씨 캔버스. 꺼내기(is-shown) 전에는 안 보이고 눌리지도 않는다.
+   display: none 이면 크기를 잴 수 없어 글자 모양을 못 만들므로 visibility 로 숨긴다 */
+.vl-error-scene__soft.is-overlay {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.vl-error-scene__soft.is-overlay.is-shown {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* 403 연출 캔버스 (error-403.js). 끌기 같은 손 조작이 없어 커서를 바꾸지 않는다 */
+.vl-error-scene__stage {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 캐릭터는 글자·거인 위에 그린다. 클릭은 아래 글자 캔버스로 지나간다 */
+.vl-error-scene__odm {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+@media (max-width: 600px) {
+  .vl-error-scene {
+    height: 220px;
+  }
+}
