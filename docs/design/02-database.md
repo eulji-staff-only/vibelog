@@ -302,7 +302,7 @@ email이 비워지므로 같은 이메일로 다시 가입할 수 있다(MySQL�
 | UNIQUE | 테이블 정의서에 적은 UNIQUE 제약 전부 |
 | FK | MySQL InnoDB는 FK 컬럼에 인덱스가 없으면 자동으로 만든다 |
 
-### 6-2. 조회용으로 더하는 인덱스 (13개)
+### 6-2. 조회용으로 더하는 인덱스 (14개)
 
 | 인덱스 이름 | 테이블 | 컬럼 | 쓰는 곳 |
 | --- | --- | --- | --- |
@@ -319,8 +319,9 @@ email이 비워지므로 같은 이메일로 다시 가입할 수 있다(MySQL�
 | idx_message_created_at | message | (created_at) | 1년 지난 쪽지 배치 삭제 |
 | idx_report_target_type_target_id | report | (target_type, target_id) | 대상별 신고 수 (3명이면 숨김) |
 | idx_report_status_created_at | report | (status, created_at) | 운영자 신고 처리 목록 |
+| idx_portfolio_screenshot_url | portfolio | (screenshot_url) | 업로드 파일 열람 권한 확인 (파일 요청마다, #483) |
 
-P1 테이블 5개(member, email_verification, post, comment, quiz_attempt)는 P1 상세 ERD에, 나머지 8개(recommendation, notification, message, report)는 P2·P3 상세 ERD에 표시한다.
+P1 테이블 5개(member, email_verification, post, comment, quiz_attempt)는 P1 상세 ERD에, 나머지 9개(recommendation, notification, message, report, portfolio)는 P2·P3 상세 ERD에 표시한다.
 
 ### 6-3. 따로 만들지 않은 것
 

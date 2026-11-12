@@ -26,7 +26,7 @@ import java.io.IOException;
  *        - API-PRT-03 설정 파일 내려받기는 과제가 열렸는지 확인한 뒤 이 주소로 forward 하므로, forward 는 다시 보지 않는다.
  *        - 주소는 디코딩한 주소(UrlPathHelper)로 본다 (%61 같은 인코딩으로 검사를 비켜 가지 못하게).
  *        - PortfolioReader 는 ObjectProvider 로 받는다. @WebMvcTest 화면 테스트에는 빈이 없어서, 없으면 검사하지 않는다.
- * ponytail: 파일 요청마다 portfolio·portfolio_assignment 를 주소로 찾는다(인덱스 없음). 파일이 많아지면 주소 컬럼 인덱스나 저장 폴더 분리
+ *        - 파일 요청마다 portfolio 를 주소로 찾는다 (idx_portfolio_screenshot_url, #483). portfolio_assignment 는 코스당 1건이라 인덱스 없이 찾는다.
  */
 @Component
 @RequiredArgsConstructor

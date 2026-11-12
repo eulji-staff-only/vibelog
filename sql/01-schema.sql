@@ -462,7 +462,8 @@ CREATE TABLE portfolio (
     CONSTRAINT fk_portfolio_course_id FOREIGN KEY (course_id) REFERENCES course (course_id) ON DELETE RESTRICT,
     CONSTRAINT uk_portfolio_member_course UNIQUE (member_id, course_id),
     CONSTRAINT ck_portfolio_type CHECK (portfolio_type IN ('COURSE', 'PERSONAL')),
-    CONSTRAINT ck_portfolio_type_course CHECK ((portfolio_type = 'COURSE' AND course_id IS NOT NULL) OR (portfolio_type = 'PERSONAL' AND course_id IS NULL))
+    CONSTRAINT ck_portfolio_type_course CHECK ((portfolio_type = 'COURSE' AND course_id IS NOT NULL) OR (portfolio_type = 'PERSONAL' AND course_id IS NULL)),
+    INDEX idx_portfolio_screenshot_url (screenshot_url)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '포트폴리오';
 
 -- =====================================================================
