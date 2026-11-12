@@ -33,11 +33,6 @@
   touch-action: none; /* 휴대폰에서 끌 때 화면이 스크롤되지 않게 */
 }
 
-.vl-soft__canvas:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
 .vl-soft__canvas.is-dragging {
   cursor: grabbing;
 }
