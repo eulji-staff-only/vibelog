@@ -53,6 +53,11 @@ public class MemberReader {
                 .collect(Collectors.toSet());
     }
 
+    /* 통계에서 뺄 회원 ID 전체: 운영자·테스트 계정 (PL-EXM-008). 응시자 수만큼 회원을 불러오지 않고 DB 집계에서 빼려고 쓴다 (#481) */
+    public Set<Long> findAllStatExcludedIds() {
+        return memberRepository.findStatExcludedIds();
+    }
+
     /* 영구 정지 중인 회원 전체 (PL-RPT-006). 게시판 목록처럼 페이지를 나누는 조회에서 미리 빼려고 쓴다 (#215) */
     public Set<Long> findAllHiddenMemberIds() {
         return memberSuspensionRepository.findAllPermanentlySuspended();
