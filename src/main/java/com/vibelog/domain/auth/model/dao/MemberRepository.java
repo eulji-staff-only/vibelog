@@ -20,6 +20,10 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     boolean existsByEmail(String email);
 
+    /* 통계에서 뺄 회원 ID 전체: 운영자·테스트 계정 (PL-EXM-008). 서비스 전체에서 몇 명 안 된다 (MemberReader.findAllStatExcludedIds, #481) */
+    @Query("select m.memberId from Member m where m.role = com.vibelog.domain.auth.model.entity.MemberRole.ADMIN or m.isTest = true")
+    Set<Long> findStatExcludedIds();
+
     boolean existsByNicknameAndStatus(String nickname, MemberStatus status);
 
     boolean existsByNicknameAndStatusAndMemberIdNot(String nickname, MemberStatus status, Long memberId);
