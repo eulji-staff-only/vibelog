@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>회원 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/auth-admin.css}">
+</head>
+<body>
+<!-- A-08 회원 목록 (API-ADM-37, #119). 닉네임·이메일 일부로 찾는다. 백오피스 공통 틀(왼쪽 메뉴, #81)을 쓴다 (#445) -->
+<div class="vl-admin">
+<div th:replace="~{common/admin-layout :: sidebar('members')}"></div>
+
+<main class="vl-admin__content">
+    <h1 class="am-title">회원</h1>
+
+    <form class="am-search" action="/admin/members" method="get" role="search">
+        <input type="search" name="q" th:value="${q}" placeholder="닉네임 또는 이메일" aria-label="닉네임 또는 이메일">
+        <input type="hidden" name="learning" th:value="${learning}" th:unless="${learning.empty}">
+        <input type="hidden" name="verified" th:value="${verified}" th:unless="${verified.empty}">
+        <button class="am-btn" type="submit">검색</button>
+    </form>
+
+    <!-- 필터 (API-ADM-37, #446): 눌러야 보이는 게 아니라 열자마자 펼쳐 두고, 누르면 목록이 바로 걸러진다. 검색어·다른 필터는 그대로 둔다 -->
+    <div class="am-filters" role="group" aria-label="회원 필터">
+        <div class="am-filter">
+            <span class="am-filter__label">수강</span>
+            <a class="am-chip" th:href="@{/admin/members(q=${q}, verified=${verified})}"
+               th:classappend="${learning.empty} ? 'is-active' : ''" th:attr="aria-current=${learning.empty} ? 'true' : null">전체</a>
+            <a class="am-chip" th:href="@{/admin/members(q=${q}, learning='yes', verified=${verified})}"
+               th:classappend="${learning == 'yes'} ? 'is-active' : ''" th:attr="aria-current=${learning == 'yes'} ? 'true' : null">수강 중</a>
+            <a class="am-chip" th:href="@{/admin/members(q=${q}, learning='no', verified=${verified})}"
+               th:classappend="${learning == 'no'} ? 'is-active' : ''" th:attr="aria-current=${learning == 'no'} ? 'true' : null">수강 안 함</a>
+        </div>
+        <div class="am-filter">
+            <span class="am-filter__label">이메일</span>
+            <a class="am-chip" th:href="@{/admin/members(q=${q}, learning=${learning})}"
+               th:classappend="${verified.empty} ? 'is-active' : ''" th:attr="aria-current=${verified.empty} ? 'true' : null">전체</a>
+            <a class="am-chip" th:href="@{/admin/members(q=${q}, learning=${learning}, verified='yes')}"
+               th:classappend="${verified == 'yes'} ? 'is-active' : ''" th:attr="aria-current=${verified == 'yes'} ? 'true' : null">인증</a>
+            <a class="am-chip" th:href="@{/admin/members(q=${q}, learning=${learning}, verified='no')}"
+               th:classappend="${verified == 'no'} ? 'is-active' : ''" th:attr="aria-current=${verified == 'no'} ? 'true' : null">미인증</a>
+        </div>
+    </div>
+
+    <p class="am-muted" th:if="${members.empty}">조건에 맞는 회원이 없습니다</p>
+    <div class="am-scroll" th:unless="${members.empty}">
+        <table class="am-table">
+            <thead>
+            <tr><th>닉네임</th><th>이메일</th><th>역할</th><th>이메일 인증</th><th>가입일</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="m : ${members}">
+                <td><a th:href="@{/admin/members/{id}(id=${m.memberId()})}" th:text="${m.nickname()}">닉네임</a></td>
+                <td th:text="${m.email()}">learner@vibelog.test</td>
+                <td th:text="${m.roleLabel()}">학습자</td>
+                <td th:text="${m.emailVerified()} ? '인증' : '미인증'">인증</td>
+                <td th:text="${#temporals.format(m.joinedAt(), 'yyyy.MM.dd')}">2026.11.01</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="am-pager" aria-label="페이지" th:if="${members.totalPages > 1}">
+        <a th:if="${members.hasPrevious()}" th:href="@{/admin/members(q=${q}, learning=${learning}, verified=${verified}, page=${members.number})}">← 이전</a>
+        <span th:text="|${members.number + 1} / ${members.totalPages}|">1 / 2</span>
+        <a th:if="${members.hasNext()}" th:href="@{/admin/members(q=${q}, learning=${learning}, verified=${verified}, page=${members.number + 2})}">다음 →</a>
+    </nav>
+</main>
+</div>
+</body>
+</html>

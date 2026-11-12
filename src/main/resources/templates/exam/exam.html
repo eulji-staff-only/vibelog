@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>모의고사 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/exam.css}" href="/css/exam.css">
+    <script th:src="@{/js/exam.js}" src="/js/exam.js" defer></script>
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+</head>
+<body>
+<div th:replace="~{common/layout :: header}"></div>
+<!-- U-15 모의고사 응시. 화면 선행 작업(#55): 문구는 샘플이고, 데이터·저장·제출은 ③ 단계(API-EXM-01~04)에서 붙인다.
+     공통 헤더·푸터는 #133에서 적용했다. 버튼·안내 상자·모달 조각(#46)은 ③ 단계에서 바꾼다. -->
+<div class="exam-page">
+
+    <section class="exam-band">
+        <span class="exam-eyebrow" th:text="|${page.lessonTitle} · ${page.attemptNo}회차|">수업 1 · 1회차</span>
+        <h1 class="exam-title">모의고사</h1>
+        <p class="exam-lead">이 수업의 모든 개념에서 출제됩니다. 통과 점수와 제한 시간은 없습니다.</p>
+    </section>
+
+    <main class="exam-main">
+        <div class="exam-panel">
+            <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
+
+            <!-- 고를 때마다 답을 저장한다 (API-EXM-03). 제출은 아래 M-02 폼 (API-EXM-04) -->
+            <div class="exam-body" data-exam
+                 th:attr="data-answer-url=@{/api/exam-attempts/{id}/answers(id=${page.examAttemptId})}">
+                <div class="exam-solve">
+                    <div class="exam-progress">
+                        <div class="exam-progress-top">
+                            <span class="exam-progress-label">응답한 문항</span>
+                            <span class="exam-progress-value"><span data-answered>0</span> / <span data-total th:text="${#lists.size(page.questions)}">5</span>문항</span>
+                        </div>
+                        <div class="exam-progress-track" role="progressbar" aria-label="응답한 문항" aria-valuemin="0"
+                             th:attr="aria-valuemax=${#lists.size(page.questions)}" aria-valuemax="5" aria-valuenow="0" data-progress>
+                            <div class="exam-progress-fill" data-progress-fill></div>
+                        </div>
+                    </div>
+
+                    <section class="exam-question" data-question th:each="q, qs : ${page.questions}"
+                             th:attr="data-question-id=${q.examQuestionId},aria-label=|문항 ${qs.count}|" th:hidden="${!qs.first}"
+                             aria-label="문항 1">
+                        <span class="exam-question-no" th:text="|문항 ${qs.count} / ${qs.size}|">문항 1 / 5</span>
+                        <h2 class="exam-question-text" th:text="${q.content}">[문항 1]</h2>
+                        <div class="exam-choices" role="group" th:attr="aria-label=|문항 ${qs.count} 응답|" aria-label="문항 1 응답">
+                            <button type="button" class="exam-choice" th:each="c, cs : ${q.choices}"
+                                    th:attr="data-choice-id=${c.examChoiceId},aria-pressed=${c.examChoiceId == q.selectedChoiceId}"
+                                    aria-pressed="false"><span class="exam-choice-key" th:text="${cs.count}">1</span><span th:text="${c.content}">[보기 1]</span></button>
+                        </div>
+                    </section>
+
+                    <div class="exam-move">
+                        <button type="button" class="exam-btn exam-btn-outline" data-prev>이전 문항</button>
+                        <button type="button" class="exam-btn exam-btn-outline" data-next>다음 문항</button>
+                    </div>
+
+                    <div class="exam-notice">
+                        <strong>제출하면 바로 채점하고 오답 분석 리포트를 보여줍니다.</strong>
+                        <p>리포트 화면을 열면 다음 수업이 열립니다. 제출 전에 나가도 답안은 저장되어 이어서 풀 수 있습니다.</p>
+                    </div>
+
+                    <div class="exam-actions">
+                        <a class="exam-btn exam-btn-text"
+                           th:href="@{/courses/{c}/lessons/{l}(c=${page.courseId},l=${page.lessonId})}" href="#">수업으로 돌아가기</a>
+                        <button type="button" class="exam-btn exam-btn-navy" data-open-submit>제출하고 리포트 보기</button>
+                    </div>
+                </div>
+
+                <aside class="exam-status" aria-label="문항 현황">
+                    <div class="exam-status-block">
+                        <h3 class="exam-status-title">문항 이동</h3>
+                        <div class="exam-nav">
+                            <button type="button" class="exam-nav-no" th:each="q, qs : ${page.questions}"
+                                    th:attr="data-go=${qs.index},aria-label=|문항 ${qs.count}, 미선택|" th:text="${qs.count}"
+                                    data-go="0" aria-label="문항 1, 미선택">1</button>
+                        </div>
+                        <div class="exam-legend">
+                            <span>■ 현재 문항</span><span>● 응답함</span><span>○ 미선택</span>
+                        </div>
+                    </div>
+
+                    <div class="exam-status-block exam-status-unanswered">
+                        <h3 class="exam-status-title">미선택 문항 <span class="exam-danger"><span data-unanswered-count>5</span>개</span></h3>
+                        <div data-unanswered-area>
+                            <div class="exam-unanswered" data-unanswered-list></div>
+                            <p class="exam-hint">미선택 문항이 있어도 제출할 수 있으며, 미선택 문항은 오답으로 처리됩니다. 제출 전에 확인 창이 열립니다.</p>
+                        </div>
+                        <span class="exam-badge-success" data-all-answered hidden>모든 문항에 응답했습니다</span>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- M-02 모의고사 제출 확인 -->
+<div class="exam-modal" data-submit-modal hidden>
+    <div class="exam-modal-box" role="dialog" aria-modal="true" aria-labelledby="exam-submit-title">
+        <h2 class="exam-modal-title" id="exam-submit-title" tabindex="-1">모의고사를 제출할까요?</h2>
+        <div class="exam-modal-body">
+            <span class="exam-modal-count"><span>미선택 문항</span><strong data-modal-count>5개</strong></span>
+            <span>미선택 문항은 오답으로 처리됩니다. 제출하면 바로 채점하고 오답 분석 리포트를 보여 드립니다.</span>
+        </div>
+        <!-- API-EXM-04. 마지막 답은 exam.js 가 answers[문항 ID]=보기 ID 숨은 칸으로 넣는다 -->
+        <form class="exam-modal-actions" method="post" data-submit-form
+              th:action="@{/lessons/{id}/exam/submit(id=${page.lessonId})}">
+            <input type="hidden" name="examAttemptId" th:value="${page.examAttemptId}">
+            <button type="button" class="exam-btn exam-btn-outline" data-close-submit>돌아가기</button>
+            <button type="submit" class="exam-btn exam-btn-navy">제출하고 리포트 보기</button>
+        </form>
+    </div>
+</div>
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${course == null} ? '코스 만들기 | 바이브로그 백오피스' : ${course.title()} + ' | 바이브로그 백오피스'">코스 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/course-admin.css}">
+    <script th:src="@{/js/ui.js}" defer></script>
+    <script th:src="@{/js/course-admin-lessons.js}" defer></script>
+</head>
+<body>
+<!--
+  A-05 코스 만들기·상세 (API-ADM-12~15, FR-CRS-005, #96). course 가 없으면 만들기, 있으면 상세(수정 폼 + 수업 목록 + 포트폴리오 과제 상태).
+  - 입력 오류는 같은 폼에 칸 메시지(④). 새 코스는 비공개로 저장한다.
+  - 수업 만들기(API-ADM-17)·순서 저장(API-ADM-18)은 lesson 영역 주소로 보낸다. 수업을 누르면 A-06, 과제 편집은 A-07.
+  - 코스 공개·비공개(API-ADM-16, FR-CRS-006, #117)는 확인 모달 뒤 보낸다. 공개된 수업이나 포트폴리오 과제가 없으면
+    공개 버튼을 막고 이유를 보여 준다 (서버도 다시 막는다, COURSE_NOT_PUBLISHABLE).
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('courses')}"></div>
+    <main class="vl-admin__content">
+        <a class="ca-back" th:href="@{/admin/courses}">← 코스 목록</a>
+        <div class="ca-head">
+            <h1 class="ca-title" th:text="${course == null} ? '코스 만들기' : ${course.title()}">코스 만들기</h1>
+            <div class="ca-head__side" th:if="${course != null}">
+                <span th:replace="~{common/ui :: badge(${course.isPublic()} ? 'success' : 'neutral', ${course.isPublic()} ? '공개' : '비공개')}"></span>
+                <button type="button" class="vl-ui-btn is-navy" th:if="${!course.isPublic()}" th:disabled="${!course.publishable()}"
+                        data-ui-modal-open="ca-publish-modal">공개하기</button>
+                <button type="button" class="vl-ui-btn is-outline" th:if="${course.isPublic()}"
+                        data-ui-modal-open="ca-unpublish-modal">비공개로 바꾸기</button>
+            </div>
+        </div>
+        <th:block th:if="${course != null and !course.isPublic() and !course.publishable()}">
+            <p th:replace="~{common/ui :: btnReason('공개된 수업과 포트폴리오 과제가 있어야 공개할 수 있습니다.')}"></p>
+        </th:block>
+        <div class="vl-ui-notice is-info ca-toast" role="status" th:if="${toast}"><p th:text="${toast}">안내</p></div>
+        <p class="ca-muted" th:if="${course == null}">새 코스는 비공개로 저장됩니다. 수업과 포트폴리오 과제를 갖춘 뒤 공개할 수 있습니다.</p>
+
+        <section class="ca-section" aria-labelledby="ca-info-title">
+            <h2 class="ca-section__title" id="ca-info-title">코스 정보</h2>
+            <form class="ca-form" method="post" novalidate th:object="${courseForm}"
+                  th:action="${course == null} ? @{/admin/courses} : @{/admin/courses/{id}/edit(id=${course.courseId()})}">
+                <div class="ca-form__row">
+                    <div class="ca-field">
+                        <label for="trackId">트랙</label>
+                        <select class="ca-input" id="trackId" th:field="*{trackId}"
+                                th:attrappend="aria-invalid=${#fields.hasErrors('trackId')} ? 'true'" aria-describedby="trackId-error">
+                            <option value="">트랙을 고르세요</option>
+                            <option th:each="option : ${trackOptions}" th:value="${option.id()}" th:text="${option.name()}">Starter</option>
+                        </select>
+                        <p class="ca-error" id="trackId-error" th:if="${#fields.hasErrors('trackId')}" th:errors="*{trackId}">트랙 오류</p>
+                    </div>
+                    <div class="ca-field">
+                        <label for="courseCategoryId">카테고리</label>
+                        <select class="ca-input" id="courseCategoryId" th:field="*{courseCategoryId}"
+                                th:attrappend="aria-invalid=${#fields.hasErrors('courseCategoryId')} ? 'true'" aria-describedby="courseCategoryId-error">
+                            <option value="">카테고리를 고르세요</option>
+                            <option th:each="option : ${categoryOptions}" th:value="${option.id()}" th:text="${option.name()}">웹</option>
+                        </select>
+                        <p class="ca-error" id="courseCategoryId-error" th:if="${#fields.hasErrors('courseCategoryId')}" th:errors="*{courseCategoryId}">카테고리 오류</p>
+                    </div>
+                </div>
+                <div class="ca-field">
+                    <label for="title">코스 이름</label>
+                    <input class="ca-input" id="title" type="text" maxlength="100" th:field="*{title}"
+                           th:attrappend="aria-invalid=${#fields.hasErrors('title')} ? 'true'" aria-describedby="title-error">
+                    <p class="ca-error" id="title-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">이름 오류</p>
+                </div>
+                <div class="ca-field">
+                    <label for="summary">한 줄 소개</label>
+                    <input class="ca-input" id="summary" type="text" maxlength="200" th:field="*{summary}"
+                           th:attrappend="aria-invalid=${#fields.hasErrors('summary')} ? 'true'" aria-describedby="summary-error">
+                    <p class="ca-error" id="summary-error" th:if="${#fields.hasErrors('summary')}" th:errors="*{summary}">한 줄 소개 오류</p>
+                </div>
+                <div class="ca-field">
+                    <label for="description">소개</label>
+                    <textarea class="ca-input" id="description" rows="4" th:field="*{description}"
+                              th:attrappend="aria-invalid=${#fields.hasErrors('description')} ? 'true'" aria-describedby="description-error"></textarea>
+                    <p class="ca-error" id="description-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">소개 오류</p>
+                </div>
+                <div class="ca-field">
+                    <label for="target">대상 학습자</label>
+                    <input class="ca-input" id="target" type="text" maxlength="200" th:field="*{target}"
+                           th:attrappend="aria-invalid=${#fields.hasErrors('target')} ? 'true'" aria-describedby="target-error">
+                    <p class="ca-error" id="target-error" th:if="${#fields.hasErrors('target')}" th:errors="*{target}">대상 오류</p>
+                </div>
+                <div class="ca-field">
+                    <label for="goal">목표</label>
+                    <textarea class="ca-input" id="goal" rows="3" th:field="*{goal}"
+                              th:attrappend="aria-invalid=${#fields.hasErrors('goal')} ? 'true'" aria-describedby="goal-error"></textarea>
+                    <p class="ca-error" id="goal-error" th:if="${#fields.hasErrors('goal')}" th:errors="*{goal}">목표 오류</p>
+                </div>
+                <div class="ca-field">
+                    <label for="planDays">플랜 일수</label>
+                    <input class="ca-input is-short" id="planDays" type="number" min="1" th:field="*{planDays}"
+                           th:attrappend="aria-invalid=${#fields.hasErrors('planDays')} ? 'true'" aria-describedby="planDays-error">
+                    <p class="ca-error" id="planDays-error" th:if="${#fields.hasErrors('planDays')}" th:errors="*{planDays}">플랜 일수 오류</p>
+                </div>
+                <div class="ca-form__actions">
+                    <a class="vl-ui-btn is-outline" th:href="@{/admin/courses}" th:if="${course == null}">취소</a>
+                    <button type="submit" class="vl-ui-btn is-navy" th:text="${course == null} ? '만들기' : '저장'">만들기</button>
+                </div>
+            </form>
+        </section>
+
+        <th:block th:if="${course != null}">
+            <section class="ca-section" aria-labelledby="ca-lessons-title">
+                <div class="ca-section__head">
+                    <h2 class="ca-section__title" id="ca-lessons-title">수업</h2>
+                    <button type="button" class="vl-ui-btn is-outline is-s" data-ui-modal-open="ca-lesson-modal">수업 만들기</button>
+                </div>
+                <form method="post" th:action="@{/admin/courses/{id}/lessons/order(id=${course.courseId()})}"
+                      th:unless="${course.lessons().empty}" data-ca-lesson-order>
+                    <p class="ca-muted">끌어서 순서를 바꾼 뒤 순서 저장을 누르세요. 수업을 누르면 편집 화면으로 갑니다.</p>
+                    <ol class="ca-order">
+                        <li class="ca-order__row" draggable="true" th:each="lesson : ${course.lessons()}">
+                            <input type="hidden" name="lessonIds" th:value="${lesson.lessonId()}">
+                            <span class="ca-order__handle" aria-hidden="true">⋮⋮</span>
+                            <a class="ca-order__name ca-link" th:href="@{/admin/lessons/{id}(id=${lesson.lessonId()})}" th:text="${lesson.title()}">수업 제목</a>
+                            <span th:replace="~{common/ui :: badge(${lesson.isPublic()} ? 'success' : 'neutral', ${lesson.isPublic()} ? '공개' : '비공개')}"></span>
+                            <button type="button" class="vl-ui-btn is-text is-s" data-ca-move="up" th:attr="aria-label=${lesson.title()} + ' 위로'">↑</button>
+                            <button type="button" class="vl-ui-btn is-text is-s" data-ca-move="down" th:attr="aria-label=${lesson.title()} + ' 아래로'">↓</button>
+                        </li>
+                    </ol>
+                    <div class="ca-form__actions">
+                        <button type="submit" class="vl-ui-btn is-navy is-s" disabled data-ca-order-save>순서 저장</button>
+                    </div>
+                </form>
+                <th:block th:if="${course.lessons().empty}">
+                    <div th:replace="~{common/ui :: notice('empty', '', '아직 수업이 없습니다. 수업 만들기로 첫 수업을 추가하세요.')}"></div>
+                </th:block>
+            </section>
+
+            <section class="ca-section" aria-labelledby="ca-assignment-title">
+                <div class="ca-section__head">
+                    <h2 class="ca-section__title" id="ca-assignment-title">포트폴리오 과제</h2>
+                    <a class="vl-ui-btn is-outline is-s" th:href="@{/admin/courses/{id}/portfolio(id=${course.courseId()})}">과제 편집</a>
+                </div>
+                <p class="ca-assignment">
+                    <span th:replace="~{common/ui :: badge(${course.hasAssignment()} ? 'success' : 'neutral', ${course.hasAssignment()} ? '과제 있음' : '과제 없음')}"></span>
+                    <span class="ca-muted" th:unless="${course.hasAssignment()}">과제가 없으면 코스를 공개할 수 없습니다.</span>
+                </p>
+            </section>
+        </th:block>
+    </main>
+</div>
+
+<!-- 코스 공개 (API-ADM-16, FR-CRS-006) -->
+<div class="vl-ui-modal" hidden id="ca-publish-modal" role="dialog" aria-modal="true" th:if="${course != null}"
+     th:attr="data-ui-modal='ca-publish-modal', aria-labelledby='ca-publish-modal-title'">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="ca-publish-modal-title" tabindex="-1">코스 공개</h2>
+        <p class="vl-ui-modal__body">이 코스를 공개할까요? 공개하면 학습자 코스 목록에 보입니다.</p>
+        <form method="post" th:action="@{/admin/courses/{id}/visibility(id=${course.courseId()})}">
+            <input type="hidden" name="isPublic" value="true">
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">공개</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 코스 비공개 (API-ADM-16, FR-CRS-006) -->
+<div class="vl-ui-modal" hidden id="ca-unpublish-modal" role="dialog" aria-modal="true" th:if="${course != null}"
+     th:attr="data-ui-modal='ca-unpublish-modal', aria-labelledby='ca-unpublish-modal-title'">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="ca-unpublish-modal-title" tabindex="-1">코스 비공개</h2>
+        <p class="vl-ui-modal__body">이 코스를 비공개할까요? 비공개하면 학습자 코스 목록에서 사라집니다.</p>
+        <form method="post" th:action="@{/admin/courses/{id}/visibility(id=${course.courseId()})}">
+            <input type="hidden" name="isPublic" value="false">
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">비공개</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 수업 만들기 모달 (API-ADM-17). 만들면 비공개로 저장되고 수업 편집(A-06)으로 간다 -->
+<div class="vl-ui-modal" id="ca-lesson-modal" data-ui-modal="ca-lesson-modal" role="dialog" aria-modal="true"
+     aria-labelledby="ca-lesson-modal-title" hidden th:if="${course != null}">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="ca-lesson-modal-title" tabindex="-1">수업 만들기</h2>
+        <form class="ca-form" method="post" th:action="@{/admin/courses/{id}/lessons(id=${course.courseId()})}">
+            <div class="ca-field">
+                <label for="lesson-title">수업 제목</label>
+                <input class="ca-input" id="lesson-title" name="title" type="text" maxlength="100" required>
+            </div>
+            <div class="ca-field">
+                <label for="lesson-intro">수업 소개</label>
+                <textarea class="ca-input" id="lesson-intro" name="intro" rows="2" required></textarea>
+            </div>
+            <div class="ca-field">
+                <label for="lesson-goal">학습 목표</label>
+                <textarea class="ca-input" id="lesson-goal" name="goal" rows="2" required></textarea>
+            </div>
+            <div class="ca-field">
+                <label for="lesson-contents">본문</label>
+                <textarea class="ca-input" id="lesson-contents" name="contents" rows="4" required></textarea>
+            </div>
+            <div class="ca-field">
+                <label for="lesson-minutes">예상 소요 시간(분)</label>
+                <input class="ca-input is-short" id="lesson-minutes" name="estimatedMinutes" type="number" min="1" required>
+            </div>
+            <div class="vl-ui-modal__actions">
+                <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                <button type="submit" class="vl-ui-btn is-navy">만들기</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>

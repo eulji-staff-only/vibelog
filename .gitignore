@@ -1,0 +1,49 @@
+### Gradle · 빌드 결과물 ###
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### STS · Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### VS Code ###
+.vscode/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### 비밀 정보 (절대 커밋 금지) ###
+.env
+*.env
+
+### 개인 AI 도구 설정 (팀 공용 설정만 PR로 추가) ###
+.claude/settings.local.json
+CLAUDE.local.md
+
+### 로그 ###
+*.log
+
+### 업로드 파일 (로컬 저장 폴더, #79) ###
+uploads/

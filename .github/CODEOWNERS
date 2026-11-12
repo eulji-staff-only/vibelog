@@ -1,0 +1,3 @@
+# 기본 리뷰어 자동 지정은 쓰지 않는다 (팀 결정 #287: 사람 리뷰는 P1 PR 에만).
+# P1 PR 의 리뷰어(PM·형상관리, 다른 영역 담당)는 area-review 검사(.github/scripts/area-review.sh)가 추가하고 승인을 요구한다.
+# P1 이 아닌 PR 은 리뷰어 없이 CodeRabbit 대화 해결 + build 로 머지한다. 자세한 규칙은 README "리뷰어 지정 약속".

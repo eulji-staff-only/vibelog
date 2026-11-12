@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title th:text="${quiz.title()} + ' | 바이브로그'">퀴즈 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/quiz.css}" href="/css/quiz.css">
+    <script th:src="@{/js/ui.js}" src="/js/ui.js" defer></script>
+    <script th:src="@{/js/quiz.js}" src="/js/quiz.js" defer></script>
+</head>
+<body>
+<!-- U-14 퀴즈 (FR-LSN-006, API-LSN-03~06, #108). QuizPageController 가 담아 주는 quiz(QuizPageView)로 틀을 그리고,
+     문항은 quiz.js 가 풀이 시작(API-LSN-04)으로 받아 그린다. 확인(API-LSN-05)·제출(API-LSN-06)도 quiz.js 가 JSON 으로 부른다.
+     표시 유형 4가지(PL-LSN-003): 코드 빈칸 채우기 / 개념 문제 / 결과 유추하기 / 낚시 문제(물고기를 누르면 바로 확인). -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="qz-band">
+    <span class="qz-eyebrow">퀴즈</span>
+    <h1 class="qz-title" th:text="${quiz.title()}">퀴즈</h1>
+    <p class="qz-lead">문항마다 답을 고르고 확인하면 정답과 해설이 나옵니다. 확인한 답은 바꿀 수 없어요.</p>
+    <p class="qz-lead" th:if="${quiz.bestCorrectRate() != null}"
+       th:text="'최고 점수 ' + ${#numbers.formatDecimal(quiz.bestCorrectRate(), 1, 0)} + '%'">최고 점수</p>
+</section>
+
+<main class="qz-main"
+      th:with="lessonUrl=@{/courses/{c}/lessons/{l}(c=${quiz.courseId()},l=${quiz.lessonId()})}">
+    <div class="vl-ui-panel qz-panel" data-quiz
+         th:attr="data-start-url=@{/api/quizzes/{id}/attempts(id=${quiz.activityId()})},data-lesson-url=${lessonUrl}">
+
+        <!-- 문항이 없을 때 (운영자가 아직 준비하지 않음) -->
+        <th:block th:if="${quiz.questionCount() == 0}">
+            <div th:replace="~{common/ui :: notice('empty', '', '아직 준비된 문항이 없습니다')}"></div>
+            <a th:replace="~{common/ui :: btnLink(${lessonUrl}, '수업으로 돌아가기', 'outline', '')}">수업으로 돌아가기</a>
+        </th:block>
+
+        <!-- 풀이 중 -->
+        <div class="qz-solve" data-quiz-solve th:unless="${quiz.questionCount() == 0}">
+            <div class="qz-top">
+                <a class="qz-exit" th:href="${lessonUrl}" aria-label="퀴즈 나가기 (수업으로 돌아가기)">
+                    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 L19 19 M19 5 L5 19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </a>
+                <div class="vl-ui-progress qz-progress" role="progressbar" aria-label="확인한 문항" aria-valuemin="0"
+                     th:attr="aria-valuemax=${quiz.questionCount()}" aria-valuenow="0" data-quiz-progress>
+                    <div class="vl-ui-progress__track"><div class="vl-ui-progress__fill" data-quiz-progress-fill></div></div>
+                </div>
+                <span class="qz-counter" data-quiz-counter th:text="'1 / ' + ${quiz.questionCount()}">1 / 4</span>
+            </div>
+
+            <p class="qz-muted" data-quiz-loading>문항을 불러오는 중입니다…</p>
+            <div data-quiz-questions></div>
+
+            <div class="qz-actions">
+                <p class="vl-ui-btn-reason" data-quiz-reason hidden>보기를 고르면 확인할 수 있습니다</p>
+                <button type="button" class="vl-ui-btn is-navy" aria-disabled="true" data-quiz-check hidden>확인</button>
+                <button type="button" class="vl-ui-btn is-navy" data-quiz-next hidden>다음</button>
+            </div>
+        </div>
+
+        <!-- 채점 결과 (같은 화면, API-LSN-06 응답으로 그린다) -->
+        <section class="qz-result" data-quiz-result aria-labelledby="qz-result-h" hidden>
+            <div class="qz-result__head">
+                <h2 class="qz-h2" id="qz-result-h" tabindex="-1">채점 결과</h2>
+                <span class="vl-ui-badge is-success" data-quiz-pass>통과</span>
+                <span class="vl-ui-badge is-danger" data-quiz-fail>미달</span>
+            </div>
+
+            <div class="vl-ui-progress" role="progressbar" aria-label="정답률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-quiz-score>
+                <div class="vl-ui-progress__top">
+                    <span class="vl-ui-progress__label">정답률</span>
+                    <span class="vl-ui-progress__value" data-quiz-score-text>0%</span>
+                </div>
+                <div class="vl-ui-progress__track"><div class="vl-ui-progress__fill" data-quiz-score-fill></div></div>
+            </div>
+
+            <div class="vl-ui-notice is-success" data-quiz-pass>
+                <p class="vl-ui-notice__title" data-quiz-pass-title>통과했습니다.</p>
+            </div>
+            <div class="vl-ui-notice is-info" data-quiz-fail>
+                <p class="vl-ui-notice__title">정답률이 통과 기준에 못 미쳤습니다.</p>
+                <p>개념을 다시 보거나 퀴즈를 다시 풀어 보세요.</p>
+            </div>
+
+            <!-- 개념 태그별 오답 비율 (FR-LSN-007). 약한 개념 = 그 태그 정답률 60% 미만 (PL-LSN-008). 막대는 CSS 로만 그린다 -->
+            <div class="qz-tags" data-quiz-tags-box>
+                <h3 class="qz-h3">개념 태그별 오답 비율</h3>
+                <p class="qz-muted">개념별 정답률이 60% 미만이면 약한 개념으로 표시합니다.</p>
+                <ul class="qz-tag-list" data-quiz-tags>
+                    <!-- 태그 줄 틀: quiz.js 가 tagStats 수만큼 복사해 채운다 -->
+                    <li class="qz-tag" data-quiz-tag-template hidden>
+                        <div class="vl-ui-progress qz-tag__bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                            <div class="vl-ui-progress__top">
+                                <span class="vl-ui-progress__label" data-tag-name>개념 태그</span>
+                                <span class="vl-ui-progress__value" data-tag-text>오답 0%</span>
+                            </div>
+                            <div class="vl-ui-progress__track"><div class="vl-ui-progress__fill is-wrong" data-tag-fill></div></div>
+                        </div>
+                        <span class="qz-tag__weak" data-tag-weak hidden>
+                            <span class="vl-ui-badge is-danger">약한 개념</span>
+                            <!-- 그 태그가 붙은 개념 글로 (quiz.js 가 tagStats[].conceptActivityId 로 채운다, 없으면 수업 화면, #284) -->
+                            <a class="qz-link" th:href="${lessonUrl}" data-tag-review>이 개념 다시 보기</a>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="qz-result__actions">
+                <a class="vl-ui-btn is-text" th:href="${lessonUrl}">수업으로 돌아가기</a>
+                <div class="vl-ui-btn-group">
+                    <a class="vl-ui-btn is-navy is-xl" th:href="${lessonUrl}" data-quiz-pass data-quiz-next-link>다음으로</a>
+                    <a class="vl-ui-btn is-outline" th:href="${lessonUrl}" data-quiz-fail>이 개념 다시 보기</a>
+                    <button type="button" class="vl-ui-btn is-navy" data-quiz-retry data-quiz-fail>퀴즈 다시 풀기</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<div th:replace="~{common/ui :: toastContainer}"></div>
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,68 @@
+name: "🔧 작업 (리팩터링 · 문서 · 설정 · 테스트 · 디자인)"
+description: "새 기능이나 버그가 아닌 작업, 또는 결정이 필요한 질문에 사용합니다."
+title: "[작업] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 라벨을 꼭 붙여 주세요 🏷️
+        이 양식은 타입 라벨이 자동으로 붙지 않습니다. 오른쪽 **Labels** 에서 작업 종류에 맞는 라벨을 골라 주세요.
+        `🎨 design` · `♻️ refactor` · `✅ test` · `📝 docs` · `🔧 chore` (결정이 필요한 질문이면 `❓ question`)
+        - 요구사항·정책을 바꾸자는 내용이면 이 양식 대신 **📐 요구사항 · 정책 변경 요청** 을 써 주세요.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: "🗂️ 작업 종류"
+      options:
+        - "🎨 디자인 (화면·CSS)"
+        - "♻️ 리팩터링 (동작은 같고 코드 구조 개선)"
+        - "✅ 테스트"
+        - "📝 문서"
+        - "🔧 설정 · 패키지 · 빌드"
+        - "❓ 질문 · 논의"
+    validations:
+      required: true
+
+  - type: input
+    id: spec
+    attributes:
+      label: "📋 관련 요구사항 · 정책 ID"
+      description: "관련된 ID가 있으면 적어 주세요. (예: 비기능 요구사항, 공통 컴포넌트가 쓰이는 기능)"
+      placeholder: "예) NFR-SEC-005, PL-ERR-006"
+    validations:
+      required: false
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: "📌 무엇을 하나요?"
+      placeholder: "예) 포트폴리오 카드 컴포넌트를 목록용과 상세용으로 분리한다."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: "💡 왜 필요한가요?"
+      placeholder: "예) 커뮤니티 화면과 포트폴리오 화면에서 같은 코드를 복사해 쓰고 있어서, 수정할 때마다 두 곳을 고쳐야 한다."
+    validations:
+      required: false
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: "🛠️ 작업 목록"
+      value: |
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: "✅ 완료 조건"
+      placeholder: "예) 두 화면이 모두 새 컴포넌트를 사용하고, 화면 모습은 이전과 같다."
+    validations:
+      required: false

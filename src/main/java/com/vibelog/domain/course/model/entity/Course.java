@@ -1,0 +1,72 @@
+package com.vibelog.domain.course.model.entity;
+
+import com.vibelog.global.entity.BaseTimeEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+/*
+ * [Course]
+ * 역할 : 코스 테이블(course)과 매핑된다. 트랙·카테고리에 속하고, 수업(lesson)을 순서대로 가진다.
+ * 책임 : 컬럼은 sql/01-schema.sql 의 course 그대로 둔다. 트랙·카테고리는 ID 로만 가진다.
+ *        - 새 코스는 비공개로 만든다 (FR-CRS-005). 공개 조건(공개 수업·포트폴리오 과제)은 다른 영역 값이라
+ *          CourseAdminService 가 보고, 여기서는 상태만 바꾼다 (changeVisibility, API-ADM-16).
+ */
+@Getter
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Course extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long courseId;
+
+    private Long trackId;
+
+    private Long courseCategoryId;
+
+    private String title;
+
+    private String summary;
+
+    private String description;
+
+    private String target;
+
+    private String goal;
+
+    private int planDays;
+
+    private boolean isPublic;
+
+    /* 운영자 코스 만들기 (API-ADM-13). 항상 비공개로 시작한다 */
+    public static Course create(Long trackId, Long courseCategoryId, String title, String summary, String description,
+                                String target, String goal, int planDays) {
+        Course course = new Course();
+        course.change(trackId, courseCategoryId, title, summary, description, target, goal, planDays);
+        course.isPublic = false;
+        return course;
+    }
+
+    /* 공개·비공개 (API-ADM-16). 공개해도 되는지는 부르는 쪽(CourseAdminService)이 먼저 본다 */
+    public void changeVisibility(boolean isPublic) {
+        this.isPublic = isPublic;
+    }
+
+    /* 운영자 코스 수정 (API-ADM-15). 공개 상태는 바꾸지 않는다 */
+    public void change(Long trackId, Long courseCategoryId, String title, String summary, String description,
+                       String target, String goal, int planDays) {
+        this.trackId = trackId;
+        this.courseCategoryId = courseCategoryId;
+        this.title = title;
+        this.summary = summary;
+        this.description = description;
+        this.target = target;
+        this.goal = goal;
+        this.planDays = planDays;
+    }
+}

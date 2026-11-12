@@ -1,0 +1,41 @@
+<!--
+  message/report.html
+  M-11 신고 사유 선택 (API-RPT-01, FR-RPT-001, PL-RPT-003, #255). 화면마다 한 번 넣고, 신고 버튼이 대상을 실어 연다.
+    <button type="button" data-ui-modal-open="report-modal" data-report-type="POST" th:attr="data-report-id=${id}">신고</button>
+  쓰는 화면은 message.css, /js/ui.js, /js/report.js, common/ui :: toastContainer 를 함께 넣는다.
+  보내면 report.js 가 JSON 으로 접수하고, 204 면 모달을 닫고 "신고가 접수되었습니다" 토스트를 띄운다.
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="reportModal" class="vl-ui-modal" id="report-modal" data-ui-modal="report-modal" role="dialog"
+     aria-modal="true" aria-labelledby="report-modal-title" hidden>
+    <form class="vl-ui-modal__box" data-report-form novalidate
+          th:attr="data-url=@{/api/reports},data-csrf-header=${_csrf.headerName},data-csrf-token=${_csrf.token}">
+        <h2 class="vl-ui-modal__title" id="report-modal-title" tabindex="-1">신고하기</h2>
+        <input type="hidden" name="targetType">
+        <input type="hidden" name="targetId">
+        <fieldset class="ms-report">
+            <legend class="vl-ui-modal__body">신고 사유를 골라 주세요</legend>
+            <label class="ms-report__reason"><input type="radio" name="reason" value="SPAM"> 스팸</label>
+            <label class="ms-report__reason"><input type="radio" name="reason" value="ABUSE"> 욕설/비방</label>
+            <label class="ms-report__reason"><input type="radio" name="reason" value="PLAGIARISM"> 도용</label>
+            <label class="ms-report__reason"><input type="radio" name="reason" value="PRIVACY"> 개인정보 노출</label>
+            <label class="ms-report__reason"><input type="radio" name="reason" value="ETC"> 기타</label>
+        </fieldset>
+        <div class="ms-field">
+            <label for="report-detail">기타 내용 <span class="ms-muted">(기타를 고르면 꼭 써 주세요, 500자까지)</span></label>
+            <textarea class="ms-input is-short" id="report-detail" name="reasonDetail" maxlength="500"
+                      aria-describedby="report-error"></textarea>
+        </div>
+        <p class="ms-error" id="report-error" role="alert" data-report-error></p>
+        <div class="vl-ui-modal__actions">
+            <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+            <button type="submit" class="vl-ui-btn is-navy">신고하기</button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>

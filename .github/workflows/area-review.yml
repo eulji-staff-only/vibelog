@@ -1,0 +1,38 @@
+# 사람 리뷰는 P1 PR 에만 요구한다 (팀 결정 #287). P1 이 아닌 PR 은 바로 통과하고,
+# P1 PR 은 PM·형상관리 중 1명 + 다른 묶음 영역을 바꿨으면 그 담당의 승인을 받아야 통과한다.
+# 승인(리뷰)이 들어오면 area-review-rerun.yml 이 이 실행을 다시 돌려 결과를 바꾼다. 자세한 규칙은 README "리뷰어 지정 약속".
+# 승인 이벤트로 따로 실행하면 처음 실패 기록이 남아 머지를 계속 막는다 (#130). 그래서 트리거는 PR 이벤트만 둔다.
+# PR 마일스톤과 본문의 연결 이슈(Closes #번호)로 P1 을 판단하므로, 본문을 고치거나(edited) 마일스톤을 바꿔도 다시 돈다.
+# 연결한 이슈의 마일스톤이 바뀌면 area-review-issue.yml 이 그 이슈를 연결한 열린 PR 의 이 검사를 다시 돌린다.
+name: area-review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited, milestoned, demilestoned]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# 그룹을 커밋별로 나눈다. PR별로 묶으면 옛 커밋의 재실행(area-review-rerun)이 새 커밋의 검사를 취소한다 (#134).
+concurrency:
+  group: area-review-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  area-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - name: Check P1 approvals
+        run: bash .github/scripts/area-review.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          # 임시 (#421): 리뷰어로는 지정하되 승인은 요구하지 않을 사람. 저장소 변수라 지우면 원래 규칙으로 돌아간다
+          OPTIONAL_REVIEWERS: ${{ vars.AREA_REVIEW_OPTIONAL_REVIEWERS }}

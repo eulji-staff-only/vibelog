@@ -1,0 +1,119 @@
+<!--
+  error/error.html
+  역할: GlobalExceptionHandler 가 Controller·Service 예외를 모두 보내는 화면 한 장. status(모델의
+        정수)로 E-01(404)·E-02(403)·E-03(500)과 그 밖의 상태를 나눠 그린다 (#46, PL-ERR-001·006).
+  message 는 호출한 쪽(BusinessException 의 ErrorCode 등)이 준 문구를 그대로 보여준다. 다만 404·403·500은
+  화면 흐름 설계서 1-4 문구를 기본으로 쓰고, message 가 있으면 보조 설명으로 덧붙인다.
+  오류 화면에는 모두 문의 이메일을 보여줘야 하는데(PL-ERR-006), common/layout 의 footer 에 이미 있다.
+  errorBody(status, message) fragment 는 error/404.html · 403.html · 500.html (Spring Boot 가 컨트롤러를
+  거치지 않은 오류를 "/error" 로 보낼 때 찾는 이름, 예: SecurityConfig 의 403) 에서도 그대로 가져다 쓴다.
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>오류 안내 — 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+</head>
+<body>
+
+<div th:replace="~{common/layout :: header}"></div>
+
+<!--
+  이 화면을 GlobalExceptionHandler 가 "error/error" 로 바로 그릴 때는 th:fragment 매개변수 이름(status,
+  message)이 모델 속성 이름과 같아서 그대로 쓰인다. error/404·403·500.html 은 이 fragment 를
+  th:replace="~{error/error :: errorBody(404, '...')}" 처럼 값을 직접 넣어 가져다 쓴다 (아래 참고).
+-->
+<main th:fragment="errorBody(status, message)" class="vl-error">
+    <!-- E-01 404 -->
+    <th:block th:if="${status == 404}">
+        <!-- (#470) 404 연출: 거인이 올라와 말랑한 "404"를 날리고, 입체기동 캐릭터가 지나가면 내려간다 (한 번만).
+             원작 캐릭터 그림을 쓴다 (저작권 확인 필요). 404.html 도 이 조각을 쓰므로 CSS·JS 를 여기서 함께 부른다 -->
+        <link rel="stylesheet" th:href="@{/css/error-fun.css}">
+        <!-- 스크립트·그림을 못 불러와도 상태 번호가 보이게 둔다. 보이는 캔버스가 번호를 그리면 JS 가 숨긴다 (#470) -->
+        <p class="vl-error__code" data-soft-fallback>404</p>
+        <figure class="vl-error-scene">
+            <canvas class="vl-error-scene__soft" data-soft-wordmark data-soft-word="404" data-titan-once="true"
+                    th:attr="data-titan-src=@{/images/playground/titan-rise.png}"
+                    role="img" aria-label="404"></canvas>
+            <canvas class="vl-error-scene__odm" data-error-odm th:attr="data-sprite-base=@{/images/playground/}" aria-hidden="true"></canvas>
+        </figure>
+        <script th:src="@{/js/vibelog-soft.js}" defer></script>
+        <script th:src="@{/js/error-odm.js}" defer></script>
+        <h1 class="vl-error__title">페이지를 찾을 수 없습니다</h1>
+        <p class="vl-error__desc">
+            주소가 바뀌었거나, 삭제되거나 비공개로 전환된 페이지일 수 있어요.
+        </p>
+        <p class="vl-error__desc" th:if="${message != null and !#strings.isEmpty(message) and message != '페이지를 찾을 수 없습니다.'}" th:text="${message}"></p>
+    </th:block>
+
+    <!-- E-02 403 -->
+    <th:block th:if="${status == 403}">
+        <!-- (#470) 403 연출: 손가락 구멍 안의 "403"을 따라 들어가면 여우가 나타나 먹고, 말랑한 "403"이 무대 아래에서
+             튀어 들어와 제자리로 돌아온다 (한 번만). 그 뒤로는 404처럼 끌어서 말랑하게 늘려 볼 수 있고 무대 밖으로는 못 나간다.
+             원작 애니메이션 장면 그림을 쓴다 (저작권 확인 필요). 403.html 도 이 조각을 쓰므로 CSS·JS 를 여기서 함께 부른다 -->
+        <link rel="stylesheet" th:href="@{/css/error-fun.css}">
+        <!-- 스크립트·그림을 못 불러와도 상태 번호가 보이게 둔다. 보이는 캔버스가 번호를 그리면 JS 가 숨긴다 (#470) -->
+        <p class="vl-error__code" data-soft-fallback>403</p>
+        <figure class="vl-error-scene vl-error-scene--403">
+            <canvas class="vl-error-scene__stage" data-error-403 th:attr="data-sprite-base=@{/images/playground/}"
+                    role="img" aria-label="403"></canvas>
+            <!-- 마지막 장면의 말랑한 "403" (vibelog-soft.js). 여우가 끝날 때까지 숨겨 두었다가 error-403.js 가 꺼낸다 -->
+            <canvas class="vl-error-scene__soft is-overlay" data-soft-wordmark data-soft-word="403" aria-hidden="true"></canvas>
+        </figure>
+        <script th:src="@{/js/vibelog-soft.js}" defer></script>
+        <script th:src="@{/js/error-403.js}" defer></script>
+        <h1 class="vl-error__title">접근할 수 없습니다</h1>
+        <p class="vl-error__desc" th:text="${message != null and !#strings.isEmpty(message) ? message : '이 페이지를 볼 수 있는 권한이 없습니다.'}">
+            이 페이지를 볼 수 있는 권한이 없습니다.
+        </p>
+    </th:block>
+
+    <!-- E-03 500 (그 밖에 예상하지 못한 오류 포함) -->
+    <th:block th:if="${status == 500}">
+        <p class="vl-error__code">500</p>
+        <h1 class="vl-error__title">일시적인 오류가 발생했습니다</h1>
+        <p class="vl-error__desc">잠시 후 다시 시도해 주세요.</p>
+        <div class="vl-ui-btn-group">
+            <button type="button" class="vl-ui-btn is-navy" data-ui-reload>다시 시도</button>
+        </div>
+        <!-- PL-ERR-003 문의용 오류 번호 (#365). 서버 로그의 "오류 번호 xxxxxxxx" 와 같은 값이다.
+             GlobalExceptionHandler(Controller 예외)·ErrorIdAttributes(/error 로 온 오류)가 모델에 errorId 로 넣는다 -->
+        <p class="vl-error__ref" th:if="${errorId != null}" th:text="|오류 번호: ${errorId}|">오류 번호</p>
+    </th:block>
+
+    <!-- 그 밖(400·409 등) -->
+    <th:block th:if="${status != 404 and status != 403 and status != 500}">
+        <!-- (#470) 그 밖 연출: 젠이츠가 글자 오른쪽에서 질주해 사라지고, 가로 번개가 상태 번호를 가로질러
+             위·아래 두 동강으로 흩어진 뒤 3초 뒤 제자리로 (한 번만). 원작 캐릭터 그림을 쓴다 (저작권 확인 필요) -->
+        <link rel="stylesheet" th:href="@{/css/error-fun.css}">
+        <!-- 스크립트·그림을 못 불러와도 상태 번호가 보이게 둔다. 보이는 캔버스가 번호를 그리면 JS 가 숨긴다 (#470) -->
+        <p class="vl-error__code" data-soft-fallback th:text="${status}">400</p>
+        <figure class="vl-error-scene vl-error-scene--solid">
+            <canvas class="vl-error-scene__soft" data-soft-wordmark th:attr="data-soft-word=${status},aria-label=${status}" data-soft-split="true"
+                    role="img" aria-label="400"></canvas>
+            <canvas class="vl-error-scene__fx" data-error-400 th:attr="data-sprite-base=@{/images/playground/}" aria-hidden="true"></canvas>
+        </figure>
+        <script th:src="@{/js/vibelog-soft.js}" defer></script>
+        <script th:src="@{/js/error-400.js}" defer></script>
+        <h1 class="vl-error__title">요청을 처리할 수 없습니다</h1>
+        <p class="vl-error__desc" th:text="${message != null and !#strings.isEmpty(message) ? message : '입력하신 내용을 다시 확인해 주세요.'}">
+            입력하신 내용을 다시 확인해 주세요.
+        </p>
+    </th:block>
+
+    <div class="vl-ui-btn-group" th:if="${status != 500}">
+        <a class="vl-ui-btn is-outline" href="#" data-ui-back>이전 페이지로</a>
+        <a class="vl-ui-btn is-navy" href="/">홈으로</a>
+    </div>
+    <div class="vl-ui-btn-group" th:if="${status == 500}">
+        <a class="vl-ui-btn is-outline" href="/">홈으로</a>
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+
+<script th:src="@{/js/ui.js}"></script>
+</body>
+</html>

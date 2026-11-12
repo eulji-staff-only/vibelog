@@ -1,0 +1,89 @@
+/*
+ * course-admin.css
+ * 운영자 트랙 관리(A-02) · 카테고리 관리(A-03) 화면 (#95). 백오피스는 데스크톱 기준이다 (설계서 7장).
+ * 색·글꼴·간격은 설계서 6장 토큰만 쓴다. 버튼·안내 상자·모달은 공통 조각(.vl-ui-*)을 쓴다.
+ */
+
+.ca-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); }
+.ca-title { margin: 0; font-size: 28px; font-weight: 900; }
+.ca-toast { margin-bottom: var(--space-5); }
+.ca-muted { margin: 0 0 var(--space-3); font-size: 14px; color: var(--ink-muted); }
+.ca-strong { font-weight: 700; }
+.vl-ui-btn.ca-danger { color: var(--danger); }
+.vl-ui-btn.ca-danger:hover { color: var(--danger); text-decoration: underline; }
+.ca-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 트랙 표 */
+.ca-table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface-raised); border-radius: var(--radius-md); overflow: hidden; }
+.ca-table th, .ca-table td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
+.ca-table th { color: var(--ink-muted); font-weight: 700; background: var(--surface); }
+.ca-desc { max-width: 360px; color: var(--ink-muted); }
+.ca-actions { display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+.ca-actions form { margin: 0; }
+
+/* 카테고리 순서 목록 (드래그) */
+.ca-order { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.ca-order__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    cursor: grab;
+}
+.ca-order__row:hover { border-color: var(--line-strong); }
+.ca-order__row.is-dragging { opacity: 0.5; }
+.ca-order__handle { color: var(--ink-muted); font-weight: 900; letter-spacing: -2px; }
+.ca-order__name { flex: 1; }
+.ca-order .ca-muted { margin: 0; }
+
+/* 모달 폼 */
+.ca-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.ca-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.ca-field label { font-size: 13px; font-weight: 700; }
+.ca-hint { font-weight: 400; color: var(--ink-muted); }
+.ca-input {
+    min-height: var(--control-h);
+    padding: var(--space-2) var(--space-3);
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--surface-raised);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+}
+.ca-input.is-short { width: 120px; }
+.ca-input[aria-invalid="true"] { border-color: var(--danger); }
+.ca-error { margin: 0; font-size: 13px; color: var(--danger); }
+
+/* ---- A-04 코스 목록 · A-05 코스 상세 (#96) ---- */
+.ca-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin-bottom: var(--space-5); }
+.ca-filter__field { display: flex; flex-direction: column; gap: var(--space-1); font-size: 13px; font-weight: 700; }
+.ca-filter .ca-input { min-width: 160px; }
+.ca-link { color: inherit; text-decoration: none; }
+.ca-link:hover { text-decoration: underline; }
+.ca-back { display: inline-block; margin-bottom: var(--space-3); font-size: 14px; color: var(--ink-muted); text-decoration: none; }
+.ca-back:hover { text-decoration: underline; }
+.ca-head__side { display: flex; align-items: center; gap: var(--space-3); }
+.ca-section { margin-bottom: var(--space-6); padding: var(--space-5); background: var(--surface-raised); border-radius: var(--radius-md); }
+.ca-section__head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+.ca-section__title { margin: 0 0 var(--space-4); font-size: 18px; font-weight: 800; }
+.ca-section__head .ca-section__title { margin: 0; }
+.ca-form__row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); }
+.ca-form__actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-3); }
+.ca-assignment { display: flex; align-items: center; gap: var(--space-3); margin: 0; }
+.ca-assignment .ca-muted { margin: 0; }
+
+/* ---- A-09 진단 설정 (#187) ---- */
+.dg-modal { max-width: 720px; }
+.dg-options { border: 0; margin: 0; padding: 0; }
+.dg-options legend { font-size: 13px; font-weight: 700; margin-bottom: var(--space-2); }
+.dg-option { display: grid; grid-template-columns: minmax(0, 1fr) 140px 90px; gap: var(--space-2); margin-bottom: var(--space-2); }
+.ca-input.is-score { width: 100%; }
+.dg-preview { margin-bottom: var(--space-4); }
+@media (max-width: 600px) {
+    .dg-option { grid-template-columns: 1fr 1fr; }
+    .dg-option .ca-input[type="text"] { grid-column: 1 / -1; }
+}

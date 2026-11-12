@@ -1,0 +1,116 @@
+/*
+ * 모의고사 영역 화면 (U-15).
+ * 색·글꼴·간격은 화면 흐름 설계서 6장 토큰 이름(var(--…))만 쓴다. 값은 공통 CSS(#13)가 정한다.
+ * 버튼·안내 상자·모달 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
+ */
+
+/* 배경·글자색·글꼴은 common.css(body)가 정한다 (#133) */
+/* display 를 준 요소도 hidden 속성이면 숨긴다 (문항 전환·잠김 안내) */
+.exam-page [hidden] { display: none; }
+
+/* 상단 네이비 띠 + 제목 */
+.exam-band { background: var(--navy-900); color: var(--on-navy); padding: 48px var(--space-6) calc(var(--band-tail) + 28px);
+    display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.exam-eyebrow { font-size: 14px; font-weight: 700; padding: var(--space-1\.5) 14px; border-radius: var(--radius-pill);
+    border: 1px solid var(--navy-700); color: var(--glow); }
+.exam-title { margin: 0; font-size: 36px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.exam-lead { margin: 0; max-width: var(--hero-text-max); font-size: 17px; line-height: 1.7; color: var(--on-navy-muted); }
+
+/* 띠에 겹쳐 올라오는 흰 패널 */
+.exam-main { max-width: 1100px; margin: 0 auto; padding: 0 var(--space-6) 64px; }
+.exam-panel { margin-top: calc(var(--hero-overlap) * -1); position: relative; background: var(--surface-raised);
+    border-radius: var(--radius-xl); padding: var(--space-9); box-shadow: var(--shadow-panel); }
+.exam-body { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 32px; }
+.exam-solve { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-7); }
+
+/* 진행 막대 */
+.exam-progress { display: flex; flex-direction: column; gap: var(--space-2); }
+.exam-progress-top { display: flex; justify-content: space-between; gap: var(--space-3); font-size: 14px; }
+.exam-progress-label { font-weight: 700; }
+.exam-progress-value { color: var(--ink-muted); }
+.exam-progress-track { height: 8px; background: var(--tint); border-radius: var(--radius-pill); overflow: hidden; }
+.exam-progress-fill { width: 0; height: 100%; background: var(--link); border-radius: var(--radius-pill); }
+
+/* 문항 · 보기 */
+.exam-question { display: flex; flex-direction: column; gap: var(--space-4); min-height: 340px; }
+.exam-question-no { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.exam-question-text { margin: 0; font-size: 22px; line-height: 1.5; font-weight: 900; }
+.exam-choices { display: flex; flex-direction: column; gap: 10px; }
+.exam-choice { display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: 52px; padding: 13px 18px;
+    text-align: left; font: inherit; font-size: 16px; line-height: 1.5; color: var(--ink);
+    background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: var(--radius-md); cursor: pointer; }
+.exam-choice:hover { border-color: var(--ink-muted); }
+.exam-choice-key { flex: 0 0 28px; height: 28px; border-radius: 50%; background: var(--tint); font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; }
+.exam-choice[aria-pressed="true"] { border: 2px solid var(--link); padding: 12px 17px; background: var(--tint); font-weight: 700; }
+.exam-choice[aria-pressed="true"] .exam-choice-key { background: var(--link); color: var(--surface-raised); }
+
+/* 버튼 (공통 조각 #46 전까지) */
+.exam-move, .exam-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); }
+.exam-actions { padding-top: var(--space-5); border-top: 1px solid var(--line-soft); }
+.exam-btn { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-h);
+    padding: 11px 18px; font: inherit; font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none;
+    border: 1px solid transparent; border-radius: var(--radius-pill); cursor: pointer; white-space: nowrap; }
+.exam-btn-navy { background: var(--navy-900); color: var(--on-navy); }
+.exam-btn-navy:hover { background: var(--navy-800); }
+.exam-btn-outline { background: var(--surface-raised); color: var(--ink); border-color: var(--line-strong); }
+.exam-btn-outline:hover { background: var(--surface); }
+.exam-btn-text { padding-left: 0; padding-right: 0; background: transparent; color: var(--link); border-radius: 0; }
+.exam-btn-text:hover { color: var(--link-hover); }
+.exam-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 안내 상자 (공통 조각 #46 전까지) */
+.exam-notice { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) 20px;
+    border-radius: var(--radius-md); background: var(--tint); font-size: 15px; line-height: 1.6; }
+.exam-notice p { margin: 0; }
+
+/* 오른쪽 문항 현황 */
+.exam-status { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 20px; padding: var(--space-6);
+    background: var(--surface); border-radius: var(--radius-lg); }
+.exam-status-block { display: flex; flex-direction: column; gap: var(--space-3); }
+.exam-status-unanswered { padding-top: 18px; border-top: 1px solid var(--line); }
+.exam-status-title { margin: 0; font-size: 17px; font-weight: 700; }
+.exam-nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
+.exam-nav-no { height: var(--control-h); font: inherit; font-size: 15px; font-weight: 700; color: var(--ink); cursor: pointer;
+    background: var(--surface-raised); border: 1px dashed var(--line-strong); border-radius: var(--radius-md); }
+.exam-nav-no.is-answered { background: var(--tint); border: 1px solid var(--link); }
+.exam-nav-no[aria-current="step"] { background: var(--navy-900); color: var(--on-navy); border: 2px solid var(--navy-900); }
+.exam-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-muted); }
+.exam-danger { color: var(--danger); }
+.exam-unanswered { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.exam-unanswered .exam-btn { min-height: 40px; padding: 9px 16px; font-size: 14px; }
+.exam-hint { margin: var(--space-2) 0 0; font-size: 14px; line-height: 1.5; color: var(--ink-muted); }
+.exam-badge-success { align-self: flex-start; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 700;
+    background: var(--success-soft); color: var(--success); }
+
+/* M-02 제출 확인 모달 (공통 조각 #46 전까지) */
+.exam-modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+    padding: var(--space-6); background: rgba(15, 27, 61, 0.55); }
+.exam-modal[hidden] { display: none; }
+.exam-modal-box { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: var(--space-4); padding: 32px;
+    background: var(--surface-raised); border-radius: var(--radius-xl); box-shadow: var(--shadow-panel); }
+.exam-modal-title { margin: 0; font-size: 22px; line-height: 1.4; font-weight: 900; }
+.exam-modal-body { display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
+.exam-modal-count { display: flex; align-items: baseline; gap: var(--space-2); font-size: 14px; font-weight: 700; }
+.exam-modal-count strong { font-size: 28px; line-height: 1; font-weight: 900; color: var(--danger); }
+.exam-modal-count strong.is-zero { color: var(--ink); }
+.exam-modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; padding-top: var(--space-2); }
+
+/* 키보드 포커스 (설계서 5-2) */
+.exam-page :focus-visible, .exam-modal :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* 태블릿: 문항 이동을 문항 위로 (설계서 7장) */
+@media (max-width: 1023px) {
+    .exam-status { order: -1; flex-basis: 100%; }
+}
+
+/* 모바일 (설계서 7장) */
+@media (max-width: 767px) {
+    .exam-band { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .exam-title { font-size: 26px; }
+    .exam-main { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .exam-panel { padding: var(--space-6) 20px; }
+    .exam-actions .exam-btn-navy, .exam-modal-actions .exam-btn { width: 100%; }
+    .exam-modal { align-items: flex-end; padding: 0; }
+    .exam-modal-box { max-width: none; border-radius: var(--radius-xl) var(--radius-xl) 0 0; }
+}

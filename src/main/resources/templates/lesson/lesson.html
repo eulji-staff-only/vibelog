@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>수업 | 바이브로그</title>
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/lesson.css}" href="/css/lesson.css">
+    <!-- 공통 요청 처리(request.js, #367)는 공통 헤더(common/layout :: header)가 불러온다. 여기서 또 불러오면 폼 제출이 중복으로 보여 막힌다 -->
+    <script th:src="@{/js/lesson.js}" src="/js/lesson.js" defer></script>
+    <script th:src="@{/js/ui.js}" src="/js/ui.js" defer></script>
+</head>
+<body>
+<!-- U-13 수업 (활동 목록 · 개념, API-LSN-01·02). activity 전환은 서버를 부르지 않는 자바스크립트로만 한다
+     (설계서 U-13 "전환") — 모든 활동 패널을 한 번에 그려 두고 lesson.js 가 보이기/숨기기만 한다.
+     공통 헤더·푸터는 다른 화면처럼 common/layout 조각을 쓴다 (#358). 배지·안내 상자 조각(#46)은 아직 쓰지 않는다. -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<!-- 잠긴 활동에 들어오면(ACTIVITY_LOCKED) 컨트롤러가 넘긴 안내. my-learning.html 과 같은 방식 (#275) -->
+<p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
+
+<div class="ls-page">
+
+    <section class="ls-band">
+        <h1 class="ls-title" th:text="${page.lessonTitle}">[수업] 제목</h1>
+        <p class="ls-lead" th:text="${page.lessonGoal}">[수업 목표]</p>
+    </section>
+
+    <!-- 운영자 미리보기 (FR-LSN-015, API-ADM-39). 기록을 남기는 버튼은 아래에서 모두 숨긴다 -->
+    <p class="ls-preview-notice" role="status" th:if="${page.preview}">운영자 미리보기입니다. 진행 기록이 저장되지 않습니다.</p>
+
+    <main class="ls-main">
+        <div class="ls-layout">
+
+            <!-- 왼쪽 활동 목록 -->
+            <nav class="ls-activities" aria-label="활동 목록" data-activity-nav>
+                <ul class="ls-activity-list">
+                    <li th:each="card, iter : ${page.cards}">
+                        <button type="button" class="ls-activity" data-activity-btn
+                                th:classappend="${card.isLocked()} ? 'is-locked' : ''"
+                                th:attr="data-activity=${card.activityId != null ? card.activityId : 'exam'},aria-current=${card.selected}">
+                            <span class="ls-activity-no" aria-hidden="true"
+                                  th:text="${card.isLocked() ? '🔒' : iter.count}">1</span>
+                            <span class="ls-activity-info">
+                                <span class="ls-activity-kind" th:text="${card.kindLabel()}">개념</span>
+                                <span class="ls-activity-name" th:text="${card.title}">[활동 제목]</span>
+                            </span>
+                            <span class="ls-badge" th:classappend="${card.statusBadgeClass()}"
+                                  th:if="${!page.preview}" th:text="${card.statusLabel()}">완료</span>
+                            <!-- 완료한 수업에 나중에 추가된 활동 (PL-ENR-005 "새 활동", #379) -->
+                            <span class="ls-badge ls-badge-new" th:if="${card.newActivity}">새 활동</span>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- 오른쪽 선택한 활동 -->
+            <section class="ls-content" aria-live="polite" data-activity-content>
+                <article class="ls-panel" th:each="card : ${page.cards}"
+                         th:classappend="${card.isLocked()} ? 'ls-panel-locked' : ''"
+                         th:attr="data-activity-panel=${card.activityId != null ? card.activityId : 'exam'}"
+                         th:hidden="${!card.selected}">
+
+                    <!-- 잠김 (FR-LSN-009): 개념·퀴즈·모의고사 모두 같은 안내 문구를 쓴다 (_template.md 7장 ACTIVITY_LOCKED) -->
+                    <div class="ls-notice" th:if="${card.isLocked()}">
+                        <span class="ls-badge ls-badge-locked">잠김</span>
+                        <strong>앞 퀴즈를 통과하면 열립니다.</strong>
+                        <p>왼쪽 활동 목록에서 열려 있는 활동부터 차례로 진행해 주세요.</p>
+                        <button type="button" class="ls-link" th:if="${card.previousActivityId != null}"
+                                th:attr="data-activity-link=${card.previousActivityId}">앞 활동 바로가기</button>
+                    </div>
+
+                    <!-- 새 활동은 선택 학습이다 (PL-ENR-005, #379). 열려 있는 새 활동 위에만 안내한다 -->
+                    <p class="ls-new-note" th:if="${card.newActivity and !card.isLocked()}">
+                        <span class="ls-badge ls-badge-new">새 활동</span>
+                        이 수업을 끝낸 뒤에 추가된 활동입니다. 선택 학습이라 하지 않아도 수업 진행과 모의고사에는 영향이 없습니다.
+                    </p>
+
+                    <!-- 개념 -->
+                    <th:block th:if="${!card.isLocked() and card.isConcept()}">
+                        <span class="ls-panel-eyebrow">개념</span>
+                        <h2 class="ls-panel-title" th:text="${card.title}">[개념] 제목</h2>
+                        <div class="ls-panel-body" th:utext="${card.body}">[개념 본문]</div>
+                        <div class="ls-tags" aria-label="개념 태그" th:if="${!card.conceptTags.isEmpty()}">
+                            <!-- 태그를 누르면 같은 태그의 개념을 모달로 찾아 준다 (API-LSN-09, FR-LSN-005). 열기는 ui.js, 검색은 lesson.js -->
+                            <button type="button" class="ls-tag" data-concept-tag data-ui-modal-open="concept-search-modal"
+                                    th:each="tag, tagIter : ${card.conceptTags}"
+                                    th:attr="data-concept-tag-id=${card.conceptTagIds[tagIter.index]},data-concept-tag-name=${tag}"
+                                    th:text="'#' + ${tag}">#태그</button>
+                        </div>
+                        <!-- 연관 개념 (API-LSN-07, FR-LSN-003). 잠긴 개념이면 누른 뒤 그 화면의 잠김 안내를 본다 -->
+                        <section class="ls-related" aria-label="연관 개념" th:if="${!card.relatedConcepts.isEmpty()}">
+                            <h3 class="ls-related-title">연관 개념</h3>
+                            <ul class="ls-related-list">
+                                <li th:each="related : ${card.relatedConcepts}">
+                                    <a class="ls-related-link"
+                                       th:href="@{'/courses/' + ${related.courseId} + '/lessons/' + ${related.lessonId}(activity=${related.relatedActivityId})}"
+                                       th:text="${related.title}">[연관 개념] 제목</a>
+                                </li>
+                            </ul>
+                        </section>
+                        <a class="ls-tool-link" th:if="${card.toolNoteUrl != null}" th:href="${card.toolNoteUrl}"
+                           target="_blank" rel="noopener noreferrer">도구 노트 보러 가기 (새 탭)</a>
+                        <div class="ls-panel-actions">
+                            <!-- 북마크 토글 (API-LSN-08, FR-LSN-004). 누를 때마다 켜짐·꺼짐이 바뀐다 -->
+                            <button type="button" class="ls-btn ls-btn-outline" data-bookmark th:if="${!page.preview}"
+                                    th:attr="data-url=@{'/api/concepts/' + ${card.activityId} + '/bookmark'},aria-pressed=${card.bookmarked}"
+                                    th:text="${card.bookmarked} ? '북마크 해제' : '북마크'">북마크</button>
+                            <!-- 완료한 개념: 다시 볼 수 있다 (PL-LSN-009). 퀴즈로는 그냥 이동만 하면 되므로 GET 링크 -->
+                            <a th:if="${card.isCompleted() and card.quizActivityId != null}"
+                               class="ls-btn ls-btn-outline"
+                               th:href="@{'/courses/' + ${page.courseId} + '/lessons/' + ${page.lessonId} + '/quizzes/' + ${card.quizActivityId}}">퀴즈 다시 보기</a>
+                            <!-- 진행 중: 읽기 완료 → 처음 한 번만 기록되고 바로 뒤 퀴즈로 이동(API-LSN-02) -->
+                            <form th:if="${card.isInProgress() and !page.preview}" method="post"
+                                  th:action="@{'/courses/' + ${page.courseId} + '/lessons/' + ${page.lessonId} + '/activities/' + ${card.activityId} + '/complete'}">
+                                <button type="submit" class="ls-btn ls-btn-navy">읽기 완료 · 퀴즈로</button>
+                            </form>
+                        </div>
+                    </th:block>
+
+                    <!-- 퀴즈 -->
+                    <th:block th:if="${!card.isLocked() and card.isQuiz()}">
+                        <span class="ls-panel-eyebrow">퀴즈</span>
+                        <h2 class="ls-panel-title" th:text="${card.title}">[퀴즈] 제목</h2>
+                        <p class="ls-panel-desc">개념에서 배운 내용을 확인합니다.</p>
+                        <span class="ls-badge" th:if="${card.bestCorrectRate != null}"
+                              th:text="'최고 점수 ' + ${card.bestCorrectRate} + '%'">최고 점수</span>
+                        <div class="ls-panel-actions" th:if="${!page.preview}">
+                            <a class="ls-btn ls-btn-navy"
+                               th:href="@{'/courses/' + ${page.courseId} + '/lessons/' + ${page.lessonId} + '/quizzes/' + ${card.activityId}}"
+                               th:text="${card.isCompleted()} ? '퀴즈 다시 풀기' : '퀴즈 풀기'">퀴즈 풀기</a>
+                            <!-- 틀린 문제 모아보기 U-28 (FR-LSN-008, quiz #190): 이 수업으로 걸러 연다 -->
+                            <a class="ls-btn ls-btn-outline"
+                               th:href="@{/my/wrong-answers(course=${page.courseId},lesson=${page.lessonId})}">틀린 문제 모아보기</a>
+                        </div>
+                    </th:block>
+
+                    <!-- 모의고사 (열렸을 때. activity 테이블에 없는 가상 항목, 계약 ②) -->
+                    <th:block th:if="${!card.isLocked() and card.isExam()}">
+                        <span class="ls-panel-eyebrow">모의고사</span>
+                        <h2 class="ls-panel-title">모의고사</h2>
+                        <p class="ls-panel-desc">이 수업의 모든 개념에서 출제됩니다. 통과 점수와 제한 시간은 없습니다.</p>
+                        <div class="ls-panel-actions" th:if="${!page.preview}">
+                            <form method="post" th:action="${card.examUrl}">
+                                <button type="submit" class="ls-btn ls-btn-navy">모의고사 응시하기</button>
+                            </form>
+                            <a class="ls-btn ls-btn-outline" th:if="${card.reportUrl != null}"
+                               th:href="${card.reportUrl}">지난 리포트 다시 보기</a>
+                        </div>
+                    </th:block>
+
+                </article>
+            </section>
+        </div>
+    </main>
+</div>
+
+<div th:replace="~{common/layout :: footer}"></div>
+
+<!-- 개념 태그 검색 결과 (API-LSN-09). 공통 모달 꼴(vl-ui-modal)이고, 목록은 lesson.js 가 채운다 -->
+<div class="vl-ui-modal" hidden role="dialog" aria-modal="true" id="concept-search-modal"
+     data-ui-modal="concept-search-modal" aria-labelledby="concept-search-modal-title"
+     th:attr="data-search-url=@{/api/concepts}">
+    <div class="vl-ui-modal__box">
+        <h2 class="vl-ui-modal__title" id="concept-search-modal-title" tabindex="-1" data-concept-search-title>태그로 개념 찾기</h2>
+        <p class="vl-ui-modal__body" data-concept-search-message role="status"></p>
+        <ul class="ls-search-list" data-concept-search-list></ul>
+        <div class="vl-ui-modal__actions">
+            <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>닫기</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

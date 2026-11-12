@@ -1,0 +1,121 @@
+name: "🐛 버그 제보"
+description: "명세서·정책과 다르게 동작하는 문제를 발견했을 때 사용합니다."
+title: "[버그] "
+labels: ["🐛 bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 버그를 알려 주셔서 고마워요 🙏
+        - **다른 사람이 똑같이 따라 했을 때 버그가 재현되도록** 적어 주는 것이 가장 중요합니다.
+        - "기대한 동작"은 가능하면 [요구사항 명세서](https://github.com/eulji-staff-only/vibelog/blob/develop/docs/planning/06-requirements.md)·[정책 정의서](https://github.com/eulji-staff-only/vibelog/blob/develop/docs/planning/07-policy.md)의 ID로 근거를 남겨 주세요. 명세 자체가 이상하다면 버그가 아니라 **📐 요구사항 변경 요청** 입니다.
+        - 이슈를 만든 뒤 오른쪽 사이드바에서 **Labels(part / area / 우선순위)** 와 **Projects** 를 설정해 주세요.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "🐞 어떤 문제인가요?"
+      description: "버그를 한두 문장으로 설명해 주세요."
+      placeholder: "예) 정답률 50%로 퀴즈를 제출했는데 통과가 아니라 재도전 화면이 나온다."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: domain
+    attributes:
+      label: "🗂️ 업무"
+      options:
+        - "USR · 회원"
+        - "DGN · 진단·추천"
+        - "CRS · 트랙·카테고리·코스"
+        - "ENR · 수강"
+        - "LSN · 수업 (개념·퀴즈)"
+        - "EXM · 모의고사·오답 리포트"
+        - "PRT · 포트폴리오"
+        - "CMT · 커뮤니티 (게시판)"
+        - "CTS · 월간 콘테스트"
+        - "RWD · 보상 (배지)"
+        - "REV · 동료 리뷰"
+        - "MSG · 쪽지"
+        - "RPT · 신고"
+        - "NTF · 알림·공지"
+        - "ADM · 백오피스 공통"
+        - "공통 (인프라·설정·여러 업무)"
+    validations:
+      required: true
+
+  - type: input
+    id: spec
+    attributes:
+      label: "📋 관련 요구사항 · 정책 ID"
+      description: "어긋난 기준이 되는 ID. 모르면 비워 두세요."
+      placeholder: "예) FR-LSN-006, PL-LSN-002"
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "🔁 재현 방법"
+      description: "버그가 나타나기까지의 순서를 적어 주세요. 어떤 역할(비회원 / 학습자 / 운영자) 계정인지도 적어 주세요."
+      value: |
+        - 계정: 학습자 / 운영자 / 비회원
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "🙆 기대한 동작"
+      placeholder: "예) 정답률 50% 이상이면 통과 처리되고 다음 개념이 열린다. (PL-LSN-002)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: "🙅 실제 동작"
+      placeholder: "예) 재도전 화면이 나오고 다음 개념이 잠겨 있다."
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "📸 스크린샷 / 영상"
+      description: "이미지나 영상을 이 칸에 드래그해서 붙여넣을 수 있어요."
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "📋 에러 메시지 / 로그"
+      description: "브라우저 콘솔, 네트워크 응답(상태 코드·응답 본문), 서버 로그를 텍스트로 붙여넣어 주세요. (API 키·비밀번호·개인정보는 지우고!)"
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: "💻 발생 환경"
+      placeholder: "예) Chrome 130 / macOS, 로컬 · 개발 서버, develop 최신 (a1b2c3d)"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "🔥 심각도"
+      description: "고른 값에 맞춰 오른쪽 Labels에서 우선순위 라벨(P0~P3)도 붙여 주세요."
+      options:
+        - "P0 · 서비스를 쓸 수 없음 / 발표·배포를 막음"
+        - "P1 · 메인 흐름(가입 → 진단 → 수업 → 모의고사 → 포트폴리오 → 완료)이 막힘"
+        - "P2 · 불편하지만 다른 방법으로 사용 가능"
+        - "P3 · 사소한 문제 (오타, 미세한 화면 깨짐)"
+    validations:
+      required: true

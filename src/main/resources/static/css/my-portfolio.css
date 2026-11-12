@@ -1,0 +1,134 @@
+/*
+ * 포트폴리오 영역 화면 — U-19 내 포트폴리오, U-20 포트폴리오 상세.
+ * 색·간격·모서리는 common.css(#124) 토큰을 쓴다. 띠 겹침·그림자는 common.css 에 토큰이 없어 값을 직접 적었다.
+ * 버튼·배지·안내 상자·모달 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
+ */
+
+/* display 를 준 요소도 hidden 속성이면 숨긴다 (빈 상태·내 작품·비공개) */
+.mp-band [hidden], .mp-main [hidden] { display: none; }
+.mp-muted { font-size: 14px; color: var(--ink-muted); }
+.mp-caption { font-size: 13px; color: var(--ink-muted); }
+
+/* 상단 네이비 띠 + 제목 (설계서 6-3 페이지 틀) */
+.mp-band { background: var(--navy-900); color: var(--on-navy);
+    padding: 48px var(--space-7) calc(120px + var(--space-8)); /* 120px = 띠 꼬리, common.css 에 토큰 없음 */
+    display: flex; flex-direction: column; align-items: center; gap: var(--space-4); text-align: center; }
+/* 상세는 제목을 왼쪽 정렬하고 패널과 같은 폭(880px - 좌우 여백)에 맞춘다 */
+.mp-band-left { text-align: left; }
+.mp-band-left > * { width: 100%; max-width: 832px; }
+.mp-band-left .mp-eyebrow { width: auto; }
+.mp-title { margin: 0; font-size: 36px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.mp-lead { margin: 0; max-width: var(--hero-max); font-size: 17px; line-height: 1.7; color: var(--on-navy-muted); }
+.mp-band-left .mp-lead { font-size: 15px; }
+.mp-eyebrow { font-size: 14px; font-weight: 700; padding: var(--space-2) 14px; border-radius: var(--radius-pill);
+    border: 1px solid var(--navy-700); color: var(--glow); }
+.mp-back { color: var(--on-navy-muted); font-size: 15px; padding: 10px 0; }
+.mp-back:hover { color: var(--on-navy); }
+
+/* 띠에 겹쳐 올라오는 흰 패널 (폭 880px, 설계서 6-3) */
+.mp-main { max-width: 880px; margin: 0 auto; padding: 0 var(--space-7) 64px; }
+.mp-panel { position: relative; margin-top: -88px; /* 띠 겹침 88px, common.css 에 토큰 없음 */
+    display: flex; flex-direction: column; gap: var(--space-7); padding: var(--space-9);
+    background: var(--surface-raised); border-radius: var(--radius-large); box-shadow: 0 24px 60px rgba(15, 27, 61, 0.14); }
+.mp-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-3) var(--space-5); }
+.mp-h2 { margin: 0; font-size: 24px; line-height: 1.4; font-weight: 900; }
+.mp-h3 { margin: 0; font-size: 20px; line-height: 1.4; font-weight: 900; }
+
+/* U-19 카드 */
+.mp-cards { display: flex; flex-direction: column; gap: var(--space-5); }
+.mp-card { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-6) var(--space-7); padding: var(--space-7);
+    background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-panel); }
+.mp-card-body { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.mp-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) 10px; }
+.mp-card-title { font-size: 20px; line-height: 1.4; font-weight: 900; color: var(--ink); }
+.mp-card-title:hover { text-decoration: underline; }
+.mp-card-summary { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
+.mp-card-actions { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-end; gap: var(--space-3) var(--space-4); }
+.mp-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); padding: 40px var(--space-7);
+    text-align: center; background: var(--surface); border-radius: var(--radius-card); color: var(--ink-muted); }
+.mp-empty strong { font-size: 17px; color: var(--ink); }
+.mp-empty p { margin: 0; }
+
+/* U-20 상세 */
+.mp-closed, .mp-detail { display: flex; flex-direction: column; gap: var(--space-8); }
+.mp-closed { gap: var(--space-6); }
+.mp-facts { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 14px var(--space-7); font-size: 15px; line-height: 1.65; }
+.mp-facts dt { font-weight: 700; color: var(--ink-muted); }
+.mp-facts dd { margin: 0; overflow-wrap: anywhere; }
+.mp-link { color: var(--link); font-weight: 700; }
+.mp-link:hover { color: var(--link-hover); }
+.mp-section { display: flex; flex-direction: column; gap: 10px; }
+.mp-section-first { padding-top: var(--space-7); border-top: 1px solid var(--line-soft); }
+.mp-text { margin: 0; font-size: 16px; line-height: 1.75; }
+.mp-shot { max-width: 420px; aspect-ratio: 16 / 10; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--ink-muted); background: var(--surface); border: 1px dashed var(--line-strong); border-radius: var(--radius-card);
+    overflow: hidden; }
+/* 올린 스크린샷은 크기와 비율이 제각각이라 칸 안에 비율을 지켜 맞춘다. 규칙이 없으면 원본 크기로 칸 밖까지 나온다 (#397) */
+.mp-shot img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.mp-detail-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-4);
+    padding-top: var(--space-7); border-top: 1px solid var(--line-soft); }
+
+/* 배지 (공통 조각 #46 전까지) */
+.mp-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.mp-badge-strong { background: var(--navy-900); color: var(--on-navy); }
+.mp-badge-neutral { background: var(--tint); color: var(--ink); }
+
+/* 안내 상자 (공통 조각 #46 전까지) */
+.mp-notice { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-5) var(--space-6);
+    border-radius: var(--radius-card); background: var(--tint); font-size: 15px; line-height: 1.6; }
+.mp-notice p { margin: 0; }
+
+/* 버튼 (공통 조각 #46 전까지) */
+.mp-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 9px 16px;
+    font: inherit; font-size: 14px; font-weight: 700; line-height: 1.4; white-space: nowrap; cursor: pointer;
+    border: 1px solid transparent; border-radius: var(--radius-pill); }
+.mp-btn-outline { background: var(--surface-raised); color: var(--ink); border-color: var(--line-strong); }
+.mp-btn-outline:hover { background: var(--surface); }
+.mp-btn-text { padding-left: 0; padding-right: 0; background: transparent; color: var(--link); border-radius: 0; }
+.mp-btn-text:hover { color: var(--link-hover); }
+.mp-btn-danger { min-height: var(--control-h); padding: 11px 18px; font-size: 15px; background: var(--danger); color: var(--on-navy); }
+.mp-btn-danger:hover { background: #9a3412; }
+.mp-modal-actions .mp-btn-outline { min-height: var(--control-h); padding: 11px 18px; font-size: 15px; }
+
+/* M-04 삭제 확인 모달 (공통 조각 #46 전까지) */
+.mp-modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+    padding: var(--space-7); background: rgba(15, 27, 61, 0.55); }
+.mp-modal[hidden] { display: none; }
+.mp-modal-box { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: var(--space-5); padding: 32px;
+    /* 모바일 가로·화면 확대로 뷰포트보다 높아지면 안에서 스크롤 (공통 .vl-ui-modal__box 와 같은 값) */
+    max-height: calc(100vh - var(--space-10)); overflow-y: auto;
+    background: var(--surface-raised); border-radius: var(--radius-large); box-shadow: 0 24px 60px rgba(15, 27, 61, 0.14); }
+.mp-modal-title { margin: 0; font-size: 22px; line-height: 1.4; font-weight: 900; }
+.mp-modal-text, .mp-modal-warn { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
+.mp-modal-warn { color: var(--danger); font-weight: 700; }
+.mp-modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; padding-top: var(--space-3); }
+
+/* 모바일 (설계서 7장) */
+@media (max-width: 767px) {
+    .mp-band, .mp-band-left { padding-left: var(--space-5); padding-right: var(--space-5); }
+    .mp-title { font-size: 26px; }
+    .mp-main { padding-left: var(--space-5); padding-right: var(--space-5); }
+    .mp-panel { padding: var(--space-7) var(--space-6); }
+    .mp-card-actions { justify-content: flex-start; }
+    .mp-facts { grid-template-columns: 1fr; gap: var(--space-1); }
+    .mp-facts dd + dt { margin-top: var(--space-3); }
+    .mp-modal { align-items: flex-end; padding: 0; }
+    .mp-modal-box { max-width: none; border-radius: var(--radius-large) var(--radius-large) 0 0; }
+    .mp-modal-actions .mp-btn { width: 100%; }
+}
+
+/* U-20 받은 리뷰 (동료 리뷰 #281) */
+.mp-review-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.mp-reviews { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.mp-review { padding: var(--space-4); border: 1px solid var(--line-soft); border-radius: var(--radius-md); }
+.mp-review-meta { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.mp-review-comments { margin: var(--space-3) 0 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.mp-review-comments dt { font-weight: 700; }
+.mp-review-comments dd { margin: 4px 0 0; white-space: pre-wrap; }
+.mp-review-actions { margin-top: var(--space-3); display: flex; align-items: center; gap: var(--space-3); }
+
+/* U-35 같은 코스 작품 페이지 번호 (#197) */
+.mp-pages { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-top: var(--space-6); }
+.mp-pages a { display: inline-flex; align-items: center; justify-content: center; min-width: var(--control-h); min-height: var(--control-h);
+    border-radius: var(--radius-pill); font-weight: 700; }
+.mp-pages a[aria-current="page"] { background: var(--navy-900); color: var(--on-navy); }

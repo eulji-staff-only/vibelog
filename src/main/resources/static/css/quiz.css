@@ -1,0 +1,253 @@
+/*
+ * quiz.css
+ * 퀴즈 화면 (U-14, #54). 색·글꼴·간격은 화면 흐름 설계서 6장 토큰(var(--…))만 쓴다. 값은 common.css 가 정한다.
+ * 버튼·배지·안내 상자·진행 막대·패널은 공통 조각(.vl-ui-*)을 쓰고, 여기서는 퀴즈만의 모양(문항 유형·보기·물고기)만 둔다.
+ */
+
+/* 상단 네이비 띠 + 제목 (6-3 페이지 틀) */
+.qz-band {
+    background: var(--navy-900);
+    color: var(--on-navy);
+    padding: var(--space-9) var(--space-5) calc(var(--band-tail) + var(--space-7));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    text-align: center;
+}
+.qz-eyebrow {
+    font-size: 14px;
+    font-weight: 700;
+    padding: var(--space-1\.5) 14px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--navy-700);
+    color: var(--glow);
+}
+.qz-title { margin: 0; font-size: 36px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.qz-lead { margin: 0; max-width: var(--hero-text-max); font-size: 17px; line-height: 1.7; color: var(--on-navy-muted); }
+
+/* 띠에 겹쳐 올라오는 흰 패널. 퀴즈는 폼처럼 폭 680px (6-3) */
+.qz-main { max-width: 680px; margin: 0 auto; padding: 0 var(--space-5) var(--space-10); }
+.qz-panel { position: relative; margin-top: calc(var(--hero-overlap) * -1); }
+.qz-panel [hidden] { display: none !important; }
+
+.qz-solve, .qz-question, .qz-result { display: flex; flex-direction: column; gap: var(--space-5); }
+.qz-solve { gap: var(--space-7); }
+
+/* 나가기 · 진행 막대 · n / 전체 */
+.qz-top { display: flex; align-items: center; gap: var(--space-4); }
+.qz-exit {
+    flex: 0 0 var(--control-h);
+    height: var(--control-h);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-pill);
+    color: var(--ink-muted);
+}
+.qz-exit:hover { background: var(--surface); color: var(--ink); }
+.qz-progress { flex: 1; }
+.qz-progress .vl-ui-progress__track { height: 12px; }
+.qz-progress .vl-ui-progress__fill { width: 0; transition: width 0.3s ease; }
+.qz-counter { flex: 0 0 auto; font-size: 15px; font-weight: 700; color: var(--ink-muted); }
+
+/* 문항 */
+.qz-type { align-self: flex-start; font-size: 14px; font-weight: 700; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--tint); color: var(--navy-700); }
+.qz-type.is-output { background: var(--success-soft); color: var(--success); }
+.qz-type.is-trick { background: var(--navy-900); color: var(--glow); }
+.qz-q { margin: 0; font-size: 24px; line-height: 1.45; font-weight: 900; letter-spacing: -0.02em; }
+/* 다음 문항으로 넘어갈 때 화면 낭독기가 문항부터 읽도록 제목에 포커스를 옮긴다. 제목은 누르는 곳이 아니라 테두리는 숨긴다 */
+.qz-q:focus, .qz-h2:focus { outline: none; }
+
+.qz-code {
+    margin: 0;
+    padding: var(--space-5) var(--space-6);
+    border-radius: var(--radius-card);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 15px;
+    line-height: 2;
+    white-space: pre-wrap;
+    overflow-x: auto;
+}
+.qz-blank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    height: 34px;
+    padding: 0 var(--space-3);
+    vertical-align: middle;
+    border: 2px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+    font-weight: 700;
+}
+.qz-blank.is-filled { border-style: solid; border-color: var(--link); background: var(--tint); }
+
+/* 보기 (객관식 4지선다) */
+.qz-choices { display: flex; gap: var(--space-3); }
+.qz-choices.is-chips { flex-wrap: wrap; }
+.qz-choices.is-list { flex-direction: column; }
+.qz-choices.is-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.qz-choice {
+    min-height: 56px;
+    padding: var(--space-3) var(--space-6);
+    font: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    text-align: left;
+    color: var(--ink);
+    background: var(--surface-raised);
+    border: 2px solid var(--line);
+    border-bottom-width: 4px;
+    border-radius: var(--radius-card);
+    cursor: pointer;
+}
+.qz-choices.is-chips .qz-choice { min-width: 72px; text-align: center; }
+.qz-choices.is-grid .qz-choice { min-height: 88px; text-align: center; }
+.qz-choice.is-mono { font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; }
+/* 마우스 오버(5-2)는 아직 확인 전이고 고르지 않은 보기에만. 확인 뒤(disabled)·고른 보기는 그 상태 색을 그대로 둔다 */
+.qz-choice:not([disabled]):not([aria-pressed="true"]):hover { border-color: var(--line-strong); }
+.qz-choice[aria-pressed="true"] { border-color: var(--link); background: var(--tint); }
+/* 확인 뒤: 정답은 --success, 고른 오답은 --danger (5-2) */
+.qz-choice.is-correct { border-color: var(--success); background: var(--success-soft); }
+.qz-choice.is-wrong { border-color: var(--danger); background: var(--danger-soft); }
+.qz-choice[disabled] { cursor: default; }
+
+/* 낚시 문제: 연못 위 물고기 4마리. 물고기 자체가 보기 버튼이다 */
+.qz-pond {
+    position: relative;
+    height: 380px;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(var(--tint) 0 22%, var(--link) 22% 100%);
+    overflow: hidden;
+}
+.qz-fish {
+    position: absolute;
+    width: min(210px, 44%);
+    min-height: 0;
+    aspect-ratio: 220 / 116;
+    padding: 0;
+    border: 0;
+    background: none;
+    animation: qz-sway 4.5s ease-in-out infinite alternate;
+}
+.qz-fish:nth-child(2n) { animation-duration: 5.6s; animation-delay: -1.8s; }
+.qz-fish svg { width: 100%; height: 100%; display: block; }
+.qz-fish__body { fill: var(--glow); stroke: var(--navy-900); stroke-width: 2.5; }
+.qz-fish__fin { fill: var(--on-navy-muted); stroke: var(--navy-900); stroke-width: 2.5; stroke-linejoin: round; }
+.qz-fish__eye { fill: var(--navy-900); }
+.qz-fish span {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 26%;
+    right: 30%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.3;
+    font-weight: 700;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+    color: var(--navy-900);
+}
+.qz-fish span.is-long { font-size: 12px; line-height: 1.25; }
+/* 몸통 안(눈·꼬리 사이)에 글자가 들어가는 폭이라 물고기끼리 겹치지 않게 두 줄로 나눠 놓는다.
+   맞힌 물고기는 자기 높이의 40%쯤 위로 올라가며 기울어지므로(qz-catch) 맨 위 물고기 위에 그만큼 여유를 둔다 (#399) */
+.qz-fish.is-p1 { left: 52%; top: 26%; }
+.qz-fish.is-p2 { left: 4%; top: 20%; }
+.qz-fish.is-p3 { left: 6%; top: 62%; }
+.qz-fish.is-p4 { left: 52%; top: 68%; }
+.qz-fish:hover { filter: brightness(1.06); }
+.qz-fish.is-correct, .qz-fish.is-wrong { background: none; }
+.qz-fish.is-correct .qz-fish__body { fill: var(--success-soft); stroke: var(--success); }
+/* 맞힌 물고기만 끌어올린다. 틀렸을 때 정답 물고기는 색으로만 알려 준다 */
+.qz-fish.is-caught { animation: qz-catch 1.2s ease-in-out forwards; z-index: 1; }
+.qz-fish.is-wrong .qz-fish__body { fill: var(--danger-soft); stroke: var(--danger); }
+.qz-fish.is-wrong { animation: qz-shake 0.5s ease-in-out; }
+.qz-hint { margin: 0; font-size: 14px; color: var(--ink-muted); }
+
+@keyframes qz-sway { from { transform: translate(-6px, 0); } to { transform: translate(8px, -5px); } }
+@keyframes qz-catch { 0%, 40% { transform: translateY(0) rotate(0); } 100% { transform: translateY(-40%) rotate(-12deg); } }
+@keyframes qz-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 50% { transform: translateX(8px); } 75% { transform: translateX(-5px); } }
+@media (prefers-reduced-motion: reduce) {
+    .qz-fish, .qz-fish.is-caught, .qz-fish.is-wrong { animation: none; }
+}
+
+/* 확인 뒤 정답·해설 */
+.qz-feedback { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); font-size: 15px; line-height: 1.65; }
+.qz-feedback p { margin: 0; color: var(--ink); }
+.qz-feedback.is-correct { background: var(--success-soft); }
+.qz-feedback.is-correct strong { color: var(--success); }
+.qz-feedback.is-wrong { background: var(--danger-soft); }
+.qz-feedback.is-wrong strong { color: var(--danger); }
+
+.qz-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--space-3); }
+.qz-actions .vl-ui-btn-reason { margin: 0; }
+
+/* 채점 결과 */
+.qz-result { gap: var(--space-6); }
+.qz-result__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.qz-h2 { margin: 0; font-size: 24px; line-height: 1.4; font-weight: 900; }
+.qz-h3 { margin: 0; font-size: 20px; line-height: 1.4; font-weight: 900; }
+.qz-muted { margin: 0; font-size: 14px; color: var(--ink-muted); }
+.qz-tags { display: flex; flex-direction: column; gap: var(--space-2); }
+.qz-tag-list { list-style: none; margin: 0; padding: 0; }
+.qz-tag { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--line-soft); }
+.qz-tag__bar { flex: 1 1 260px; min-width: 0; }
+.qz-tag__weak { display: inline-flex; align-items: center; gap: var(--space-3); }
+.vl-ui-progress__fill.is-wrong { background: var(--danger); }
+.qz-link { color: var(--link); font-size: 14px; font-weight: 700; }
+.qz-link:hover { color: var(--link-hover); }
+.qz-result__actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); padding-top: var(--space-5); border-top: 1px solid var(--line-soft); }
+
+/* 모바일 (7장: 좌우 여백 16px, 페이지 제목 26px, 버튼 폭 100%) */
+@media (max-width: 767px) {
+    .qz-band { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .qz-title { font-size: 26px; }
+    .qz-main { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .qz-panel { padding: var(--space-6) var(--space-5); }
+    .qz-q { font-size: 20px; }
+    .qz-choices.is-grid { grid-template-columns: 1fr; }
+    .qz-choices.is-grid .qz-choice { min-height: 56px; }
+    /* 모바일: 물고기를 한 마리씩 위아래로 엇갈려 놓아 글자가 들어갈 폭을 지킨다 */
+    .qz-pond { height: 590px; }
+    .qz-fish { width: min(240px, 64%); }
+    .qz-fish.is-p1 { left: 4%; right: auto; top: 13%; }
+    .qz-fish.is-p2 { left: auto; right: 4%; top: 34%; }
+    .qz-fish.is-p3 { left: 4%; right: auto; top: 55%; }
+    .qz-fish.is-p4 { left: auto; right: 4%; top: 76%; }
+    .qz-actions, .qz-result__actions, .qz-result__actions .vl-ui-btn-group { flex-direction: column; align-items: stretch; width: 100%; }
+    .qz-actions .vl-ui-btn, .qz-result__actions .vl-ui-btn { width: 100%; }
+    .qz-actions .vl-ui-btn-reason { text-align: center; }
+}
+
+/* ---- U-28 틀린 문제 모아보기 (#190) ---- */
+.wa-filter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); margin-bottom: var(--space-4); }
+.wa-filter__field { display: flex; flex-direction: column; gap: var(--space-1); font-size: 13px; font-weight: 700; }
+.wa-filter select {
+    min-width: 180px; min-height: 40px; padding: 0 var(--space-3);
+    border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface-raised); font: inherit;
+}
+.wa-count { margin: 0 0 var(--space-3); }
+.wa-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.wa-item { padding: var(--space-4); border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface-raised); }
+.wa-where { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-2); font-size: 13px; color: var(--ink-muted); }
+.wa-q { margin: 0 0 var(--space-3); font-size: 17px; font-weight: 800; }
+.wa-answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-2); margin: 0 0 var(--space-3); }
+.wa-answer { padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--surface); }
+.wa-answer dt { font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.wa-answer dd { margin: 0; }
+.wa-answer.is-mine dd { color: var(--danger); }
+.wa-answer.is-correct dd { font-weight: 700; }
+.wa-explanation { margin: 0 0 var(--space-3); font-size: 14px; }
+.wa-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin: 0; }
+.wa-pages { display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin: var(--space-5) 0; }

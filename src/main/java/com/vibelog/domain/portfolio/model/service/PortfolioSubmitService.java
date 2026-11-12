@@ -1,0 +1,146 @@
+package com.vibelog.domain.portfolio.model.service;
+
+import com.vibelog.domain.auth.model.service.MemberReader;
+import com.vibelog.domain.community.model.policy.ReviewRequestCloser;
+import com.vibelog.domain.contest.model.policy.ContestEntryChecker;
+import com.vibelog.domain.lesson.model.policy.PortfolioEnrollmentProgress;
+import com.vibelog.domain.portfolio.exception.PortfolioErrorCode;
+import com.vibelog.domain.portfolio.model.dao.PortfolioRepository;
+import com.vibelog.domain.portfolio.model.dto.PortfolioSubmitForm;
+import com.vibelog.domain.portfolio.model.entity.Portfolio;
+import com.vibelog.global.exception.BusinessException;
+import com.vibelog.global.exception.CommonErrorCode;
+import com.vibelog.global.file.FileStorage;
+import com.vibelog.global.policy.BannedWordPolicy;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+
+import static com.vibelog.domain.portfolio.model.policy.ApiKeyMasker.mask;
+
+/*
+ * [PortfolioSubmitService]
+ * 역할 : 코스 과제 포트폴리오 제출 (API-PRT-04, FR-PRT-003·004)과 수정 (API-PRT-06, FR-PRT-006).
+ * 책임 : - 순서: 과제 열림(계약 ⑥) → 이메일 인증(PL-USR-003) → 이미 제출함 → 금칙어(PL-SEC-003) → API 키 가리기(PL-PRT-008)
+ *          → 스크린샷 저장(1장, PL-PRT-005·_template.md 10장, 형식·크기는 FileStorage) → 저장 → 계약 ⑦ recordSubmitted.
+ *        - 이미 제출함(ALREADY_SUBMITTED)은 삭제 표시가 없는 포트폴리오가 있을 때만이다. 삭제 표시한 것이 있으면 그 행을 되살려
+ *          덮어쓴다 (_template.md 9-2, DB 설계서 5-4).
+ *        - 코스 완료 기록(계약 ⑦)은 같은 트랜잭션이라, 저장이 실패하면 완료도 남지 않는다.
+ *        - API 키는 글 칸(제목·요약·회고·AI 도구·에이전트 점검 결과)에서 가린다. 결과물 링크는 URL 이라 가리지 않는다.
+ *        - 에이전트 점검 결과는 명세에 길이가 없어 저장 칸 크기(agent_result TEXT, 65,535바이트)를 가린 뒤의 값으로 검사한다.
+ *          넘으면 INVALID_INPUT (Controller 가 그 칸의 메시지로 바꾼다).
+ *        - 코스 포트폴리오의 최초 제출은 에이전트 점검 결과를 받지 않는다 (보내도 버린다). 평가 에이전트는 제출 뒤 수정에서
+ *          열리므로 점검 결과도 그때 적는다 (#404).
+ *        - 수정은 제출과 같은 폼·같은 검사(인증·금칙어·API 키·길이)를 하고 최신본으로 덮는다 (PL-PRT-007).
+ *          본인 것이 아니면 NOT_OWNER. 스크린샷은 새로 올렸을 때만 바꾼다.
+ *          콘테스트 출품 중(투표가 끝나기 전)이면 contest 계약 ⑮ isEntered 로 막는다 (CONTEST_ENTERED, PL-PRT-007, #314).
+ *        - 개인 작품(FR-PRT-011, API-PRT-13, #199): 코스 없이 고정 항목 5개 + 공개 여부만 받는다. 검사(인증·금칙어·API 키 가리기·길이)는
+ *          코스 포트폴리오와 같고, 에이전트 점검 결과·스크린샷은 받지 않는다 (보내도 버린다). 수정도 같은 규칙이다.
+ *          수정 폼에도 공개 여부가 있어, 비공개로 저장하면 계약 ⑭ 로 열린 리뷰 요청을 닫는다 (FR-REV-005).
+ */
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class PortfolioSubmitService {
+
+    private final PortfolioEnrollmentProgress portfolioEnrollmentProgress;
+    private final PortfolioRepository portfolioRepository;
+    private final MemberReader memberReader;
+    private final BannedWordPolicy bannedWordPolicy;
+    private final FileStorage fileStorage;
+    private final PortfolioManageService portfolioManageService;
+    private final ReviewRequestCloser reviewRequestCloser;
+    private final ContestEntryChecker contestEntryChecker;
+
+    private static final int AGENT_RESULT_MAX_BYTES = 65_535;   // sql/01-schema.sql portfolio.agent_result TEXT
+
+    @Transactional
+    public void submit(Long memberId, Long courseId, PortfolioSubmitForm form, MultipartFile screenshot) {
+        if (!portfolioEnrollmentProgress.getAccess(memberId, courseId).unlocked()) {
+            throw new BusinessException(PortfolioErrorCode.PORTFOLIO_LOCKED);
+        }
+        requireEmailVerified(memberId);
+        Optional<Portfolio> existing = portfolioRepository.findByMemberIdAndCourseId(memberId, courseId);
+        if (existing.isPresent() && !existing.get().isDeleted()) {
+            throw new BusinessException(PortfolioErrorCode.ALREADY_SUBMITTED);
+        }
+        // 최초 제출에는 에이전트 점검 결과를 받지 않는다. 평가 에이전트는 제출 뒤 수정에서 열리므로 값이 와도 버린다 (#404)
+        checkBannedWords(form);
+        String screenshotUrl = saveScreenshot(screenshot);
+        if (existing.isPresent()) {
+            existing.get().resubmit(mask(form.getTitle()), form.getResultUrl(), mask(form.getSummary()),
+                    mask(form.getRetrospective()), mask(form.getAiTools()), form.getIsPublic(), null, screenshotUrl);
+        } else {
+            portfolioRepository.save(Portfolio.create(memberId, courseId, mask(form.getTitle()), form.getResultUrl(),
+                    mask(form.getSummary()), mask(form.getRetrospective()), mask(form.getAiTools()), form.getIsPublic(),
+                    null, screenshotUrl));
+        }
+        portfolioEnrollmentProgress.recordSubmitted(memberId, courseId);
+    }
+
+    /* API-PRT-13 개인 작품 등록. 개수 제한은 없다 */
+    @Transactional
+    public void submitPersonal(Long memberId, PortfolioSubmitForm form) {
+        requireEmailVerified(memberId);
+        checkBannedWords(form);
+        portfolioRepository.save(Portfolio.createPersonal(memberId, mask(form.getTitle()), form.getResultUrl(),
+                mask(form.getSummary()), mask(form.getRetrospective()), mask(form.getAiTools()), form.getIsPublic()));
+    }
+
+    /* API-PRT-06 수정: 최신본으로 덮는다 */
+    @Transactional
+    public void edit(Long memberId, Long portfolioId, PortfolioSubmitForm form, MultipartFile screenshot) {
+        Portfolio portfolio = portfolioManageService.getOwned(memberId, portfolioId);
+        if (contestEntryChecker.isEntered(portfolioId)) {
+            throw new BusinessException(PortfolioErrorCode.CONTEST_ENTERED);
+        }
+        requireEmailVerified(memberId);
+        String agentResult = null;
+        String screenshotUrl = null;
+        if (portfolio.isPersonal()) {
+            checkBannedWords(form);   // 개인 작품은 에이전트 점검 결과·스크린샷을 받지 않는다
+        } else {
+            agentResult = checkAndMaskAgentResult(form);
+            screenshotUrl = saveScreenshot(screenshot);
+        }
+        portfolio.edit(mask(form.getTitle()), form.getResultUrl(), mask(form.getSummary()), mask(form.getRetrospective()),
+                mask(form.getAiTools()), form.getIsPublic(), agentResult, screenshotUrl);
+        if (!portfolio.isPersonal() && form.isRemoveScreenshot() && screenshotUrl == null) {
+            portfolio.removeScreenshot();   // 새 파일을 같이 올렸으면 위 edit 이 바꿨으므로 지우지 않는다
+        }
+        if (!form.getIsPublic()) {
+            reviewRequestCloser.closeOpenRequests(portfolioId);
+        }
+    }
+
+    private void requireEmailVerified(Long memberId) {
+        if (!memberReader.isEmailVerified(memberId)) {
+            throw new BusinessException(CommonErrorCode.EMAIL_NOT_VERIFIED);
+        }
+    }
+
+    /* 금칙어 검사 후 에이전트 점검 결과를 가리고 저장 칸 크기를 본다. 비었으면 null */
+    private String checkAndMaskAgentResult(PortfolioSubmitForm form) {
+        bannedWordPolicy.check(form.getTitle(), form.getSummary(), form.getRetrospective(), form.getAiTools(),
+                form.getAgentResult());
+        String agentResult = form.getAgentResult() == null || form.getAgentResult().isBlank()
+                ? null : mask(form.getAgentResult());
+        if (agentResult != null && agentResult.getBytes(StandardCharsets.UTF_8).length > AGENT_RESULT_MAX_BYTES) {
+            throw new BusinessException(PortfolioErrorCode.INVALID_INPUT);
+        }
+        return agentResult;
+    }
+
+    /* 에이전트 점검 결과를 받지 않는 제출(개인 작품, 코스 최초 제출)의 금칙어 검사 */
+    private void checkBannedWords(PortfolioSubmitForm form) {
+        bannedWordPolicy.check(form.getTitle(), form.getSummary(), form.getRetrospective(), form.getAiTools());
+    }
+
+    private String saveScreenshot(MultipartFile screenshot) {
+        return screenshot == null || screenshot.isEmpty() ? null : fileStorage.saveImage(screenshot);
+    }
+}

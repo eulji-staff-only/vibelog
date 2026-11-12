@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${profile.nickname()} + ' | 바이브로그'">공개 프로필 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
+    <!-- 팔로우(API-CMT-15)는 JSON POST 라 CSRF 토큰을 헤더로 보낸다 (README "JSON API 약속") -->
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <script th:src="@{/js/ui.js}" defer></script>
+    <script th:src="@{/js/community.js}" defer></script>
+</head>
+<body class="cm-page">
+<!-- U-29 공개 프로필 (API-CMT-14, #181). 배지는 콘테스트 수상 기록(#202). 쪽지 보내기는 M-13 모달(#184). -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="cm-band">
+    <h1 class="cm-title" th:text="${profile.nickname()}">닉네임</h1>
+    <p class="cm-lead">
+        팔로워 <strong data-follower-count th:text="${profile.followerCount()}">0</strong>
+        · 팔로잉 <strong th:text="${profile.followingCount()}">0</strong>
+    </p>
+</section>
+
+<main class="cm-main">
+    <div class="cm-panel">
+        <div class="cm-notice is-toast" role="status" th:if="${toast}"><p th:text="${toast}">쪽지를 보냈습니다</p></div>
+        <div class="cm-toolbar" th:unless="${profile.me()}">
+            <div class="cm-toolbar__actions">
+                <button class="cm-btn is-navy" type="button" data-follow
+                        th:attr="data-url=@{/api/users/{id}/follow(id=${profile.memberId()})},aria-pressed=${profile.following()}"
+                        th:text="${profile.following()} ? '팔로우 취소' : '팔로우'">팔로우</button>
+                <button class="cm-btn is-outline" type="button" data-ui-modal-open="message-modal">쪽지 보내기</button>
+            </div>
+        </div>
+
+        <h2 class="cm-h">배지</h2>
+        <ul class="cm-badges" th:unless="${profile.badges().empty}">
+            <li class="cm-badge" th:each="badge : ${profile.badges()}" th:text="${badge.name()}">2026년 11월 1등</li>
+        </ul>
+        <p class="cm-muted" th:if="${profile.badges().empty}">받은 배지가 없습니다</p>
+
+        <h2 class="cm-h">공개 포트폴리오</h2>
+        <ul class="cm-list" th:unless="${profile.portfolios().empty}">
+            <li th:each="card : ${profile.portfolios()}">
+                <a class="cm-item" th:href="@{/portfolios/{id}(id=${card.portfolioId()})}">
+                    <span class="cm-item__title" th:text="${card.title()}">작품 제목</span>
+                    <p class="cm-item__meta" th:text="${card.summary()}">한 줄 요약</p>
+                </a>
+            </li>
+        </ul>
+        <p class="cm-muted" th:if="${profile.portfolios().empty}">공개한 포트폴리오가 없습니다</p>
+
+        <h2 class="cm-h">게시글</h2>
+        <ul class="cm-list" th:unless="${profile.posts().empty}">
+            <li th:each="item : ${profile.posts().content}">
+                <a class="cm-item" th:href="@{/community/{id}(id=${item.postId()})}">
+                    <span class="cm-badge" th:text="${item.categoryLabel()}">카테고리</span>
+                    <span class="cm-item__title" th:text="${item.title()}">제목</span>
+                    <span class="cm-item__count" th:text="|댓글 ${item.commentCount()}|">댓글 0</span>
+                    <p class="cm-item__meta" th:text="${#temporals.format(item.createdAt(), 'yyyy.MM.dd')}">작성일</p>
+                </a>
+            </li>
+        </ul>
+        <p class="cm-muted" th:if="${profile.posts().empty}">작성한 글이 없습니다</p>
+        <nav class="cm-pages" aria-label="페이지" th:if="${profile.posts().totalPages > 1}">
+            <a th:each="n : ${#numbers.sequence(1, profile.posts().totalPages)}"
+               th:href="@{/users/{id}(id=${profile.memberId()}, page=${n})}"
+               th:attr="aria-current=${n == profile.posts().number + 1} ? 'page'" th:text="${n}">1</a>
+        </nav>
+    </div>
+</main>
+
+<!-- M-13 쪽지 작성 (API-MSG-04, #184). 보내기에 실패하면 flash messageContent·messageError 를 받아 연 채로 보여준다 -->
+<div class="vl-ui-modal" id="message-modal" data-ui-modal="message-modal" role="dialog" aria-modal="true"
+     aria-labelledby="message-modal-title" th:unless="${profile.me()}" th:hidden="${messageError == null}">
+    <form class="vl-ui-modal__box" method="post" th:action="@{/users/{id}/messages(id=${profile.memberId()})}"
+          th:attr="data-draft=|message.${profile.memberId()}|">
+        <h2 class="vl-ui-modal__title" id="message-modal-title" tabindex="-1">쪽지 보내기</h2>
+        <p class="vl-ui-modal__body" th:text="|받는 사람: ${profile.nickname()}|">받는 사람: 닉네임</p>
+        <div class="cm-field">
+            <label class="cm-label" for="message-content">내용</label>
+            <textarea class="cm-input cm-textarea is-short" id="message-content" name="content" maxlength="1000" data-count
+                      aria-describedby="message-error" th:text="${messageContent}" th:autofocus="${messageError != null}"
+                      th:attr="aria-invalid=${messageError != null} ? 'true'"></textarea>
+            <div id="message-error">
+                <p class="cm-hint is-error" role="alert" th:if="${messageError}" th:text="${messageError}">보내기 오류</p>
+            </div>
+            <p class="cm-hint is-count"><span data-count-for="message-content">0</span> / 1,000</p>
+        </div>
+        <div class="vl-ui-modal__actions">
+            <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+            <button type="submit" class="vl-ui-btn is-navy">보내기</button>
+        </div>
+    </form>
+</div>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

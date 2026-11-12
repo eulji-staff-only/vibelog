@@ -1,0 +1,97 @@
+/*
+ * 오답 분석 리포트 화면 (U-16).
+ * 색·글꼴·간격은 화면 흐름 설계서 6장 토큰 이름(var(--…))만 쓴다. 값은 공통 CSS(#13)가 정한다.
+ * 버튼·배지·안내 상자 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
+ */
+
+/* 배경·글자색·글꼴은 common.css(body)가 정한다 (#133) */
+.report-page [hidden] { display: none; }
+
+/* 상단 네이비 띠 + 제목 */
+.report-band { background: var(--navy-900); color: var(--on-navy); padding: 48px var(--space-6) calc(var(--band-tail) + 28px);
+    display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.report-eyebrow { font-size: 14px; font-weight: 700; padding: var(--space-1\.5) 14px; border-radius: var(--radius-pill);
+    border: 1px solid var(--navy-700); color: var(--glow); }
+.report-title { margin: 0; font-size: 36px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.report-lead { margin: 0; max-width: var(--hero-text-max); font-size: 17px; line-height: 1.7; color: var(--on-navy-muted); }
+
+/* 띠에 겹쳐 올라오는 흰 패널 (리포트 폭 880px, 설계서 6-3) */
+.report-main { max-width: 880px; margin: 0 auto; padding: 0 var(--space-6) 64px; }
+.report-panel { margin-top: calc(var(--hero-overlap) * -1); position: relative; background: var(--surface-raised);
+    border-radius: var(--radius-xl); padding: var(--space-9); box-shadow: var(--shadow-panel);
+    display: flex; flex-direction: column; gap: var(--space-9); }
+
+/* 점수 (numeral-l) */
+.report-score { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-7);
+    background: var(--surface); border-radius: var(--radius-lg); text-align: center; }
+.report-label { font-size: 14px; font-weight: 700; color: var(--ink-muted); }
+.report-numeral { margin: 0; font-size: 32px; line-height: 1; font-weight: 900; color: var(--ink-muted); }
+.report-numeral strong { font-size: 44px; color: var(--ink); }
+.report-unit { margin-left: var(--space-2); font-size: 15px; font-weight: 700; }
+.report-caption { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-muted); }
+
+/* 점수 스켈레톤 (설계서 5-3) */
+.report-skeleton-line { display: block; width: 60%; height: 14px; border-radius: var(--radius-pill); background: var(--line-soft); }
+.report-skeleton-line.is-short { width: 25%; }
+.report-skeleton-line.is-numeral { width: 40%; height: 44px; }
+
+/* 섹션 공통 */
+.report-section { display: flex; flex-direction: column; gap: var(--space-4); }
+.report-section-title { margin: 0; font-size: 24px; line-height: 1.4; font-weight: 900; }
+.report-danger { color: var(--danger); }
+
+/* 개념별 정답률 막대 */
+.report-concepts, .report-wrongs { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-4); }
+.report-concept { display: flex; flex-direction: column; gap: var(--space-2); }
+.report-concept-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); font-size: 15px; }
+.report-concept-name { font-weight: 700; display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.report-concept-rate { font-weight: 700; }
+.report-bar { height: 10px; background: var(--tint); border-radius: var(--radius-pill); overflow: hidden; }
+.report-bar-fill { height: 100%; background: var(--success); border-radius: var(--radius-pill); }
+.report-concept.is-weak .report-concept-rate { color: var(--danger); }
+.report-concept.is-weak .report-bar { background: var(--danger-soft); }
+.report-concept.is-weak .report-bar-fill { background: var(--danger); }
+.report-badge-danger { padding: 3px 10px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 700;
+    background: var(--danger-soft); color: var(--danger); }
+
+/* 틀린 문항 */
+.report-wrong { display: flex; flex-direction: column; gap: var(--space-2); padding: 20px; border: 1px solid var(--line);
+    border-radius: var(--radius-lg); }
+.report-wrong-no { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.report-wrong-text { margin: 0; font-size: 17px; line-height: 1.45; font-weight: 700; }
+.report-answers { margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); font-size: 15px; }
+.report-answers div { display: flex; gap: var(--space-2); }
+.report-answers dt { color: var(--ink-muted); }
+.report-answers dd { margin: 0; font-weight: 700; }
+.report-explain { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
+
+/* 안내 상자 (공통 조각 #46 전까지) */
+.report-notice { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) 20px;
+    border-radius: var(--radius-md); background: var(--success-soft); font-size: 15px; line-height: 1.6; }
+.report-notice p { margin: 0; }
+
+/* 버튼 (공통 조각 #46 전까지) */
+.report-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3);
+    padding-top: var(--space-5); border-top: 1px solid var(--line-soft); }
+.report-actions-sub { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.report-btn { display: inline-flex; align-items: center; justify-content: center; min-height: var(--control-h);
+    padding: 11px 18px; font-size: 15px; font-weight: 700; line-height: 1.4; font-family: inherit; text-decoration: none; cursor: pointer;
+    border: 1px solid transparent; border-radius: var(--radius-pill); white-space: nowrap; }
+.report-btn-navy { background: var(--navy-900); color: var(--on-navy); }
+.report-btn-navy:hover { background: var(--navy-800); }
+.report-btn-outline { background: var(--surface-raised); color: var(--ink); border-color: var(--line-strong); }
+.report-btn-outline:hover { background: var(--surface); }
+.report-btn-text { align-self: flex-start; padding-left: 0; padding-right: 0; color: var(--link); border-radius: 0; white-space: normal; }
+.report-btn-text:hover { color: var(--link-hover); }
+
+/* 키보드 포커스 (설계서 5-2) */
+.report-page :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* 모바일 (설계서 7장) */
+@media (max-width: 767px) {
+    .report-band, .report-main { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .report-title { font-size: 26px; }
+    .report-panel { padding: var(--space-6) 20px; gap: var(--space-7); }
+    .report-actions, .report-actions-sub { flex-direction: column; align-items: stretch; width: 100%; }
+    .report-actions .report-btn { width: 100%; }
+}

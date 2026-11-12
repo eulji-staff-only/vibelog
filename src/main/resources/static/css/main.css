@@ -1,0 +1,221 @@
+/*
+ * main.css
+ * U-01 메인 화면 전용 스타일 (히어로, 세그먼트 탭, 카드).
+ * 공통 디자인 토큰은 common.css 를 따른다.
+ */
+
+.vl-hero {
+  position: relative;
+  background: linear-gradient(180deg, var(--navy-900), var(--navy-800));
+  color: var(--on-navy);
+  padding: var(--space-10) 0;
+}
+
+/* 말랑한 vibelog 글자 (vibelog-soft.js). 데스크톱은 히어로 오른쪽, 좁은 화면은 글 아래.
+   색은 아래 변수로 JS 에 넘긴다 */
+.vl-soft {
+  --soft-ink: var(--on-navy);
+  --soft-fill: var(--navy-800);
+  --soft-accent: var(--glow);
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40%;
+  margin: 0;
+}
+
+.vl-soft__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none; /* 휴대폰에서 끌 때 화면이 스크롤되지 않게 */
+}
+
+.vl-soft__canvas.is-dragging {
+  cursor: grabbing;
+}
+
+@media (min-width: 1024px) {
+  /* 오른쪽에 글자 도형 자리를 비우려고 글 묶음을 왼쪽 정렬하고 폭을 줄인다 */
+  .vl-hero .vl-hero__inner {
+    max-width: var(--content-max);
+  }
+
+  .vl-hero__inner > * {
+    max-width: 55%;
+    word-break: keep-all;
+  }
+}
+
+.vl-hero__inner {
+  max-width: var(--hero-max);
+}
+
+.vl-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--glow);
+  margin: 0 0 var(--space-4);
+}
+
+.vl-hero h1 {
+  font-size: 46px;
+  line-height: 1.3;
+  font-weight: 900;
+  margin: 0 0 var(--space-5);
+}
+
+.vl-hero__lead {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--on-navy-muted);
+  margin: 0 0 var(--space-8);
+}
+
+.vl-hero__cta {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.vl-cta {
+  height: var(--control-h);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-7);
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+}
+
+.vl-cta.is-primary {
+  background: var(--glow);
+  color: var(--navy-900);
+}
+
+.vl-cta.is-outline {
+  border: 1px solid var(--on-navy-muted);
+  color: var(--on-navy);
+}
+
+.vl-segment {
+  padding: var(--space-9) var(--space-5);
+}
+
+.vl-tabs {
+  display: flex;
+  gap: var(--space-6);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--space-7);
+  overflow-x: auto;
+}
+
+.vl-tab {
+  height: var(--tab-h);
+  padding: 0 var(--space-2);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vl-tab.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--navy-900);
+}
+
+.vl-panel h2 {
+  font-size: 24px;
+  font-weight: 900;
+  margin: 0 0 var(--space-6);
+}
+
+.vl-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-6);
+}
+
+.vl-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+}
+
+.vl-card h3 {
+  font-size: 17px;
+  font-weight: 700;
+  margin: var(--space-2) 0;
+}
+
+.vl-card__badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--tint);
+  color: var(--navy-900);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 var(--space-3);
+}
+
+.vl-card__meta {
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+.vl-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (max-width: 1023px) {
+  .vl-hero {
+    padding-bottom: 0;
+  }
+
+  .vl-soft__canvas {
+    touch-action: pan-y; /* 좁은 화면은 캔버스가 폭을 다 차지하므로 세로 스와이프는 페이지 스크롤로 둔다 */
+  }
+
+  .vl-soft {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    margin-top: var(--space-7);
+  }
+
+  .vl-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .vl-hero h1 {
+    font-size: 28px;
+  }
+
+  .vl-hero__cta {
+    flex-direction: column;
+  }
+
+  .vl-cta {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .vl-card-grid {
+    grid-template-columns: 1fr;
+  }
+}

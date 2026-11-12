@@ -1,0 +1,241 @@
+package com.vibelog.global.config;
+
+import com.vibelog.domain.course.model.service.CourseContractService;
+import com.vibelog.domain.lesson.model.service.LessonContractService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.willReturn;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/*
+ * 접근 권한(비회원·학습자·운영자), 로그인 도착지(API-USR-05 ①②④⑤), 로그인 유지(PL-USR-006), 5회 실패 잠금(PL-USR-007)을 확인한다. (#12)
+ * 로그인 테스트용 회원은 테스트마다 넣고 끝나면 되돌린다(@Transactional). 비밀번호는 매번 무작위로 만든다.
+ * 계약 ⑫(진행 중 수강)·진단 기록은 테스트마다 값을 정하려고 실제 빈을 감싼 Spy 로 그 메서드만 바꾼다. 기본값은 "진단함, 수강 중인 코스 없음".
+ * Mock 으로 빈을 통째로 바꾸면 같은 빈이 구현한 다른 계약(ExamLessonProgress 등)을 주입받는 곳에서 앱이 뜨지 않는다 (#231).
+ * Spy 는 given(...) 이 실제 메서드를 먼저 부르므로 willReturn(...).given(spy) 로 쓴다.
+ * 로컬 MySQL 이 켜져 있고 sql/01-schema.sql 로 member 테이블이 만들어져 있어야 통과한다.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+class SecurityConfigTest {
+
+    private static final String EMAIL = "security-test@vibelog.test";
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @MockitoSpyBean
+    LessonContractService lessonContractService;
+
+    @MockitoSpyBean
+    CourseContractService courseContractService;
+
+    private final String password = UUID.randomUUID().toString();
+
+    @BeforeEach
+    void 진단은_했고_수강_중인_코스가_없는_회원으로_둔다() {
+        willReturn(true).given(courseContractService).hasDiagnosisRecord(anyLong());
+        willReturn(false).given(lessonContractService).hasActiveEnrollment(anyLong());
+    }
+
+    @Test
+    void 비회원이_회원_화면에_오면_원래_주소를_붙여_로그인으로_보낸다() throws Exception {
+        mockMvc.perform(get("/my/learning?tab=completed"))
+                .andExpect(redirectedUrl("/login?redirect=%2Fmy%2Flearning%3Ftab%3Dcompleted"));
+        mockMvc.perform(get("/community/write"))
+                .andExpect(redirectedUrl("/login?redirect=%2Fcommunity%2Fwrite"));
+    }
+
+    // PL-ERR-005 (#366): 세션이 끊긴 뒤 폼을 보내면 폼을 보낸 화면으로 돌아오게 해 작성 중 내용을 복원한다
+    @Test
+    void 세션이_끊긴_뒤_폼을_보내면_폼을_보낸_화면으로_돌아오게_한다() throws Exception {
+        String referer = "http://localhost/community/write";
+        // 비회원(토큰은 맞음) → 로그인한 뒤 폼 화면으로
+        mockMvc.perform(post("/community").with(csrf()).header("Referer", referer))
+                .andExpect(redirectedUrl("/login?redirect=%2Fcommunity%2Fwrite"));
+        // 세션이 바뀌어 CSRF 토큰이 맞지 않음 → 403 대신 폼 화면으로 (회원 화면이라 거기서 다시 로그인으로 간다)
+        mockMvc.perform(post("/community").header("Referer", referer))
+                .andExpect(redirectedUrl("/community/write"));
+        // 다른 사이트의 Referer, 다른 사이트로 읽히는 경로는 쓰지 않는다
+        mockMvc.perform(post("/community").with(csrf()).header("Referer", "http://evil.com/community/write"))
+                .andExpect(redirectedUrl("/login"));
+        mockMvc.perform(post("/community").header("Referer", "http://localhost//evil.com/x"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void 비회원도_전체_화면은_로그인_없이_연다() throws Exception {
+        mockMvc.perform(get("/login")).andExpect(status().isOk());
+        // 화면이 아직 없어 404일 수 있지만, 로그인으로 보내지(302) 않으면 된다
+        mockMvc.perform(get("/courses/1")).andExpect(status().is(not(302)));
+        mockMvc.perform(get("/community/1")).andExpect(status().is(not(302)));
+    }
+
+    @Test
+    void 비회원의_JSON_요청은_401() throws Exception {
+        mockMvc.perform(get("/api/anything")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "LEARNER")
+    void 학습자가_백오피스에_오면_메인으로_보낸다() throws Exception {
+        mockMvc.perform(get("/admin")).andExpect(redirectedUrl("/"));
+    }
+
+    @Test
+    void 로그인하면_redirect_화면으로_돌아간다() throws Exception {
+        insertMember(EMAIL, "LEARNER");
+
+        login("/my/learning").andExpect(redirectedUrl("/my/learning"));
+    }
+
+    @Test
+    void redirect가_없으면_운영자는_백오피스로_간다() throws Exception {
+        insertMember(EMAIL, "ADMIN");
+
+        login(null).andExpect(redirectedUrl("/admin"));
+    }
+
+    @Test
+    void 진단_기록이_없으면_수강_중이어도_진단으로_간다() throws Exception {
+        insertMember(EMAIL, "LEARNER");
+        willReturn(false).given(courseContractService).hasDiagnosisRecord(anyLong());
+        willReturn(true).given(lessonContractService).hasActiveEnrollment(anyLong());
+
+        login(null).andExpect(redirectedUrl("/diagnosis"));
+    }
+
+    @Test
+    void 운영자는_진단_기록이_없어도_백오피스로_가고_redirect_가_있으면_그_화면이다() throws Exception {
+        insertMember(EMAIL, "ADMIN");
+        willReturn(false).given(courseContractService).hasDiagnosisRecord(anyLong());
+
+        login(null).andExpect(redirectedUrl("/admin"));
+        login("/community").andExpect(redirectedUrl("/community"));
+    }
+
+    @Test
+    void 진행_중인_수강이_있으면_내_학습으로_간다() throws Exception {
+        insertMember(EMAIL, "LEARNER");
+        willReturn(true).given(lessonContractService).hasActiveEnrollment(anyLong());
+
+        login(null).andExpect(redirectedUrl("/my/learning"));
+    }
+
+    @Test
+    void 그_밖의_학습자는_코스_목록으로_간다() throws Exception {
+        insertMember(EMAIL, "LEARNER");
+
+        login(null).andExpect(redirectedUrl("/courses"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"https://evil.example", "//evil.example", "/\\evil.example", "/\t/evil.example"})
+    void 다른_사이트_주소는_redirect로_받지_않는다(String redirect) throws Exception {
+        insertMember(EMAIL, "LEARNER");
+
+        login(redirect).andExpect(redirectedUrl("/courses"));
+    }
+
+    @Test
+    void 비밀번호가_틀리면_돌아갈_주소를_유지한_채_로그인_화면으로() throws Exception {
+        insertMember(EMAIL, "LEARNER");
+
+        login(EMAIL, "wrong-" + password, "/my/learning", null)
+                .andExpect(redirectedUrl("/login?error&redirect=%2Fmy%2Flearning"));
+    }
+
+    @Test
+    void 로그인_유지를_체크하면_14일_동안_유지하는_쿠키를_준다() throws Exception {
+        insertMember(EMAIL, "LEARNER");
+
+        login(EMAIL, password, null, "on").andExpect(cookie().maxAge("remember-me", 14 * 24 * 60 * 60));
+    }
+
+    @Test
+    void 운영자는_로그인_유지를_체크해도_쿠키를_주지_않는다() throws Exception {
+        insertMember(EMAIL, "ADMIN");
+
+        login(EMAIL, password, null, "on").andExpect(cookie().doesNotExist("remember-me"));
+    }
+
+    @Test
+    void 다섯_번_연속_실패하면_비밀번호가_맞아도_막는다() throws Exception {
+        // 잠금은 서버 메모리에 남으므로 다른 테스트와 겹치지 않는 이메일을 쓴다
+        String email = "lock-test@vibelog.test";
+        insertMember(email, "LEARNER");
+
+        for (int i = 0; i < 4; i++) {
+            login(email, "wrong", null, null).andExpect(redirectedUrl("/login?error"));
+        }
+        // 대소문자만 바꾼 이메일도 같은 회원으로 센다. 잠금이 풀리는 시각(until)을 함께 넘긴다 (#394)
+        String locked = login(email.toUpperCase(), "wrong", null, null)
+                .andExpect(redirectedUrlPattern("/login?locked&until=*")).andReturn().getResponse().getRedirectedUrl();
+        // 잠긴 동안 다시 시도해도 풀리는 시각은 그대로다
+        login(email, password, null, null).andExpect(redirectedUrl(locked));
+    }
+
+    @Test
+    void 네_번_틀려도_다섯_번째에_비밀번호가_맞으면_로그인된다() throws Exception {
+        String email = "fifth-ok-test@vibelog.test";
+        insertMember(email, "LEARNER");
+
+        for (int i = 0; i < 4; i++) {
+            login(email, "wrong", null, null).andExpect(redirectedUrl("/login?error"));
+        }
+        login(email, password, null, null).andExpect(redirectedUrl("/courses"));
+    }
+
+    private void insertMember(String email, String role) {
+        jdbcTemplate.update("INSERT INTO member (email, password_hash, nickname, role) VALUES (?, ?, ?, ?)",
+                email, passwordEncoder.encode(password), "보안테스트", role);
+    }
+
+    private ResultActions login(String redirect) throws Exception {
+        return login(EMAIL, password, redirect, null);
+    }
+
+    private ResultActions login(String email, String password, String redirect, String rememberMe) throws Exception {
+        MockHttpServletRequestBuilder request = post("/login").with(csrf())
+                .param("email", email)
+                .param("password", password);
+        if (redirect != null) {
+            request.param("redirect", redirect);
+        }
+        if (rememberMe != null) {
+            request.param("rememberMe", rememberMe);
+        }
+        return mockMvc.perform(request);
+    }
+}

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${view.courseTitle()} + ' 포트폴리오 과제 | 바이브로그 백오피스'">포트폴리오 과제 | 바이브로그 백오피스</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <link rel="stylesheet" th:href="@{/css/portfolio-admin.css}">
+    <script th:src="@{/js/portfolio-admin.js}" defer></script>
+</head>
+<body>
+<!--
+  A-07 포트폴리오 과제 편집 (API-ADM-34~36, FR-PRT-012·013, #104). A-05 코스 상세 "포트폴리오 과제 편집"에서 들어온다.
+  탭은 주소의 tab(assignment·agent·faq)으로 서버가 고른다. FAQ 탭(API-PRT-11, FR-PRT-014)은 P2 (#196).
+  스텝·FAQ 추가·삭제·순서 바꾸기는 portfolio-admin.js 가 화면 안에서만 하고, 저장할 때 목록 순서대로 보낸다.
+-->
+<div class="vl-admin">
+    <div th:replace="~{common/admin-layout :: sidebar('courses')}"></div>
+
+    <main class="vl-admin__content">
+        <nav class="pa-breadcrumb">
+            <a th:href="@{/admin/courses/{id}(id=${view.courseId()})}" th:text="${view.courseTitle()}">코스</a>
+            <span aria-hidden="true">/</span>
+            <span>포트폴리오 과제</span>
+        </nav>
+        <h1 class="pa-title">포트폴리오 과제</h1>
+
+        <nav class="pa-tabs" aria-label="편집 탭">
+            <a class="pa-tab" th:href="@{/admin/courses/{id}/portfolio(id=${view.courseId()},tab='assignment')}"
+               th:classappend="${tab == 'assignment'} ? 'is-active'"
+               th:attr="aria-current=${tab == 'assignment'} ? 'page' : null">과제·스텝</a>
+            <a class="pa-tab" th:href="@{/admin/courses/{id}/portfolio(id=${view.courseId()},tab='agent')}"
+               th:classappend="${tab == 'agent'} ? 'is-active'"
+               th:attr="aria-current=${tab == 'agent'} ? 'page' : null">평가 에이전트</a>
+            <a class="pa-tab" th:href="@{/admin/courses/{id}/portfolio(id=${view.courseId()},tab='faq')}"
+               th:classappend="${tab == 'faq'} ? 'is-active'"
+               th:attr="aria-current=${tab == 'faq'} ? 'page' : null">FAQ</a>
+        </nav>
+
+        <!-- 과제·스텝 (API-ADM-35) -->
+        <section class="vl-ui-panel pa-panel" th:if="${tab == 'assignment'}">
+            <form class="pa-form" th:object="${assignmentForm}" method="post" novalidate
+                  th:action="@{/admin/courses/{id}/portfolio(id=${view.courseId()})}">
+                <p class="pa-error" role="alert" th:if="${#fields.hasGlobalErrors()}" th:errors="*{global}">오류</p>
+
+                <div class="pa-field">
+                    <label for="pa-topic">과제 주제</label>
+                    <input id="pa-topic" type="text" maxlength="200" th:field="*{topic}">
+                    <p class="pa-error" role="alert" th:if="${#fields.hasErrors('topic')}" th:errors="*{topic}">주제 오류</p>
+                </div>
+                <div class="pa-field">
+                    <label for="pa-goal">학습 목표</label>
+                    <textarea id="pa-goal" th:field="*{goal}"></textarea>
+                    <p class="pa-error" role="alert" th:if="${#fields.hasErrors('goal')}" th:errors="*{goal}">목표 오류</p>
+                </div>
+
+                <fieldset class="pa-steps">
+                    <legend>스텝 가이드</legend>
+                    <p class="pa-hint">학습자가 체크한 스텝을 지우면 체크 기록은 남기고 학습자 화면에서만 빠집니다.</p>
+                    <ol class="pa-step-list" data-list="steps">
+                        <li class="pa-step" data-item th:each="step, s : *{steps}">
+                            <input type="hidden" data-field="guideStepId" th:field="*{steps[__${s.index}__].guideStepId}">
+                            <textarea aria-label="스텝 내용" data-field="content" th:field="*{steps[__${s.index}__].content}"></textarea>
+                            <p class="pa-error" role="alert" th:if="${#fields.hasErrors('steps[__${s.index}__].content')}"
+                               th:errors="*{steps[__${s.index}__].content}">스텝 오류</p>
+                            <div class="pa-step-actions">
+                                <button type="button" class="vl-ui-btn is-outline is-s" data-item-up>위로</button>
+                                <button type="button" class="vl-ui-btn is-outline is-s" data-item-down>아래로</button>
+                                <button type="button" class="vl-ui-btn is-text is-s" data-item-remove>삭제</button>
+                            </div>
+                        </li>
+                    </ol>
+                    <button type="button" class="vl-ui-btn is-outline" data-add="steps">스텝 추가</button>
+                </fieldset>
+
+                <!-- 스텝 추가 때 복사할 빈 줄. name 은 portfolio-admin.js 가 순서대로 붙인다 -->
+                <template data-template="steps">
+                    <li class="pa-step" data-item>
+                        <input type="hidden" data-field="guideStepId" value="">
+                        <textarea aria-label="스텝 내용" data-field="content"></textarea>
+                        <div class="pa-step-actions">
+                            <button type="button" class="vl-ui-btn is-outline is-s" data-item-up>위로</button>
+                            <button type="button" class="vl-ui-btn is-outline is-s" data-item-down>아래로</button>
+                            <button type="button" class="vl-ui-btn is-text is-s" data-item-remove>삭제</button>
+                        </div>
+                    </li>
+                </template>
+
+                <div>
+                    <button th:replace="~{common/ui :: btnSubmit('저장', 'navy', '')}"></button>
+                </div>
+            </form>
+        </section>
+
+        <!-- 평가 에이전트 (API-ADM-36). 과제를 먼저 저장해야 쓸 수 있다 -->
+        <section class="vl-ui-panel pa-panel" th:if="${tab == 'agent'}">
+            <th:block th:unless="${view.assignmentSaved()}">
+                <div th:replace="~{common/ui :: notice('info', null, '과제·스텝을 먼저 저장하면 평가 에이전트를 쓸 수 있습니다.')}"></div>
+            </th:block>
+
+            <form class="pa-form" th:if="${view.assignmentSaved()}" th:object="${agentForm}" method="post"
+                  enctype="multipart/form-data" novalidate
+                  th:action="@{/admin/courses/{id}/portfolio/agent(id=${view.courseId()})}">
+                <p class="pa-error" role="alert" th:if="${#fields.hasGlobalErrors()}" th:errors="*{global}">오류</p>
+
+                <div class="pa-field">
+                    <label for="pa-agent-guide">평가 에이전트 안내</label>
+                    <p class="pa-hint">세팅 방법, 평가 기준, 실행 방법, "실행이 안 될 때" 체크리스트를 씁니다.</p>
+                    <textarea id="pa-agent-guide" class="pa-tall" th:field="*{agentGuide}"></textarea>
+                    <p class="pa-error" role="alert" th:if="${#fields.hasErrors('agentGuide')}" th:errors="*{agentGuide}">안내 오류</p>
+                </div>
+                <div class="pa-field">
+                    <label for="pa-agent-file">설정 파일</label>
+                    <p class="pa-hint" th:if="${view.agentFileUrl() != null}">
+                        올린 파일: <a th:href="${view.agentFileUrl()}" th:text="${view.agentFileUrl()}" href="#">파일</a>
+                        (새 파일을 고르면 바뀝니다)
+                    </p>
+                    <input id="pa-agent-file" type="file" name="agentFile" accept=".md,.json,.yaml,.txt">
+                    <p class="pa-hint">md·json·yaml·txt, 5MB까지. 실행 파일은 올릴 수 없습니다.</p>
+                </div>
+                <div>
+                    <button th:replace="~{common/ui :: btnSubmit('저장', 'navy', '')}"></button>
+                </div>
+            </form>
+        </section>
+
+        <!-- FAQ (API-PRT-11, FR-PRT-014). 과제를 먼저 저장해야 쓸 수 있다. 목록에서 지운 FAQ 는 저장할 때 지워진다 -->
+        <section class="vl-ui-panel pa-panel" th:if="${tab == 'faq'}">
+            <th:block th:unless="${view.assignmentSaved()}">
+                <div th:replace="~{common/ui :: notice('info', null, '과제·스텝을 먼저 저장하면 FAQ를 쓸 수 있습니다.')}"></div>
+            </th:block>
+
+            <form class="pa-form" th:if="${view.assignmentSaved()}" th:object="${faqForm}" method="post" novalidate
+                  th:action="@{/admin/courses/{id}/portfolio/faq(id=${view.courseId()})}">
+                <p class="pa-error" role="alert" th:if="${#fields.hasGlobalErrors()}" th:errors="*{global}">오류</p>
+
+                <fieldset class="pa-steps">
+                    <legend>FAQ</legend>
+                    <p class="pa-hint">학습자가 포트폴리오 과제에서 자주 막히는 문제와 해결 방법을 씁니다. 저장한 순서대로 보입니다.</p>
+                    <ol class="pa-step-list" data-list="faqs">
+                        <li class="pa-step" data-item th:each="faq, f : *{faqs}">
+                            <input type="hidden" data-field="portfolioFaqId" th:field="*{faqs[__${f.index}__].portfolioFaqId}">
+                            <input type="text" maxlength="300" aria-label="질문" placeholder="질문" data-field="question"
+                                   th:field="*{faqs[__${f.index}__].question}">
+                            <p class="pa-error" role="alert" th:if="${#fields.hasErrors('faqs[__${f.index}__].question')}"
+                               th:errors="*{faqs[__${f.index}__].question}">질문 오류</p>
+                            <textarea aria-label="답" placeholder="답" data-field="answer" th:field="*{faqs[__${f.index}__].answer}"></textarea>
+                            <p class="pa-error" role="alert" th:if="${#fields.hasErrors('faqs[__${f.index}__].answer')}"
+                               th:errors="*{faqs[__${f.index}__].answer}">답 오류</p>
+                            <div class="pa-step-actions">
+                                <button type="button" class="vl-ui-btn is-outline is-s" data-item-up>위로</button>
+                                <button type="button" class="vl-ui-btn is-outline is-s" data-item-down>아래로</button>
+                                <button type="button" class="vl-ui-btn is-text is-s" data-item-remove>삭제</button>
+                            </div>
+                        </li>
+                    </ol>
+                    <button type="button" class="vl-ui-btn is-outline" data-add="faqs">FAQ 추가</button>
+                </fieldset>
+
+                <!-- FAQ 추가 때 복사할 빈 줄. name 은 portfolio-admin.js 가 순서대로 붙인다 -->
+                <template data-template="faqs">
+                    <li class="pa-step" data-item>
+                        <input type="hidden" data-field="portfolioFaqId" value="">
+                        <input type="text" maxlength="300" aria-label="질문" placeholder="질문" data-field="question">
+                        <textarea aria-label="답" placeholder="답" data-field="answer"></textarea>
+                        <div class="pa-step-actions">
+                            <button type="button" class="vl-ui-btn is-outline is-s" data-item-up>위로</button>
+                            <button type="button" class="vl-ui-btn is-outline is-s" data-item-down>아래로</button>
+                            <button type="button" class="vl-ui-btn is-text is-s" data-item-remove>삭제</button>
+                        </div>
+                    </li>
+                </template>
+
+                <div>
+                    <button th:replace="~{common/ui :: btnSubmit('저장', 'navy', '')}"></button>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>

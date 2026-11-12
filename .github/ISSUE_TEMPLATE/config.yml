@@ -1,0 +1,9 @@
+# 빈 이슈는 만들 수 없게 하고, 아래 양식(1-feature, 2-bug, 3-task, 4-spec-change)만 사용합니다.
+blank_issues_enabled: false
+contact_links:
+  - name: "📋 요구사항 명세서 (FR · NFR ID 찾기)"
+    url: https://github.com/eulji-staff-only/vibelog/blob/develop/docs/planning/06-requirements.md
+    about: "기능 이슈를 만들기 전에 구현할 요구사항 ID를 확인하세요."
+  - name: "📏 정책 정의서 (PL ID · 숫자 기준)"
+    url: https://github.com/eulji-staff-only/vibelog/blob/develop/docs/planning/07-policy.md
+    about: "횟수·기간·통과 기준·에러 처리 기준을 확인하세요."

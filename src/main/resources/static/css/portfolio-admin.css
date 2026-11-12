@@ -1,0 +1,34 @@
+/*
+ * 백오피스 포트폴리오 과제 편집 화면 (A-07, API-ADM-34~36, #104).
+ * 왼쪽 메뉴·본문 틀은 admin.css(#81), 버튼·안내 상자·패널은 common.css 공통 조각을 쓰고 여기서는 화면 안쪽만 둔다.
+ * 색·간격은 common.css 토큰만 쓴다 (화면 흐름 설계서 6장).
+ */
+
+.pa-breadcrumb { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; color: var(--ink-muted); margin-bottom: var(--space-3); }
+.pa-breadcrumb a { color: var(--link); font-weight: 700; }
+.pa-title { margin: 0 0 var(--space-5); font-size: 26px; font-weight: 900; color: var(--ink); }
+
+.pa-tabs { display: flex; gap: var(--space-2); margin-bottom: var(--space-5); border-bottom: 1px solid var(--line); }
+.pa-tab { display: inline-flex; align-items: center; min-height: var(--tab-h); padding: 0 var(--space-5);
+    font-weight: 700; color: var(--ink-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.pa-tab:hover { color: var(--ink); }
+.pa-tab.is-active { color: var(--ink); border-bottom-color: var(--navy-900); }
+
+.pa-panel { display: flex; flex-direction: column; gap: var(--space-5); }
+.pa-form { display: flex; flex-direction: column; gap: var(--space-5); }
+.pa-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.pa-field label, .pa-steps legend { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.pa-field input[type="text"], .pa-step input[type="text"], .pa-form textarea {
+    font: inherit; min-height: var(--control-h); padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface-raised);
+}
+.pa-form textarea { min-height: 96px; resize: vertical; }
+.pa-form textarea.pa-tall { min-height: 240px; }
+.pa-hint { margin: 0; font-size: 13px; color: var(--ink-muted); }
+.pa-hint a { color: var(--link); word-break: break-all; }
+.pa-error { margin: 0; font-size: 13px; color: var(--danger); }
+
+.pa-steps { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.pa-step-list { margin: 0; padding-left: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+.pa-step { display: flex; flex-direction: column; gap: var(--space-2); }
+.pa-step-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }

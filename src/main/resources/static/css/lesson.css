@@ -1,0 +1,139 @@
+/*
+ * 수업 영역 화면 (U-13).
+ * 색·글꼴·간격은 화면 흐름 설계서 6장 토큰 이름(var(--…))만 쓴다. 값은 공통 CSS(#13)가 정한다.
+ * 배지·안내 상자 모양은 공통 조각(#46)이 머지되면 그것으로 바꾸고 여기서 지운다.
+ */
+
+.ls-page { min-height: 100vh; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+/* display 를 준 요소도 hidden 속성이면 숨긴다 (활동 전환·잠김 안내) */
+.ls-page [hidden] { display: none; }
+
+/* 상단 네이비 띠 + 제목 */
+.ls-band { background: var(--navy-900); color: var(--on-navy); padding: 48px var(--space-6) calc(var(--band-tail) + 28px);
+    display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
+.ls-eyebrow { font-size: 14px; font-weight: 700; padding: var(--space-1\.5) 14px; border-radius: var(--radius-pill);
+    border: 1px solid var(--navy-700); color: var(--glow); }
+.ls-title { margin: 0; font-size: 36px; line-height: 1.3; font-weight: 900; letter-spacing: -0.03em; }
+.ls-lead { margin: 0; max-width: var(--hero-text-max); font-size: 17px; line-height: 1.7; color: var(--on-navy-muted); }
+
+/* 띠에 겹쳐 올라오는 흰 패널 */
+.ls-main { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-6) 64px; }
+.ls-layout { margin-top: calc(var(--hero-overlap) * -1); position: relative; display: flex; align-items: flex-start; gap: var(--space-6); }
+
+/* 왼쪽 활동 목록 */
+.ls-activities { flex: 0 0 300px; min-width: 0; position: sticky; top: var(--space-6);
+    background: var(--surface-raised); border-radius: var(--radius-xl); box-shadow: var(--shadow-panel); padding: var(--space-5); }
+.ls-activity-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.ls-activity { width: 100%; display: flex; align-items: center; gap: var(--space-3); min-height: var(--control-h);
+    padding: 10px var(--space-4); box-sizing: border-box; text-align: left; font: inherit; color: var(--ink);
+    background: var(--surface-raised); border: 1px solid transparent; border-radius: var(--radius-md); cursor: pointer; }
+.ls-activity:hover { border-color: var(--line-strong); }
+.ls-activity[aria-current="true"] { background: var(--tint); border-color: var(--link); }
+.ls-activity.is-locked { color: var(--ink-muted); }
+.ls-activity-no { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--tint); font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; }
+.ls-activity.is-locked .ls-activity-no { background: var(--line-soft); font-size: 12px; }
+.ls-activity-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ls-activity-kind { font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.ls-activity-name { font-size: 14px; font-weight: 700; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 배지 (공통 조각 #46 전까지) */
+.ls-badge { flex: 0 0 auto; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.ls-badge-success { background: var(--success-soft); color: var(--success); }
+.ls-badge-strong { background: var(--navy-900); color: var(--on-navy); }
+.ls-badge-locked { background: var(--line-soft); color: var(--ink-muted); }
+/* 완료한 수업에 나중에 추가된 새 활동 표시 (PL-ENR-005) */
+.ls-badge-new { background: var(--surface-raised); color: var(--ink); border: 1px solid var(--line-strong); }
+.ls-new-note { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: 14px; line-height: 1.6; color: var(--ink-muted); }
+
+/* 오른쪽 선택한 활동 */
+.ls-content { flex: 1 1 0; min-width: 0; background: var(--surface-raised); border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-panel); padding: var(--space-9); }
+.ls-panel { display: flex; flex-direction: column; gap: var(--space-5); }
+.ls-panel-eyebrow { font-size: 13px; font-weight: 700; color: var(--link); }
+.ls-panel-title { margin: 0; font-size: 28px; line-height: 1.4; font-weight: 900; }
+.ls-panel-desc { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
+.ls-panel-body { display: flex; flex-direction: column; gap: var(--space-4); font-size: 15px; line-height: 1.65; }
+.ls-panel-body p { margin: 0; }
+/* 마크다운 본문 서식 (#473). 블록 사이 간격은 .ls-panel-body 의 gap 으로 준다 */
+.ls-panel-body h1, .ls-panel-body h2, .ls-panel-body h3, .ls-panel-body h4 { margin: 0; line-height: 1.4; font-weight: 800; }
+.ls-panel-body h1, .ls-panel-body h2 { font-size: 20px; }
+.ls-panel-body h3, .ls-panel-body h4 { font-size: 17px; }
+.ls-panel-body ul, .ls-panel-body ol { margin: 0; padding-left: var(--space-6); display: flex; flex-direction: column; gap: var(--space-1); }
+.ls-panel-body strong { font-weight: 800; }
+.ls-panel-body a { color: var(--link); }
+.ls-panel-body code { padding: 1px 6px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line);
+    font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; font-size: 0.92em; }
+.ls-panel-body pre { margin: 0; padding: var(--space-4) var(--space-5); border-radius: var(--radius-card); background: var(--surface);
+    border: 1px solid var(--line); overflow-x: auto; white-space: pre-wrap; }
+.ls-panel-body pre code { padding: 0; border: 0; background: none; }
+.ls-panel-body blockquote { margin: 0; padding-left: var(--space-4); border-left: 3px solid var(--line-strong); color: var(--ink-muted); }
+/* 개념 본문에 넣은 그림 (운영자가 이미지 올리기로 넣은 것). 화면 폭보다 크지 않게 줄인다 */
+.ls-body-img { display: block; max-width: 100%; height: auto; margin: var(--space-3) 0; border-radius: var(--radius-md); }
+.ls-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ls-tag { padding: 4px 12px; border-radius: var(--radius-pill); background: var(--tint); font-size: 13px; font-weight: 700; color: var(--ink);
+    font-family: inherit; border: 1px solid transparent; cursor: pointer; }
+.ls-tag:hover { border-color: var(--link); }
+.ls-tool-link { align-self: flex-start; color: var(--link); font-weight: 700; }
+.ls-tool-link:hover { color: var(--link-hover); }
+.ls-panel-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--line-soft); }
+
+/* 연관 개념 (API-LSN-07) */
+.ls-related { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-5); border-radius: var(--radius-md); background: var(--tint); }
+.ls-related-title { margin: 0; font-size: 15px; font-weight: 700; }
+.ls-related-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.ls-related-link { color: var(--link); font-weight: 700; text-decoration: none; }
+.ls-related-link:hover { color: var(--link-hover); text-decoration: underline; }
+
+/* 북마크 켜짐 (API-LSN-08) */
+.ls-btn[aria-pressed="true"] { background: var(--navy-900); color: var(--on-navy); border-color: var(--navy-900); }
+
+/* 개념 태그 검색 결과 모달 (API-LSN-09). 모달 틀은 공통 vl-ui-modal */
+.ls-search-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2);
+    max-height: 320px; overflow-y: auto; }
+.ls-search-list:empty { display: none; }
+.ls-search-link { display: flex; flex-direction: column; gap: 2px; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
+    border: 1px solid var(--line-soft); color: var(--ink); text-decoration: none; }
+.ls-search-link:hover { border-color: var(--link); background: var(--tint); }
+.ls-search-name { font-size: 14px; font-weight: 700; }
+.ls-search-where { font-size: 12px; color: var(--ink-muted); }
+
+/* 버튼 (공통 조각 #46 전까지) */
+.ls-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: var(--control-h);
+    padding: 11px 18px; font: inherit; font-size: 15px; font-weight: 700; line-height: 1.4; text-decoration: none;
+    border: 1px solid transparent; border-radius: var(--radius-pill); cursor: pointer; white-space: nowrap; }
+.ls-btn-navy { background: var(--navy-900); color: var(--on-navy); }
+.ls-btn-navy:hover { background: var(--navy-800); }
+.ls-btn-outline { background: var(--surface-raised); color: var(--ink); border-color: var(--line-strong); }
+.ls-btn-outline:hover { background: var(--surface); }
+
+/* 잠김 안내 (공통 조각 #46 전까지) */
+/* 운영자 미리보기 안내 (FR-LSN-015) */
+.ls-preview-notice { margin: 0; padding: var(--space-3) var(--space-6); background: var(--surface); color: var(--ink);
+    border-bottom: 1px solid var(--line-strong); font-weight: 600; text-align: center; }
+.ls-notice { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-6) var(--space-5);
+    border-radius: var(--radius-md); background: var(--tint); font-size: 15px; line-height: 1.6; }
+.ls-notice p { margin: 0; color: var(--ink-muted); }
+.ls-link { padding: 0; font: inherit; font-size: 14px; font-weight: 700; color: var(--link); background: none; border: none; cursor: pointer; }
+.ls-link:hover { color: var(--link-hover); }
+
+/* 키보드 포커스 (설계서 5-2) */
+.ls-page :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* 태블릿: 활동 목록이 위쪽 가로 스크롤 줄로 (설계서 7장) */
+@media (max-width: 1023px) {
+    .ls-layout { flex-direction: column; }
+    .ls-activities { position: static; width: 100%; flex-basis: auto; padding: var(--space-4); }
+    .ls-activity-list { flex-direction: row; overflow-x: auto; padding-bottom: var(--space-1); }
+    .ls-activity { flex: 0 0 auto; width: auto; min-width: 220px; }
+    .ls-activity-name { white-space: normal; }
+}
+
+/* 모바일 (설계서 7장) */
+@media (max-width: 767px) {
+    .ls-band { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .ls-title { font-size: 26px; }
+    .ls-main { padding-left: var(--space-4); padding-right: var(--space-4); }
+    .ls-content { padding: var(--space-6) 20px; }
+    .ls-panel-actions .ls-btn { width: 100%; }
+}

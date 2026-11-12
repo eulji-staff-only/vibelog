@@ -1,0 +1,221 @@
+<!--
+  lesson/my-learning.html (U-12 내 학습, API-ENR-02, #106)
+  역할: 수강 중 · 완료 탭의 코스 카드, 수업별 상태(잠김·진행 중·완료), 모의고사 상태(잠김·열림·응시함·리포트 확인),
+        포트폴리오 상태, 진행률(PL-ENR-006), 다음에 할 일 · 남은 완료 조건을 MyLearningPageController 가 담아 주는
+        activeCourses · completedCourses 로 그린다. 탭 전환은 서버를 부르지 않는 자바스크립트로만 한다(my-learning.js).
+  참고: 수업(U-13)·모의고사(U-15)·리포트(U-16) 화면 자체는 #107 이 만든다. 여기서는 상태값만 정확하면 된다.
+-->
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>내 학습 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/my-learning.css}">
+    <script th:src="@{/js/my-learning.js}" defer></script>
+    <script th:src="@{/js/ui.js}" defer></script>
+</head>
+<body>
+
+<div th:replace="~{common/layout :: header}"></div>
+
+<!-- 잠긴 수업·모의고사로 되돌아올 때(LESSON_LOCKED, EXAM_LOCKED) 넘어온 안내. 공통 토스트(#139)가 머지되면 그것으로 바꾼다 -->
+<p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
+
+<div class="ml-page">
+
+    <section class="ml-band">
+        <span class="ml-eyebrow">내 학습</span>
+        <h1 class="ml-title">내 학습</h1>
+        <p class="ml-lead">수강 중인 코스의 진행 상황을 확인하고 이어서 학습하세요.</p>
+    </section>
+
+    <main class="ml-main">
+        <div class="ml-panel">
+
+            <!-- 탭 (수강 중 / 완료). URL 의 tab 쿼리를 읽어 처음 보여줄 탭을 고른다 -->
+            <div class="ml-tabs" role="tablist" aria-label="내 학습 탭" data-tab-nav>
+                <button type="button" class="ml-tab" role="tab" aria-selected="false" data-tab-btn data-tab="active">수강 중</button>
+                <button type="button" class="ml-tab" role="tab" aria-selected="false" data-tab-btn data-tab="completed">완료</button>
+            </div>
+
+            <!-- 수강 중 탭 -->
+            <section class="ml-tabpanel" role="tabpanel" aria-label="수강 중" data-tab-panel="active" hidden>
+                <ul class="ml-course-list" th:if="${not #lists.isEmpty(activeCourses)}">
+                    <li th:each="course : ${activeCourses}">
+                        <article class="ml-course">
+                            <header class="ml-course-head">
+                                <div class="ml-course-info">
+                                    <span class="ml-course-track" th:text="'[' + ${course.trackName()} + ']'">[트랙]</span>
+                                    <h2 class="ml-course-name" th:text="${course.courseName()}">코스 이름</h2>
+                                </div>
+                                <div class="ml-course-actions">
+                                    <!-- 진행 중인 수업(U-13)으로 간다. 열린 수업이 없으면 코스 상세로 간다 (설계서 U-12) -->
+                                    <a class="ml-btn ml-btn-navy"
+                                       th:href="${course.learningLessonId() != null}
+                                           ? @{/courses/{courseId}/lessons/{lessonId}(courseId=${course.courseId()},lessonId=${course.learningLessonId()})}
+                                           : @{/courses/{courseId}(courseId=${course.courseId()})}">학습하기</a>
+                                    <!-- 틀린 문제 모아보기 (U-28, FR-LSN-008): 이 코스로 걸러 연다 -->
+                                    <a class="ml-btn ml-btn-outline" th:href="@{/my/wrong-answers(course=${course.courseId()})}">틀린 문제 모아보기</a>
+                                    <!-- 수강 포기 (FR-ENR-005, P2): 수강 중 탭에만 둔다. 누르면 M-12 확인 모달이 열린다 -->
+                                    <button type="button" class="ml-btn ml-btn-outline"
+                                            th:attr="data-ui-modal-open='drop-modal-' + ${course.courseId()}">수강 포기</button>
+                                </div>
+                            </header>
+
+                            <div class="ml-progress">
+                                <div class="ml-progress-top">
+                                    <span class="ml-progress-label">진행률</span>
+                                    <span class="ml-progress-value" th:text="${course.progressPercent()} + '%'">0%</span>
+                                </div>
+                                <div class="ml-bar" role="img" th:attr="aria-label='진행률 ' + ${course.progressPercent()} + '%'">
+                                    <div class="ml-bar-fill" th:style="'width: ' + ${course.progressPercent()} + '%'"></div>
+                                </div>
+                                <p class="ml-progress-next">다음에 할 일: <strong th:text="${course.nextStepText()}">다음 할 일</strong></p>
+                            </div>
+
+                            <details class="ml-accordion" open>
+                                <summary class="ml-accordion-summary">수업 목록
+                                    <span class="ml-course-count" th:text="${#lists.size(course.lessons())} + '개 수업'">0개 수업</span>
+                                </summary>
+
+                                <ul class="ml-lesson-list">
+                                    <li class="ml-lesson" th:each="lesson, lessonIter : ${course.lessons()}"
+                                        th:classappend="${lesson.status().isLocked()} ? 'is-locked'">
+                                        <div class="ml-lesson-info">
+                                            <span class="ml-lesson-no" th:if="${!lesson.status().isLocked()}" th:text="${lesson.order()}">1</span>
+                                            <span class="ml-lesson-no" th:if="${lesson.status().isLocked()}" aria-hidden="true">🔒</span>
+                                            <span class="ml-lesson-name" th:text="${lesson.title()}">수업 이름</span>
+                                        </div>
+                                        <div class="ml-lesson-status">
+                                            <span class="ml-badge" th:classappend="${lesson.status().badgeClass()}"
+                                                  th:text="${lesson.status().label()}">상태</span>
+                                            <span class="ml-badge" th:if="${!lesson.status().isLocked()}"
+                                                  th:classappend="${lesson.examStatus().badgeClass()}"
+                                                  th:text="'모의고사 ' + ${lesson.examStatus().label()}">모의고사 상태</span>
+                                        </div>
+                                        <a class="ml-link" th:if="${lesson.hasReport()}" th:href="${lesson.reportUrl()}">리포트 보기</a>
+                                        <a class="ml-link" th:unless="${lesson.status().isLocked()}"
+                                           th:href="@{/courses/{courseId}/lessons/{lessonId}(courseId=${course.courseId()},lessonId=${lesson.lessonId()})}">
+                                            바로 가기
+                                        </a>
+                                        <!-- 모의고사가 열린 수업에서만 응시 시작(API-EXM-01)을 누를 수 있다. 수업 화면과 같은 POST 폼이다 -->
+                                        <form class="ml-inline-form" method="post" th:if="${lesson.examStatus().name() == 'OPEN'}"
+                                              th:action="@{/lessons/{lessonId}/exam/attempts(lessonId=${lesson.lessonId()})}">
+                                            <button type="submit" class="ml-btn ml-btn-outline ml-btn-s">모의고사 응시하기</button>
+                                        </form>
+                                        <!-- 잠긴 수업: 왜 잠겼는지와 이전 수업 바로가기 (FR-ENR-003, 설계서 U-12 예외) -->
+                                        <div class="ml-lesson-lock" th:if="${lesson.status().isLocked()}">
+                                            <p class="ml-muted">이전 수업의 모의고사를 보고 리포트를 확인하면 열립니다.</p>
+                                            <!-- 바로 앞 수업도 잠겼으면 그 수업으로 보내도 잠김 화면으로 돌아오므로 링크를 숨긴다 -->
+                                            <a class="ml-link" th:if="${lessonIter.index > 0 and !course.lessons()[lessonIter.index - 1].status().isLocked()}"
+                                               th:href="@{/courses/{courseId}/lessons/{lessonId}(courseId=${course.courseId()},lessonId=${course.lessons()[lessonIter.index - 1].lessonId()})}">이전 수업으로</a>
+                                        </div>
+                                    </li>
+                                </ul>
+
+                                <div class="ml-portfolio-row">
+                                    <span class="ml-portfolio-label">포트폴리오</span>
+                                    <span class="ml-badge" th:classappend="${course.portfolioStatus().badgeClass()}"
+                                          th:text="${course.portfolioStatus().label()}">잠김</span>
+                                    <a class="ml-link" th:if="${course.portfolioStatus().name() != 'LOCKED'}"
+                                       th:href="@{/courses/{courseId}/portfolio(courseId=${course.courseId()})}">포트폴리오 보기</a>
+                                </div>
+
+                                <div class="ml-remaining" th:if="${not #lists.isEmpty(course.remainingConditions())}">
+                                    <strong class="ml-remaining-title">남은 완료 조건</strong>
+                                    <ul class="ml-remaining-list">
+                                        <li th:each="condition : ${course.remainingConditions()}" th:text="${condition}">조건</li>
+                                    </ul>
+                                </div>
+                            </details>
+                        </article>
+
+                        <!-- M-12 수강 포기 확인 (API-ENR-04). 공통 확인 모달 꼴(vl-ui-modal)이고, 확인 버튼을 POST 폼으로 연결했다 -->
+                        <div class="vl-ui-modal" hidden role="dialog" aria-modal="true"
+                             th:with="modalId='drop-modal-' + ${course.courseId()}"
+                             th:id="${modalId}"
+                             th:attr="data-ui-modal=${modalId},aria-labelledby=${modalId + '-title'}">
+                            <form class="vl-ui-modal__box" method="post"
+                                  th:action="@{/courses/{courseId}/drop(courseId=${course.courseId()})}">
+                                <h2 class="vl-ui-modal__title" th:id="${modalId + '-title'}" tabindex="-1">수강을 포기할까요?</h2>
+                                <p class="vl-ui-modal__body">내 학습 목록에서 내려갑니다. 진행 기록은 남고, 같은 코스를 다시 시작하면 이어서 학습할 수 있습니다.</p>
+                                <div class="vl-ui-modal__actions">
+                                    <button type="button" class="vl-ui-btn is-outline" data-ui-modal-close>취소</button>
+                                    <button type="submit" class="vl-ui-btn is-navy">포기하기</button>
+                                </div>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+
+                <div class="ml-empty" th:if="${#lists.isEmpty(activeCourses)}">
+                    <div class="ml-notice ml-notice-empty">
+                        <strong>아직 수강 중인 코스가 없습니다.</strong>
+                        <p>트랙을 고르고 코스를 시작하면 여기에서 진행 상황을 볼 수 있습니다.</p>
+                        <a class="ml-btn ml-btn-outline" href="/courses">코스 찾아보기</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 완료 탭 -->
+            <section class="ml-tabpanel" role="tabpanel" aria-label="완료" data-tab-panel="completed" hidden>
+                <ul class="ml-course-list" th:if="${not #lists.isEmpty(completedCourses)}">
+                    <li th:each="course : ${completedCourses}">
+                        <article class="ml-course">
+                            <header class="ml-course-head">
+                                <div class="ml-course-info">
+                                    <span class="ml-course-track" th:text="'[' + ${course.trackName()} + ']'">[트랙]</span>
+                                    <h2 class="ml-course-name" th:text="${course.courseName()}">코스 이름</h2>
+                                    <span class="ml-badge ml-badge-success">완료</span>
+                                </div>
+                            </header>
+                            <p class="ml-muted" th:if="${course.completedAt() != null}"
+                               th:text="'완료일 ' + ${#temporals.format(course.completedAt(), 'yyyy.MM.dd')}">완료일</p>
+                            <!-- 완료한 코스도 수업을 다시 열어 복습할 수 있다 (PL-ENR-004, 설계서 U-12 "다시 보기 → U-13") -->
+                            <details class="ml-accordion">
+                                <summary class="ml-accordion-summary">수업 목록
+                                    <span class="ml-course-count" th:text="${#lists.size(course.lessons())} + '개 수업'">0개 수업</span>
+                                </summary>
+                                <ul class="ml-lesson-list">
+                                    <li class="ml-lesson" th:each="lesson : ${course.lessons()}">
+                                        <div class="ml-lesson-info">
+                                            <span class="ml-lesson-no" th:text="${lesson.order()}">1</span>
+                                            <span class="ml-lesson-name" th:text="${lesson.title()}">수업 이름</span>
+                                        </div>
+                                        <a class="ml-link" th:if="${lesson.hasReport()}" th:href="${lesson.reportUrl()}">리포트 보기</a>
+                                        <a class="ml-link"
+                                           th:href="@{/courses/{courseId}/lessons/{lessonId}(courseId=${course.courseId()},lessonId=${lesson.lessonId()})}">다시 보기</a>
+                                    </li>
+                                </ul>
+                            </details>
+                            <div class="ml-course-actions">
+                                <a class="ml-btn ml-btn-outline" th:href="@{/courses/{courseId}/complete(courseId=${course.courseId()})}">결과 보기</a>
+                                <a class="ml-btn ml-btn-outline" href="/my/portfolios">내 포트폴리오 보기</a>
+                                <a class="ml-btn ml-btn-outline" th:href="@{/my/wrong-answers(course=${course.courseId()})}">틀린 문제 모아보기</a>
+                            </div>
+                        </article>
+                    </li>
+                </ul>
+
+                <div class="ml-empty" th:if="${#lists.isEmpty(completedCourses)}">
+                    <div class="ml-notice ml-notice-empty">
+                        <strong>아직 완료한 코스가 없습니다.</strong>
+                        <p>수강 중인 코스를 끝까지 마치면 여기에서 볼 수 있습니다.</p>
+                    </div>
+                </div>
+
+                <div class="ml-tabpanel-footer">
+                    <a class="ml-link" href="/courses">다른 코스 찾기</a>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+
+<div th:replace="~{common/layout :: footer}"></div>
+
+</body>
+</html>

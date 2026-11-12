@@ -1,0 +1,218 @@
+/*
+ * admin.css
+ * 백오피스(운영자) 공통 레이아웃 — 왼쪽 메뉴(common/admin-layout.html) + 본문 영역 스타일.
+ * 디자인 토큰은 common.css 의 CSS 변수만 쓴다 (화면 흐름 설계서 6장). 이 파일 안에서 색·간격 값을
+ * 새로 짓지 않는다.
+ * 완료 조건: 데스크톱 폭에서 깨지지 않는 것까지만 다룬다 (모바일 백오피스 메뉴는 범위 밖, #81).
+ */
+
+.vl-admin {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+  background: var(--surface);
+}
+
+/* 왼쪽 메뉴 */
+.vl-admin__sidebar {
+  flex: 0 0 240px;
+  width: 240px;
+  min-height: 100vh;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-7) var(--space-6);
+  background: var(--navy-900);
+  color: var(--on-navy-muted);
+}
+
+.vl-admin__logo {
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--on-navy);
+}
+
+.vl-admin__nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.vl-admin__group {
+  margin: var(--space-5) 0 0;
+  padding: 0 var(--space-4);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--on-navy-muted);
+}
+
+.vl-admin__link {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  color: var(--on-navy-muted);
+  font-weight: 700;
+}
+
+.vl-admin__link:hover {
+  color: var(--on-navy);
+  background: var(--navy-800);
+}
+
+.vl-admin__link.is-active {
+  color: var(--navy-900);
+  background: var(--glow);
+}
+
+.vl-admin__exit {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--navy-700);
+  padding-top: var(--space-5);
+  font-weight: 700;
+  color: var(--on-navy-muted);
+}
+
+.vl-admin__exit:hover {
+  color: var(--on-navy);
+}
+
+/* 본문 영역 — 각 백오피스 화면(A-01~A-08)이 이 안을 채운다 */
+.vl-admin__content {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-8) var(--space-9);
+  box-sizing: border-box;
+}
+
+@media (max-width: 1023px) {
+  .vl-admin {
+    flex-direction: column;
+  }
+
+  .vl-admin__sidebar {
+    position: static;
+    width: 100%;
+    min-height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .vl-admin__nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .vl-admin__group {
+    margin: 0;
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .vl-admin__exit {
+    border-top: none;
+    padding-top: var(--space-3);
+  }
+
+  .vl-admin__content {
+    padding: var(--space-6) var(--space-5);
+  }
+}
+
+/*
+ * 대시보드(A-01, API-ADM-01, #120) — 기간 필터, 가입자 수 카드, 트랙·코스별 수강 수·완료율 표.
+ * 색·간격은 common.css 토큰만 쓴다.
+ */
+.vl-admin-dash__title {
+  margin: 0 0 var(--space-6);
+}
+
+.vl-admin-dash__filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-7);
+}
+
+.vl-admin-dash__filter-label {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.vl-admin-dash__filter-input {
+  min-height: var(--control-h);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-card);
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-raised);
+}
+
+.vl-admin-dash__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin-bottom: var(--space-7);
+}
+
+.vl-admin-dash__stat {
+  min-width: 200px;
+}
+
+.vl-admin-dash__stat-label {
+  margin: 0 0 var(--space-2);
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+.vl-admin-dash__stat-value {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.vl-admin-dash__stat-detail {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.vl-admin-dash__subtitle {
+  margin: 0 0 var(--space-5);
+}
+
+.vl-admin-dash__track {
+  margin-bottom: var(--space-7);
+}
+
+.vl-admin-dash__track-title {
+  margin: 0 0 var(--space-1);
+}
+
+.vl-admin-dash__track-summary {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+.vl-admin-dash__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.vl-admin-dash__table th,
+.vl-admin-dash__table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.vl-admin-dash__table th {
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 700;
+}

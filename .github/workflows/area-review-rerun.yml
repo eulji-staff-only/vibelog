@@ -1,0 +1,35 @@
+# 승인(리뷰)이 들어오면 이 PR 커밋의 area-review 실행을 다시 돌린다.
+# 새로 검사하면 처음 실패 기록이 그대로 남아 머지를 막으므로, 처음 실행을 다시 돌려 결과를 덮어쓴다 (#130).
+name: area-review-rerun
+
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  actions: write
+
+# 리뷰가 몰려 오면(AI 리뷰·답글 여러 개) 동시에 돌다가 "이미 실행 중"으로 실패한다 (#134).
+# 같은 PR·커밋은 하나씩 차례로 돌린다. 기다리는 실행은 마지막 하나만 남아도 결과는 같다.
+concurrency:
+  group: area-review-rerun-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+
+jobs:
+  rerun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-run area-review
+        run: |
+          # 같은 커밋을 다른 PR(예: develop→main)이 함께 쓸 수 있으므로 이 PR 번호의 실행만 고른다
+          id=$(gh api "repos/$REPO/actions/workflows/area-review.yml/runs?event=pull_request&head_sha=$SHA" \
+                 --jq "[.workflow_runs[] | select(any(.pull_requests[]; .number == $PR))][0].id // empty")
+          if [ -z "$id" ]; then echo "다시 돌릴 area-review 실행이 없습니다"; exit 0; fi
+          gh run watch "$id" -R "$REPO" > /dev/null || true   # 아직 도는 중이면 끝날 때까지 기다린다
+          gh run rerun "$id" -R "$REPO"
+          echo "area-review 실행 $id 을 다시 돌렸습니다"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}

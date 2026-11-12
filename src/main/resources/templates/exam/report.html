@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>오답 분석 리포트 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/exam-report.css}" href="/css/exam-report.css">
+</head>
+<body>
+<div th:replace="~{common/layout :: header}"></div>
+<!-- U-16 오답 분석 리포트 (API-EXM-05, #111). 처음 열면 연 일시를 기록하고 다음 수업(마지막이면 포트폴리오)이 열린다.
+     공통 헤더·푸터는 #133에서 적용했다. 버튼·배지·안내 상자는 아직 화면 전용 클래스를 쓴다. -->
+<div class="report-page" th:with="lessonUrl=@{/courses/{c}/lessons/{l}(c=${report.courseId()},l=${report.lessonId()})}">
+
+    <section class="report-band">
+        <span class="report-eyebrow" th:text="|${report.lessonTitle()} · ${report.attemptNo()}회차|">수업 1 · 1회차</span>
+        <h1 class="report-title">오답 분석 리포트</h1>
+        <p class="report-lead">개념별 정답률을 확인하고, 약한 개념을 다시 보세요. 리포트를 확인하면 다음 수업이 열립니다.</p>
+    </section>
+
+    <main class="report-main">
+        <div class="report-panel">
+            <p class="vl-flash" role="status" th:if="${toast}" th:text="${toast}">알림</p>
+
+            <!-- 점수: 정답 수 / 문항 수 (이 회차 기준, PL-EXM-004) -->
+            <section class="report-score" aria-label="내 점수">
+                <span class="report-label">내 점수</span>
+                <p class="report-numeral"><strong th:text="${report.correctCount()}">3</strong> / <th:block th:text="${report.totalCount()}">5</th:block><span class="report-unit">문항 정답</span></p>
+                <p class="report-caption" th:text="|${report.attemptNo()}회차 응시 기준|">가장 최근 응시 기준</p>
+                <!-- 같은 수업 응시자 평균 (P2 FR-EXM-005): 첫 응시 기준, 응시자 5명 미만이면 숨김 (PL-EXM-008) -->
+                <p class="report-caption" th:if="${report.averageScore() != null}"
+                   th:text="|같은 수업 응시자 평균 ${#numbers.formatDecimal(report.averageScore(), 1, 1)}문항 정답 (첫 응시 기준)|">같은 수업 응시자 평균 3.4문항 정답 (첫 응시 기준)</p>
+            </section>
+
+            <!-- 개념별 정답률 · 약한 부분 60% 미만 (PL-LSN-008). 다시 보기는 그 개념 활동(U-13)으로 -->
+            <section class="report-section" aria-labelledby="report-concepts-title">
+                <h2 class="report-section-title" id="report-concepts-title">개념별 정답률</h2>
+                <p class="report-caption">정답률 60% 미만인 개념은 약한 부분으로 표시합니다.</p>
+                <ul class="report-concepts">
+                    <li class="report-concept" th:each="concept : ${report.concepts()}" th:classappend="${concept.weak()} ? 'is-weak'">
+                        <div class="report-concept-top">
+                            <span class="report-concept-name"><th:block th:text="${concept.title()}">[개념]</th:block>
+                                <span class="report-badge-danger" th:if="${concept.weak()}">약한 부분</span></span>
+                            <span class="report-concept-rate" th:text="|${concept.rate()}%|">100%</span>
+                        </div>
+                        <div class="report-bar" aria-hidden="true"><div class="report-bar-fill" th:style="|width: ${concept.rate()}%|"></div></div>
+                        <a class="report-btn report-btn-text" th:if="${concept.weak()}"
+                           th:href="@{${lessonUrl}(activity=${concept.activityId()})}">이 개념 다시 보기</a>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- 틀린 문항 (문항, 내 답, 정답, 해설, 연관 개념) -->
+            <section class="report-section" aria-labelledby="report-wrong-title">
+                <h2 class="report-section-title" id="report-wrong-title">틀린 문항 <span class="report-danger" th:text="|${#lists.size(report.wrongs())}개|">2개</span></h2>
+                <p class="report-caption" th:if="${#lists.isEmpty(report.wrongs())}">모두 맞혔습니다.</p>
+                <ol class="report-wrongs">
+                    <li class="report-wrong" th:each="wrong : ${report.wrongs()}">
+                        <span class="report-wrong-no" th:text="|문항 ${wrong.number()}|">문항 2</span>
+                        <p class="report-wrong-text" th:text="${wrong.content()}">[문항]</p>
+                        <dl class="report-answers">
+                            <div><dt>내 답</dt><dd class="report-danger" th:text="${wrong.myChoice() ?: '선택하지 않음'}">[보기]</dd></div>
+                            <div><dt>정답</dt><dd th:text="${wrong.correctChoice()}">[보기]</dd></div>
+                        </dl>
+                        <p class="report-explain" th:text="${wrong.explanation()}">[해설]</p>
+                        <a class="report-btn report-btn-text" th:href="@{${lessonUrl}(activity=${wrong.conceptActivityId()})}"
+                           th:text="|연관 개념: ${wrong.conceptTitle()} 다시 보기|">연관 개념 다시 보기</a>
+                    </li>
+                </ol>
+            </section>
+
+            <div class="report-notice">
+                <strong th:text="${report.lastLesson()} ? '포트폴리오 과제가 열렸습니다.' : '다음 수업이 열렸습니다.'">다음 수업이 열렸습니다.</strong>
+                <p>약한 개념은 언제든 다시 보고, 모의고사를 다시 응시할 수 있습니다.</p>
+            </div>
+
+            <div class="report-actions">
+                <div class="report-actions-sub">
+                    <a class="report-btn report-btn-outline" th:href="@{/my/learning}">내 학습으로</a>
+                    <!-- 다시 응시 = 새 회차 시작 (API-EXM-01, POST) -->
+                    <form method="post" th:action="@{/lessons/{id}/exam/attempts(id=${report.lessonId()})}">
+                        <button type="submit" class="report-btn report-btn-outline">다시 응시</button>
+                    </form>
+                </div>
+                <a class="report-btn report-btn-navy" th:unless="${report.lastLesson()}"
+                   th:href="@{/courses/{c}/lessons/{l}(c=${report.courseId()},l=${report.nextLessonId()})}">다음 수업으로</a>
+                <a class="report-btn report-btn-navy" th:if="${report.lastLesson()}"
+                   th:href="@{/courses/{c}/portfolio(c=${report.courseId()})}">포트폴리오로</a>
+            </div>
+        </div>
+    </main>
+</div>
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

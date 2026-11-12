@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>쪽지함 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}">
+    <link rel="stylesheet" th:href="@{/css/message.css}">
+    <script th:src="@{/js/message.js}" defer></script>
+    <script th:src="@{/js/ui.js}" defer></script>
+    <script th:src="@{/js/report.js}" defer></script>
+</head>
+<body>
+<!--
+  U-27 쪽지함 (API-MSG-01·02·03·05, #184). 왼쪽은 받은·보낸 탭 목록(최신순 20개씩), 오른쪽은 연 쪽지와 답장 폼, 쪽지를 안 열었으면 새 쪽지 폼.
+  새 쪽지의 받는 사람은 닉네임 앞부분으로 찾아 고른다 (message.js → /api/users). 1,000자, 하루 20통, 답장 없는 상대에게 연속 3통 (PL-MSG-003).
+-->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="ms-band">
+    <h1 class="ms-title">쪽지함</h1>
+</section>
+
+<main class="ms-main is-wide">
+    <div class="ms-panel">
+        <p class="ms-toast" role="status" th:if="${toast}" th:text="${toast}">쪽지를 보냈습니다</p>
+        <div class="ms-inbox">
+            <section class="ms-inbox__list" aria-label="쪽지 목록">
+                <div class="ms-inbox__tabs">
+                    <nav class="ms-tabs" aria-label="쪽지함">
+                        <a class="ms-tab" href="/messages?box=received" th:attr="aria-current=${box == 'received'} ? 'page'">받은 쪽지</a>
+                        <a class="ms-tab" href="/messages?box=sent" th:attr="aria-current=${box == 'sent'} ? 'page'">보낸 쪽지</a>
+                    </nav>
+                    <a class="ms-btn is-outline is-s" th:href="@{/messages(box=${box})}">새 쪽지</a>
+                </div>
+
+                <ul class="ms-list" th:unless="${messages.empty}">
+                    <li th:each="m : ${messages.content}">
+                        <a class="ms-msg" th:href="@{/messages(box=${box}, messageId=${m.messageId()}, page=${messages.number + 1})}"
+                           th:classappend="${box == 'received' and !m.read()} ? 'is-unread'"
+                           th:attr="aria-current=${opened != null and opened.messageId() == m.messageId()} ? 'true'">
+                            <span class="ms-msg__who" th:text="${m.otherNickname()}">닉네임</span>
+                            <span class="ms-msg__preview" th:text="${m.preview()}">내용 앞부분</span>
+                            <time th:datetime="${m.createdAt()}" th:text="${#temporals.format(m.createdAt(), 'MM.dd HH:mm')}">11.09 10:00</time>
+                        </a>
+                    </li>
+                </ul>
+                <p class="ms-muted" th:if="${messages.empty}" th:text="${box == 'sent'} ? '보낸 쪽지가 없습니다' : '받은 쪽지가 없습니다'">받은 쪽지가 없습니다</p>
+
+                <nav class="ms-pages" aria-label="페이지" th:if="${messages.totalPages > 1}"
+                     th:with="current=${messages.number + 1},
+                              start=${T(java.lang.Math).max(1, current - 4)},
+                              end=${T(java.lang.Math).min(messages.totalPages, start + 9)}">
+                    <a th:each="p : ${#numbers.sequence(start, end)}" th:href="@{/messages(box=${box}, page=${p})}"
+                       th:attr="aria-current=${p == current} ? 'page'" th:text="${p}">1</a>
+                </nav>
+            </section>
+
+            <!-- 연 쪽지 -->
+            <section class="ms-inbox__pane" th:if="${opened != null}" aria-label="쪽지 내용">
+                <p class="ms-muted" th:if="${opened.received()}">보낸 사람
+                    <a class="ms-link" th:href="@{/users/{id}(id=${opened.senderMemberId()})}" th:text="${opened.senderNickname()}">닉네임</a></p>
+                <p class="ms-muted" th:unless="${opened.received()}">받는 사람
+                    <a class="ms-link" th:href="@{/users/{id}(id=${opened.receiverMemberId()})}" th:text="${opened.receiverNickname()}">닉네임</a></p>
+                <p class="ms-muted"><time th:datetime="${opened.createdAt()}" th:text="${#temporals.format(opened.createdAt(), 'yyyy.MM.dd HH:mm')}">2026.11.09 10:00</time></p>
+                <!-- 운영자가 숨긴 내 쪽지: 보낸 나에게만 내용이 보인다 (FR-RPT-003, #256) -->
+                <p class="ms-error" role="status" th:if="${opened.hidden() and !opened.received()}">운영 정책에 따라 숨겨졌습니다. 다른 사람에게는 보이지 않습니다</p>
+                <p class="ms-article__body" th:text="${opened.content()}">쪽지 내용</p>
+                <!-- 받은 쪽지만 신고 (API-RPT-01 · M-11, 명세 결정 14) -->
+                <div class="ms-actions" th:if="${opened.received() and !opened.hidden()}">
+                    <button class="ms-btn is-outline is-s" type="button" data-ui-modal-open="report-modal"
+                            data-report-type="MESSAGE" th:attr="data-report-id=${opened.messageId()}">신고</button>
+                </div>
+
+                <form class="ms-reply" method="post" th:if="${opened.received()}" th:object="${messageContentRequest}" novalidate
+                      th:action="@{/messages/{id}/reply(id=${opened.messageId()})}" th:attr="data-draft=|message-reply.${opened.messageId()}|">
+                    <label for="reply-content">답장</label>
+                    <textarea class="ms-input" id="reply-content" maxlength="1000" th:field="*{content}" aria-describedby="reply-error"
+                              th:attrappend="aria-invalid=${#fields.hasErrors('content') or #fields.hasGlobalErrors()} ? 'true'"></textarea>
+                    <div id="reply-error">
+                        <p class="ms-error" th:if="${#fields.hasErrors('content')}" th:errors="*{content}">내용 오류</p>
+                        <p class="ms-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}">보내기 오류</p>
+                    </div>
+                    <div class="ms-actions"><button class="ms-btn" type="submit">답장 보내기</button></div>
+                </form>
+            </section>
+
+            <!-- 새 쪽지 -->
+            <section class="ms-inbox__pane" th:if="${opened == null}" aria-labelledby="compose-h">
+                <form class="ms-reply" method="post" th:action="@{/messages}" th:object="${messageWriteRequest}" novalidate data-compose data-draft="message">
+                    <h2 id="compose-h">새 쪽지</h2>
+                    <label for="receiver-search">받는 사람</label>
+                    <input class="ms-input" id="receiver-search" type="search" placeholder="닉네임으로 찾기" autocomplete="off"
+                           aria-describedby="receiver-chosen receiver-error" data-receiver-search
+                           th:value="${receiverNickname}">
+                    <ul class="ms-receivers" hidden data-receiver-results></ul>
+                    <input type="hidden" th:field="*{receiverMemberId}" data-receiver-id>
+                    <p class="ms-muted" id="receiver-chosen" aria-live="polite" data-receiver-chosen
+                       th:text="${receiverNickname != null} ? |받는 사람: ${receiverNickname}| : ''"></p>
+                    <p class="ms-error" id="receiver-error" th:if="${#fields.hasErrors('receiverMemberId')}" th:errors="*{receiverMemberId}">받는 사람 오류</p>
+
+                    <label for="compose-content">내용</label>
+                    <textarea class="ms-input" id="compose-content" maxlength="1000" th:field="*{content}" aria-describedby="compose-error"
+                              th:attrappend="aria-invalid=${#fields.hasErrors('content') or #fields.hasGlobalErrors()} ? 'true'"></textarea>
+                    <div id="compose-error">
+                        <p class="ms-error" th:if="${#fields.hasErrors('content')}" th:errors="*{content}">내용 오류</p>
+                        <p class="ms-error" th:each="err : ${#fields.globalErrors()}" th:text="${err}">보내기 오류</p>
+                    </div>
+                    <p class="ms-muted">1,000자까지, 하루 20통까지, 답장이 없는 상대에게는 연속 3통까지 보낼 수 있습니다.</p>
+                    <div class="ms-actions"><button class="ms-btn" type="submit">보내기</button></div>
+                </form>
+            </section>
+        </div>
+    </div>
+</main>
+
+<!-- M-11 신고 사유 선택 (#255) -->
+<div th:replace="~{message/report :: reportModal}"></div>
+<div th:replace="~{common/ui :: toastContainer}"></div>
+
+<div th:replace="~{common/layout :: footer}"></div>
+</body>
+</html>

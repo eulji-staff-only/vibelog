@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>코스 목록 | 바이브로그</title>
+    <link rel="stylesheet" th:href="@{/css/common.css}" href="/css/common.css">
+    <link rel="stylesheet" th:href="@{/css/course.css}" href="/css/course.css">
+</head>
+<body>
+<!-- U-10 코스 목록 (FR-CRS-001, API-CRS-02, #97). CoursePageController 가 담아 주는 courseList(CourseListView)로 그린다.
+     - 진단을 마친 회원만 추천 트랙 영역이 보인다 (비회원·진단 건너뛴 회원은 없음).
+     - 트랙(?track=)·카테고리(?category=)·검색(?q=, 헤더 검색창도 여기로 온다)은 함께 쓸 수 있다 (P2 FR-CRS-003·009, #189).
+       칩·검색창은 다른 조건을 그대로 넘긴다. 검색어가 있으면 추천 영역은 서버가 빼고, 수업 제목으로 걸린 카드에는 걸린 수업을 적는다. -->
+<div th:replace="~{common/layout :: header}"></div>
+
+<section class="crs-band">
+    <h1 class="crs-title">코스</h1>
+    <p class="crs-lead">추천과 관계없이 어떤 트랙의 코스든 고를 수 있어요.</p>
+</section>
+
+<main class="crs-main" th:with="selected=${courseList.selectedTrackId()}, selectedCategory=${courseList.selectedCategoryId()}, q=${courseList.q()}">
+    <div class="vl-ui-panel crs-panel">
+
+        <div class="crs-filters">
+            <form class="crs-search" th:action="@{/courses}" method="get" role="search">
+                <input type="hidden" name="track" th:if="${selected != null}" th:value="${selected}">
+                <input type="hidden" name="category" th:if="${selectedCategory != null}" th:value="${selectedCategory}">
+                <input class="crs-search__input" type="search" name="q" th:value="${q}" placeholder="코스·수업 제목으로 검색" aria-label="코스·수업 검색">
+                <button class="vl-ui-btn is-navy is-s" type="submit">검색</button>
+            </form>
+            <nav class="crs-chips" aria-label="트랙">
+                <a class="crs-chip" th:href="@{/courses(category=${selectedCategory},q=${q})}" th:attr="aria-current=${selected == null} ? 'page'">전체 트랙</a>
+                <a class="crs-chip" th:each="chip : ${courseList.tracks()}"
+                   th:href="@{/courses(track=${chip.trackId()},category=${selectedCategory},q=${q})}"
+                   th:attr="aria-current=${selected == chip.trackId()} ? 'page'"
+                   th:text="${chip.name()}">트랙</a>
+            </nav>
+            <nav class="crs-chips is-sub" aria-label="카테고리" th:unless="${courseList.categories().empty}">
+                <a class="crs-chip" th:href="@{/courses(track=${selected},q=${q})}" th:attr="aria-current=${selectedCategory == null} ? 'page'">전체 카테고리</a>
+                <a class="crs-chip" th:each="chip : ${courseList.categories()}"
+                   th:href="@{/courses(track=${selected},category=${chip.courseCategoryId()},q=${q})}"
+                   th:attr="aria-current=${selectedCategory == chip.courseCategoryId()} ? 'page'"
+                   th:text="${chip.name()}">카테고리</a>
+            </nav>
+            <div class="crs-filters__bottom">
+                <p class="crs-count">
+                    <th:block th:if="${q != null}"><strong th:text="${'“' + q + '”'}">“검색어”</strong> 검색 결과 · </th:block>
+                    코스 <strong th:text="${courseList.totalCount()}">0</strong>개
+                </p>
+                <a class="crs-reset" href="/courses" th:if="${courseList.isFiltered()}">조건 초기화</a>
+            </div>
+        </div>
+
+        <!-- 추천 영역: 진단을 마친 회원만 (API-CRS-02) -->
+        <section class="crs-recommend" aria-labelledby="crs-rec-h" th:if="${courseList.recommended() != null}"
+                 th:with="rec=${courseList.recommended()}">
+            <div class="crs-section__head">
+                <div>
+                    <span th:replace="~{common/ui :: badge('strong', '추천 트랙')}">추천 트랙</span>
+                    <h2 class="crs-h2" id="crs-rec-h" th:text="${rec.trackName()}">추천 트랙</h2>
+                </div>
+                <a class="crs-link" th:href="@{/tracks/{id}(id=${rec.trackId()})}">트랙 소개 →</a>
+            </div>
+            <ul class="crs-cards" th:unless="${rec.courses().empty}">
+                <li th:each="card : ${rec.courses()}">
+                    <a th:replace="~{:: courseCard(${card})}">코스 카드</a>
+                </li>
+            </ul>
+            <p class="crs-count" th:if="${rec.courses().empty}">이 트랙에 아직 공개된 코스가 없습니다.</p>
+        </section>
+
+        <section class="crs-section" th:each="group : ${courseList.groups()}"
+                 th:attr="aria-labelledby='crs-group-' + ${group.trackId()}">
+            <div class="crs-section__head">
+                <h2 class="crs-h2" th:id="'crs-group-' + ${group.trackId()}" th:text="${group.trackName()}">트랙</h2>
+                <a class="crs-link" th:href="@{/tracks/{id}(id=${group.trackId()})}">트랙 소개 →</a>
+            </div>
+            <ul class="crs-cards">
+                <li th:each="card : ${group.courses()}">
+                    <a th:replace="~{:: courseCard(${card})}">코스 카드</a>
+                </li>
+            </ul>
+        </section>
+
+        <!-- 빈 상태 (U-10 예외): 조건에 맞는 공개 코스가 없을 때 -->
+        <div class="crs-empty" th:if="${courseList.isEmpty()}">
+            <div th:replace="~{common/ui :: notice('empty', '', '조건에 맞는 코스가 없습니다')}"></div>
+            <a th:replace="~{common/ui :: btnLink('/courses', '조건 초기화', 'outline', '')}">조건 초기화</a>
+        </div>
+
+    </div>
+</main>
+
+<div th:replace="~{common/layout :: footer}"></div>
+
+<!-- 코스 카드 (CourseCard). 트랙 소개(track.html)도 이 조각을 쓴다. API-CRS-01·02: 코스명, 한 줄 소개, 카테고리, 플랜 일수, 수업 수 -->
+<th:block th:if="false">
+    <a th:fragment="courseCard(card)" class="crs-card" th:href="@{/courses/{id}(id=${card.courseId()})}">
+        <span class="crs-card__meta" th:text="${card.trackName()} + ' · ' + ${card.categoryName()}">트랙 · 카테고리</span>
+        <h3 class="crs-card__title" th:text="${card.title()}">코스 이름</h3>
+        <p class="crs-card__summary" th:text="${card.summary()}">한 줄 소개</p>
+        <!-- 검색(API-CRS-02 P2)에서 수업 제목으로 걸린 코스: 걸린 수업 제목 -->
+        <p class="crs-card__matched" th:unless="${card.matchedLessonTitles().empty}"
+           th:text="'수업: ' + ${#strings.listJoin(card.matchedLessonTitles(), ', ')}">수업: 수업 제목</p>
+        <p class="crs-card__info">
+            <span th:text="'플랜 ' + ${card.planDays()} + '일'">플랜 0일</span>
+            <span th:text="'수업 ' + ${card.lessonCount()} + '개'">수업 0개</span>
+        </p>
+    </a>
+</th:block>
+</body>
+</html>
